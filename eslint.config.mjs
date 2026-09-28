@@ -32,7 +32,8 @@ const eslintConfig = [
           patterns: [
             {
               group: ["@/server", "@/server/*", "**/server/*"],
-              message: "src/server is server-only. Call it through an API route or a server component.",
+              message:
+                "src/server is server-only. Call it through an API route or a server component.",
             },
           ],
         },

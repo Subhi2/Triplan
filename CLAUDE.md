@@ -34,10 +34,14 @@ pnpm install
 pnpm dev              # Next.js dev server on :3000
 pnpm lint             # ESLint
 pnpm typecheck        # tsc --noEmit
-pnpm test             # Vitest
-pnpm test:e2e         # Playwright
+pnpm test             # Vitest unit tests (no network, no DB)
+pnpm test:integration # Vitest against DATABASE_URL (seeded)
+pnpm test:e2e         # Playwright (APIs mocked)
+pnpm db:generate      # generate a Drizzle migration from the schema
 pnpm db:migrate       # apply Drizzle migrations
 pnpm db:seed          # load docs/06 seed data
+pnpm check:pins       # compare seed pins with OpenStreetMap (Nominatim, throttled)
+pnpm fixtures:routes  # re-record OSRM route fixtures used by tests
 pnpm job:discover     # run hidden-places discovery once (phase 6)
 ```
 
@@ -62,10 +66,10 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
 DATABASE_URL=
-NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
+NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL; empty = OpenFreeMap "liberty"
 OSRM_BASE_URL=https://router.project-osrm.org
 NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
-NOMINATIM_USER_AGENT=bike-travelling-guide/0.1 (contact email)
+NOMINATIM_USER_AGENT=bike-travelling-guide/0.1 (contact email)   # required by Nominatim policy
 YOUTUBE_API_KEY=                  # phase 6
 INSTAGRAM_ACCESS_TOKEN=           # phase 7, needs Meta app review
 INSTAGRAM_BUSINESS_ACCOUNT_ID=    # phase 7

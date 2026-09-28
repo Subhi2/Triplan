@@ -13,7 +13,10 @@ export default defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     // Product spec requires the app to work at 375 px width.
-    { name: "mobile", use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 740 } } },
+    {
+      name: "mobile",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 740 } },
+    },
   ],
   webServer: {
     command: "pnpm dev",
