@@ -1,0 +1,18 @@
+[
+  {
+    "place_id": 252991630,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "relation",
+    "osm_id": 5419632,
+    "lat": "12.9173302",
+    "lon": "75.7580573",
+    "category": "tourism",
+    "type": "attraction",
+    "place_rank": 30,
+    "importance": 0.14389741120638372,
+    "addresstype": "tourism",
+    "name": "Manjarabad Fort",
+    "display_name": "Manjarabad Fort, SH27, Kesaganahalli, Kyanahalli, Sakaleshapura taluk, Hassan, Karnataka, 573134, India",
+    "boundingbox": ["12.9167662", "12.9179205", "75.7578575", "75.7589974"]
+  }
+]

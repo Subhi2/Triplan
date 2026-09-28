@@ -1,2 +1,15 @@
-// RoutingProvider interface and implementations (osrm.ts, later google.ts). Implemented in Phase 2.
-export {};
+import { routeDbCache } from "../../db/cache";
+import { serverEnv } from "../../env";
+import { withRouteCache } from "./cached";
+import { createOsrmProvider } from "./osrm";
+import type { RoutingProvider } from "./types";
+
+export * from "./types";
+
+let provider: RoutingProvider | undefined;
+
+/** OSRM behind the route_cache table. Swap the inner provider here for Google Routes / GraphHopper. */
+export function getRoutingProvider(): RoutingProvider {
+  provider ??= withRouteCache(createOsrmProvider(serverEnv().OSRM_BASE_URL), routeDbCache);
+  return provider;
+}
