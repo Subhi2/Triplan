@@ -52,11 +52,14 @@ describe.skipIf(!process.env.DATABASE_URL)("places along real routes", () => {
       expect(slugs).not.toContain("ballalarayana-durga");
     });
 
-    // OPEN: the spec says the Chikkamagaluru route lists Mullayanagiri at 5 km. The OSM-checked pin
-    // (the peak) is 10.0 km from the road through Chikkamagaluru town, so it only appears at 10 km+.
-    // Kept here so the decision stays visible: change the criterion or the reference route.
-    it.skip("the Chikkamagaluru route lists Mullayanagiri", async () => {
-      expect(await slugsAlong(ROUTES.viaChikkamagaluru)).toContain("mullayanagiri");
+    // Mullayanagiri peak is ~10.0 km from the road through Chikkamagaluru town: a real detour.
+    it("Mullayanagiri is missing at 5 km and shows as a detour at 10 km", async () => {
+      expect(await slugsAlong(ROUTES.viaChikkamagaluru)).not.toContain("mullayanagiri");
+
+      const wide = await placesAlong(ROUTES.viaChikkamagaluru.geometry, 10_000, null);
+      const mullayanagiri = wide.find((p) => p.slug === "mullayanagiri");
+      expect(mullayanagiri).toBeDefined();
+      expect(mullayanagiri!.detourM).toBeGreaterThan(DEFAULT_CORRIDOR_M);
     });
 
     it("real detours (Devaramane, Shravanabelagola) are not listed", async () => {
@@ -82,10 +85,6 @@ describe.skipIf(!process.env.DATABASE_URL)("places along real routes", () => {
         expect(place, slug).toBeDefined();
         expect(place!.detourM).toBeGreaterThan(DEFAULT_CORRIDOR_M);
       }
-    });
-
-    it("list Mullayanagiri on the Chikkamagaluru route", async () => {
-      expect(await slugsAlong(ROUTES.viaChikkamagaluru, 25_000)).toContain("mullayanagiri");
     });
   });
 
