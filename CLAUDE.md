@@ -59,8 +59,8 @@ Add these scripts to `package.json` as the phases introduce them.
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
 DATABASE_URL=
 NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
 OSRM_BASE_URL=https://router.project-osrm.org
