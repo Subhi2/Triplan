@@ -1,2 +1,4 @@
-// routeService, corridorService, placeService, discoveryService. Added from Phase 2 onwards.
-export {};
+// Business logic called by API route handlers and server components.
+export * from "./corridorService";
+export * from "./placeService";
+export * from "./routeService";
