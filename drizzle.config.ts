@@ -8,6 +8,8 @@ export default defineConfig({
   schema: "./src/server/db/schema.ts",
   out: "./src/server/db/migrations",
   dbCredentials: { url: process.env.DATABASE_URL ?? "" },
+  // Supabase owns auth, storage, extensions etc.; only manage our tables.
+  schemaFilter: ["public"],
   // PostGIS owns its own tables (spatial_ref_sys etc.); keep drizzle-kit away from them.
   extensionsFilters: ["postgis"],
 });
