@@ -1,6 +1,7 @@
 import type { LineString } from "geojson";
 import { sql } from "drizzle-orm";
 import type { LngLat } from "@/lib/geo";
+import { TRENDING_MIN_SCORE, type PlaceAlong } from "@/lib/places";
 import { getDb } from "../db";
 
 export interface PlaceAlongRow {
@@ -62,4 +63,21 @@ export async function placesAlong(
     thumbUrl: r.thumb_url,
     trendingScore: r.trending_score,
   }));
+}
+
+export function toPlaceAlong(row: PlaceAlongRow): PlaceAlong {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    category: row.category,
+    location: row.location,
+    kmFromStart: row.kmFromStart,
+    detourKm: row.detourM / 1000,
+    rating: row.ratingAvg,
+    ratingCount: row.ratingCount,
+    bestMonths: row.bestMonths,
+    thumbUrl: row.thumbUrl,
+    trending: row.trendingScore >= TRENDING_MIN_SCORE,
+  };
 }

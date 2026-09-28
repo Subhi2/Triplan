@@ -1,7 +1,9 @@
-import { createHash } from "node:crypto";
 import type { LineString } from "geojson";
+import { ROUTE_ID_PATTERN } from "@/lib/places";
 import type { RouteOption, TripRequest } from "@/lib/trip";
-import { getRoutingProvider, type RoutingProvider } from "../providers/routing";
+import { routeDbCache, type JsonCache } from "../db/cache";
+import { getRoutingProvider, type RouteResult, type RoutingProvider } from "../providers/routing";
+import { routeCacheKey } from "../providers/routing/cached";
 import { placesAlong } from "./corridorService";
 import { viaLabels, type TownOnRoute } from "./viaLabel";
 
@@ -24,8 +26,25 @@ function defaultDeps(): RouteServiceDeps {
   return { routing: getRoutingProvider(), townsAlong: townsAlongDb };
 }
 
-export function routeId(geometry: LineString): string {
-  return createHash("sha1").update(JSON.stringify(geometry.coordinates)).digest("hex").slice(0, 12);
+const CACHE_KEY_PREFIX = "route:v1:";
+
+/**
+ * A route id is the route_cache hash of the routing request plus the route's index in the
+ * response, so the places API can load the geometry instead of the client uploading it.
+ */
+export function routeIdFor(cacheKey: string, index: number): string {
+  return `${cacheKey.slice(CACHE_KEY_PREFIX.length)}-${index}`;
+}
+
+/** Geometry for a route id from route_cache, or null if the id is unknown or has expired. */
+export async function getRouteGeometry(
+  id: string,
+  cache: JsonCache = routeDbCache,
+): Promise<LineString | null> {
+  if (!ROUTE_ID_PATTERN.test(id)) return null;
+  const [hash, index] = id.split("-") as [string, string];
+  const routes = (await cache.get(`${CACHE_KEY_PREFIX}${hash}`)) as RouteResult[] | undefined;
+  return routes?.[Number(index)]?.geometry ?? null;
 }
 
 /** Routes for a trip: the path through the user's stops, plus engine alternatives when there are none. */
@@ -34,13 +53,9 @@ export async function getRoutes(
   deps: RouteServiceDeps = defaultDeps(),
 ): Promise<RouteOption[]> {
   const waypoints = trip.stops.map((s) => s.location);
-  const results = (
-    await deps.routing.route({
-      waypoints,
-      alternatives: waypoints.length === 2,
-      profile: trip.vehicle,
-    })
-  ).slice(0, MAX_ROUTES);
+  const input = { waypoints, alternatives: waypoints.length === 2, profile: trip.vehicle };
+  const cacheKey = routeCacheKey(input);
+  const results = (await deps.routing.route(input)).slice(0, MAX_ROUTES);
 
   const routes = await Promise.all(
     results.map(async (r) => {
@@ -58,7 +73,7 @@ export async function getRoutes(
   );
 
   return routes.map((r, i) => ({
-    id: routeId(r.result.geometry),
+    id: routeIdFor(cacheKey, i),
     geometry: r.result.geometry,
     distanceKm: r.distanceKm,
     durationMin: Math.round(r.result.durationS / 60),
