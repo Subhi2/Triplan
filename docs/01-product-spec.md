@@ -82,7 +82,7 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 
 - Searching Bengaluru → Kalasa returns at least 2 routes, one through Sakleshpur and one through Chikkamagaluru (force with via stops if the engine does not return both).
 - Adding via stop "Sakleshpur" produces a route passing within 1 km of Sakleshpur town.
-- With seed data loaded, the Sakleshpur route lists Manjarabad Fort and Ballalarayana Durga; the Chikkamagaluru route lists Belur and Mullayanagiri. Neither lists places only on the other route (with default 5 km corridor, detours flagged).
+- With seed data loaded, the Sakleshpur route lists Manjarabad Fort and Ballalarayana Durga; the Chikkamagaluru route lists Belur. Mullayanagiri, Devaramane and Shravanabelagola are real detours: they appear only with a 10 km or wider corridor and are flagged as detours. Neither lists places only on the other route (with default 5 km corridor, detours flagged).
 - Places are ordered by km from start and km values are within 5% of real road distance.
 - Place detail shows all guide fields, with "Not known yet" for empty ones rather than hiding them.
 - Works at 375 px width; Lighthouse PWA and accessibility scores ≥ 90.
