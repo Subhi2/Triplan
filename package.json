@@ -13,8 +13,10 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx scripts/seed.ts",
+    "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
     "icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
