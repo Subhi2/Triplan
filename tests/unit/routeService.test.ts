@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RoutingProvider } from "@/server/providers/routing";
-import { getRoutes, type RouteServiceDeps } from "@/server/services/routeService";
+import { getRouteGeometry, getRoutes, type RouteServiceDeps } from "@/server/services/routeService";
 import type { TownOnRoute } from "@/server/services/viaLabel";
 import { routeFixture } from "../helpers/fixtures";
 
@@ -48,8 +48,9 @@ describe("getRoutes", () => {
     // Start and destination towns are not "via" towns.
     expect(routes[1]!.towns).toEqual(["Hassan", "Sakleshpur", "Mudigere"]);
     expect(routes[0]!.distanceKm).toBeCloseTo(337.6, 1);
-    expect(routes[0]!.id).toMatch(/^[0-9a-f]{12}$/);
-    expect(routes[0]!.id).not.toBe(routes[1]!.id);
+    // Ids point at the cached routing response: same hash, different index.
+    expect(routes[0]!.id).toMatch(/^[0-9a-f]{32}-0$/);
+    expect(routes[1]!.id).toBe(routes[0]!.id.replace(/-0$/, "-1"));
   });
 
   it("routes through via stops without alternatives and names the route after them", async () => {
@@ -61,5 +62,20 @@ describe("getRoutes", () => {
     );
     expect(routes).toHaveLength(1);
     expect(routes[0]!.viaLabel).toBe("via Sakleshpur");
+  });
+});
+
+describe("getRouteGeometry", () => {
+  it("reads a route's geometry back from the route cache by id", async () => {
+    const routes = routeFixture("bengaluru-kalasa");
+    const store = new Map<string, unknown>();
+    const cache = { get: async (k: string) => store.get(k), set: async () => {} };
+    const d = deps("bengaluru-kalasa", []);
+    const [, second] = await getRoutes({ stops: [BENGALURU, KALASA], vehicle: "bike" }, d);
+    store.set(`route:v1:${second!.id.split("-")[0]}`, routes);
+
+    expect(await getRouteGeometry(second!.id, cache)).toEqual(routes[1]!.geometry);
+    expect(await getRouteGeometry(second!.id.replace(/-1$/, "-2"), cache)).toBeNull();
+    expect(await getRouteGeometry("not-an-id", cache)).toBeNull();
   });
 });

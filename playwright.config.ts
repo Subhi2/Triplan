@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Own port and build dir, so tests never reuse or disturb a dev server you have running on :3000.
+const PORT = Number(process.env.E2E_PORT ?? 3100);
+const BASE_URL = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
@@ -7,7 +11,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
   },
   projects: [
@@ -19,8 +23,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
+    command: `pnpm exec next dev --port ${PORT}`,
+    env: { NEXT_DIST_DIR: ".next-e2e" },
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

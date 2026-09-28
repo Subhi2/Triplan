@@ -7,6 +7,8 @@ const trip: TripUrlState = {
   to: { label: "Kalasa", location: [75.356, 13.234] },
   vehicle: "car",
   corridorKm: 10,
+  categories: [],
+  maxDetourKm: null,
 };
 
 describe("trip URL state", () => {
@@ -18,6 +20,13 @@ describe("trip URL state", () => {
     expect(parseTripUrl(new URLSearchParams(qs))).toEqual(trip);
   });
 
+  it("round-trips place filters", () => {
+    const filtered = { ...trip, categories: ["temple", "fort"], maxDetourKm: 2 as const };
+    const qs = serializeTripUrl(filtered);
+    expect(decodeURIComponent(qs)).toContain("&cat=temple,fort&hd=2");
+    expect(parseTripUrl(new URLSearchParams(qs))).toEqual(filtered);
+  });
+
   it("keeps labels that contain @ and commas", () => {
     expect(decodeStop("Cafe @ Hill, Kalasa@75.356,13.234")).toEqual({
       label: "Cafe @ Hill, Kalasa",
@@ -25,9 +34,11 @@ describe("trip URL state", () => {
     });
   });
 
-  it("drops invalid stops and falls back to defaults", () => {
+  it("drops invalid values and falls back to defaults", () => {
     const state = parseTripUrl(
-      new URLSearchParams("from=nowhere&via=X@200,10&via=Belur@75.865,13.165&v=plane&c=7"),
+      new URLSearchParams(
+        "from=nowhere&via=X@200,10&via=Belur@75.865,13.165&v=plane&c=7&cat=temple,Bad!,temple&hd=3",
+      ),
     );
     expect(state).toEqual({
       from: null,
@@ -35,6 +46,8 @@ describe("trip URL state", () => {
       to: null,
       vehicle: "bike",
       corridorKm: 5,
+      categories: ["temple"],
+      maxDetourKm: null,
     });
   });
 

@@ -56,12 +56,19 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
         : options("bengaluru-sakleshpur-kalasa", ["via Sakleshpur"]);
     return route.fulfill({ json: { routes } });
   });
+  await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
   // A blank local map style instead of the network tile server.
   await page.route("https://tiles.openfreemap.org/**", (route) =>
     route.fulfill({
       json: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: {} }] },
     }),
   );
+}
+
+/** On mobile a trip loaded from the URL folds the form away; open it like a rider would. */
+async function openTripForm(page: Page) {
+  const edit = page.getByRole("button", { name: "Edit trip" });
+  if (await edit.isVisible()) await edit.click();
 }
 
 async function choose(page: Page, field: string, text: string, option: string) {
@@ -108,6 +115,8 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
     "from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
   );
   await page.reload();
+  await expect(cards).toHaveCount(1);
+  await openTripForm(page);
   await expect(page.getByRole("combobox", { name: "Stop 1" })).toHaveValue("Sakleshpur");
   await expect(cards).toHaveCount(1);
 });
@@ -121,6 +130,7 @@ test("stops can be reordered from the keyboard", async ({ page }) => {
   await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toHaveCount(
     1,
   );
+  await openTripForm(page);
   const handle = page.getByRole("button", { name: "Reorder Stop 1" });
   await handle.focus();
   // Each step waits for dnd-kit's screen reader announcement, so keys never race the drag.

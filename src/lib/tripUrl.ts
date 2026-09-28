@@ -1,4 +1,5 @@
 import { round5, type LngLat } from "./geo";
+import { DETOUR_LIMITS_KM } from "./places";
 import {
   CORRIDOR_KM,
   DEFAULT_CORRIDOR_KM,
@@ -10,6 +11,9 @@ import {
 
 // Trips live in the query string so they can be shared:
 //   ?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234&v=bike&c=5
+// plus optional place filters: cat=temple,fort (categories shown) and hd=2 (hide detours over 2 km).
+
+export type DetourLimitKm = (typeof DETOUR_LIMITS_KM)[number];
 
 export interface UrlStop {
   label: string;
@@ -22,6 +26,8 @@ export interface TripUrlState {
   to: UrlStop | null;
   vehicle: Vehicle;
   corridorKm: CorridorKm;
+  categories: string[]; // empty = all
+  maxDetourKm: DetourLimitKm | null;
 }
 
 export function encodeStop({ label, location: [lng, lat] }: UrlStop): string {
@@ -45,6 +51,7 @@ export function parseTripUrl(params: URLSearchParams): TripUrlState {
   const decode = (v: string | null) => (v ? decodeStop(v) : null);
   const vehicle = params.get("v");
   const corridor = Number(params.get("c"));
+  const detour = Number(params.get("hd"));
   return {
     from: decode(params.get("from")),
     via: params
@@ -57,6 +64,17 @@ export function parseTripUrl(params: URLSearchParams): TripUrlState {
     corridorKm: CORRIDOR_KM.includes(corridor as CorridorKm)
       ? (corridor as CorridorKm)
       : DEFAULT_CORRIDOR_KM,
+    categories: [
+      ...new Set(
+        (params.get("cat") ?? "")
+          .split(",")
+          .map((c) => c.trim())
+          .filter((c) => /^[a-z0-9_]+$/.test(c)),
+      ),
+    ].slice(0, 20),
+    maxDetourKm: DETOUR_LIMITS_KM.includes(detour as DetourLimitKm)
+      ? (detour as DetourLimitKm)
+      : null,
   };
 }
 
@@ -67,5 +85,7 @@ export function serializeTripUrl(state: TripUrlState): string {
   if (state.to) params.set("to", encodeStop(state.to));
   params.set("v", state.vehicle);
   params.set("c", String(state.corridorKm));
+  if (state.categories.length > 0) params.set("cat", state.categories.join(","));
+  if (state.maxDetourKm !== null) params.set("hd", String(state.maxDetourKm));
   return params.toString();
 }
