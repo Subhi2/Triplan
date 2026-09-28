@@ -1,0 +1,91 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { JsonCache } from "@/server/db/cache";
+import { geocodeCacheKey, withGeocodeCache } from "@/server/providers/geocoding/cached";
+import { createThrottle } from "@/server/providers/http";
+import { routeCacheKey, withRouteCache } from "@/server/providers/routing/cached";
+import type { RouteInput, RoutingProvider } from "@/server/providers/routing";
+import { routeFixture } from "../helpers/fixtures";
+
+function mapCache(): JsonCache & { store: Map<string, unknown> } {
+  const store = new Map<string, unknown>();
+  return {
+    store,
+    get: async (k) => store.get(k),
+    set: async (k, v) => void store.set(k, v),
+  };
+}
+
+const input: RouteInput = {
+  waypoints: [
+    [77.5946, 12.9716],
+    [75.356, 13.234],
+  ],
+  alternatives: true,
+  profile: "bike",
+};
+
+describe("route cache", () => {
+  it("keys on waypoints rounded to 5 decimals, profile and alternatives", () => {
+    const nudged: RouteInput = {
+      ...input,
+      waypoints: [
+        [77.594601, 12.971599],
+        [75.356, 13.234],
+      ],
+    };
+    expect(routeCacheKey(nudged)).toBe(routeCacheKey(input));
+    expect(routeCacheKey({ ...input, profile: "car" })).not.toBe(routeCacheKey(input));
+    expect(routeCacheKey({ ...input, alternatives: false })).not.toBe(routeCacheKey(input));
+  });
+
+  it("calls the provider once and serves repeats from the cache", async () => {
+    const routes = routeFixture("bengaluru-kalasa");
+    const inner: RoutingProvider = { route: vi.fn(async () => routes) };
+    const cached = withRouteCache(inner, mapCache());
+
+    expect(await cached.route(input)).toEqual(routes);
+    expect(await cached.route(input)).toEqual(routes);
+    expect(inner.route).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("geocode cache", () => {
+  it("normalises the query and includes limit and viewbox in the key", () => {
+    expect(geocodeCacheKey("  Sakleshpur   Town ")).toBe(geocodeCacheKey("sakleshpur town"));
+    expect(geocodeCacheKey("x", { limit: 3 })).not.toBe(geocodeCacheKey("x", { limit: 5 }));
+    expect(geocodeCacheKey("x", { viewbox: [1, 2, 3, 4] })).not.toBe(geocodeCacheKey("x"));
+  });
+
+  it("serves repeats from the cache", async () => {
+    const search = vi.fn(async () => [
+      { id: "node/1", name: "A", label: "A", location: [1, 2] as [number, number], kind: "x/y" },
+    ]);
+    const cached = withGeocodeCache({ search }, mapCache());
+    await cached.search("Kalasa");
+    await cached.search("kalasa ");
+    expect(search).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("createThrottle", () => {
+  afterEach(() => void vi.useRealTimers());
+
+  it("spaces concurrent callers at least the interval apart", async () => {
+    vi.useFakeTimers();
+    const wait = createThrottle(1_000);
+    const done: number[] = [];
+    const start = Date.now();
+    const calls = [0, 1, 2].map((i) => wait().then(() => done.push(i)));
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(done).toEqual([0]);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(done).toEqual([0]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(done).toEqual([0, 1]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    await Promise.all(calls);
+    expect(done).toEqual([0, 1, 2]);
+    expect(Date.now() - start).toBe(2_000);
+  });
+});
