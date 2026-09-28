@@ -1,13 +1,10 @@
 // Loads categories, carry items, towns and places from docs/06-seed-data.md.
 // Idempotent: upserts on slug, and replaces each seeded place's guide and carry rows.
 // Run with `pnpm db:seed` (reads DATABASE_URL from .env.local).
-import { readFile } from "node:fs/promises";
 import { eq, sql } from "drizzle-orm";
-import { z } from "zod";
 import { closeDb, getDb } from "../src/server/db";
 import { carryItem, category, place, placeCarry, placeGuide } from "../src/server/db/schema";
-
-const SEED_DOC = "docs/06-seed-data.md";
+import { readSeedDoc, slugify, type SeedPlace } from "./seed-doc";
 
 // Display metadata for the slugs listed in the seed doc. Icons are lucide icon names.
 const CATEGORY_META: Record<string, { name: string; icon: string; weight?: number }> = {
@@ -48,62 +45,6 @@ const CARRY_META: Record<string, { name: string; icon: string }> = {
   forest_permit: { name: "Forest permit", icon: "file-check" },
 };
 
-const month = z.number().int().min(1).max(12);
-const lat = z.number().min(-90).max(90);
-const lng = z.number().min(-180).max(180);
-
-const seedPlace = z.object({
-  slug: z.string().regex(/^[a-z0-9-]+$/),
-  name: z.string().min(1),
-  category: z.string(),
-  lat,
-  lng,
-  district: z.string().optional(),
-  guide: z
-    .object({
-      best_vehicles: z.array(z.enum(["bike", "car", "suv_4x4", "on_foot", "bus"])).default([]),
-      last_mile_note: z.string().optional(),
-      road_condition: z.string().optional(),
-      best_months: z.array(month).default([]),
-      ok_months: z.array(month).default([]),
-      avoid_months: z.array(month).default([]),
-      best_time_of_day: z.string().optional(),
-      visit_duration_min: z.number().int().positive().optional(),
-      timings: z.string().optional(),
-      entry_fee: z.string().optional(),
-      dress_code: z.string().optional(),
-      permit_needed: z.string().optional(),
-      notes: z.string().optional(),
-    })
-    .strict(),
-  carry: z.array(z.tuple([z.string(), z.array(month)])).default([]),
-});
-
-const seedTown = z.object({ name: z.string().min(1), lat, lng });
-
-type SeedPlace = z.infer<typeof seedPlace>;
-
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-/** Returns the inline `a, b, c` list under a "## heading". */
-function inlineList(doc: string, heading: string): string[] {
-  const match = new RegExp(`## ${heading}\\s+\`([^\`]+)\``).exec(doc);
-  if (!match?.[1]) throw new Error(`No inline list under "## ${heading}" in ${SEED_DOC}`);
-  return match[1].split(",").map((s) => s.trim());
-}
-
-/** Returns the parsed ```json block under a "## heading". */
-function jsonBlock(doc: string, heading: string): unknown {
-  const match = new RegExp(`## ${heading}[^\\n]*\\n+\`\`\`json\\n([\\s\\S]*?)\`\`\``).exec(doc);
-  if (!match?.[1]) throw new Error(`No json block under "## ${heading}" in ${SEED_DOC}`);
-  return JSON.parse(match[1]);
-}
-
 function withMeta<T>(slugs: string[], meta: Record<string, T>, kind: string) {
   return slugs.map((slug) => {
     const m = meta[slug];
@@ -113,11 +54,9 @@ function withMeta<T>(slugs: string[], meta: Record<string, T>, kind: string) {
 }
 
 async function main() {
-  const doc = await readFile(SEED_DOC, "utf8");
-  const categories = withMeta(inlineList(doc, "Categories"), CATEGORY_META, "category");
-  const carryItems = withMeta(inlineList(doc, "Carry items"), CARRY_META, "carry item");
-  const places = z.array(seedPlace).parse(jsonBlock(doc, "Places"));
-  const towns = z.array(seedTown).parse(jsonBlock(doc, "Towns"));
+  const { categorySlugs, carryItemSlugs, places, towns } = await readSeedDoc();
+  const categories = withMeta(categorySlugs, CATEGORY_META, "category");
+  const carryItems = withMeta(carryItemSlugs, CARRY_META, "carry item");
 
   const db = getDb();
   await db.transaction(async (tx) => {
@@ -158,6 +97,7 @@ async function main() {
         categoryId: lookup(categoryId, p.category, `place ${p.slug}`),
         location: [p.lng, p.lat] as [number, number],
         district: p.district ?? null,
+        osmId: p.osm_id ?? null,
       })),
       ...towns.map((t) => ({
         slug: slugify(t.name),
@@ -165,6 +105,7 @@ async function main() {
         categoryId: lookup(categoryId, "town", "towns"),
         location: [t.lng, t.lat] as [number, number],
         district: null,
+        osmId: null,
       })),
     ].map((p) => ({ ...p, state: "Karnataka", status: "verified" as const, source: "curated" }));
 
@@ -178,6 +119,7 @@ async function main() {
           categoryId: sql`excluded.category_id`,
           location: sql`excluded.location`,
           district: sql`excluded.district`,
+          osmId: sql`excluded.osm_id`,
           state: sql`excluded.state`,
           status: sql`excluded.status`,
           source: sql`excluded.source`,
