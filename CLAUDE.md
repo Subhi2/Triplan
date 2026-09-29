@@ -17,6 +17,7 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 | `docs/05-hidden-places.md` | YouTube / Instagram discovery pipeline and its rules |
 | `docs/06-seed-data.md` | Seed places for the Bengaluru → Kalasa demo |
 | `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, making money |
+| `docs/08-design.md` | The "Ghat Road" design: tokens, type, components, layout and motion. Follow it for any UI |
 
 ## Stack (decided)
 
@@ -53,6 +54,7 @@ Add these scripts to `package.json` as the phases introduce them.
 - Server-only code (DB, API keys, external APIs) lives under `src/server/`. Never import it from client components.
 - All external API calls go through a provider interface in `src/server/providers/`, so each can be mocked in tests.
 - Phones first: touch targets at least 44 px and input text at least 16 px below 768 px wide (see "Phone layout" in `docs/02-architecture.md`).
+- UI follows `docs/08-design.md`: palette tokens and `stone-*` (remapped to warm paper and ink), `font-display` for headings, `font-mono tabular` for numbers, motion that respects reduced motion.
 - Distances are stored in metres and shown as km with one decimal. Coordinates are `[lng, lat]` (GeoJSON order) everywhere in code.
 - Months are stored as integers 1–12.
 - Every image stored or displayed must carry `source`, `license` and `author`. Never re-host social media videos or photos; embed or link them.
