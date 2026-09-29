@@ -1,4 +1,4 @@
-// Records raw OSRM responses for the Bengaluru → Kalasa demo into tests/fixtures/osrm/.
+// Records raw OSRM responses for the test trips into tests/fixtures/osrm/.
 // Tests parse these instead of calling OSRM. Re-run only when the fixtures need refreshing:
 //   pnpm fixtures:routes
 import { mkdir, writeFile } from "node:fs/promises";
@@ -11,6 +11,10 @@ const BELUR: LngLat = [75.865, 13.165];
 const CHIKKAMAGALURU: LngLat = [75.772, 13.3161];
 const BALEHONNUR: LngLat = [75.46, 13.36];
 const KALASA: LngLat = [75.356, 13.234];
+// Other trips (the app must work for any trip). Endpoints as our geocoder returns them.
+const OOTY: LngLat = [76.7031, 11.4127]; // Udhagamandalam
+const PUNE: LngLat = [73.8545, 18.5214];
+const PANAJI: LngLat = [73.8282, 15.499]; // "Goa" geocodes to the middle of the state
 
 export const ROUTE_FIXTURES = {
   // Direct search: OSRM returns the Chikkamagaluru-town route and the NH75/Sakleshpur alternative.
@@ -25,6 +29,8 @@ export const ROUTE_FIXTURES = {
     BALEHONNUR,
     KALASA,
   ],
+  "bengaluru-ooty": [BENGALURU, OOTY],
+  "pune-goa": [PUNE, PANAJI],
 } satisfies Record<string, LngLat[]>;
 
 const baseUrl = process.env.OSRM_BASE_URL ?? "https://router.project-osrm.org";
@@ -32,7 +38,10 @@ const dir = "tests/fixtures/osrm";
 
 async function main() {
   await mkdir(dir, { recursive: true });
+  // Optional names limit the run: pnpm fixtures:routes -- pune-goa
+  const only = process.argv.slice(2).filter((a) => a !== "--");
   for (const [name, waypoints] of Object.entries(ROUTE_FIXTURES)) {
+    if (only.length > 0 && !only.includes(name)) continue;
     const url = buildOsrmRouteUrl(baseUrl, { waypoints, alternatives: true, profile: "car" });
     const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
     const body: unknown = await res.json();

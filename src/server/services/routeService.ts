@@ -4,8 +4,8 @@ import type { RouteOption, TripRequest } from "@/lib/trip";
 import { routeDbCache, type JsonCache } from "../db/cache";
 import { getRoutingProvider, type RouteResult, type RoutingProvider } from "../providers/routing";
 import { routeCacheKey } from "../providers/routing/cached";
-import { placesAlong } from "./corridorService";
-import { viaLabels, type TownOnRoute } from "./viaLabel";
+import { townsAlong } from "./corridorService";
+import { mainTowns, viaLabels, type TownOnRoute } from "./viaLabel";
 
 const MAX_ROUTES = 3;
 const TOWN_RADIUS_M = 2_000;
@@ -18,8 +18,7 @@ export interface RouteServiceDeps {
 }
 
 export async function townsAlongDb(geometry: LineString): Promise<TownOnRoute[]> {
-  const rows = await placesAlong(geometry, TOWN_RADIUS_M, ["town"]);
-  return rows.map((r) => ({ name: r.name, location: r.location, kmFromStart: r.kmFromStart }));
+  return townsAlong(geometry, TOWN_RADIUS_M);
 }
 
 function defaultDeps(): RouteServiceDeps {
@@ -78,6 +77,6 @@ export async function getRoutes(
     distanceKm: r.distanceKm,
     durationMin: Math.round(r.result.durationS / 60),
     viaLabel: labels[i]!,
-    towns: r.towns.map((t) => t.name),
+    towns: mainTowns(r.towns).map((t) => t.name),
   }));
 }

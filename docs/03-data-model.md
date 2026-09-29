@@ -9,8 +9,9 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;   -- fuzzy name matching
 -- Categories -----------------------------------------------------------
 CREATE TABLE category (
   id          serial PRIMARY KEY,
-  slug        text UNIQUE NOT NULL,       -- temple, heritage, fort, viewpoint, waterfall, trek, lake,
-                                          -- beach, food, coffee, fuel, stay, town
+  slug        text UNIQUE NOT NULL,       -- temple, worship, heritage, fort, museum, attraction,
+                                          -- viewpoint, waterfall, trek, peak, cave, lake, beach,
+                                          -- food, coffee, fuel, stay, town (src/lib/categories.ts)
   name        text NOT NULL,
   icon        text NOT NULL,
   parent_id   int REFERENCES category(id),
@@ -33,9 +34,11 @@ CREATE TABLE place (
   description   text,
   status        place_status NOT NULL DEFAULT 'unverified',
   source        text NOT NULL,             -- 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
-  osm_id        text,
+  osm_id        text UNIQUE,               -- 'node/123' | 'way/456' | 'relation/789'; OSM import upserts on it
   google_place_id text,
   wikidata_id   text,
+  population    int,                       -- towns, from OSM; ranks "via" towns on route cards
+  osm_tags      jsonb,                     -- selected OSM tags (provenance, later guide fields)
   rating_avg    real,                      -- from our reviews, maintained by trigger
   rating_count  int NOT NULL DEFAULT 0,
   trending_score real NOT NULL DEFAULT 0,
@@ -46,6 +49,10 @@ CREATE TABLE place (
 CREATE INDEX place_location_gix ON place USING gist (location);
 CREATE INDEX place_name_trgm ON place USING gin (name gin_trgm_ops);
 CREATE INDEX place_status_idx ON place (status);
+CREATE INDEX place_category_idx ON place (category_id);
+-- Type-ahead on alternative names ("Ooty" -> Udhagamandalam); alt_names_text is an IMMUTABLE
+-- wrapper around array_to_string so it can be indexed.
+CREATE INDEX place_alt_names_trgm ON place USING gin (alt_names_text(alt_names) gin_trgm_ops);
 
 -- Curated guide fields (one row per place) -------------------------------
 CREATE TYPE vehicle AS ENUM ('bike', 'car', 'suv_4x4', 'on_foot', 'bus');

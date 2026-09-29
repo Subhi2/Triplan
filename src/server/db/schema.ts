@@ -17,6 +17,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
@@ -64,9 +65,11 @@ export const place = pgTable(
     description: text("description"),
     status: placeStatus("status").notNull().default("unverified"),
     source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
-    osmId: text("osm_id"),
+    osmId: text("osm_id"), // "node/123", "way/456"; unique, the OSM import upserts on it
     googlePlaceId: text("google_place_id"),
     wikidataId: text("wikidata_id"),
+    population: integer("population"), // towns, from OSM when tagged
+    osmTags: jsonb("osm_tags"), // selected OSM tags kept for provenance and later guide fields
     ratingAvg: real("rating_avg"),
     ratingCount: integer("rating_count").notNull().default(0),
     trendingScore: real("trending_score").notNull().default(0),
@@ -78,6 +81,8 @@ export const place = pgTable(
     index("place_location_gix").using("gist", t.location),
     index("place_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
     index("place_status_idx").on(t.status),
+    index("place_category_idx").on(t.categoryId),
+    uniqueIndex("place_osm_id_key").on(t.osmId),
   ],
 );
 

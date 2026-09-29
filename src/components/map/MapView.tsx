@@ -24,7 +24,14 @@ import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
 const MAP_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/liberty";
 
-const KARNATAKA = { longitude: 76.2, latitude: 13.2, zoom: 6.3 };
+// Before a trip is chosen, frame India (places are imported for every state).
+const INITIAL_VIEW = {
+  bounds: [
+    [68.1, 6.7],
+    [97.4, 35.7],
+  ] as [[number, number], [number, number]],
+  fitBoundsOptions: { padding: 16 },
+};
 const INTERACTIVE_LAYERS = [...ROUTE_LAYER_IDS, PLACE_CLUSTERS_LAYER, PLACE_POINTS_LAYER];
 
 export interface MapStop {
@@ -145,7 +152,7 @@ export function MapView(props: Props) {
   return (
     <Map
       ref={mapRef}
-      initialViewState={KARNATAKA}
+      initialViewState={INITIAL_VIEW}
       mapStyle={MAP_STYLE}
       style={{ width: "100%", height: "100%" }}
       interactiveLayerIds={INTERACTIVE_LAYERS}

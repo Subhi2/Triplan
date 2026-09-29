@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { categoryStyle } from "@/lib/categories";
 import { bestTimeSummary, formatMonthRanges } from "@/lib/months";
-import { detourLabel, placesAlongRequestSchema } from "@/lib/places";
+import {
+  bestAlongRoute,
+  detourLabel,
+  placesAlongRequestSchema,
+  type PlaceAlong,
+} from "@/lib/places";
 
 describe("formatMonthRanges", () => {
   it("joins consecutive months, including across the new year", () => {
@@ -73,5 +78,59 @@ describe("placesAlongRequestSchema", () => {
       placesAlongRequestSchema.safeParse({ geometry: line, corridorKm: 5, categories: ["x'); --"] })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("bestAlongRoute", () => {
+  let n = 0;
+  const place = (
+    p: Partial<PlaceAlong> & Pick<PlaceAlong, "category" | "kmFromStart">,
+  ): PlaceAlong => ({
+    id: `p${++n}`,
+    slug: `p${n}`,
+    name: `Place ${n}`,
+    location: [76, 13],
+    detourKm: 1,
+    rating: null,
+    ratingCount: 0,
+    bestMonths: [],
+    thumbUrl: null,
+    trending: false,
+    notable: false,
+    ...p,
+  });
+
+  it("keeps the 5 best places in each 10 km stretch, notable and weighty first", () => {
+    const city = [
+      place({ category: "attraction", kmFromStart: 1, detourKm: 0.2 }),
+      place({ category: "attraction", kmFromStart: 2, detourKm: 0.3 }),
+      place({ category: "museum", kmFromStart: 3, detourKm: 0.4 }),
+      place({
+        category: "museum",
+        kmFromStart: 4,
+        detourKm: 4.5,
+        notable: true,
+        name: "Notable museum",
+      }),
+      place({ category: "heritage", kmFromStart: 5, detourKm: 3 }), // weight 1.2
+      place({ category: "lake", kmFromStart: 6, detourKm: 0.1 }),
+      place({ category: "attraction", kmFromStart: 7, detourKm: 4.9 }),
+      place({ category: "fort", kmFromStart: 8, detourKm: 2, notable: true, name: "Notable fort" }),
+    ];
+    const rural = place({ category: "waterfall", kmFromStart: 55, detourKm: 4.9 });
+    const best = bestAlongRoute([...city, rural]);
+
+    expect(best).toHaveLength(6); // 5 from the city stretch + the lone rural waterfall
+    expect(best.map((p) => p.name)).toEqual(
+      expect.arrayContaining(["Notable museum", "Notable fort", rural.name]),
+    );
+    expect(best.find((p) => p.kmFromStart === 7)).toBeUndefined(); // attraction, 4.9 km off
+    const kms = best.map((p) => p.kmFromStart);
+    expect(kms).toEqual([...kms].sort((a, b) => a - b)); // still ordered by km
+  });
+
+  it("keeps everything on a quiet road", () => {
+    const quiet = [5, 25, 45, 65].map((km) => place({ category: "viewpoint", kmFromStart: km }));
+    expect(bestAlongRoute(quiet)).toEqual(quiet);
   });
 });

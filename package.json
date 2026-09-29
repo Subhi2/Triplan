@@ -17,6 +17,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "db:import-osm": "tsx --env-file=.env.local scripts/import-osm.ts",
     "icons": "tsx scripts/generate-icons.ts",
     "check:pins": "tsx --env-file=.env.local scripts/check-pins.ts",
     "fixtures:routes": "tsx --env-file=.env.local scripts/record-route-fixtures.ts"
