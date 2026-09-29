@@ -10,18 +10,30 @@ interface Props {
   highlighted: boolean;
   onSelect: () => void;
   onHover: (hovering: boolean) => void;
+  /** Ticked to open in Google Maps with the trip. */
+  picked: boolean;
+  onPickedChange: (picked: boolean) => void;
 }
 
 export function placeRowId(placeId: string) {
   return `place-row-${placeId}`;
 }
 
-export function PlaceRow({ place, active, highlighted, onSelect, onHover }: Props) {
+export function PlaceRow(props: Props) {
+  const { place, active, highlighted, onSelect, onHover } = props;
   const cat = categoryStyle(place.category);
   const onRoute = place.detourKm <= ON_ROUTE_MAX_KM;
 
   return (
-    <li id={placeRowId(place.id)}>
+    <li id={placeRowId(place.id)} className="flex items-start gap-1">
+      <input
+        type="checkbox"
+        aria-label={`Tick ${place.name} for Google Maps`}
+        title="Tick to open in Google Maps with the trip"
+        checked={props.picked}
+        onChange={(e) => props.onPickedChange(e.target.checked)}
+        className="accent-brand mt-3.5 h-4 w-4 shrink-0 cursor-pointer"
+      />
       <button
         type="button"
         aria-current={active || undefined}
@@ -30,7 +42,7 @@ export function PlaceRow({ place, active, highlighted, onSelect, onHover }: Prop
         onMouseLeave={() => onHover(false)}
         onFocus={() => onHover(true)}
         onBlur={() => onHover(false)}
-        className={`flex w-full gap-3 rounded-lg px-2 py-2.5 text-left transition ${
+        className={`flex min-w-0 flex-1 gap-3 rounded-lg px-2 py-2.5 text-left transition ${
           active
             ? "bg-brand/10 ring-brand ring-1"
             : highlighted
