@@ -7,6 +7,7 @@ import { VEHICLE_LABELS, type PlaceDetail } from "@/lib/placeDetail";
 import { detourLabel } from "@/lib/places";
 import type { Vehicle } from "@/lib/trip";
 import { CarryList } from "./CarryList";
+import { FromGoogle } from "./FromGoogle";
 import { MonthStrip } from "./MonthStrip";
 import { NotKnown } from "./NotKnown";
 
@@ -177,10 +178,22 @@ export function PlaceDetailView({
           ))}
         </ul>
       ) : (
-        <p className="rounded-lg bg-stone-100 px-3 py-6 text-center text-sm text-stone-500 dark:bg-stone-900 dark:text-stone-400">
-          No photos yet
-        </p>
+        // With Google on, its photos (if any) fill this gap in the section below.
+        !googleEnabled && (
+          <p className="rounded-lg bg-stone-100 px-3 py-6 text-center text-sm text-stone-500 dark:bg-stone-900 dark:text-stone-400">
+            No photos yet
+          </p>
+        )
       )}
+
+      <FromGoogle
+        key={place.slug}
+        slug={place.slug}
+        placeName={place.name}
+        ownPhotos={place.media.length}
+        ownReviews={place.reviews.length}
+        headingLevel={sub}
+      />
 
       {place.description && <p className="text-sm leading-relaxed">{place.description}</p>}
 

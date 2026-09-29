@@ -209,6 +209,16 @@ Not filled by Google: the place list and map markers (a rating per row would be 
 
 `@vis.gl/react-google-maps` (MIT, maintained by vis.gl with Google): routes as `Polyline`s (selected one thick, others thin and dashed with repeated symbols), place dots as Advanced Markers clustered with `@googlemaps/markerclusterer`. If 1,000 markers are slow on a mid-range phone, draw the dots with deck.gl's `GoogleMapsOverlay` instead. `gestureHandling: "greedy"` so one finger pans, as today. The map is created once per page and kept across route and place changes, since each new map is a billed load. Map tiles from Google cannot be saved offline, so the offline trip pack (G2.6) uses the MapLibre view with no Google content in it.
 
+### As built (2026-09-30)
+
+- Keys: `src/server/env.ts` (`GOOGLE_MAPS_API_KEY`) and `src/lib/google.ts` (`googleEnabled`, true when the browser key is set; the Map ID falls back to Google's `DEMO_MAP_ID`).
+- Budget: `providers/google/budget.ts`, `google_usage` table (migration `0010`). A photos-only Place Details request is free and counts under `ids`.
+- Provider: `providers/google/places.ts`. Place ids and photo names are checked against Google's formats before they go into a URL.
+- Service: `services/googleGapService.ts` (`getGoogleGapFill`, `getGooglePlaceId`). An id Google answers 404 for is cleared, so the next visit looks it up again. `external_rating` is dropped (migration `0011`).
+- Routes: `GET /api/places/[slug]/google` (gap fill), `GET /api/places/[slug]/google-maps` (redirect to the exact place, used by "Open in Google Maps" while the id is not known yet), `GET /api/google/photo?name=` (redirect to Google's photo URL). All three send `Cache-Control: private, no-store`.
+- Map: `components/map/google/` (`GoogleMapView`, `GoogleRoutes`, `GooglePlaceMarkers`, `useGoogleFraming`) with the same props as the MapLibre `MapView` (`components/map/types.ts`); the planner loads one or the other. Place dots are Advanced Markers clustered by `@googlemaps/markerclusterer` with its viewport algorithm, so only the markers in view are placed. On phones the map ends where the sheet begins (its height shrinks by the sheet's height), which keeps Google's logo and terms visible.
+- Place details: `components/place/FromGoogle.tsx`, after our own photos. With Google on, the "No photos yet" box is left out, since Google's photos fill that gap.
+
 ## Saved trips
 
 Saved trips are open: no sign-in and no owners (`trip.user_id` stays empty, `is_public` is always true). `/trips` lists everyone's trips, most recently changed first, and `/trips/[id]` opens the planner with a trip; that URL is the share link. Anyone can rename a trip or save changes to it.
