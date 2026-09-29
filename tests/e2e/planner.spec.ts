@@ -103,6 +103,8 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
   await expect(cards.nth(1)).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 
+  // On phones the form folds away once the trip is complete, leaving the map and routes.
+  await openTripForm(page);
   await page.getByRole("button", { name: "+ Add stop" }).click();
   await choose(page, "Stop 1", "Sakl", "Sakleshpur");
 
@@ -380,7 +382,7 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   expect(await open.getAttribute("href")).not.toContain("waypoints");
 
   await page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }).check();
-  await expect(page.getByText("1 place ticked")).toBeVisible();
+  await expect(page.getByText("1 ticked")).toBeVisible();
   await expect(open).toHaveAttribute("href", /waypoints=12\.9173%2C75\.7581/);
 
   // The place's own page on Google Maps, for photos and reviews: on its row and in its details.
@@ -395,4 +397,38 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   await expect(
     page.getByRole("article").getByRole("link", { name: "Open in Google Maps" }),
   ).toHaveAttribute("href", /maps\/search\/Manjarabad%20Fort\/@12\.9173,75\.7581,17z/);
+});
+
+test("on phones the map comes first, then a one-line header and the sheet", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "phone layout only");
+  await mockApis(page, []);
+  await page.goto("/");
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+
+  // No empty sheet over the map before there is a trip.
+  const sheet = page.locator('section[aria-label="Routes and places"]');
+  await expect(sheet).toHaveAttribute("aria-hidden", "true");
+  // 16 px text: iOS Safari zooms the page into smaller inputs.
+  const start = page.getByRole("combobox", { name: "Start" });
+  const fontPx = await start.evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+  expect(fontPx).toBeGreaterThanOrEqual(16);
+
+  await choose(page, "Start", "Beng", "Bengaluru");
+  await choose(page, "Destination", "Kala", "Kalasa");
+
+  // The form folds away: the header shows the trip, and the sheet the routes.
+  await expect(page.getByText("Bengaluru → Kalasa")).toBeVisible();
+  await expect(start).toBeHidden();
+  await expect(sheet).not.toHaveAttribute("aria-hidden", "true");
+  await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toHaveCount(
+    2,
+  );
+  for (const target of [
+    page.getByRole("button", { name: "Edit trip" }),
+    page.getByRole("link", { name: "Trips" }),
+  ]) {
+    expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
 });

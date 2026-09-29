@@ -10,6 +10,8 @@ interface Props {
   label: string;
   snap: SheetSnap;
   onSnapChange: (snap: SheetSnap) => void;
+  /** Slid out of view (kept mounted, so its scroll position survives). */
+  hidden?: boolean;
   children: React.ReactNode;
 }
 
@@ -19,7 +21,7 @@ const MIN_PX = 72;
  * Mobile bottom sheet over the map. Drag the handle to resize (it snaps to the nearest height),
  * or tap / use the arrow keys on it to step between heights.
  */
-export function BottomSheet({ label, snap, onSnapChange, children }: Props) {
+export function BottomSheet({ label, snap, onSnapChange, hidden = false, children }: Props) {
   const [dragPx, setDragPx] = useState<number | null>(null);
   const drag = useRef<{ startY: number; startPx: number; moved: boolean } | null>(null);
 
@@ -76,16 +78,19 @@ export function BottomSheet({ label, snap, onSnapChange, children }: Props) {
   return (
     <section
       aria-label={label}
+      aria-hidden={hidden || undefined}
+      inert={hidden}
       className="fixed inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl border-t border-stone-200 bg-(--background) shadow-[0_-4px_16px_rgba(0,0,0,0.12)] dark:border-stone-800"
       style={{
         height: dragPx !== null ? `${dragPx}px` : `${SHEET_SNAPS[snap] * 100}dvh`,
-        transition: dragPx !== null ? "none" : "height 200ms ease-out",
+        transform: hidden ? "translateY(100%)" : undefined,
+        transition: dragPx !== null ? "none" : "height 200ms ease-out, transform 200ms ease-out",
       }}
     >
       <button
         type="button"
         aria-label={`Resize ${label.toLowerCase()} (${["small", "half", "full"][snap]})`}
-        className="flex shrink-0 touch-none justify-center py-3"
+        className="flex h-11 shrink-0 touch-none items-center justify-center"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -95,7 +100,10 @@ export function BottomSheet({ label, snap, onSnapChange, children }: Props) {
       >
         <span className="h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-600" />
       </button>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
+      {/* Bottom padding clears the iPhone home bar (safe area) as well. */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {children}
+      </div>
     </section>
   );
 }

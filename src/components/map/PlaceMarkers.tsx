@@ -7,6 +7,10 @@ import type { PlaceAlong } from "@/lib/places";
 
 export const PLACE_POINTS_LAYER = "place-points";
 export const PLACE_CLUSTERS_LAYER = "place-clusters";
+/** An invisible, wider circle under each place, so a finger can hit a 7 px dot. */
+export const PLACE_HIT_LAYER = "place-hit";
+/** Layers whose features are single places (a tap selects the place). */
+export const PLACE_TAP_LAYERS = [PLACE_HIT_LAYER, PLACE_POINTS_LAYER];
 export const PLACES_SOURCE = "places";
 
 type Props = { places: PlaceAlong[]; highlightIds: string[] };
@@ -42,11 +46,12 @@ export function PlaceMarkers({ places, highlightIds }: Props) {
           type="circle"
           filter={["has", "point_count"]}
           paint={{
-            "circle-color": "#0f766e",
-            "circle-opacity": 0.9,
-            "circle-radius": ["step", ["get", "point_count"], 13, 10, 17, 50, 22],
+            // White with a teal ring: clusters stay readable without hiding the teal route.
+            "circle-color": "#ffffff",
+            "circle-opacity": 0.95,
+            "circle-radius": ["step", ["get", "point_count"], 11, 10, 14, 50, 17],
             "circle-stroke-width": 2,
-            "circle-stroke-color": "#ffffff",
+            "circle-stroke-color": "#0f766e",
           }}
         />
         <Layer
@@ -59,7 +64,13 @@ export function PlaceMarkers({ places, highlightIds }: Props) {
             "text-size": 12,
             "text-allow-overlap": true,
           }}
-          paint={{ "text-color": "#ffffff" }}
+          paint={{ "text-color": "#115e59" }}
+        />
+        <Layer
+          id={PLACE_HIT_LAYER}
+          type="circle"
+          filter={["!", ["has", "point_count"]]}
+          paint={{ "circle-radius": 20, "circle-opacity": 0 }}
         />
         <Layer
           id={PLACE_POINTS_LAYER}

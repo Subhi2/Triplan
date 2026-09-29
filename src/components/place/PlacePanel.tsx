@@ -79,13 +79,13 @@ export function PlacePanel({ slug, name, along, vehicle, tripAction, onBack }: P
         <button
           type="button"
           onClick={onBack}
-          className="text-brand text-sm font-medium hover:underline"
+          className="text-brand inline-flex min-h-11 items-center text-sm font-medium hover:underline md:min-h-0"
         >
           ← All places
         </button>
         <Link
           href={`/place/${slug}`}
-          className="text-sm text-stone-600 underline dark:text-stone-400"
+          className="inline-flex min-h-11 items-center text-sm text-stone-600 underline md:min-h-0 dark:text-stone-400"
         >
           Open full page
         </Link>

@@ -26,15 +26,18 @@ export function PlaceRow(props: Props) {
   const onRoute = place.detourKm <= ON_ROUTE_MAX_KM;
 
   return (
-    <li id={placeRowId(place.id)} className="flex items-start gap-1">
-      <input
-        type="checkbox"
-        aria-label={`Tick ${place.name} for Google Maps`}
-        title="Tick to open in Google Maps with the trip"
-        checked={props.picked}
-        onChange={(e) => props.onPickedChange(e.target.checked)}
-        className="accent-brand mt-3.5 h-4 w-4 shrink-0 cursor-pointer"
-      />
+    <li id={placeRowId(place.id)} className="flex items-start">
+      {/* The label is the touch target: 40 × 44 px around a 20 px box. */}
+      <label className="-ml-2 flex h-11 w-10 shrink-0 cursor-pointer items-center justify-center md:ml-0 md:w-7">
+        <input
+          type="checkbox"
+          aria-label={`Tick ${place.name} for Google Maps`}
+          title="Tick to open in Google Maps with the trip"
+          checked={props.picked}
+          onChange={(e) => props.onPickedChange(e.target.checked)}
+          className="accent-brand h-5 w-5 cursor-pointer md:h-4 md:w-4"
+        />
+      </label>
       <div className="min-w-0 flex-1">
         <button
           type="button"
@@ -52,7 +55,7 @@ export function PlaceRow(props: Props) {
                 : "hover:bg-stone-100 dark:hover:bg-stone-800"
           }`}
         >
-          <span className="w-14 shrink-0 pt-0.5 text-right text-sm font-semibold text-stone-600 tabular-nums dark:text-stone-300">
+          <span className="w-12 shrink-0 pt-0.5 text-right text-sm font-semibold text-stone-600 tabular-nums md:w-14 dark:text-stone-300">
             {Math.round(place.kmFromStart)} km
           </span>
           <span className="min-w-0 flex-1">
@@ -106,7 +109,7 @@ export function PlaceRow(props: Props) {
           target="_blank"
           rel="noopener noreferrer nofollow"
           aria-label={`Open ${place.name} in Google Maps`}
-          className="text-brand -mt-1 mb-1 ml-[4.75rem] inline-block text-xs font-medium hover:underline"
+          className="text-brand -mt-2.5 ml-[4.25rem] inline-flex min-h-11 items-center text-xs font-medium hover:underline md:-mt-1 md:mb-1 md:ml-[4.75rem] md:min-h-0"
         >
           Open in Google Maps ↗
         </a>

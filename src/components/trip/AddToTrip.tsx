@@ -17,7 +17,7 @@ interface Props {
 }
 
 const button =
-  "rounded-md px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium md:min-h-0 md:py-1.5 transition disabled:cursor-not-allowed disabled:opacity-50";
 
 /** "Add to trip" on a place: adds it as a via stop in route order, or removes it again. */
 export function AddToTrip({ status, onAdd, onRemove }: Props) {

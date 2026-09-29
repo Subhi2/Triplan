@@ -142,7 +142,7 @@ export function PlaceDetailView({
             href={googleMapsPlaceUrl(place)}
             target="_blank"
             rel={external}
-            className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium hover:border-stone-500 dark:border-stone-700"
+            className="inline-flex min-h-11 items-center rounded-md border border-stone-300 px-3 text-sm font-medium hover:border-stone-500 md:min-h-0 md:py-1.5 dark:border-stone-700"
           >
             Open in Google Maps
           </a>
@@ -271,7 +271,12 @@ export function PlaceDetailView({
           <ul className="space-y-1 text-sm">
             {place.videos.map((v) => (
               <li key={v.url}>
-                <a href={v.url} rel={external} target="_blank" className="text-brand underline">
+                <a
+                  href={v.url}
+                  rel={external}
+                  target="_blank"
+                  className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
+                >
                   {v.title ?? v.url}
                 </a>
                 <span className="text-stone-600 dark:text-stone-400">
@@ -291,7 +296,7 @@ export function PlaceDetailView({
             href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`}
             rel={external}
             target="_blank"
-            className="text-brand underline"
+            className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
           >
             Directions
           </a>
@@ -303,7 +308,7 @@ export function PlaceDetailView({
             }
             rel={external}
             target="_blank"
-            className="text-brand underline"
+            className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
           >
             OpenStreetMap
           </a>
@@ -312,7 +317,7 @@ export function PlaceDetailView({
               href={place.osm.wikipediaUrl}
               rel={external}
               target="_blank"
-              className="text-brand underline"
+              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
             >
               Wikipedia
             </a>
@@ -322,7 +327,7 @@ export function PlaceDetailView({
               href={place.osm.website}
               rel={external}
               target="_blank"
-              className="text-brand underline"
+              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
             >
               Website
             </a>

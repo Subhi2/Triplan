@@ -6,6 +6,8 @@ import type { GeocodeResult } from "@/lib/trip";
 
 /** Suggestions are fetched this long after the rider stops typing. */
 export const SUGGEST_DEBOUNCE_MS = 300;
+const MIN_PANEL_PX = 160;
+const PANEL_MARGIN_PX = 12;
 
 /** Where the map is looking; suggestions near it rank higher. */
 export interface MapBias {
@@ -63,6 +65,7 @@ export function StopInput({
   const [status, setStatus] = useState<Status>("idle");
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const inflight = useRef<AbortController | undefined>(undefined);
+  const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => () => clearTimeout(debounce.current), []);
 
@@ -127,11 +130,32 @@ export function StopInput({
 
   const q = value.trim();
   const showPanel = open && q.length >= 2 && !resolved;
+
+  // The panel fits above the on-screen keyboard and scrolls, so every suggestion can be reached:
+  // the visual viewport shrinks when the keyboard opens, and the form itself does not scroll.
+  const [panelMaxPx, setPanelMaxPx] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    if (!showPanel) return;
+    const vv = window.visualViewport;
+    const fit = () => {
+      const inputBottom = input.current?.getBoundingClientRect().bottom ?? 0;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      setPanelMaxPx(Math.max(MIN_PANEL_PX, visibleBottom - inputBottom - PANEL_MARGIN_PX));
+    };
+    fit();
+    vv?.addEventListener("resize", fit);
+    vv?.addEventListener("scroll", fit);
+    return () => {
+      vv?.removeEventListener("resize", fit);
+      vv?.removeEventListener("scroll", fit);
+    };
+  }, [showPanel]);
   const fromPhoton = results.some((r) => r.source === "photon");
 
   return (
     <div className="relative flex-1">
       <input
+        ref={input}
         type="text"
         role="combobox"
         aria-label={label}
@@ -148,25 +172,35 @@ export function StopInput({
         onKeyDown={handleKeyDown}
         onFocus={() => results.length > 0 && setOpen(true)}
         onBlur={() => setOpen(false)}
-        className={`focus:ring-brand w-full rounded-md border bg-white px-3 py-2 text-sm text-stone-900 outline-none focus:ring-2 dark:bg-stone-900 dark:text-stone-100 ${
+        className={`focus:ring-brand w-full rounded-md border bg-white px-3 py-2.5 text-base text-stone-900 outline-none focus:ring-2 md:py-2 md:text-sm dark:bg-stone-900 dark:text-stone-100 ${
           resolved ? "border-brand/60" : "border-stone-300 dark:border-stone-700"
         }`}
       />
       {showPanel && (
         <div
-          className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-stone-200 bg-white text-sm shadow-lg dark:border-stone-700 dark:bg-stone-900"
+          style={{ maxHeight: panelMaxPx }}
+          className="absolute z-20 mt-1 flex w-full flex-col overflow-hidden rounded-md border border-stone-200 bg-white text-sm shadow-lg dark:border-stone-700 dark:bg-stone-900"
           // Keep focus in the input so clicks on options register before blur closes the panel.
           onMouseDown={(e) => e.preventDefault()}
         >
-          <ul id={listId} role="listbox" aria-label={`${label} suggestions`}>
+          <ul
+            id={listId}
+            role="listbox"
+            aria-label={`${label} suggestions`}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          >
             {results.map((r, i) => (
               <li
                 key={r.id}
                 id={`${listId}-${i}`}
                 role="option"
                 aria-selected={i === active}
-                onClick={() => pick(r)}
-                className={`cursor-pointer px-3 py-2 ${i === active ? "bg-brand/10" : "hover:bg-stone-100 dark:hover:bg-stone-800"}`}
+                onClick={() => {
+                  pick(r);
+                  // A tapped pick is done: close the phone keyboard. Keyboard users keep focus.
+                  if (window.matchMedia("(pointer: coarse)").matches) input.current?.blur();
+                }}
+                className={`cursor-pointer px-3 py-2.5 ${i === active ? "bg-brand/10" : "hover:bg-stone-100 dark:hover:bg-stone-800"}`}
               >
                 <div className="font-medium">{r.name}</div>
                 {r.label !== r.name && (
@@ -180,7 +214,7 @@ export function StopInput({
               <li className="px-3 py-2 text-stone-500">No matches</li>
             )}
           </ul>
-          <div className="space-y-0.5 border-t border-stone-200 px-3 py-2 text-xs text-stone-500 dark:border-stone-700">
+          <div className="shrink-0 space-y-0.5 border-t border-stone-200 px-3 py-2 text-xs text-stone-500 dark:border-stone-700">
             {status === "loading" ? (
               <p>Searching…</p>
             ) : status === "error" ? (
