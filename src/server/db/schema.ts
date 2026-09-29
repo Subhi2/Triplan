@@ -5,6 +5,7 @@ import {
   bigint,
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -66,7 +67,9 @@ export const place = pgTable(
     status: placeStatus("status").notNull().default("unverified"),
     source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
     osmId: text("osm_id"), // "node/123", "way/456"; unique, the OSM import upserts on it
-    googlePlaceId: text("google_place_id"),
+    googlePlaceId: text("google_place_id"), // the only Google data stored (Maps ToS 3.2.3(b))
+    // When the Google place id was last looked up; with no id found, not retried for 30 days.
+    googlePlaceCheckedAt: timestamp("google_place_checked_at", { withTimezone: true }),
     wikidataId: text("wikidata_id"),
     population: integer("population"), // towns, from OSM when tagged
     osmTags: jsonb("osm_tags"), // selected OSM tags kept for provenance and later guide fields
@@ -290,6 +293,20 @@ export const writeLimit = pgTable("write_limit", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
   count: integer("count").notNull().default(0),
 });
+
+// Google call budget ------------------------------------------------------------
+// Calls to Google per UTC day and SKU, so usage stays inside Google's free monthly caps
+// (src/server/providers/google/budget.ts).
+
+export const googleUsage = pgTable(
+  "google_usage",
+  {
+    day: date("day").notNull(),
+    sku: text("sku").notNull(), // 'ids' | 'details_atmosphere' | 'photo'
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.sku] })],
+);
 
 // Caches ----------------------------------------------------------------------
 

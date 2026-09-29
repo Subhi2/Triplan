@@ -71,6 +71,13 @@
       "when": 1790705567322,
       "tag": "0009_photo_import",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790708151467,
+      "tag": "0010_google_usage",
+      "breakpoints": true
     }
   ]
 }
