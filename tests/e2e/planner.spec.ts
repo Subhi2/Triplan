@@ -108,7 +108,7 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
 
   // On phones the form folds away once the trip is complete, leaving the map and routes.
   await openTripForm(page);
-  await page.getByRole("button", { name: "+ Add stop" }).click();
+  await page.getByRole("button", { name: "Add a stop" }).click();
   await choose(page, "Stop 1", "Sakl", "Sakleshpur");
 
   await expect(cards).toHaveCount(1);
@@ -318,7 +318,7 @@ test("open a place's details, add it to the trip and remove it again", async ({ 
   await expect.poll(() => routeRequests.at(-1)?.stops).toHaveLength(2);
 
   // Back to the list, with focus on the place's row.
-  await page.getByRole("button", { name: "← All places" }).click();
+  await page.getByRole("button", { name: "All places" }).click();
   await expect(page.getByRole("button", { name: /Manjarabad Fort/ })).toBeFocused();
 });
 

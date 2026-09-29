@@ -26,11 +26,12 @@ export function PlaceList(props: Props) {
   }, [activeId]);
 
   return (
-    <ol aria-label="Places along the route" className="space-y-1">
-      {places.map((p) => (
+    <ol aria-label="Places along the route" className="flex flex-col">
+      {places.map((p, i) => (
         <PlaceRow
           key={p.id}
           place={p}
+          index={i}
           active={p.id === activeId}
           highlighted={p.id === hoverId}
           onSelect={() => onSelect(p.id)}

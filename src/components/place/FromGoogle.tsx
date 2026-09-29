@@ -54,7 +54,7 @@ function GooglePhoto({ name, alt, now }: { name: string; alt: string; now: boole
   }, [show]);
 
   return (
-    <div ref={ref} className="h-40 w-64 overflow-hidden rounded-lg bg-stone-200 dark:bg-stone-800">
+    <div ref={ref} className="shimmer h-44 w-72 overflow-hidden rounded-2xl">
       {show && (
         // Served by Google through our redirect, never stored.
         // eslint-disable-next-line @next/next/no-img-element
@@ -62,7 +62,7 @@ function GooglePhoto({ name, alt, now }: { name: string; alt: string; now: boole
           src={googlePhotoUrl(name)}
           alt={alt}
           referrerPolicy="no-referrer"
-          className="h-40 w-64 object-cover"
+          className="animate-rise h-44 w-72 object-cover"
         />
       )}
     </div>
@@ -87,7 +87,7 @@ function ReviewText({ text }: { text: string }) {
           type="button"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
-          className="text-brand inline-flex min-h-11 items-center text-sm font-medium hover:underline md:min-h-0"
+          className="text-brand-dark inline-flex min-h-11 items-center text-sm font-bold hover:underline md:min-h-0 dark:text-teal-300"
         >
           {open ? "Less" : "More"}
         </button>
@@ -117,15 +117,12 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
   const H = headingLevel === 2 ? "h2" : "h3";
 
   return (
-    <section
-      className="flex flex-col gap-2 border-t border-stone-200 pt-3 dark:border-stone-800"
-      aria-label="From Google"
-    >
-      <H className="font-semibold">
+    <section className="animate-rise flex flex-col gap-3" aria-label="From Google">
+      <H className="font-display text-lg font-bold tracking-tight">
         From Google
         {fill.rating !== null && (
           <span className="ml-2 text-sm font-normal">
-            <span aria-hidden className="text-amber-600 dark:text-amber-400">
+            <span aria-hidden className="text-marigold dark:text-amber-400">
               ★{" "}
             </span>
             <span className="sr-only">Rated </span>
@@ -146,7 +143,7 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
           aria-label="Photos from Google"
         >
           {fill.photos.map((p, i) => (
-            <li key={p.name} className="w-64 shrink-0 snap-start">
+            <li key={p.name} className="w-72 shrink-0 snap-start">
               <figure>
                 <GooglePhoto
                   name={p.name}
@@ -190,7 +187,7 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
                   />
                 )}
                 <span>
-                  <span aria-hidden className="text-amber-600 dark:text-amber-400">
+                  <span aria-hidden className="text-marigold dark:text-amber-400">
                     ★{" "}
                   </span>
                   <span className="sr-only">Rated </span>

@@ -61,9 +61,11 @@ async function mockRouting(page: Page, trip: Trip) {
 }
 
 async function kmMarkers(page: Page): Promise<number[]> {
-  const rows = page.getByRole("list", { name: "Places along the route" }).getByRole("button");
-  await expect(rows.first()).toBeVisible({ timeout: 30_000 });
-  return (await rows.allInnerTexts()).map((t) => Number(t.split("\n")[0]!.replace(" km", "")));
+  const list = page.getByRole("list", { name: "Places along the route" });
+  await expect(list.getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+  return list
+    .locator(":scope > li")
+    .evaluateAll((lis) => lis.map((li) => Number((li as HTMLElement).dataset.km)));
 }
 
 for (const [name, trip] of Object.entries(TRIPS)) {

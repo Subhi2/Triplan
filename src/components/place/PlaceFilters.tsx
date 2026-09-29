@@ -14,9 +14,9 @@ interface Props {
 }
 
 const chip =
-  "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm whitespace-nowrap transition md:min-h-8 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none";
-const chipOn = "border-brand bg-brand text-white";
-const chipOff = "border-stone-300 hover:border-stone-500 dark:border-stone-700";
+  "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
+const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
+const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 
 export function PlaceFilters(props: Props) {
   const { counts, selected } = props;
@@ -43,7 +43,7 @@ export function PlaceFilters(props: Props) {
           onClick={() => props.onSelectedChange([])}
           className={`${chip} ${all ? chipOn : chipOff}`}
         >
-          Best stops <span className="opacity-75">{props.bestCount}</span>
+          Best stops <span className="tabular font-mono text-xs opacity-70">{props.bestCount}</span>
         </button>
         {counts.map(([category, count]) => {
           const on = selected.includes(category);
@@ -58,10 +58,10 @@ export function PlaceFilters(props: Props) {
             >
               <span
                 aria-hidden
-                className="h-2 w-2 rounded-full ring-1 ring-white/60"
+                className="h-2 w-2 rounded-full"
                 style={{ backgroundColor: style.color }}
               />
-              {style.name} <span className="opacity-75">{count}</span>
+              {style.name} <span className="tabular font-mono text-xs opacity-70">{count}</span>
             </button>
           );
         })}
@@ -82,7 +82,7 @@ export function PlaceFilters(props: Props) {
           value={props.maxDetourKm ?? 2}
           disabled={props.maxDetourKm === null}
           onChange={(e) => props.onMaxDetourChange(Number(e.target.value) as DetourLimitKm)}
-          className="min-h-10 rounded-md border border-stone-300 bg-white px-2 text-base disabled:opacity-50 md:min-h-0 md:py-0.5 md:text-sm dark:border-stone-700 dark:bg-stone-900"
+          className="min-h-10 rounded-lg border border-stone-300 bg-(--surface) px-2 text-base disabled:opacity-50 md:min-h-0 md:py-0.5 md:text-sm dark:border-stone-700"
         >
           {DETOUR_LIMITS_KM.map((km) => (
             <option key={km} value={km}>

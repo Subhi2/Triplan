@@ -51,13 +51,16 @@ async function mockRouting(page: Page) {
 
 /** Rows of the place list: km marker, name, detour label (as km, 0 on route) and category. */
 async function placeRows(page: Page) {
-  const rows = page.getByRole("list", { name: "Places along the route" }).getByRole("button");
-  await expect(rows.first()).toBeVisible({ timeout: 30_000 });
-  const texts = await rows.allInnerTexts();
-  return texts.map((t) => {
-    const [km, name, detour, category] = t.split("\n").map((s) => s.trim());
-    const detourKm = detour === "On route" ? 0 : Number(/\+([\d.]+) km/.exec(detour!)?.[1]);
-    return { km: Number(km!.replace(" km", "")), name: name!, detour: detour!, detourKm, category };
+  const list = page.getByRole("list", { name: "Places along the route" });
+  await expect(list.getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+  // Each row carries its facts as data attributes (PlaceRow), independent of the layout.
+  const rows = await list
+    .locator(":scope > li")
+    .evaluateAll((lis) => lis.map((li) => ({ ...(li as HTMLElement).dataset })));
+  return rows.map((r) => {
+    const detour = r.detour!;
+    const detourKm = detour === "On route" ? 0 : Number(/\+([\d.]+) km/.exec(detour)?.[1]);
+    return { km: Number(r.km), name: r.name!, detour, detourKm, category: r.category };
   });
 }
 
@@ -170,7 +173,7 @@ test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", as
     await page.getByRole("button", { name: "Add to trip" }).click();
     await expect(page.getByText(/In your trip \(stop \d\)/)).toBeVisible();
 
-    await page.getByRole("button", { name: "← All places" }).click();
+    await page.getByRole("button", { name: "All places" }).click();
     const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
     await expect(cards.first()).toContainText("Manjarabad Fort");
     await page.getByRole("button", { name: "Save trip" }).click();

@@ -74,32 +74,50 @@ export function PlacePanel({ slug, name, along, vehicle, tripAction, onBack }: P
   }, [loaded, slug]);
 
   return (
-    <div ref={top} className="flex scroll-mt-4 flex-col gap-3">
+    <div ref={top} className="animate-rise flex scroll-mt-4 flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={onBack}
-          className="text-brand inline-flex min-h-11 items-center text-sm font-medium hover:underline md:min-h-0"
+          className="text-brand-dark -ml-1 inline-flex min-h-11 items-center gap-1 rounded-xl px-1 text-sm font-bold hover:underline md:min-h-9 dark:text-teal-300"
         >
-          ← All places
+          <svg
+            aria-hidden
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+          All places
         </button>
         <Link
           href={`/place/${slug}`}
-          className="inline-flex min-h-11 items-center text-sm text-stone-600 underline md:min-h-0 dark:text-stone-400"
+          className="inline-flex min-h-11 items-center text-sm font-bold text-stone-600 hover:underline md:min-h-9 dark:text-stone-400"
         >
           Open full page
         </Link>
       </div>
       {state.status === "loading" && (
         <>
-          <h2 className="text-xl font-bold">{name}</h2>
+          <h2 className="font-display text-[28px] leading-[1.05] font-extrabold tracking-tight">
+            {name}
+          </h2>
           {tripAction && <div className="flex flex-wrap gap-2">{tripAction}</div>}
-          <p className="text-sm text-stone-500">Loading details…</p>
+          <p className="text-sm text-stone-600 dark:text-stone-400">Loading details…</p>
+          <div aria-hidden className="shimmer h-44 rounded-2xl" />
         </>
       )}
       {state.status === "error" && (
         <>
-          <h2 className="text-xl font-bold">{name}</h2>
+          <h2 className="font-display text-[28px] leading-[1.05] font-extrabold tracking-tight">
+            {name}
+          </h2>
           {tripAction && <div className="flex flex-wrap gap-2">{tripAction}</div>}
           <p role="alert" className="text-sm text-red-700 dark:text-red-400">
             {state.message}

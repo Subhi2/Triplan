@@ -25,12 +25,17 @@ interface Props {
   headingRef?: React.Ref<HTMLHeadingElement>;
 }
 
-function Field(props: { label: string; value: React.ReactNode; source?: string }) {
+/** A fact as a tile; `wide` ones (sentences) take the full row. */
+function Field(props: { label: string; value: React.ReactNode; source?: string; wide?: boolean }) {
   const empty = props.value === null || props.value === undefined || props.value === "";
   return (
-    <div className="grid grid-cols-[8rem_1fr] gap-2 py-1.5 text-sm">
-      <dt className="text-stone-600 dark:text-stone-400">{props.label}</dt>
-      <dd>
+    <div
+      className={`rounded-xl border border-stone-200 bg-(--surface) px-3 py-2.5 dark:border-stone-800 ${
+        props.wide ? "col-span-2" : ""
+      }`}
+    >
+      <dt className="text-xs text-stone-600 dark:text-stone-400">{props.label}</dt>
+      <dd className={`mt-0.5 text-[15px] ${empty || props.wide ? "" : "font-bold"}`}>
         {empty ? <NotKnown /> : props.value}
         {!empty && props.source && (
           <span className="text-xs text-stone-500 dark:text-stone-400"> ({props.source})</span>
@@ -43,8 +48,8 @@ function Field(props: { label: string; value: React.ReactNode; source?: string }
 function Section(props: { title: string; level: 2 | 3; children: React.ReactNode }) {
   const H = props.level === 2 ? "h2" : "h3";
   return (
-    <section className="border-t border-stone-200 pt-3 dark:border-stone-800">
-      <H className="mb-1 font-semibold">{props.title}</H>
+    <section className="flex flex-col gap-2">
+      <H className="font-display text-lg font-bold tracking-tight">{props.title}</H>
       {props.children}
     </section>
   );
@@ -53,7 +58,7 @@ function Section(props: { title: string; level: 2 | 3; children: React.ReactNode
 function Stars({ rating }: { rating: number }) {
   return (
     <>
-      <span aria-hidden className="text-amber-600 dark:text-amber-400">
+      <span aria-hidden className="text-marigold dark:text-amber-400">
         ★{" "}
       </span>
       <span className="sr-only">Rated </span>
@@ -95,10 +100,10 @@ export function PlaceDetailView({
       : null;
 
   return (
-    <article className="flex flex-col gap-4" aria-labelledby={`place-${place.id}`}>
+    <article className="flex flex-col gap-6" aria-labelledby={`place-${place.id}`}>
       <header className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1 rounded-full border border-stone-200 px-2 py-0.5 dark:border-stone-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 font-bold dark:bg-stone-800">
             <span
               aria-hidden
               className="h-2 w-2 rounded-full"
@@ -116,15 +121,17 @@ export function PlaceDetailView({
           id={`place-${place.id}`}
           ref={headingRef}
           tabIndex={-1}
-          className="text-xl font-bold outline-none"
+          className="font-display text-[28px] leading-[1.05] font-extrabold tracking-tight outline-none md:text-3xl"
         >
           {place.name}
         </H>
         {area && <p className="text-sm text-stone-600 dark:text-stone-400">{area}</p>}
         {along && (
           <p className="text-sm">
-            <span className="font-semibold">{Math.round(along.kmFromStart)} km</span> from the start
-            · {detourLabel(along.detourKm)}
+            <span className="tabular font-mono font-semibold">
+              KM {Math.round(along.kmFromStart)}
+            </span>{" "}
+            from the start · {detourLabel(along.detourKm)}
           </p>
         )}
         <p className="text-sm">
@@ -137,14 +144,28 @@ export function PlaceDetailView({
             <span className="text-stone-600 dark:text-stone-400">No reviews yet</span>
           )}
         </p>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-2">
           {actions}
           <a
             href={placeGoogleMapsHref(place, googleEnabled)}
             target="_blank"
             rel={external}
-            className="inline-flex min-h-11 items-center rounded-md border border-stone-300 px-3 text-sm font-medium hover:border-stone-500 md:min-h-0 md:py-1.5 dark:border-stone-700"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-stone-300 bg-(--surface) px-3.5 text-sm font-bold hover:border-stone-500 md:min-h-10 dark:border-stone-700"
           >
+            <svg
+              aria-hidden
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z" />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
             Open in Google Maps
           </a>
         </div>
@@ -153,7 +174,7 @@ export function PlaceDetailView({
       {place.media.length > 0 ? (
         <ul className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1" aria-label="Photos">
           {place.media.map((m) => (
-            <li key={m.url} className="w-64 shrink-0 snap-start">
+            <li key={m.url} className="w-72 shrink-0 snap-start">
               <figure>
                 {/* Photos come from many hosts (Wikimedia, uploads), each shown with its credit. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -161,7 +182,7 @@ export function PlaceDetailView({
                   src={m.thumbUrl ?? m.url}
                   alt={`${place.name}${m.author ? `, photo by ${m.author}` : ""}`}
                   loading="lazy"
-                  className="h-40 w-64 rounded-lg bg-stone-200 object-cover dark:bg-stone-800"
+                  className="h-44 w-72 rounded-2xl bg-stone-200 object-cover dark:bg-stone-800"
                 />
                 <figcaption className="mt-1 truncate text-xs text-stone-600 dark:text-stone-400">
                   {m.authorUrl ? (
@@ -180,7 +201,7 @@ export function PlaceDetailView({
       ) : (
         // With Google on, its photos (if any) fill this gap in the section below.
         !googleEnabled && (
-          <p className="rounded-lg bg-stone-100 px-3 py-6 text-center text-sm text-stone-500 dark:bg-stone-900 dark:text-stone-400">
+          <p className="rounded-2xl bg-stone-100 px-3 py-8 text-center text-sm text-stone-600 dark:bg-stone-900 dark:text-stone-400">
             No photos yet
           </p>
         )
@@ -198,7 +219,7 @@ export function PlaceDetailView({
       {place.description && <p className="text-sm leading-relaxed">{place.description}</p>}
 
       <Section title="Getting there" level={sub}>
-        <dl>
+        <dl className="grid grid-cols-2 gap-2">
           <Field
             label="Best vehicle"
             value={
@@ -207,14 +228,14 @@ export function PlaceDetailView({
                 : null
             }
           />
-          <Field label="Last mile" value={g?.lastMileNote} />
+          <Field label="Last mile" value={g?.lastMileNote} wide />
           <Field
             label="Road"
             value={g?.roadCondition && <span className="capitalize">{g.roadCondition}</span>}
           />
         </dl>
         {notIdeal && (
-          <p className="mt-1 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <p className="bg-marigold-tint text-ghat-dark rounded-xl px-3 py-2.5 text-sm font-bold dark:bg-orange-950 dark:text-orange-200">
             Better reached by {notIdeal} than by {vehicle}.
           </p>
         )}
@@ -222,7 +243,7 @@ export function PlaceDetailView({
 
       <Section title="When to go" level={sub}>
         <MonthStrip guide={g} month={month} />
-        <dl className="mt-1">
+        <dl className="mt-1 grid grid-cols-2 gap-2">
           <Field label="Time of day" value={g?.bestTimeOfDay} />
           <Field
             label="Time needed"
@@ -236,8 +257,9 @@ export function PlaceDetailView({
       </Section>
 
       <Section title="Visiting" level={sub}>
-        <dl>
+        <dl className="grid grid-cols-2 gap-2">
           <Field
+            wide
             label="Timings"
             value={g?.timings ?? place.osm.openingHours}
             source={!g?.timings && place.osm.openingHours ? "OpenStreetMap" : undefined}
@@ -249,7 +271,7 @@ export function PlaceDetailView({
           />
           <Field label="Dress code" value={g?.dressCode} />
           <Field label="Permit" value={g?.permitNeeded} />
-          {g?.notes && <Field label="Notes" value={g.notes} />}
+          {g?.notes && <Field label="Notes" value={g.notes} wide />}
         </dl>
       </Section>
 
