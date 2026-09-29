@@ -11,7 +11,7 @@ const MAX_FRAME_ZOOM = 12;
 /** Frames the routes (or stops) when they change, and brings the active place into view. */
 export function useGoogleFraming(props: MapViewProps) {
   const map = useMap();
-  const { routes, stops, places, activePlaceId } = props;
+  const { routes, stops, places, activePlaceId, topInset = 0 } = props;
 
   const frame = frameKey(routes, stops);
   useEffect(() => {
@@ -25,7 +25,10 @@ export function useGoogleFraming(props: MapViewProps) {
       return;
     }
     const [[west, south], [east, north]] = b;
-    map.fitBounds({ west, south, east, north }, PADDING);
+    map.fitBounds(
+      { west, south, east, north },
+      { top: PADDING + topInset, left: PADDING, right: PADDING, bottom: PADDING },
+    );
     google.maps.event.addListenerOnce(map, "idle", () => {
       if ((map.getZoom() ?? 0) > MAX_FRAME_ZOOM) map.setZoom(MAX_FRAME_ZOOM);
     });

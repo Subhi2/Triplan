@@ -39,13 +39,13 @@ const INTERACTIVE_LAYERS = [
 
 /** The MapLibre map (OpenStreetMap tiles): used when no Google key is set. */
 export function MapView(props: MapViewProps) {
-  const { routes, stops, places, activePlaceId, bottomInset = 0 } = props;
+  const { routes, stops, places, activePlaceId, bottomInset = 0, topInset = 0 } = props;
   const mapRef = useRef<MapRef>(null);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const hovered = useRef<string | null>(null);
   const coarsePointer = useMediaQuery("(pointer: coarse)");
 
-  const padding = { top: 48, left: 48, right: 48, bottom: 48 + bottomInset };
+  const padding = { top: 48 + topInset, left: 48, right: 48, bottom: 48 + bottomInset };
 
   // Frame all routes when they change; with no routes yet, frame the stops.
   const frame = frameKey(routes, stops);

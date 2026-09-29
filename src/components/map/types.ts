@@ -24,6 +24,8 @@ export interface MapViewProps {
   onHoverPlace: (id: string | null) => void;
   /** Pixels hidden at the bottom (the mobile sheet), kept clear when framing. */
   bottomInset?: number;
+  /** Pixels hidden at the top (the header floating over the map on phones). */
+  topInset?: number;
   /** Called with the map centre and zoom after it loads and after every move. */
   onViewChange?: (center: LngLat, zoom: number) => void;
 }
