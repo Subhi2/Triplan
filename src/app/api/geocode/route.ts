@@ -10,7 +10,12 @@ const querySchema = z.object({
   // Map centre and zoom, to prefer nearby suggestions.
   lat: z.coerce.number().min(-90).max(90).optional(),
   lon: z.coerce.number().min(-180).max(180).optional(),
-  zoom: z.coerce.number().min(0).max(22).optional(),
+  // Only a hint, so out-of-range values are clamped rather than failing the search: a small map
+  // (a short phone screen, or the keyboard up) fits India below zoom 0.
+  zoom: z.coerce
+    .number()
+    .transform((zoom) => Math.min(22, Math.max(0, zoom)))
+    .optional(),
 });
 
 /** GET ?q=&source=suggest|osm&lat=&lon=&zoom= -> { results: GeocodeResult[] } */

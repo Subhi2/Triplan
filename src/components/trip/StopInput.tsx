@@ -33,7 +33,7 @@ async function searchPlaces(q: string, source: Mode, near: MapBias, signal: Abor
     source,
     lat: near.center[1].toFixed(3),
     lon: near.center[0].toFixed(3),
-    zoom: String(Math.round(near.zoom)),
+    zoom: String(Math.max(0, Math.round(near.zoom))),
   });
   const res = await fetch(`/api/geocode?${params}`, { signal });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

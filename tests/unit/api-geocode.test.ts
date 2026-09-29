@@ -27,6 +27,12 @@ describe("GET /api/geocode", () => {
     expect(geocoding.__search).not.toHaveBeenCalled();
   });
 
+  it("clamps the zoom hint instead of failing (a small map fits India below zoom 0)", async () => {
+    const res = await get("q=kalasa&lat=21.9&lon=82.7&zoom=-2");
+    expect(res.status).toBe(200);
+    expect(suggestPlaces).toHaveBeenCalledWith("kalasa", { near: [82.7, 21.9], zoom: 0 });
+  });
+
   it("suggests without a bias when the map position is missing", async () => {
     await get("q=ooty&source=suggest");
     expect(suggestPlaces).toHaveBeenCalledWith("ooty", { near: undefined, zoom: undefined });
