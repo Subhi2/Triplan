@@ -7,7 +7,7 @@ const NO_STORE = { "Cache-Control": "private, no-store" };
 
 /**
  * GET -> GoogleGapResult: Google's photos, rating and reviews for what the place lacks.
- * Only with the Google map on (the browser key set): Google content may not sit next to MapLibre.
+ * Only with the Google map on (the Google key set): Google content may not sit next to MapLibre.
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

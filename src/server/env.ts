@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+const optionalKey = z
+  .string()
+  .trim()
+  .optional()
+  .transform((s) => s || undefined);
+
 const serverEnvSchema = z.object({
   OSRM_BASE_URL: z.url().default("https://router.project-osrm.org"),
   NOMINATIM_BASE_URL: z.url().default("https://nominatim.openstreetmap.org"),
@@ -21,13 +27,11 @@ const serverEnvSchema = z.object({
         .filter(Boolean),
     )
     .pipe(z.array(z.url()).min(1)),
-  // Google fills gaps only (docs/02, "Google Maps Platform"). Server key: Places API (New) only.
-  // Without it (or without the browser key, see src/lib/google.ts) no Google call is made.
-  GOOGLE_MAPS_API_KEY: z
-    .string()
-    .trim()
-    .optional()
-    .transform((s) => s || undefined),
+  // Google fills gaps only (docs/02, "Google Maps Platform"). One key serves the map and the
+  // Places API (New) calls; GOOGLE_MAPS_API_KEY is only needed for a separate server key.
+  // Without either, no Google call is made.
+  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: optionalKey,
+  GOOGLE_MAPS_API_KEY: optionalKey,
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

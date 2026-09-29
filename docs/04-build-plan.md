@@ -78,10 +78,10 @@ Decided 2026-09-29: use Google Maps Platform only where our own data has a gap, 
 
 Before starting (the owner does this in the Google Cloud console):
 - A billing account with an Indian billing address; check that the Places and Maps prices shown are the India ones (70,000 free map loads a month). If not, lower the budget in step 2.
-- Enable the Maps JavaScript API and the Places API (New). Create the browser key (Maps JavaScript API only, HTTP referrers: the production domain, this project's Vercel preview domains, `localhost:3000`), the server key (Places API (New) only) and a Map ID.
+- Enable the Maps JavaScript API and the Places API (New). Create one key limited to those two APIs, with no application restriction (it is used in the browser and by the server), and optionally a Map ID.
 - Per-day quotas: Maps JavaScript map loads 2,250; Place Details and Place Photo requests 225 each. A budget alert as well.
 
-1. **Keys**: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAP_ID` and `GOOGLE_MAPS_API_KEY` in `src/server/env.ts` (all optional) and `.env.example`. A `googleEnabled` flag for the client: true only when the browser key is set.
+1. **Keys**: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (the one key, for the map and the server), `NEXT_PUBLIC_GOOGLE_MAP_ID` and an optional separate server key `GOOGLE_MAPS_API_KEY` in `src/server/env.ts` (all optional) and `.env.example`. A `googleEnabled` flag for the client: true only when the key is set.
 2. **Budget**: migration adding `google_usage (day date, sku text, count int, PRIMARY KEY (day, sku))` and `place.google_place_checked_at`. `src/server/providers/google/budget.ts`: `take(sku)` increments atomically and says no once the day's limit is reached (`ids` 2,000, `details_atmosphere` 225, `photo` 225). Unit tests.
 3. **Provider** `src/server/providers/google/places.ts` behind an interface, mocked in tests, responses Zod-validated, fixtures recorded once: `findPlaceId(name, [lng, lat])` (Text Search IDs only, rectangle about 600 m around the pin), `details(id, fields)`, `photoUri(name, maxWidthPx)`.
 4. **Exact Google Maps links**: resolve the id the first time a place's details open (and on "Open in Google Maps"), store it in `place.google_place_id`, record `google_place_checked_at` when nothing was found so it is not retried for 30 days. The links use `query_place_id` once the id is known; with no id, or the budget used up, today's name-at-coordinates link.

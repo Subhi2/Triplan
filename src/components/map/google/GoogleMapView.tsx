@@ -16,7 +16,7 @@ import { useGoogleFraming } from "./useGoogleFraming";
 const [[west, south], [east, north]] = INDIA_BOUNDS;
 
 /**
- * The Google map, used when the browser key is set (docs/02, "Google Maps Platform"): Google
+ * The Google map, used when the Google key is set (docs/02, "Google Maps Platform"): Google
  * photos and reviews may only be shown with a Google map. Same props as the MapLibre MapView.
  * Mounted once per page; each new map is a billed map load.
  */

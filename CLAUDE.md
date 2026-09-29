@@ -68,9 +68,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 DATABASE_URL=
 NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=  # browser key: Maps JavaScript API only, HTTP-referrer restricted; empty = MapLibre, no Google content
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=  # one Google key: Maps JavaScript API + Places API (New), used by the map and the server; empty = MapLibre, no Google content
 NEXT_PUBLIC_GOOGLE_MAP_ID=        # Map ID for Advanced Markers
-GOOGLE_MAPS_API_KEY=              # server key: Places API (New) only; never NEXT_PUBLIC_
+GOOGLE_MAPS_API_KEY=              # optional separate server key; empty = the key above
 OSRM_BASE_URL=https://router.project-osrm.org
 NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
 NOMINATIM_USER_AGENT=bike-travelling-guide/0.1 (contact email)   # also sent to Photon and Overpass

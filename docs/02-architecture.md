@@ -200,9 +200,9 @@ Not filled by Google: the place list and map markers (a rating per row would be 
 
 ### Keys, budget and limits
 
-- Two keys. Browser: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, limited to the Maps JavaScript API and to the production domain, `localhost` and this project's preview domains by HTTP referrer, plus `NEXT_PUBLIC_GOOGLE_MAP_ID` for Advanced Markers. Server: `GOOGLE_MAPS_API_KEY`, limited to the Places API (New). Vercel has no fixed outbound IP on Hobby, so the server key cannot be IP-restricted; the API restriction and the budget are the protection.
+- **One key** (decided 2026-09-30): `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, limited to the Maps JavaScript API and the Places API (New), with no application restriction (a website restriction would refuse the server's calls, and Vercel has no fixed outbound IP on Hobby). The map uses it in the browser and the server uses it for Places calls. It is visible in the page, so the per-day quotas in the Cloud console are what cap the cost if someone copies it. `GOOGLE_MAPS_API_KEY`, when set, is used by the server instead (a separate key limited to Places, if ever wanted). `NEXT_PUBLIC_GOOGLE_MAP_ID` is optional (Advanced Markers; Google's `DEMO_MAP_ID` otherwise).
 - **Daily budget in the app** (`src/server/providers/google/budget.ts`, counted in a `google_usage` table per day and SKU): 225 Enterprise + Atmosphere requests and 225 photos a day (7,000 a month ÷ 31), 2,000 ID lookups. When a day's budget is used up, the Google section is simply not shown until the next day (UTC), and "Open in Google Maps" falls back to the name-at-coordinates link.
-- **Quotas in the Cloud console** as the second guard: Maps JavaScript map loads 2,250 a day, and per-day request caps on the Places methods at the same numbers. A budget alert (e.g. ₹500) only sends an email; the quotas are what stop usage.
+- **Quotas in the Cloud console**, which also cover calls made with a copied key: Maps JavaScript map loads 2,250 a day, and per-day request caps on the Places methods at the same numbers. A budget alert (e.g. ₹500) only sends an email; the quotas are what stop usage.
 - The numbers assume the billing account gets the India price list (an Indian billing address billed through Google Cloud India; Google does not state the rule). If the account shows global pricing, the free caps are 1,000 a month for Enterprise + Atmosphere and photos and 10,000 map loads: lower the budget to 30, 30 and 320 a day.
 
 ### Map on Google
@@ -211,7 +211,7 @@ Not filled by Google: the place list and map markers (a rating per row would be 
 
 ### As built (2026-09-30)
 
-- Keys: `src/server/env.ts` (`GOOGLE_MAPS_API_KEY`) and `src/lib/google.ts` (`googleEnabled`, true when the browser key is set; the Map ID falls back to Google's `DEMO_MAP_ID`).
+- Keys: `src/server/env.ts` (the server uses `GOOGLE_MAPS_API_KEY` if set, else `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`) and `src/lib/google.ts` (`googleEnabled`, true when the key is set; the Map ID falls back to Google's `DEMO_MAP_ID`).
 - Budget: `providers/google/budget.ts`, `google_usage` table (migration `0010`). A photos-only Place Details request is free and counts under `ids`.
 - Provider: `providers/google/places.ts`. Place ids and photo names are checked against Google's formats before they go into a URL.
 - Service: `services/googleGapService.ts` (`getGoogleGapFill`, `getGooglePlaceId`). An id Google answers 404 for is cleared, so the next visit looks it up again. `external_rating` is dropped (migration `0011`).

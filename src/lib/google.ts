@@ -1,8 +1,8 @@
 // Google Maps Platform fills gaps only (docs/02, "Google Maps Platform"). Its content (photos,
 // ratings, reviews) may only be shown with a Google map, so everything Google hangs off the
-// browser key: without it the app uses MapLibre and shows nothing from Google.
+// key: without it the app uses MapLibre and shows nothing from Google.
 
-/** The browser key (Maps JavaScript API only, HTTP-referrer restricted), inlined at build time. */
+/** The Google key (also used by the server, see providers/google), inlined at build time. */
 export const GOOGLE_MAPS_BROWSER_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
 
 /** Map ID for Advanced Markers; Google's demo id works for development without cloud styling. */
