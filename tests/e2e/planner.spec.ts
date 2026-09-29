@@ -383,7 +383,10 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   await expect(page.getByText("1 place ticked")).toBeVisible();
   await expect(open).toHaveAttribute("href", /waypoints=12\.9173%2C75\.7581/);
 
-  // The place's own page on Google Maps, for photos and reviews.
+  // The place's own page on Google Maps, for photos and reviews: on its row and in its details.
+  await expect(
+    page.getByRole("link", { name: "Open Manjarabad Fort in Google Maps" }),
+  ).toHaveAttribute("href", /maps\/search\/Manjarabad%20Fort\/@12\.9173,75\.7581,17z/);
   await page
     .getByRole("list", { name: "Places along the route" })
     .getByRole("button", { name: /Manjarabad Fort/ })
@@ -391,5 +394,5 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   await expect(page.getByRole("checkbox", { name: "Tick for Google Maps" })).toBeChecked();
   await expect(
     page.getByRole("article").getByRole("link", { name: "Open in Google Maps" }),
-  ).toHaveAttribute("href", /maps\/search\/\?api=1&query=Manjarabad%20Fort%2C%20Hassan/);
+  ).toHaveAttribute("href", /maps\/search\/Manjarabad%20Fort\/@12\.9173,75\.7581,17z/);
 });

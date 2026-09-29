@@ -13,18 +13,15 @@ const line = routeFixture("bengaluru-sakleshpur-kalasa")[0]!.geometry.coordinate
 const params = (url: string | null) => new URL(url!).searchParams;
 
 describe("googleMapsPlaceUrl", () => {
-  it("searches the place by name and area", () => {
-    const url = googleMapsPlaceUrl({
-      name: "Manjarabad Fort",
-      district: "Hassan",
-      state: "Karnataka",
-    });
-    expect(url).toBe(
-      "https://www.google.com/maps/search/?api=1&query=Manjarabad%20Fort%2C%20Hassan%2C%20Karnataka",
+  it("searches the place's name with the map at its exact spot", () => {
+    expect(googleMapsPlaceUrl({ name: "Manjarabad Fort", location: [75.7581, 12.9173] })).toBe(
+      "https://www.google.com/maps/search/Manjarabad%20Fort/@12.9173,75.7581,17z",
     );
     expect(
-      googleMapsPlaceUrl({ name: "Mysore Palace", district: null, state: "Karnataka" }),
-    ).toContain("query=Mysore%20Palace%2C%20Karnataka");
+      googleMapsPlaceUrl({ name: "Shiva Temple / Hampi", location: [76.47635735, 15.3439411] }),
+    ).toBe(
+      "https://www.google.com/maps/search/Shiva%20Temple%20%2F%20Hampi/@15.34394,76.47636,17z",
+    );
   });
 });
 
