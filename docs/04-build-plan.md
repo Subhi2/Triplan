@@ -38,6 +38,7 @@ Work through the phases in order. Each phase ends with a working app, passing `p
 
 ## Phase 3 · Places along the route
 
+0. **Places for any trip, not just the demo.** Write `scripts/import-osm.ts` (`pnpm db:import-osm -- --region=<name>`) that downloads places from OpenStreetMap through the Overpass API (`https://overpass-api.de/api/interpreter`) region by region, starting with all of Karnataka, then Kerala, Tamil Nadu, Goa and Maharashtra. Tags: `tourism=viewpoint|attraction|museum|camp_site`, `historic=fort|castle|monument|ruins|archaeological_site|memorial`, `natural=waterfall|peak|beach|cave_entrance`, `water=lake|reservoir` with a name, `amenity=place_of_worship` with a `wikidata` or `wikipedia` tag, `amenity=fuel`, and `place=town|city` into the towns table. Map each to a category, upsert on `osm_id`, store as `status='verified'` with `source='osm'` (guide fields empty, shown as "Not known yet"). Throttle to one Overpass request at a time and split large regions into tiles. Test: a trip that isn't Bengaluru → Kalasa (e.g. Bengaluru → Ooty, Mysuru → Coorg, Pune → Goa) returns a sensible place list.
 1. `corridorService.placesAlong(geometry, corridorM, categories)` calling the SQL function. `POST /api/places/along`.
 2. `PlaceList` + `PlaceRow`: km marker, name, category chip, rating, best-time summary, detour label. Sorted by km.
 3. Category filter chips and "hide detours over N km" toggle.
