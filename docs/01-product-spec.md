@@ -30,8 +30,8 @@ Help riders plan a trip by showing everything worth stopping for along the exact
    - Vehicle selector: bike, car. (Affects "best vehicle" warnings only.)
    - Corridor width selector.
 2. **Route options**
-   - Show up to 3 routes: the one through the user's via stops, plus alternatives returned by the routing engine.
-   - Each route card shows distance (km), ride time, and main towns passed through.
+   - Show 2–3 routes where they exist: the one through the user's via stops, or without via stops the routing engine's alternatives, topped up to 3 with routes through towns on the way (e.g. Bengaluru → Samse via Chikkamagaluru, via Hassan–Sakleshpur and via Arasikere–Belur).
+   - Each route card shows distance (km), ride time, main towns passed through, and how the distance splits by road: national highway, state highway, ghat roads and other roads, in % and km.
    - Selecting a route card highlights it on the map.
    - One tap turns a town on an alternative route into a via stop (e.g. "via Sakleshpur").
 3. **Places along the route**

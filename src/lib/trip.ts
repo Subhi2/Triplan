@@ -28,13 +28,25 @@ export const tripRequestSchema = z.object({
 export type Stop = z.infer<typeof stopSchema>;
 export type TripRequest = z.infer<typeof tripRequestSchema>;
 
+/**
+ * How a route's distance splits by kind of road, in metres. The parts do not overlap and add up
+ * to the route distance: ghat sections count as ghat whatever road they are on.
+ */
+export interface RoadMix {
+  nationalM: number; // national highways and expressways (NH, NE)
+  stateM: number; // state highways (SH)
+  ghatM: number; // winding hill (ghat) sections, detected from the road's shape
+  otherM: number; // district and local roads
+}
+
 export interface RouteOption {
-  id: string; // hash of the geometry
+  id: string; // route_cache hash of the routing request, plus the route's index in it
   geometry: LineString;
   distanceKm: number;
   durationMin: number;
   viaLabel: string; // "via Sakleshpur"
   towns: string[];
+  roadMix: RoadMix | null; // null when the routing engine does not report road numbers
 }
 
 export interface GeocodeResult {

@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { round5 } from "@/lib/geo";
 import { createThrottle, fetchJson, ProviderError } from "../http";
-import { NoRouteError, type RouteInput, type RouteResult, type RoutingProvider } from "./types";
+import {
+  NoRouteError,
+  type RoadStretch,
+  type RouteInput,
+  type RouteResult,
+  type RoutingProvider,
+} from "./types";
 
 // The public demo server only has the car profile; bikes use it with a slower pace.
 const BIKE_DURATION_FACTOR = 1.1;
@@ -25,6 +31,15 @@ const osrmResponseSchema = z.object({
             distance: z.number().nonnegative(),
             duration: z.number().nonnegative(),
             summary: z.string(),
+            // One step per road stretch; `ref` is the road number ("NH75", "SH 57") when mapped.
+            steps: z
+              .array(
+                z.object({
+                  distance: z.number().nonnegative(),
+                  ref: z.string().optional(),
+                }),
+              )
+              .default([]),
           }),
         ),
       }),
@@ -42,7 +57,7 @@ export function buildOsrmRouteUrl(baseUrl: string, input: RouteInput): string {
     overview: "full",
     geometries: "geojson",
     alternatives: String(alternatives),
-    steps: "false",
+    steps: "true", // for road numbers (national / state highway mix)
   });
   return `${baseUrl.replace(/\/$/, "")}/route/v1/driving/${coords}?${params}`;
 }
@@ -68,7 +83,20 @@ export function parseOsrmResponse(body: unknown, profile: RouteInput["profile"])
       durationS: l.duration * factor,
       summary: l.summary,
     })),
+    roads: mergeRoads(r.legs.flatMap((l) => l.steps)),
   }));
+}
+
+/** Road stretches in route order, with consecutive steps on the same road number merged. */
+function mergeRoads(steps: { distance: number; ref?: string }[]): RoadStretch[] {
+  const roads: RoadStretch[] = [];
+  for (const step of steps) {
+    const ref = step.ref?.trim() || null;
+    const last = roads.at(-1);
+    if (last && last.ref === ref) last.distanceM += step.distance;
+    else if (step.distance > 0) roads.push({ distanceM: step.distance, ref });
+  }
+  return roads;
 }
 
 // One throttle per process: the public demo server is for light use only.

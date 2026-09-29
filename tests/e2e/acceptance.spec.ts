@@ -21,6 +21,7 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
     durationMin: Math.round(r.durationS / 60),
     viaLabel: labels[i]!,
     towns: [],
+    roadMix: null,
   }));
 }
 
