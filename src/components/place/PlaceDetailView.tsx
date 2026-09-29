@@ -1,5 +1,6 @@
 import { categoryStyle } from "@/lib/categories";
 import { formatDuration } from "@/lib/format";
+import { googleMapsPlaceUrl } from "@/lib/googleMaps";
 import { MONTH_SHORT } from "@/lib/months";
 import { VEHICLE_LABELS, type PlaceDetail } from "@/lib/placeDetail";
 import { detourLabel } from "@/lib/places";
@@ -135,7 +136,17 @@ export function PlaceDetailView({
             </span>
           ))}
         </p>
-        {actions && <div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div>}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {actions}
+          <a
+            href={googleMapsPlaceUrl(place)}
+            target="_blank"
+            rel={external}
+            className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium hover:border-stone-500 dark:border-stone-700"
+          >
+            Open in Google Maps
+          </a>
+        </div>
       </header>
 
       {place.media.length > 0 ? (

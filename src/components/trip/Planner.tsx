@@ -13,6 +13,7 @@ import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import type { LngLat } from "@/lib/geo";
+import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
@@ -25,6 +26,7 @@ import {
 } from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
+import { GoogleMapsBar } from "./GoogleMapsBar";
 import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
@@ -75,6 +77,8 @@ export function Planner({ savedTrip = null }: Props) {
   // Reopening a saved trip selects the route option it was saved with, once.
   const preferredRouteId = useRef(savedTrip?.routeId ?? null);
   const [openPlace, setOpenPlace] = useState<PlaceAlong | null>(null);
+  // Places ticked to open in Google Maps as stops, with the trip.
+  const [picked, setPicked] = useState<PlaceAlong[]>([]);
   const [stops, setStops] = useState<StopDraft[]>(() => [
     draft(initial.from),
     ...initial.via.map(draft),
@@ -253,6 +257,20 @@ export function Planner({ savedTrip = null }: Props) {
     if (i > 0 && i < stops.length - 1) setStops(stops.filter((_, j) => j !== i));
   }
 
+  const pickedIds = useMemo(() => new Set(picked.map((p) => p.id)), [picked]);
+  function setPlacePicked(place: PlaceAlong, on: boolean) {
+    setPicked((prev) =>
+      on
+        ? [...prev.filter((p) => p.id !== place.id), place]
+        : prev.filter((p) => p.id !== place.id),
+    );
+  }
+  const googleTrip = googleMapsTripUrl(
+    stops.flatMap((s) => (s.location ? [s.location] : [])),
+    picked.map((p) => p.location),
+    (selectedRoute?.geometry.coordinates ?? []) as LngLat[],
+  );
+
   // The trip as shown, for saving: resolved stops and the selected route.
   const plan: TripPlan | null =
     selectedRoute && first?.location && last?.location
@@ -312,11 +330,22 @@ export function Planner({ savedTrip = null }: Props) {
       along={openAlong}
       vehicle={vehicle}
       tripAction={
-        <AddToTrip
-          status={placeInTrip(openPlace.location)}
-          onAdd={() => addToTrip(openPlace)}
-          onRemove={() => removeFromTrip(openPlace.location)}
-        />
+        <>
+          <AddToTrip
+            status={placeInTrip(openPlace.location)}
+            onAdd={() => addToTrip(openPlace)}
+            onRemove={() => removeFromTrip(openPlace.location)}
+          />
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm">
+            <input
+              type="checkbox"
+              checked={pickedIds.has(openPlace.id)}
+              onChange={(e) => setPlacePicked(openPlace, e.target.checked)}
+              className="accent-brand h-4 w-4"
+            />
+            Tick for Google Maps
+          </label>
+        </>
       }
       onBack={closePlaceDetail}
     />
@@ -383,6 +412,8 @@ export function Planner({ savedTrip = null }: Props) {
                       if (p) openPlaceDetail(p);
                     }}
                     onHover={setHoverPlaceId}
+                    pickedIds={pickedIds}
+                    onPickedChange={setPlacePicked}
                   />
                   {hiddenCount > 0 && (
                     <p className="text-sm text-stone-600 dark:text-stone-400">
@@ -404,6 +435,13 @@ export function Planner({ savedTrip = null }: Props) {
             </>
           )}
         </section>
+      )}
+      {selectedRoute && (
+        <GoogleMapsBar
+          trip={googleTrip}
+          pickedCount={picked.length}
+          onClear={() => setPicked([])}
+        />
       )}
     </div>
   );

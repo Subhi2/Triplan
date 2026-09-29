@@ -155,6 +155,10 @@ As built (migrations `0004`–`0006`): the route line is parsed and simplified o
 
 In the planner, a place row opens the place in the side panel (desktop) or bottom sheet (mobile); with a place open, a map marker opens that place instead. "Add to trip" projects the place and every via stop onto the selected route (`metresAlong` in `src/lib/geo.ts`) and inserts the place before the first via stop further along (`viaInsertIndex` in `src/lib/trip.ts`), then the route is recomputed. A stop within 150 m of the place counts as the place.
 
+### Google Maps links
+
+`src/lib/googleMaps.ts` builds links to Google Maps with the documented Maps URLs; nothing is fetched from Google or stored. A place's link is a search for "name, district, state" (`/maps/search/?api=1&query=`), which opens its Google Maps page with photos and reviews; a common name can match another place in the same district. Ticked places open with the trip as directions (`/maps/dir/?api=1&origin=&destination=&waypoints=`, coordinates, `travelmode=driving` since Maps URLs have no two-wheeler mode): via stops and ticked places are sorted by their distance along the selected route, places already in the trip are not repeated, and more than 9 stops gives no link.
+
 ## Saved trips
 
 Saved trips are open: no sign-in and no owners (`trip.user_id` stays empty, `is_public` is always true). `/trips` lists everyone's trips, most recently changed first, and `/trips/[id]` opens the planner with a trip; that URL is the share link. Anyone can rename a trip or save changes to it.

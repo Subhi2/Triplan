@@ -362,3 +362,34 @@ test("save the trip with its route, then see changes that are not saved", async 
   await expect(page.getByText("Changes not saved.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
 });
+
+test("tick places and open the trip in Google Maps with them as stops", async ({ page }) => {
+  await mockApis(page, []);
+  await mockPlace(page);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const open = page.getByRole("region", { name: "Google Maps" }).getByRole("link", {
+    name: "Open in Google Maps",
+  });
+  await expect(open).toHaveAttribute("href", /maps\/dir\/\?api=1&origin=12\.9716%2C77\.5946/);
+  expect(await open.getAttribute("href")).not.toContain("waypoints");
+
+  await page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }).check();
+  await expect(page.getByText("1 place ticked")).toBeVisible();
+  await expect(open).toHaveAttribute("href", /waypoints=12\.9173%2C75\.7581/);
+
+  // The place's own page on Google Maps, for photos and reviews.
+  await page
+    .getByRole("list", { name: "Places along the route" })
+    .getByRole("button", { name: /Manjarabad Fort/ })
+    .click();
+  await expect(page.getByRole("checkbox", { name: "Tick for Google Maps" })).toBeChecked();
+  await expect(
+    page.getByRole("article").getByRole("link", { name: "Open in Google Maps" }),
+  ).toHaveAttribute("href", /maps\/search\/\?api=1&query=Manjarabad%20Fort%2C%20Hassan/);
+});
