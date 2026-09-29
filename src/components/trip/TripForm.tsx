@@ -29,7 +29,7 @@ import {
   type GeocodeResult,
   type Vehicle,
 } from "@/lib/trip";
-import { StopInput } from "./StopInput";
+import { StopInput, type MapBias } from "./StopInput";
 
 export interface StopDraft {
   id: string;
@@ -42,6 +42,7 @@ interface Props {
   vehicle: Vehicle;
   corridorKm: CorridorKm;
   focusId: string | null;
+  near: MapBias;
   onStopsChange: (stops: StopDraft[]) => void;
   onAddStop: () => void;
   onVehicleChange: (v: Vehicle) => void;
@@ -59,6 +60,7 @@ function SortableStop(props: {
   index: number;
   count: number;
   autoFocus: boolean;
+  near: MapBias;
   onText: (text: string) => void;
   onPick: (r: GeocodeResult) => void;
   onRemove: (() => void) | null;
@@ -89,6 +91,7 @@ function SortableStop(props: {
         placeholder={role.placeholder}
         value={stop.label}
         resolved={stop.location !== null}
+        near={props.near}
         autoFocus={props.autoFocus}
         onText={props.onText}
         onPick={props.onPick}
@@ -181,6 +184,7 @@ export function TripForm(props: Props) {
                 index={i}
                 count={stops.length}
                 autoFocus={s.id === props.focusId}
+                near={props.near}
                 onText={(label) => update(s.id, { label, location: null })}
                 onPick={(r) => update(s.id, { label: r.name, location: r.location })}
                 onRemove={

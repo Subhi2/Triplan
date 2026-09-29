@@ -53,6 +53,8 @@ interface Props {
   onHoverPlace: (id: string | null) => void;
   /** Pixels hidden at the bottom (the mobile sheet), kept clear when framing. */
   bottomInset?: number;
+  /** Called with the map centre and zoom after it loads and after every move. */
+  onViewChange?: (center: LngLat, zoom: number) => void;
 }
 
 function bounds(points: LngLat[]): [LngLat, LngLat] | null {
@@ -163,6 +165,13 @@ export function MapView(props: Props) {
         setHover(null);
       }}
       onClick={(e) => void handleClick(e)}
+      onLoad={(e) => {
+        const c = e.target.getCenter();
+        props.onViewChange?.([c.lng, c.lat], e.target.getZoom());
+      }}
+      onMoveEnd={(e) =>
+        props.onViewChange?.([e.viewState.longitude, e.viewState.latitude], e.viewState.zoom)
+      }
     >
       <NavigationControl position="top-right" showCompass={false} />
       <RouteLayer routes={routes} selectedId={props.selectedRouteId} />

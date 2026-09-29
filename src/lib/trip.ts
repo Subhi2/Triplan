@@ -54,5 +54,5 @@ export interface GeocodeResult {
   name: string;
   label: string;
   location: [number, number];
-  source: "local" | "osm";
+  source: "local" | "photon" | "osm"; // our places, Photon suggestions, Nominatim (Enter)
 }

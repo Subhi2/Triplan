@@ -1,36 +1,56 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import type { LngLat } from "@/lib/geo";
 import type { GeocodeResult } from "@/lib/trip";
+
+/** Suggestions are fetched this long after the rider stops typing. */
+export const SUGGEST_DEBOUNCE_MS = 300;
+
+/** Where the map is looking; suggestions near it rank higher. */
+export interface MapBias {
+  center: LngLat;
+  zoom: number;
+}
 
 interface Props {
   label: string; // accessible name, e.g. "Start"
   placeholder: string;
   value: string;
   resolved: boolean;
+  near: MapBias;
   autoFocus?: boolean;
   onText: (text: string) => void;
   onPick: (result: GeocodeResult) => void;
 }
 
 type Status = "idle" | "loading" | "error";
+type Mode = "suggest" | "osm";
 
-async function searchPlaces(q: string, source: "local" | "osm", signal: AbortSignal) {
-  const res = await fetch(`/api/geocode?${new URLSearchParams({ q, source })}`, { signal });
+async function searchPlaces(q: string, source: Mode, near: MapBias, signal: AbortSignal) {
+  const params = new URLSearchParams({
+    q,
+    source,
+    lat: near.center[1].toFixed(3),
+    lon: near.center[0].toFixed(3),
+    zoom: String(Math.round(near.zoom)),
+  });
+  const res = await fetch(`/api/geocode?${params}`, { signal });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return ((await res.json()) as { results: GeocodeResult[] }).results;
 }
 
 /**
- * Place search combobox. Suggestions while typing come from our own places and towns; OpenStreetMap
- * (Nominatim) is only queried on Enter or the "Search OpenStreetMap" button, because the public
- * Nominatim usage policy forbids as-you-type autocomplete.
+ * Place search combobox. While typing (after a 300 ms pause) it suggests our own places first, then
+ * Photon results near the map centre. Pressing Enter without picking a suggestion searches
+ * Nominatim instead, as a fallback: its public server forbids search-as-you-type.
  */
 export function StopInput({
   label,
   placeholder,
   value,
   resolved,
+  near,
   autoFocus,
   onText,
   onPick,
@@ -38,7 +58,7 @@ export function StopInput({
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<GeocodeResult[]>([]);
-  const [source, setSource] = useState<"local" | "osm">("local");
+  const [mode, setMode] = useState<Mode>("suggest");
   const [active, setActive] = useState(-1);
   const [status, setStatus] = useState<Status>("idle");
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -46,14 +66,15 @@ export function StopInput({
 
   useEffect(() => () => clearTimeout(debounce.current), []);
 
-  function run(q: string, src: "local" | "osm") {
+  function run(q: string, m: Mode) {
+    clearTimeout(debounce.current);
     inflight.current?.abort();
     const ctrl = new AbortController();
     inflight.current = ctrl;
     setStatus("loading");
-    setSource(src);
+    setMode(m);
     setOpen(true);
-    searchPlaces(q, src, ctrl.signal)
+    searchPlaces(q, m, near, ctrl.signal)
       .then((r) => {
         setResults(r);
         setActive(-1);
@@ -72,11 +93,12 @@ export function StopInput({
     onText(text);
     clearTimeout(debounce.current);
     if (text.trim().length < 2) {
+      inflight.current?.abort();
       setResults([]);
       setOpen(false);
       return;
     }
-    debounce.current = setTimeout(() => run(text.trim(), "local"), 250);
+    debounce.current = setTimeout(() => run(text.trim(), "suggest"), SUGGEST_DEBOUNCE_MS);
   }
 
   function pick(r: GeocodeResult) {
@@ -105,6 +127,7 @@ export function StopInput({
 
   const q = value.trim();
   const showPanel = open && q.length >= 2 && !resolved;
+  const fromPhoton = results.some((r) => r.source === "photon");
 
   return (
     <div className="relative flex-1">
@@ -118,6 +141,7 @@ export function StopInput({
         aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
         autoFocus={autoFocus}
         autoComplete="off"
+        enterKeyHint="search"
         placeholder={placeholder}
         value={value}
         onChange={(e) => handleChange(e.target.value)}
@@ -156,19 +180,18 @@ export function StopInput({
               <li className="px-3 py-2 text-stone-500">No matches</li>
             )}
           </ul>
-          <div className="border-t border-stone-200 px-3 py-2 dark:border-stone-700">
+          <div className="space-y-0.5 border-t border-stone-200 px-3 py-2 text-xs text-stone-500 dark:border-stone-700">
             {status === "loading" ? (
-              <span className="text-stone-500">Searching…</span>
+              <p>Searching…</p>
             ) : status === "error" ? (
-              <span className="text-red-700 dark:text-red-400">Search failed. Try again.</span>
-            ) : source === "local" ? (
-              <button type="button" className="text-brand underline" onClick={() => run(q, "osm")}>
-                Search OpenStreetMap for “{q}”
-              </button>
+              <p className="text-red-700 dark:text-red-400">Search failed. Try again.</p>
+            ) : mode === "suggest" ? (
+              <>
+                <p>Not listed? Press Enter to search OpenStreetMap more widely.</p>
+                {fromPhoton && <p>Suggestions by Photon · © OpenStreetMap contributors</p>}
+              </>
             ) : (
-              <span className="text-xs text-stone-500">
-                Search by Nominatim · © OpenStreetMap contributors
-              </span>
+              <p>Search by Nominatim · © OpenStreetMap contributors</p>
             )}
           </div>
         </div>

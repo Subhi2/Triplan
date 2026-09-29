@@ -149,3 +149,62 @@ test("stops can be reordered from the keyboard", async ({ page }) => {
   await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Sakleshpur");
   await expect(page.getByRole("combobox", { name: "Stop 1" })).toHaveValue("Bengaluru");
 });
+
+test("suggests while typing, ours first, and falls back to Nominatim on Enter", async ({
+  page,
+}) => {
+  const requests: URLSearchParams[] = [];
+  await page.route("**/api/geocode?**", (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    requests.push(params);
+    const results: GeocodeResult[] =
+      params.get("source") === "osm"
+        ? [
+            {
+              id: "node/9",
+              name: "Samse",
+              label: "Samse, Karnataka",
+              location: [75.33, 13.19],
+              source: "osm",
+            },
+          ]
+        : [
+            {
+              id: "place/samse-view",
+              name: "Samse View",
+              label: "Samse View, Karnataka",
+              location: [75.33, 13.19],
+              source: "local",
+            },
+            {
+              id: "node/903206643",
+              name: "Samse",
+              label: "Samse, Kalasa taluk, Karnataka",
+              location: [75.334, 13.188],
+              source: "photon",
+            },
+          ];
+    return route.fulfill({ json: { results } });
+  });
+  await page.goto("/");
+  const start = page.getByRole("combobox", { name: "Start" });
+
+  // Typing quickly sends one request, after the pause, with the map position as a bias.
+  await start.pressSequentially("samse", { delay: 60 });
+  const options = page.getByRole("listbox", { name: "Start suggestions" }).getByRole("option");
+  await expect(options).toHaveCount(2);
+  expect(requests).toHaveLength(1);
+  expect(requests[0]!.get("q")).toBe("samse");
+  expect(requests[0]!.get("source")).toBe("suggest");
+  for (const key of ["lat", "lon", "zoom"]) expect(Number(requests[0]!.get(key))).not.toBeNaN();
+  await expect(options.nth(0)).toContainText("Samse View"); // ours first
+  await expect(options.nth(1)).toContainText("Kalasa taluk"); // then Photon
+  await expect(page.getByText("Suggestions by Photon")).toBeVisible();
+
+  // Enter without choosing a suggestion searches Nominatim.
+  await start.press("Enter");
+  await expect(page.getByText("Search by Nominatim")).toBeVisible();
+  expect(requests.at(-1)!.get("source")).toBe("osm");
+  await options.filter({ hasText: "Samse" }).first().click();
+  await expect(start).toHaveValue("Samse");
+});

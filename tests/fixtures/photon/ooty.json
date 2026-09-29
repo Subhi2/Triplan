@@ -1,0 +1,181 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 245592179,
+        "osm_key": "place",
+        "osm_value": "town",
+        "type": "city",
+        "name": "Udhagamandalam",
+        "county": "Udhagamandalam",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "postcode": "643001",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.7030504, 11.4126769]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 152191875,
+        "osm_key": "amenity",
+        "osm_value": "bus_station",
+        "type": "house",
+        "name": "Ooty",
+        "street": "Commercial Road",
+        "city": "Udhagamandalam",
+        "county": "Udhagamandalam",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "postcode": "643001",
+        "countrycode": "IN",
+        "extent": [76.6948064, 11.4043087, 76.6967652, 11.4029908]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.6959156, 11.4037401]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 24657989,
+        "osm_key": "water",
+        "osm_value": "reservoir",
+        "type": "other",
+        "name": "Ooty Lake",
+        "city": "Udhagamandalam",
+        "county": "Udhagamandalam",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "postcode": "643001",
+        "countrycode": "IN",
+        "extent": [76.680138, 11.4066589, 76.693482, 11.4002751]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.6916789, 11.4034171]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 25521652,
+        "osm_key": "amenity",
+        "osm_value": "market",
+        "type": "house",
+        "name": "Ooty Market",
+        "street": "hobart park cross road",
+        "city": "Udhagamandalam",
+        "county": "Udhagamandalam",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "postcode": "643001",
+        "countrycode": "IN",
+        "extent": [76.7017297, 11.4078812, 76.7042149, 11.4055286]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.7028358, 11.406739]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 392203692,
+        "osm_key": "highway",
+        "osm_value": "primary",
+        "type": "street",
+        "name": "Ooty Road",
+        "district": "JP Nagar",
+        "city": "Mysuru",
+        "county": "Mysuru taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "postcode": "570001",
+        "countrycode": "IN",
+        "extent": [76.6576786, 12.2867105, 76.6591874, 12.2670575]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.6587082, 12.2768728]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 1299031816,
+        "osm_key": "highway",
+        "osm_value": "trunk",
+        "type": "street",
+        "name": "Ooty-Coonoor-Mettupalayam- Road",
+        "city": "Udhagamandalam",
+        "county": "Udhagamandalam",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "postcode": "643001",
+        "countrycode": "IN",
+        "extent": [76.7172727, 11.3972343, 76.7176166, 11.3957072]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.7172965, 11.396479]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 241419806,
+        "osm_key": "highway",
+        "osm_value": "trunk",
+        "type": "street",
+        "name": "Ooty-Coonoor-Mettupalayam- Road",
+        "city": "Yellanalli",
+        "county": "Coonoor",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "postcode": "643215",
+        "countrycode": "IN",
+        "extent": [76.7167316, 11.3957072, 76.7584404, 11.3732222]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.7359677, 11.3832323]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 763177572,
+        "osm_key": "highway",
+        "osm_value": "tertiary",
+        "type": "street",
+        "name": "Ooty-Kinnakorai- hiriyaseegai Rd",
+        "city": "Melkundah",
+        "county": "Kundah",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "countrycode": "IN",
+        "extent": [76.6037153, 11.2179966, 76.6200201, 11.2109916]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.6101296, 11.2142147]
+      }
+    }
+  ]
+}
