@@ -1,8 +1,8 @@
 import { metresAlong, round5, type LngLat } from "./geo";
 import { stopIndexAt } from "./trip";
 
-// Links that open Google Maps (the app on phones), built with the documented Maps URLs
-// (https://developers.google.com/maps/documentation/urls/get-started). Nothing is fetched from
+// Links that open Google Maps (the app on phones), built with the documented Maps URLs where they
+// can (https://developers.google.com/maps/documentation/urls/get-started). Nothing is fetched from
 // Google; we only link to it.
 
 /** Google Maps takes at most 9 stops between start and destination (3 in mobile browsers). */
@@ -11,16 +11,15 @@ export const MAX_GOOGLE_WAYPOINTS = 9;
 const latLng = ([lng, lat]: LngLat) => `${round5(lat)},${round5(lng)}`;
 
 /**
- * Google Maps' page for a place, found by name and area, so its photos and reviews show.
- * A search, not a pin: a common name ("Shiva Temple") can match another place in the district.
+ * Google Maps' page for a place, so its photos and reviews show: a search for its name with the
+ * map at its exact spot. A unique name ("Manjarabad Fort") opens that place directly; a common
+ * one ("Shiva Temple") lists matches, with the map on the right spot. Only a Google place id
+ * opens the exact place every time. This path form is not one of the documented Maps URLs
+ * (those cannot search at a position), but Google uses it for its own links.
  */
-export function googleMapsPlaceUrl(place: {
-  name: string;
-  district?: string | null;
-  state?: string | null;
-}): string {
-  const query = [place.name, place.district, place.state].filter(Boolean).join(", ");
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+export function googleMapsPlaceUrl(place: { name: string; location: LngLat }): string {
+  const [lng, lat] = place.location;
+  return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}/@${round5(lat)},${round5(lng)},17z`;
 }
 
 export interface GoogleMapsTrip {
