@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { PlaceDetail } from "@/lib/placeDetail";
 import type { PlaceAlong } from "@/lib/places";
@@ -62,6 +63,8 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
     return route.fulfill({ json: { routes } });
   });
   await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
+  // No forecast (as if the trip were too far ahead), so tests never reach MET Norway.
+  await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   // A blank local map style instead of the network tile server.
   await page.route("https://tiles.openfreemap.org/**", (route) =>
     route.fulfill({
@@ -105,7 +108,7 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
 
   // On phones the form folds away once the trip is complete, leaving the map and routes.
   await openTripForm(page);
-  await page.getByRole("button", { name: "+ Add stop" }).click();
+  await page.getByRole("button", { name: "Add a stop" }).click();
   await choose(page, "Stop 1", "Sakl", "Sakleshpur");
 
   await expect(cards).toHaveCount(1);
@@ -264,7 +267,7 @@ const FORT_DETAIL: PlaceDetail = {
     { slug: "grip_shoes", name: "Shoes with good grip", months: [], reason: null },
   ],
   media: [],
-  externalRatings: [],
+  googlePlaceId: null,
   videos: [],
   reviews: [],
   osm: { id: "relation/5419632", openingHours: null, fee: null, website: null, wikipediaUrl: null },
@@ -315,7 +318,7 @@ test("open a place's details, add it to the trip and remove it again", async ({ 
   await expect.poll(() => routeRequests.at(-1)?.stops).toHaveLength(2);
 
   // Back to the list, with focus on the place's row.
-  await page.getByRole("button", { name: "← All places" }).click();
+  await page.getByRole("button", { name: "All places" }).click();
   await expect(page.getByRole("button", { name: /Manjarabad Fort/ })).toBeFocused();
 });
 
@@ -344,6 +347,13 @@ test("save the trip with its route, then see changes that are not saved", async 
   // The selected route is saved with the trip, and the page moves to the trip's link.
   const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
   await cards.filter({ hasText: "via Hassan, Sakleshpur" }).click();
+  // Before saving, WhatsApp shares the planner link, which holds the whole trip.
+  const whatsApp = page.getByRole("link", { name: "WhatsApp" });
+  const sharedText = async () =>
+    new URL((await whatsApp.getAttribute("href"))!).searchParams.get("text");
+  expect(await sharedText()).toMatch(
+    /^Bengaluru → Kalasa · places along the route http:\/\/\S+\/\?from=Bengaluru/,
+  );
   await page.getByRole("button", { name: "Save trip" }).click();
   const name = page.getByRole("textbox", { name: "Trip name" });
   await expect(name).toHaveValue("Bengaluru → Kalasa via Hassan, Sakleshpur");
@@ -351,6 +361,8 @@ test("save the trip with its route, then see changes that are not saved", async 
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Saved trip: Coffee country")).toBeVisible();
   await expect(page).toHaveURL(/\/trips\/0b7e4b8e-2f4e-4c55-9d8e-3f1f5b0a9c11\?from=/);
+  // After saving, it shares the trip's own short link.
+  expect(await sharedText()).toMatch(/\/trips\/0b7e4b8e-2f4e-4c55-9d8e-3f1f5b0a9c11$/);
   expect(saves[0]).toMatchObject({
     title: "Coffee country",
     vehicle: "bike",
@@ -431,4 +443,121 @@ test("on phones the map comes first, then a one-line header and the sheet", asyn
   ]) {
     expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
+});
+
+const pump = (name: string, kmFromStart: number): PlaceAlong => ({
+  ...FORT,
+  id: `pump-${kmFromStart}`,
+  slug: `pump-${kmFromStart}`,
+  name,
+  category: "fuel",
+  kmFromStart,
+  detourKm: 0.2,
+  notable: false,
+});
+
+test.describe("ride check", () => {
+  // Sunset times depend on the clock; India's is the one riders use.
+  test.use({ timezoneId: "Asia/Kolkata" });
+
+  test("fuel gaps against the tank's range, and the arrival against sunset", async ({ page }) => {
+    await mockApis(page, []);
+    await page.route("**/api/places/along", (route) => {
+      const body = route.request().postDataJSON() as { categories?: string[] };
+      const places =
+        body.categories?.[0] === "fuel"
+          ? [pump("Nelamangala Fuels", 20), pump("Kunigal HP", 60), pump("Hassan IOCL", 250)]
+          : [];
+      return route.fulfill({ json: { places } });
+    });
+    await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+    await page
+      .getByRole("list", { name: "Route options" })
+      .getByRole("button")
+      .filter({ hasText: "via Hassan, Sakleshpur" })
+      .click();
+
+    // Folded to one line on phones, open on wide screens.
+    const toggle = page.getByRole("button", { name: /^Ride check/ });
+    await expect(toggle).toContainText(/Ride check/);
+    if ((await toggle.getAttribute("aria-expanded")) === "false") {
+      await expect(toggle).toContainText("Fuel gap 190 km");
+      await toggle.click();
+    }
+    const check = page.getByRole("region", { name: "Ride check" });
+
+    // Default range for a bike is 200 km: a 190 km stretch leaves too little reserve.
+    await expect(check).toContainText("Fuel: fill up before a 190 km stretch");
+    await expect(check).toContainText("From Kunigal HP (km 60) to Hassan IOCL (km 250)");
+    await expect(check).toContainText("3 fuel stations within 2 km of the route");
+    const range = check.getByRole("spinbutton", { name: "Range on a full tank (km)" });
+    await range.fill("300");
+    await expect(check).toContainText("Fuel: longest stretch without a pump is 190 km");
+    await range.fill("150");
+    await expect(check).toContainText("190 km without a pump, more than your range");
+
+    const start = check.getByLabel("Start");
+    await start.fill("2026-10-03T06:00");
+    await expect(check).toContainText(/Daylight: arrive about .+, before dark/);
+    await expect(check).toContainText(/Sunset at Kalasa: (6:\d\d\sPM|18:\d\d)/i);
+    await start.fill("2026-10-03T15:00");
+    await expect(check).toContainText("Daylight: you would ride after dark");
+    await expect(check).toContainText(/Start by .+ to arrive an hour before sunset/);
+
+    // Weather along the way, at the time the rider gets to each point.
+    await page.unroute("**/api/weather");
+    const weatherAt = (label: string, eta: string, rain: string, rainMm: number) => ({
+      km: 0,
+      label,
+      location: [75.8, 12.95],
+      eta,
+      forecast: { tempC: 24, windMs: 2, rainMm, rainHours: 1, symbol: rain, rain, thunder: false },
+    });
+    await page.route("**/api/weather", (route) =>
+      route.fulfill({
+        json: {
+          points: [
+            weatherAt("start", "2026-10-03T00:30:00Z", "dry", 0),
+            weatherAt("Sakleshpur", "2026-10-03T04:30:00Z", "rain", 2.5),
+            weatherAt("end", "2026-10-03T06:00:00Z", "light", 0.4),
+          ],
+        },
+      }),
+    );
+    await start.fill("2026-10-03T06:00");
+    await expect(check).toContainText("Weather: rain near Sakleshpur around 10:00");
+    const along = check.getByRole("list", { name: "Weather along the route" });
+    await expect(along.getByRole("listitem")).toHaveCount(3);
+    await expect(along.getByRole("listitem").first()).toContainText("Bengaluru · 24 °C · dry");
+    await expect(along.getByRole("listitem").last()).toContainText("Kalasa");
+    await expect(check).toContainText("Forecast by MET Norway (CC BY 4.0)");
+  });
+});
+
+test("download the trip as a GPX file with the route, stops and places", async ({ page }) => {
+  await mockApis(page, []);
+  await mockPlace(page);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  await expect(
+    page.getByRole("list", { name: "Places along the route" }).getByRole("button", {
+      name: /Manjarabad Fort/,
+    }),
+  ).toBeVisible();
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download GPX file" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("bengaluru-to-kalasa.gpx");
+  const gpx = await readFile((await download.path())!, "utf8");
+  expect(gpx).toContain('<gpx version="1.1"');
+  expect(gpx).toContain("<name>Bengaluru</name>");
+  expect(gpx).toContain("<desc>Destination</desc>");
+  expect(gpx).toContain("<name>Manjarabad Fort</name>");
+  expect(gpx.match(/<trkpt /g)!.length).toBeGreaterThan(100);
 });

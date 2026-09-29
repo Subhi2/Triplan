@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { isSavedPlan, type SavedTrip, type TripPlan } from "@/lib/savedTrip";
+import { tripHeadline, whatsAppUrl } from "@/lib/site";
 
 interface Props {
   /** The saved trip open in the planner, if any. */
@@ -31,7 +32,9 @@ const link =
   "text-brand inline-flex min-h-11 items-center font-medium hover:underline md:min-h-0 disabled:text-stone-400 disabled:no-underline";
 
 /**
- * Save the trip, rename it, save changes to it or save it as a new trip, and copy its link.
+ * Save the trip, rename it, save changes to it or save it as a new trip, and share its link:
+ * the phone's share sheet on phones, WhatsApp and "Copy link" elsewhere. An unsaved trip shares
+ * the planner link, which holds the whole trip in its query string.
  * Saved trips are open: no sign-in, and everyone sees them in the saved trips list.
  */
 export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
@@ -42,6 +45,22 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
   const [notice, setNotice] = useState("");
 
   const changed = saved !== null && plan !== null && !isSavedPlan(saved, plan);
+
+  // The share sheet on touch screens; desktop share sheets rarely include WhatsApp. Null until
+  // mounted: the links need window.location, which the server does not have.
+  const [shareWith, setShareWith] = useState<"sheet" | "links" | null>(null);
+  useEffect(() => {
+    setShareWith(
+      typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches
+        ? "sheet"
+        : "links",
+    );
+  }, []);
+
+  const shareText = () =>
+    `${tripHeadline((plan?.stops ?? saved?.stops ?? []).map((s) => s.label))} · places along the route`;
+  const shareUrl = () =>
+    saved && !changed ? `${window.location.origin}/trips/${saved.id}` : window.location.href;
 
   async function run(action: () => Promise<SavedTrip>, done: string) {
     setBusy(true);
@@ -80,8 +99,7 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
   }
 
   async function copyLink() {
-    if (!saved) return;
-    const url = `${window.location.origin}/trips/${saved.id}`;
+    const url = shareUrl();
     try {
       await navigator.clipboard.writeText(url);
       setNotice("Link copied.");
@@ -89,6 +107,39 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
       setNotice(`Share this link: ${url}`);
     }
   }
+
+  async function share() {
+    try {
+      await navigator.share({
+        title: saved?.title ?? defaultTitle,
+        text: shareText(),
+        url: shareUrl(),
+      });
+    } catch (err) {
+      // AbortError: the rider closed the share sheet.
+      if (!(err instanceof DOMException && err.name === "AbortError")) await copyLink();
+    }
+  }
+
+  const shareButtons = !shareWith ? null : shareWith === "sheet" ? (
+    <button type="button" onClick={share} className={link}>
+      Share
+    </button>
+  ) : (
+    <>
+      <a
+        href={whatsAppUrl(shareText(), shareUrl())}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={link}
+      >
+        WhatsApp
+      </a>
+      <button type="button" onClick={copyLink} className={link}>
+        Copy link
+      </button>
+    </>
+  );
 
   return (
     <section
@@ -133,9 +184,7 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
               >
                 Rename
               </button>
-              <button type="button" onClick={copyLink} className={link}>
-                Copy link
-              </button>
+              {shareButtons}
             </div>
           </div>
           {changed && (
@@ -165,18 +214,21 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
           )}
         </>
       ) : (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <span className="text-stone-600 dark:text-stone-400">
             Keep this trip to reopen or share.
           </span>
-          <button
-            type="button"
-            disabled={!plan}
-            onClick={() => startNaming("naming", defaultTitle)}
-            className={primary}
-          >
-            Save trip
-          </button>
+          <div className="flex items-center gap-3">
+            {plan && shareButtons}
+            <button
+              type="button"
+              disabled={!plan}
+              onClick={() => startNaming("naming", defaultTitle)}
+              className={primary}
+            >
+              Save trip
+            </button>
+          </div>
         </div>
       )}
       {error && (

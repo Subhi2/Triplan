@@ -27,7 +27,13 @@ export default defineConfig({
   webServer: {
     command: `pnpm exec next dev --port ${PORT}`,
     // Photon points nowhere, so the app never calls it from tests (suggestions fall back to ours).
-    env: { NEXT_DIST_DIR: ".next-e2e", PHOTON_BASE_URL: "http://127.0.0.1:9/api" },
+    // No Google keys: tests run on the MapLibre map and never call Google.
+    env: {
+      NEXT_DIST_DIR: ".next-e2e",
+      PHOTON_BASE_URL: "http://127.0.0.1:9/api",
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "",
+      GOOGLE_MAPS_API_KEY: "",
+    },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

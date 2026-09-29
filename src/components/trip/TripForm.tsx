@@ -161,7 +161,11 @@ export function TripForm(props: Props) {
   const viaCount = stops.length - 2;
 
   return (
-    <form className="space-y-3" onSubmit={(e) => e.preventDefault()} aria-label="Trip">
+    <form
+      className="space-y-3 rounded-2xl border border-stone-200 bg-(--surface) p-3 md:p-4 dark:border-stone-800"
+      onSubmit={(e) => e.preventDefault()}
+      aria-label="Trip"
+    >
       <DndContext
         id="trip-stops"
         sensors={sensors}
@@ -200,21 +204,33 @@ export function TripForm(props: Props) {
         type="button"
         onClick={props.onAddStop}
         disabled={viaCount >= MAX_VIA_STOPS}
-        className="text-brand ml-9 inline-flex min-h-11 items-center text-sm font-medium hover:underline disabled:text-stone-400 disabled:no-underline"
+        className="text-brand-dark ml-9 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold hover:underline disabled:text-stone-400 disabled:no-underline dark:text-teal-300"
       >
-        + Add stop{viaCount >= MAX_VIA_STOPS ? ` (max ${MAX_VIA_STOPS})` : ""}
+        <svg
+          aria-hidden
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Add a stop{viaCount >= MAX_VIA_STOPS ? ` (max ${MAX_VIA_STOPS})` : ""}
       </button>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9 text-sm">
-        <fieldset className="flex items-center gap-1">
+        <fieldset className="flex items-center rounded-full bg-stone-100 p-1 dark:bg-stone-800">
           <legend className="sr-only">Vehicle</legend>
           {VEHICLES.map((v) => (
             <label
               key={v}
-              className={`has-[:focus-visible]:ring-brand inline-flex min-h-10 cursor-pointer items-center rounded-full border px-4 capitalize has-[:focus-visible]:ring-2 ${
+              className={`has-[:focus-visible]:ring-brand inline-flex min-h-9 cursor-pointer items-center rounded-full px-4 font-bold capitalize transition-colors has-[:focus-visible]:ring-2 ${
                 props.vehicle === v
-                  ? "border-brand bg-brand text-white"
-                  : "border-stone-300 dark:border-stone-700"
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-stone-600 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white"
               }`}
             >
               <input
@@ -234,7 +250,7 @@ export function TripForm(props: Props) {
           <select
             value={props.corridorKm}
             onChange={(e) => props.onCorridorChange(Number(e.target.value) as CorridorKm)}
-            className="min-h-10 rounded-md border border-stone-300 bg-white px-2 text-base md:text-sm dark:border-stone-700 dark:bg-stone-900"
+            className="min-h-10 rounded-lg border border-stone-300 bg-(--surface) px-2 text-base md:text-sm dark:border-stone-700"
           >
             {CORRIDOR_KM.map((km) => (
               <option key={km} value={km}>

@@ -5,6 +5,7 @@ import {
   bigint,
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -66,13 +67,17 @@ export const place = pgTable(
     status: placeStatus("status").notNull().default("unverified"),
     source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
     osmId: text("osm_id"), // "node/123", "way/456"; unique, the OSM import upserts on it
-    googlePlaceId: text("google_place_id"),
+    googlePlaceId: text("google_place_id"), // the only Google data stored (Maps ToS 3.2.3(b))
+    // When the Google place id was last looked up; with no id found, not retried for 30 days.
+    googlePlaceCheckedAt: timestamp("google_place_checked_at", { withTimezone: true }),
     wikidataId: text("wikidata_id"),
     population: integer("population"), // towns, from OSM when tagged
     osmTags: jsonb("osm_tags"), // selected OSM tags kept for provenance and later guide fields
     ratingAvg: real("rating_avg"),
     ratingCount: integer("rating_count").notNull().default(0),
     trendingScore: real("trending_score").notNull().default(0),
+    // When the photo import last looked for this place's Wikimedia Commons image (docs/07, G1.2).
+    photosCheckedAt: timestamp("photos_checked_at", { withTimezone: true }),
     createdBy: uuid("created_by").references(() => authUsers.id),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -133,24 +138,29 @@ export const placeCarry = pgTable(
 
 // Media -----------------------------------------------------------------------
 
-export const media = pgTable("media", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  placeId: uuid("place_id")
-    .notNull()
-    .references(() => place.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull(), // 'image' | 'video_embed'
-  url: text("url").notNull(),
-  thumbUrl: text("thumb_url"),
-  source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' | 'google'
-  license: text("license").notNull(),
-  author: text("author"),
-  authorUrl: text("author_url"),
-  width: integer("width"),
-  height: integer("height"),
-  status: placeStatus("status").notNull().default("unverified"),
-  uploadedBy: uuid("uploaded_by").references(() => authUsers.id),
-  createdAt: createdAt(),
-});
+export const media = pgTable(
+  "media",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => place.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // 'image' | 'video_embed'
+    url: text("url").notNull(),
+    thumbUrl: text("thumb_url"),
+    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' (never 'google')
+    license: text("license").notNull(),
+    author: text("author"),
+    authorUrl: text("author_url"),
+    width: integer("width"),
+    height: integer("height"),
+    status: placeStatus("status").notNull().default("unverified"),
+    uploadedBy: uuid("uploaded_by").references(() => authUsers.id),
+    createdAt: createdAt(),
+  },
+  // The photo import re-runs safely: one row per place and image.
+  (t) => [uniqueIndex("media_place_url_key").on(t.placeId, t.url)],
+);
 
 // Reviews ---------------------------------------------------------------------
 
@@ -179,17 +189,8 @@ export const review = pgTable(
   ],
 );
 
-export const externalRating = pgTable(
-  "external_rating",
-  {
-    placeId: uuid("place_id").references(() => place.id, { onDelete: "cascade" }),
-    source: text("source").notNull(), // 'google'
-    rating: real("rating"),
-    count: integer("count"),
-    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.placeId, t.source] })],
-);
+// No external_rating table: Google's ratings may not be stored (Maps ToS 3.2.3(b)); they are
+// fetched live when a place's details open (services/googleGapService.ts).
 
 // Social discovery (see docs/05-hidden-places.md) -----------------------------
 
@@ -283,6 +284,20 @@ export const writeLimit = pgTable("write_limit", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
   count: integer("count").notNull().default(0),
 });
+
+// Google call budget ------------------------------------------------------------
+// Calls to Google per UTC day and SKU, so usage stays inside Google's free monthly caps
+// (src/server/providers/google/budget.ts).
+
+export const googleUsage = pgTable(
+  "google_usage",
+  {
+    day: date("day").notNull(),
+    sku: text("sku").notNull(), // 'ids' | 'details_atmosphere' | 'photo'
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.sku] })],
+);
 
 // Caches ----------------------------------------------------------------------
 

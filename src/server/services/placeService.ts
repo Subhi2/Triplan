@@ -10,11 +10,14 @@ interface NameMatchRow extends Record<string, unknown> {
   osm_id: string | null;
   lng: number;
   lat: number;
+  tier: number;
 }
 
 /** One of our own places matching a search, with its OSM id to drop Photon duplicates. */
 export interface LocalPlaceMatch extends GeocodeResult {
   osmId: string | null;
+  /** Found only as a close misspelling: the name does not contain the query. */
+  fuzzy: boolean;
 }
 
 /** Fuzzy (trigram) matches below this similarity are too loose: "kalasa" would find "Kalady". */
@@ -34,7 +37,14 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
   const startsWith = `${escaped}%`;
   const rows = await getDb().execute<NameMatchRow>(sql`
     SELECT p.slug, p.name, p.district, p.state, p.osm_id,
-           ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat
+           ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
+           CASE
+             WHEN lower(p.name) = lower(${q})
+               OR lower(${q}) = ANY (SELECT lower(a) FROM unnest(p.alt_names) a) THEN 0
+             WHEN p.name ILIKE ${startsWith} THEN 1
+             WHEN p.name ILIKE ${contains} OR alt_names_text(p.alt_names) ILIKE ${contains} THEN 2
+             ELSE 3
+           END AS tier
     FROM place p
     JOIN category c ON c.id = p.category_id
     WHERE p.status = 'verified'
@@ -42,13 +52,7 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
            OR alt_names_text(p.alt_names) ILIKE ${contains}
            OR (p.name % ${q} AND similarity(p.name, ${q}) >= ${MIN_FUZZY_SIMILARITY}))
     ORDER BY
-      CASE
-        WHEN lower(p.name) = lower(${q})
-          OR lower(${q}) = ANY (SELECT lower(a) FROM unnest(p.alt_names) a) THEN 0
-        WHEN p.name ILIKE ${startsWith} THEN 1
-        WHEN p.name ILIKE ${contains} OR alt_names_text(p.alt_names) ILIKE ${contains} THEN 2
-        ELSE 3
-      END,
+      tier,
       (c.slug = 'town') DESC,
       similarity(p.name, ${q}) DESC,
       p.name
@@ -75,6 +79,35 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
       location: [r.lng, r.lat],
       source: "local",
       osmId: r.osm_id,
+      fuzzy: r.tier === 3,
     };
   });
+}
+
+export interface SitemapPlace {
+  slug: string;
+  updatedAt: Date;
+  /** Has a curated guide, a photo or a Wikipedia article: worth more to searchers. */
+  rich: boolean;
+}
+
+/**
+ * Verified places that have a page worth indexing: every category in the place list (fuel
+ * stations and towns only label and support routes). Richest first, capped for one sitemap file.
+ */
+export async function listSitemapPlaces(limit = 45000): Promise<SitemapPlace[]> {
+  const rows = await getDb().execute<{ slug: string; updated_at: string | Date; rich: boolean }>(
+    sql`
+      SELECT p.slug, p.updated_at,
+             (p.wikidata_id IS NOT NULL
+               OR EXISTS (SELECT 1 FROM place_guide g WHERE g.place_id = p.id)
+               OR EXISTS (SELECT 1 FROM media m WHERE m.place_id = p.id AND m.status = 'verified'))
+               AS rich
+      FROM place p
+      JOIN category c ON c.id = p.category_id
+      WHERE p.status = 'verified' AND c.slug NOT IN ('fuel', 'town')
+      ORDER BY rich DESC, p.updated_at DESC
+      LIMIT ${limit}`,
+  );
+  return rows.map((r) => ({ slug: r.slug, updatedAt: new Date(r.updated_at), rich: r.rich }));
 }

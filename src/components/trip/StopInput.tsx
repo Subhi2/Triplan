@@ -172,14 +172,14 @@ export function StopInput({
         onKeyDown={handleKeyDown}
         onFocus={() => results.length > 0 && setOpen(true)}
         onBlur={() => setOpen(false)}
-        className={`focus:ring-brand w-full rounded-md border bg-white px-3 py-2.5 text-base text-stone-900 outline-none focus:ring-2 md:py-2 md:text-sm dark:bg-stone-900 dark:text-stone-100 ${
-          resolved ? "border-brand/60" : "border-stone-300 dark:border-stone-700"
+        className={`focus:ring-brand w-full rounded-xl border bg-stone-50 px-3 py-2.5 text-base text-stone-900 outline-none focus:bg-(--surface) focus:ring-2 md:py-2 dark:bg-stone-950 dark:text-stone-100 ${
+          resolved ? "border-brand/50" : "border-stone-200 dark:border-stone-700"
         }`}
       />
       {showPanel && (
         <div
           style={{ maxHeight: panelMaxPx }}
-          className="absolute z-20 mt-1 flex w-full flex-col overflow-hidden rounded-md border border-stone-200 bg-white text-sm shadow-lg dark:border-stone-700 dark:bg-stone-900"
+          className="animate-rise absolute z-20 mt-1.5 flex w-full flex-col overflow-hidden rounded-xl border border-stone-200 bg-(--surface) text-sm shadow-xl dark:border-stone-700"
           // Keep focus in the input so clicks on options register before blur closes the panel.
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -200,7 +200,7 @@ export function StopInput({
                   // A tapped pick is done: close the phone keyboard. Keyboard users keep focus.
                   if (window.matchMedia("(pointer: coarse)").matches) input.current?.blur();
                 }}
-                className={`cursor-pointer px-3 py-2.5 ${i === active ? "bg-brand/10" : "hover:bg-stone-100 dark:hover:bg-stone-800"}`}
+                className={`cursor-pointer px-3 py-2.5 ${i === active ? "bg-brand-tint dark:bg-teal-950" : "hover:bg-stone-100 dark:hover:bg-stone-800"}`}
               >
                 <div className="font-medium">{r.name}</div>
                 {r.label !== r.name && (

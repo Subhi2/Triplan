@@ -34,6 +34,30 @@ export const routeDbCache: JsonCache = {
   },
 };
 
+/**
+ * Weather forecasts, 1 hour (MET Norway updates them about every 30 minutes). Kept in
+ * geocode_cache under "metno:" keys; the daily health check deletes them after a day.
+ */
+export const weatherDbCache: JsonCache = {
+  async get(key) {
+    const [row] = await getDb()
+      .select({ response: geocodeCache.response })
+      .from(geocodeCache)
+      .where(and(eq(geocodeCache.query, key), gt(geocodeCache.createdAt, since(60 * 60 * 1000))));
+    return row?.response;
+  },
+  set: (key, value) => geocodeDbCache.set(key, value),
+};
+
+/** Deletes cached forecasts older than a day. Returns how many were deleted. */
+export async function forgetOldForecasts(): Promise<number> {
+  const rows = await getDb().execute(sql`
+    DELETE FROM geocode_cache
+    WHERE query LIKE 'metno:%' AND created_at < now() - interval '1 day'
+    RETURNING query`);
+  return rows.length;
+}
+
 /** geocode_cache, 30 days. */
 export const geocodeDbCache: JsonCache = {
   async get(key) {

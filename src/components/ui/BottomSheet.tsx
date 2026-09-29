@@ -80,7 +80,7 @@ export function BottomSheet({ label, snap, onSnapChange, hidden = false, childre
       aria-label={label}
       aria-hidden={hidden || undefined}
       inert={hidden}
-      className="fixed inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl border-t border-stone-200 bg-(--background) shadow-[0_-4px_16px_rgba(0,0,0,0.12)] dark:border-stone-800"
+      className="animate-sheet-in fixed inset-x-0 bottom-0 z-20 flex flex-col rounded-t-3xl border-t border-stone-200 bg-(--surface) shadow-[0_-8px_24px_rgba(27,26,23,0.10)] dark:border-stone-800"
       style={{
         height: dragPx !== null ? `${dragPx}px` : `${SHEET_SNAPS[snap] * 100}dvh`,
         transform: hidden ? "translateY(100%)" : undefined,

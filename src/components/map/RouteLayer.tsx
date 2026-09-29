@@ -2,7 +2,9 @@
 
 import type { FeatureCollection, LineString } from "geojson";
 import { Layer, Source } from "react-map-gl/maplibre";
+import type { LngLat } from "@/lib/geo";
 import type { RouteOption } from "@/lib/trip";
+import { linePart, useDrawIn } from "./useDrawIn";
 
 export const ROUTE_LAYER_IDS = ["routes-alt", "routes-selected"];
 
@@ -13,13 +15,21 @@ interface Props {
 
 /** All route options: the selected one thick, the others thin and dashed (and clickable). */
 export function RouteLayer({ routes, selectedId }: Props) {
+  // The picked route draws itself along the road.
+  const progress = useDrawIn(routes.some((r) => r.id === selectedId) ? (selectedId ?? "") : "");
   const data: FeatureCollection<LineString, { id: string; selected: boolean }> = {
     type: "FeatureCollection",
-    features: routes.map((r) => ({
-      type: "Feature",
-      geometry: r.geometry,
-      properties: { id: r.id, selected: r.id === selectedId },
-    })),
+    features: routes.map((r) => {
+      const selected = r.id === selectedId;
+      const coordinates = selected
+        ? linePart(r.geometry.coordinates as LngLat[], progress)
+        : r.geometry.coordinates;
+      return {
+        type: "Feature",
+        geometry: { type: "LineString", coordinates },
+        properties: { id: r.id, selected },
+      };
+    }),
   };
 
   return (
@@ -29,7 +39,7 @@ export function RouteLayer({ routes, selectedId }: Props) {
         type="line"
         filter={["==", ["get", "selected"], false]}
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": "#64748b", "line-width": 3, "line-dasharray": [2, 2] }}
+        paint={{ "line-color": "#8c877c", "line-width": 3, "line-dasharray": [2, 2] }}
       />
       <Layer
         id="routes-selected-casing"

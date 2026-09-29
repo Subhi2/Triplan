@@ -27,6 +27,8 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
 }
 
 async function mockRouting(page: Page) {
+  // The weather comes from MET Norway; these tests never call it.
+  await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   await page.route("**/api/route", (route) => {
     const { stops } = route.request().postDataJSON() as { stops: { label: string }[] };
     const vias = stops.slice(1, -1).map((s) => s.label);
@@ -49,13 +51,16 @@ async function mockRouting(page: Page) {
 
 /** Rows of the place list: km marker, name, detour label (as km, 0 on route) and category. */
 async function placeRows(page: Page) {
-  const rows = page.getByRole("list", { name: "Places along the route" }).getByRole("button");
-  await expect(rows.first()).toBeVisible({ timeout: 30_000 });
-  const texts = await rows.allInnerTexts();
-  return texts.map((t) => {
-    const [km, name, detour, category] = t.split("\n").map((s) => s.trim());
-    const detourKm = detour === "On route" ? 0 : Number(/\+([\d.]+) km/.exec(detour!)?.[1]);
-    return { km: Number(km!.replace(" km", "")), name: name!, detour: detour!, detourKm, category };
+  const list = page.getByRole("list", { name: "Places along the route" });
+  await expect(list.getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+  // Each row carries its facts as data attributes (PlaceRow), independent of the layout.
+  const rows = await list
+    .locator(":scope > li")
+    .evaluateAll((lis) => lis.map((li) => ({ ...(li as HTMLElement).dataset })));
+  return rows.map((r) => {
+    const detour = r.detour!;
+    const detourKm = detour === "On route" ? 0 : Number(/\+([\d.]+) km/.exec(detour)?.[1]);
+    return { km: Number(r.km), name: r.name!, detour, detourKm, category: r.category };
   });
 }
 
@@ -161,11 +166,14 @@ test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", as
       .getByRole("list", { name: "Places along the route" })
       .getByRole("button", { name: /Manjarabad Fort/ })
       .click({ timeout: 30_000 });
-    await expect(page.getByText("Right off NH75; about 250 steps up.")).toBeVisible();
+    // First visit: the dev server compiles the place details API.
+    await expect(page.getByText("Right off NH75; about 250 steps up.")).toBeVisible({
+      timeout: 30_000,
+    });
     await page.getByRole("button", { name: "Add to trip" }).click();
     await expect(page.getByText(/In your trip \(stop \d\)/)).toBeVisible();
 
-    await page.getByRole("button", { name: "← All places" }).click();
+    await page.getByRole("button", { name: "All places" }).click();
     const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
     await expect(cards.first()).toContainText("Manjarabad Fort");
     await page.getByRole("button", { name: "Save trip" }).click();
@@ -176,7 +184,8 @@ test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", as
     // Everyone's list shows it; opening it restores the stops and the route.
     await page.goto("/trips");
     await page.getByRole("link", { name: new RegExp(title) }).click();
-    await expect(cards).toHaveCount(1);
+    // The dev server compiles the trip page on first visit, then routes with the real OSRM.
+    await expect(cards).toHaveCount(1, { timeout: 30_000 });
     await expect(cards.first()).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText(`Saved trip: ${title}`)).toBeVisible();
     if (await page.getByRole("button", { name: "Edit trip" }).isVisible()) {

@@ -60,6 +60,39 @@ Work through the phases in order. Each phase ends with a working app, passing `p
 
 **MVP complete here.** Deploy to Vercel + Supabase.
 
+## Growth G1 · Share, photos and ride check
+
+From `07-growth-plan.md`: features that need no API key, cost nothing and need no product decision. One commit each.
+
+1. **Share cards and SEO**: share images for saved trips, planner links and places (`next/og`); a Share button (phone share sheet, WhatsApp, copy link); `sitemap.xml`, `robots.txt`, canonical URLs and schema.org JSON-LD on place pages.
+2. **Photos from Wikimedia Commons**: `pnpm db:import-photos` takes each place's Wikidata image (`P18`) with its author and licence from Commons, into `media` with `source = 'wikimedia'`. Throttled, identifies itself with the User-Agent, resumable.
+3. **Ride check** on the selected route: the longest stretch without a fuel station against the vehicle's range, and the start time with arrival against sunset (`suncalc`).
+4. **GPX export** of the route, stops and ticked places, for OsmAnd, Organic Maps and GPS units.
+5. **Weather on the ride** from MET Norway (free, commercial use allowed, CC BY 4.0): rain, temperature and wind at points along the route at the time the rider reaches them.
+
+**Done when:** a pasted trip link shows its route card in WhatsApp; Manjarabad Fort's page shows a Wikimedia photo with credit; Bengaluru → Kalasa shows the longest fuel gap, the arrival against sunset, the weather along the way, and downloads as a GPX file that opens in OsmAnd.
+
+## Growth G1-Google · Google fills the gaps (needs Google keys)
+
+Decided 2026-09-29: use Google Maps Platform only where our own data has a gap, within Google's free monthly usage. Rules, SKUs and budget are in "Google Maps Platform" in `02-architecture.md`. Do it after the Wikimedia photos (G1.2), so Google only fills what Commons could not. One commit per step.
+
+Before starting (the owner does this in the Google Cloud console):
+- A billing account with an Indian billing address; check that the Places and Maps prices shown are the India ones (70,000 free map loads a month). If not, lower the budget in step 2.
+- Enable the Maps JavaScript API and the Places API (New). Create one key limited to those two APIs, with no application restriction (it is used in the browser and by the server), and optionally a Map ID.
+- Per-day quotas: Maps JavaScript map loads 2,250; Place Details and Place Photo requests 225 each. A budget alert as well.
+
+1. **Keys**: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (the one key, for the map and the server), `NEXT_PUBLIC_GOOGLE_MAP_ID` and an optional separate server key `GOOGLE_MAPS_API_KEY` in `src/server/env.ts` (all optional) and `.env.example`. A `googleEnabled` flag for the client: true only when the key is set.
+2. **Budget**: migration adding `google_usage (day date, sku text, count int, PRIMARY KEY (day, sku))` and `place.google_place_checked_at`. `src/server/providers/google/budget.ts`: `take(sku)` increments atomically and says no once the day's limit is reached (`ids` 2,000, `details_atmosphere` 225, `photo` 225). Unit tests.
+3. **Provider** `src/server/providers/google/places.ts` behind an interface, mocked in tests, responses Zod-validated, fixtures recorded once: `findPlaceId(name, [lng, lat])` (Text Search IDs only, rectangle about 600 m around the pin), `details(id, fields)`, `photoUri(name, maxWidthPx)`.
+4. **Exact Google Maps links**: resolve the id the first time a place's details open (and on "Open in Google Maps"), store it in `place.google_place_id`, record `google_place_checked_at` when nothing was found so it is not retried for 30 days. The links use `query_place_id` once the id is known; with no id, or the budget used up, today's name-at-coordinates link.
+5. **`GET /api/places/[slug]/google`**: works out the gaps (no verified `media` → `photos`; fewer than 3 verified reviews → `rating,userRatingCount,reviews,googleMapsUri`), makes one Place Details request with those fields, returns them with `Cache-Control: private, no-store`. Nothing is written to the DB but the id. `GET /api/google/photo?name=&w=`: checks the budget, redirects to Google's `photoUri`, no-store.
+6. **Remove stored Google data**: drop `external_rating` (Google ratings may not be stored, and nothing else fills it) and its code in `placeDetailService`; `media.source` no longer takes `'google'`.
+7. **Google map**: `@vis.gl/react-google-maps` and `@googlemaps/markerclusterer`. `MapView` picks the Google or MapLibre implementation from `googleEnabled`, with the same props; route lines, place dots, clusters, selection sync with the list, bottom padding following the sheet so the Google logo stays visible, one map instance per page. Check 1,000 places on a mid-range phone; if slow, use deck.gl's `GoogleMapsOverlay` for the dots.
+8. **"From Google" section** in `PlaceDetailView`, loaded in the browser after the details show, only when `googleEnabled`: photos with author credit (first one now, the rest on swipe, at most 5), rating and count, up to 5 reviews with author name, photo and link, "See on Google Maps" (`googleMapsUri`). Hidden when there is no gap, no id or no budget. Our own photos and reviews always come first. On the place page (no map) the section is labelled "From Google" in text.
+9. Playwright keeps running without Google keys; add a unit test that `/api/places/[slug]/google` asks only for the fields of the gaps and makes no call when the budget is used up.
+
+**Done when:** with the keys set on a preview deploy, the planner shows a Google map with routes and clustered places; opening a place with no photos of our own shows Google photos and reviews with credit and the exact "Open in Google Maps" link; opening a place that has our photos and 3+ reviews makes no Google call (check the `google_usage` table); nothing from Google is in the DB but place ids; without the keys the app looks and works as before.
+
 ## Phase 5 · Community content
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.
@@ -96,20 +129,6 @@ Only after Meta app review is approved (see `05`).
 ## Phase 8 · Polish and launch
 
 - Offline trip pack, monsoon warnings on place pages during avoid months, Lighthouse ≥ 90, error monitoring (Sentry), analytics, self-hosted OSRM, terms and privacy pages, image and content takedown process.
-
-## Later · Exact Google Maps links (needs a Google API key)
-
-Decided 2026-09-29 to do this later. Today "Open in Google Maps" searches the place's name with the map at its coordinates (see "Google Maps links" in `02-architecture.md`): a unique name opens the place, but a common one ("Shiva Temple") shows a list of matches. A Google place id opens the exact place every time.
-
-Before starting: create a Google Maps Platform API key with the Places API (New) enabled. This needs a billing account. Restrict the key to the Places API and to the server. Check the current price of ID-only Text Search requests.
-
-1. `GOOGLE_MAPS_API_KEY` in `src/server/env.ts` and `.env.example` (server only, never `NEXT_PUBLIC_`).
-2. Provider `src/server/providers/google/places.ts` behind an interface, mocked in tests: Text Search (New) with the field mask `places.id` only, the place name as the query and a location bias circle of about 300 m around our coordinates. Accept a result only if it lies within that circle.
-3. Resolve lazily: the row and detail links point to our own `GET /api/places/[slug]/google-maps`, which uses `place.google_place_id` when set, otherwise looks it up once, stores it, and redirects to `https://www.google.com/maps/search/?api=1&query=<name>&query_place_id=<id>`. With no match, or if the lookup fails, it redirects to today's name-at-coordinates link. Record when a lookup found nothing (e.g. a `google_place_checked_at` column) so it is not repeated on every click.
-4. Rate-limit and cache like the other providers; never call Google in a loop or from the OSM import.
-5. Store only the place id. Google's ratings, reviews and photos are never stored (see "Things to avoid" in `CLAUDE.md`).
-
-**Done when:** "Open in Google Maps" on a common-named place (a "Shiva Temple" from the OSM import) opens that exact temple's Google Maps page, and a second click needs no Google request.
 
 ---
 

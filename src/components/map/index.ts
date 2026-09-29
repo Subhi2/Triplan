@@ -1,4 +1,6 @@
-// Map components. Import MapView through next/dynamic with ssr: false (MapLibre needs the browser).
+// Map components. Import MapView (MapLibre) or google/GoogleMapView through next/dynamic with
+// ssr: false: both need the browser.
 export * from "./MapView";
 export * from "./PlaceMarkers";
 export * from "./RouteLayer";
+export * from "./types";

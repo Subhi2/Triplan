@@ -1,15 +1,16 @@
 import type { MetadataRoute } from "next";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Bike Travelling Guide",
-    short_name: "Ride Guide",
-    description: "Every worthwhile place along your exact bike or car route.",
+    name: SITE_NAME,
+    short_name: SITE_NAME,
+    description: SITE_TAGLINE,
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#fafaf9",
+    background_color: "#f4f1ea",
     theme_color: "#0f766e",
     categories: ["travel", "navigation"],
     icons: [

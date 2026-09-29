@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PlaceDetailView } from "@/components/place/PlaceDetailView";
 import { categoryStyle } from "@/lib/categories";
-import { PLACE_SLUG_PATTERN } from "@/lib/placeDetail";
+import { PLACE_SLUG_PATTERN, type PlaceDetail } from "@/lib/placeDetail";
+import { SITE_NAME, siteUrl } from "@/lib/site";
 import { encodeStop } from "@/lib/tripUrl";
 import { getPlaceDetail } from "@/server/services/placeDetailService";
 
@@ -19,11 +20,48 @@ const loadPlace = cache(async (slug: string) =>
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const place = await loadPlace((await params).slug);
-  if (!place) return { title: "Place not found · Bike Travelling Guide" };
+  if (!place) return { title: `Place not found · ${SITE_NAME}` };
   const area = [place.district, place.state].filter(Boolean).join(", ");
+  const title = area ? `${place.name}, ${area}` : place.name;
+  const description = `${categoryStyle(place.category).name}${area ? ` in ${area}` : ""}: best time to visit, best vehicle, what to carry, timings and reviews.`;
   return {
-    title: `${place.name} · Bike Travelling Guide`,
-    description: `${categoryStyle(place.category).name}${area ? ` in ${area}` : ""}: best time to visit, best vehicle, what to carry, timings and reviews.`,
+    title: `${title} · ${SITE_NAME}`,
+    description,
+    alternates: { canonical: `/place/${place.slug}` },
+    // The share image comes from opengraph-image.tsx next to this page.
+    openGraph: { siteName: SITE_NAME, type: "website", title, description },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
+
+/** schema.org data so search engines can show the place with its location and photo. */
+function placeJsonLd(place: PlaceDetail) {
+  const photo = place.media[0];
+  return {
+    "@context": "https://schema.org",
+    "@type": "TouristAttraction",
+    name: place.name,
+    url: `${siteUrl()}/place/${place.slug}`,
+    ...(place.description && { description: place.description }),
+    geo: { "@type": "GeoCoordinates", latitude: place.location[1], longitude: place.location[0] },
+    ...((place.district || place.state) && {
+      address: {
+        "@type": "PostalAddress",
+        ...(place.district && { addressLocality: place.district }),
+        ...(place.state && { addressRegion: place.state }),
+        addressCountry: "IN",
+      },
+    }),
+    ...(photo && { image: photo.url }),
+    ...(place.rating !== null &&
+      place.ratingCount > 0 && {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: place.rating,
+          ratingCount: place.ratingCount,
+        },
+      }),
+    ...(place.osm.wikipediaUrl && { sameAs: [place.osm.wikipediaUrl] }),
   };
 }
 
@@ -34,9 +72,19 @@ export default async function PlacePage({ params }: Props) {
   const destination = encodeStop({ label: place.name, location: place.location });
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
+      <script
+        type="application/ld+json"
+        // JSON-LD must be inline; "<" is escaped so a place name cannot close the script tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(placeJsonLd(place)).replace(/</g, "\\u003c"),
+        }}
+      />
       <nav className="flex items-center justify-between gap-2 text-sm">
-        <Link href="/" className="text-brand inline-flex min-h-11 items-center font-bold">
-          Bike Travelling Guide
+        <Link
+          href="/"
+          className="font-display inline-flex min-h-11 items-center text-lg font-extrabold tracking-tight"
+        >
+          {SITE_NAME}
         </Link>
         <Link
           href="/trips"

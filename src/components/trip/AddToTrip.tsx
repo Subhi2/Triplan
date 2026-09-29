@@ -17,7 +17,25 @@ interface Props {
 }
 
 const button =
-  "inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium md:min-h-0 md:py-1.5 transition disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-xl px-4 text-sm font-bold md:min-h-10 disabled:cursor-not-allowed disabled:opacity-50";
+
+function Check() {
+  return (
+    <svg
+      aria-hidden
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
 
 /** "Add to trip" on a place: adds it as a via stop in route order, or removes it again. */
 export function AddToTrip({ status, onAdd, onRemove }: Props) {
@@ -30,8 +48,20 @@ export function AddToTrip({ status, onAdd, onRemove }: Props) {
             type="button"
             onClick={onAdd}
             disabled={status.kind === "full"}
-            className={`${button} bg-brand hover:bg-brand-dark text-white`}
+            className={`${button} bg-brand hover:bg-brand-dark text-white shadow-sm`}
           >
+            <svg
+              aria-hidden
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
             Add to trip
           </button>
           {status.kind === "full" && (
@@ -44,8 +74,11 @@ export function AddToTrip({ status, onAdd, onRemove }: Props) {
     case "via":
       return (
         <>
-          <span role="status" className="text-brand text-sm font-medium">
-            ✓ In your trip (stop {status.stopNumber})
+          <span
+            role="status"
+            className="animate-rise text-brand-dark inline-flex items-center gap-1 text-sm font-bold dark:text-teal-300"
+          >
+            <Check /> In your trip (stop {status.stopNumber})
           </span>
           <button
             type="button"
@@ -59,8 +92,8 @@ export function AddToTrip({ status, onAdd, onRemove }: Props) {
     case "start":
     case "end":
       return (
-        <span className="text-brand text-sm font-medium">
-          ✓ Your trip&apos;s {status.kind === "start" ? "start" : "destination"}
+        <span className="text-brand-dark inline-flex items-center gap-1 text-sm font-bold dark:text-teal-300">
+          <Check /> Your trip&apos;s {status.kind === "start" ? "start" : "destination"}
         </span>
       );
   }

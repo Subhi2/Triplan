@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { MapStop } from "@/components/map/MapView";
+import type { MapStop } from "@/components/map/types";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
@@ -12,9 +12,14 @@ import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
+import { categoryStyle } from "@/lib/categories";
 import type { LngLat } from "@/lib/geo";
+import { googleEnabled } from "@/lib/google";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
+import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
+import { defaultDeparture } from "@/lib/rideCheck";
+import { SITE_NAME, SITE_TAGLINE, tripHeadline } from "@/lib/site";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
@@ -27,16 +32,31 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
+import { RideCheck } from "./RideCheck";
+import { RoadStrip } from "./RoadStrip";
 import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { TripSaveBar } from "./TripSaveBar";
 
-// MapLibre needs the browser.
-const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.MapView), {
-  ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
-});
+// Both maps need the browser. The Google map when its key is set (Google photos and reviews may
+// only be shown with it), else MapLibre (docs/02, "Google Maps Platform").
+const MapView = dynamic(
+  () =>
+    googleEnabled
+      ? import("@/components/map/google/GoogleMapView").then((m) => m.GoogleMapView)
+      : import("@/components/map/MapView").then((m) => m.MapView),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
+  },
+);
+
+/** Height of the header floating over the map on phones, kept clear when framing the route. */
+const FLOATING_HEADER_PX = 72;
+
+/** Places in a GPX file at most: GPS units slow down with thousands of waypoints. */
+const MAX_GPX_PLACES = 300;
 
 let nextId = 0;
 const newId = () => `stop-${++nextId}`;
@@ -93,10 +113,14 @@ export function Planner({ savedTrip = null }: Props) {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [activePlaceId, setActivePlaceId] = useState<string | null>(null);
   const [hoverPlaceId, setHoverPlaceId] = useState<string | null>(null);
+  // When the rider sets off, for the ride check and the weather on the way. Local time.
+  const [departure, setDeparture] = useState(() => defaultDeparture());
   // Where the map is looking, to bias place suggestions. Starts at the initial map view's centre.
   const [mapBias, setMapBias] = useState<MapBias>({ center: [76.75, 15.05], zoom: 5 });
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  // Wide enough for the places in a column of their own, next to the routes.
+  const isWide = useMediaQuery("(min-width: 1024px)");
   // A touch screen: typing brings up an on-screen keyboard.
   const coarsePointer = useMediaQuery("(pointer: coarse)");
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>(1);
@@ -297,6 +321,44 @@ export function Planner({ savedTrip = null }: Props) {
     selectedRoute ? ` ${selectedRoute.viaLabel}` : ""
   }`.slice(0, 120);
 
+  /**
+   * The trip as a GPX file: the route, the stops, and the ticked places (or, with none ticked,
+   * the places in the list), for navigating offline in OsmAnd, Organic Maps or a GPS unit.
+   */
+  function downloadGpx() {
+    if (!selectedRoute) return;
+    const resolved = stops.flatMap((s) => (s.location ? [{ ...s, location: s.location }] : []));
+    const title = saved?.title ?? tripHeadline(resolved.map((s) => s.label));
+    const gpx = tripGpx({
+      name: title,
+      link: saved ? `${window.location.origin}/trips/${saved.id}` : window.location.href,
+      route: selectedRoute.geometry.coordinates as LngLat[],
+      stops: resolved.map((s, i) => {
+        const role = i === 0 ? "Start" : i === resolved.length - 1 ? "Destination" : `Stop ${i}`;
+        return {
+          name: s.label,
+          location: s.location,
+          description: role,
+          symbol: i === 0 ? "Flag, Green" : i === resolved.length - 1 ? "Flag, Red" : "Flag, Blue",
+        };
+      }),
+      places: (picked.length > 0 ? picked : places).slice(0, MAX_GPX_PLACES).map((p) => ({
+        name: p.name,
+        location: p.location,
+        description: `${categoryStyle(p.category).name} · km ${Math.round(p.kmFromStart)}`,
+        symbol: "Scenic Area",
+      })),
+    });
+    const url = URL.createObjectURL(new Blob([gpx], { type: "application/gpx+xml" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = gpxFileName(title);
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
+
   function onSaved(trip: SavedTrip) {
     setSaved(trip);
     // The trip's own link from now on; the query string keeps the planner's state for reloads.
@@ -347,8 +409,9 @@ export function Planner({ savedTrip = null }: Props) {
   }
 
   const openAlong = openPlace ? (allPlaces.find((p) => p.id === openPlace.id) ?? null) : null;
+  const destination = (last?.label ?? "").split(",")[0]!.trim();
 
-  const panel = openPlace ? (
+  const placePanel = openPlace && (
     <PlacePanel
       key={openPlace.slug}
       slug={openPlace.slug}
@@ -375,14 +438,22 @@ export function Planner({ savedTrip = null }: Props) {
       }
       onBack={closePlaceDetail}
     />
-  ) : (
+  );
+
+  const routesPanel = (
     <div className="flex flex-col gap-5">
       <section aria-label="Routes" aria-live="polite" aria-busy={routeState.status === "loading"}>
         {routeState.status === "idle" && (
-          <p className="text-sm text-stone-500">Choose a start and destination to see routes.</p>
+          <p className="text-sm text-stone-600 dark:text-stone-400">
+            Choose a start and destination to see routes.
+          </p>
         )}
         {routeState.status === "loading" && (
-          <p className="text-sm text-stone-500">Finding routes…</p>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-stone-600 dark:text-stone-400">Finding routes…</p>
+            <div aria-hidden className="shimmer h-24 rounded-2xl" />
+            <div aria-hidden className="shimmer h-16 rounded-2xl opacity-70" />
+          </div>
         )}
         {routeState.status === "error" && (
           <p role="alert" className="text-sm text-red-700 dark:text-red-400">
@@ -390,119 +461,179 @@ export function Planner({ savedTrip = null }: Props) {
           </p>
         )}
         {routeState.status === "ok" && (
-          <RouteCards routes={routes} selectedId={selectedRouteId} onSelect={setSelectedRouteId} />
+          <>
+            <div className="mb-2.5 flex items-baseline justify-between gap-2">
+              <h2 className="font-display text-xl font-bold tracking-tight">
+                {routes.length === 1 ? "1 way" : `${routes.length} ways`} to {destination}
+              </h2>
+              <span className="text-xs whitespace-nowrap text-stone-600 dark:text-stone-400">
+                {vehicle === "bike" ? "Bike" : "Car"} · within {corridorKm} km
+              </span>
+            </div>
+            <RouteCards
+              routes={routes}
+              selectedId={selectedRouteId}
+              onSelect={setSelectedRouteId}
+            />
+          </>
         )}
       </section>
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
       )}
-
-      {selectedRoute && (
-        <section aria-labelledby="places-heading" className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 id="places-heading" className="font-semibold">
-              Places along this route
-            </h2>
-            <span className="text-xs text-stone-500">within {corridorKm} km</span>
-          </div>
-          {placesState.status === "loading" && (
-            <p className="text-sm text-stone-500">Finding places…</p>
-          )}
-          {placesState.status === "error" && (
-            <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-              {placesState.message}
-            </p>
-          )}
-          {placesState.status === "ok" && (
-            <>
-              {allPlaces.length > 0 && (
-                <PlaceFilters
-                  counts={categoryCounts}
-                  bestCount={
-                    categories.length === 0 ? places.length : bestAlongRoute(allPlaces).length
-                  }
-                  selected={categories}
-                  maxDetourKm={maxDetourKm}
-                  onSelectedChange={setCategories}
-                  onMaxDetourChange={setMaxDetourKm}
-                />
-              )}
-              {places.length > 0 ? (
-                <>
-                  <PlaceList
-                    places={places}
-                    activeId={activePlaceId}
-                    hoverId={hoverPlaceId}
-                    onSelect={(id) => {
-                      const p = places.find((x) => x.id === id);
-                      if (p) openPlaceDetail(p);
-                    }}
-                    onHover={setHoverPlaceId}
-                    pickedIds={pickedIds}
-                    onPickedChange={setPlacePicked}
-                  />
-                  {hiddenCount > 0 && (
-                    <p className="text-sm text-stone-600 dark:text-stone-400">
-                      Showing the best stops: up to {BEST_PER_STRETCH} every {STRETCH_KM} km. Pick a
-                      category to see all {hiddenCount + places.length} places.
-                    </p>
-                  )}
-                  <p className="text-xs text-stone-500">
-                    Detours are straight-line distances from the route; the road may be longer.
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-stone-500">
-                  {allPlaces.length === 0
-                    ? `No places within ${corridorKm} km of this route yet. Try a wider corridor.`
-                    : "No places match these filters."}
-                </p>
-              )}
-            </>
-          )}
-        </section>
-      )}
-      {selectedRoute && (
-        <GoogleMapsBar
-          trip={googleTrip}
-          pickedCount={picked.length}
-          onClear={() => setPicked([])}
+      {selectedRoute && first?.location && last?.location && (
+        <RideCheck
+          route={selectedRoute}
+          vehicle={vehicle}
+          from={{ label: first.label, location: first.location }}
+          to={{ label: last.label, location: last.location }}
+          departure={departure}
+          onDepartureChange={setDeparture}
         />
       )}
     </div>
   );
 
+  const placesPanel = selectedRoute && (
+    <div className="flex flex-col gap-4">
+      <section aria-labelledby="places-heading" className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 id="places-heading" className="font-display text-xl font-bold tracking-tight">
+            Along the road
+          </h2>
+          <span className="tabular font-mono text-xs text-stone-600 dark:text-stone-400">
+            0 – {Math.round(selectedRoute.distanceKm)} km
+          </span>
+        </div>
+        <RoadStrip
+          route={selectedRoute}
+          places={places}
+          activePlaceId={activePlaceId}
+          hoverPlaceId={hoverPlaceId}
+        />
+        {placesState.status === "loading" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-stone-600 dark:text-stone-400">Finding places…</p>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                aria-hidden
+                className="shimmer h-14 rounded-xl"
+                style={{ opacity: 1 - i * 0.25 }}
+              />
+            ))}
+          </div>
+        )}
+        {placesState.status === "error" && (
+          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+            {placesState.message}
+          </p>
+        )}
+        {placesState.status === "ok" && (
+          <>
+            {allPlaces.length > 0 && (
+              <PlaceFilters
+                counts={categoryCounts}
+                bestCount={
+                  categories.length === 0 ? places.length : bestAlongRoute(allPlaces).length
+                }
+                selected={categories}
+                maxDetourKm={maxDetourKm}
+                onSelectedChange={setCategories}
+                onMaxDetourChange={setMaxDetourKm}
+              />
+            )}
+            {places.length > 0 ? (
+              <>
+                <PlaceList
+                  places={places}
+                  activeId={activePlaceId}
+                  hoverId={hoverPlaceId}
+                  onSelect={(id) => {
+                    const p = places.find((x) => x.id === id);
+                    if (p) openPlaceDetail(p);
+                  }}
+                  onHover={setHoverPlaceId}
+                  pickedIds={pickedIds}
+                  onPickedChange={setPlacePicked}
+                />
+                {hiddenCount > 0 && (
+                  <p className="text-sm text-stone-600 dark:text-stone-400">
+                    Showing the best stops: up to {BEST_PER_STRETCH} every {STRETCH_KM} km. Pick a
+                    category to see all {hiddenCount + places.length} places.
+                  </p>
+                )}
+                <p className="text-xs text-stone-600 dark:text-stone-400">
+                  Detours are straight-line distances from the route; the road may be longer.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-stone-600 dark:text-stone-400">
+                {allPlaces.length === 0
+                  ? `No places within ${corridorKm} km of this route yet. Try a wider corridor.`
+                  : "No places match these filters."}
+              </p>
+            )}
+          </>
+        )}
+      </section>
+      <GoogleMapsBar
+        trip={googleTrip}
+        pickedCount={picked.length}
+        onClear={() => setPicked([])}
+        onDownloadGpx={downloadGpx}
+      />
+    </div>
+  );
+
+  // Wide screens: trip and routes | places | map. Narrower: one side panel, or the phone sheet.
+  const secondColumn = isWide ? (placePanel ?? placesPanel) : null;
+  const sidePanel = isWide
+    ? routesPanel
+    : (placePanel ?? (
+        <div className="flex flex-col gap-6">
+          {routesPanel}
+          {placesPanel}
+        </div>
+      ));
+  // Phones with a trip: the header floats over the map instead of pushing it down.
+  const floatingHeader = compactHeader && !showForm;
+
   return (
-    <div className="flex h-dvh flex-col md:flex-row">
+    <div className="relative flex h-dvh flex-col md:flex-row">
       <aside
-        className={`relative flex shrink-0 flex-col gap-3 border-stone-200 bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-4 md:overflow-y-auto md:border-r md:p-4 md:shadow-none dark:border-stone-800 ${typing ? "z-30" : "z-10"}`}
+        className={`flex shrink-0 flex-col gap-3 ${
+          floatingHeader
+            ? "absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-2xl border border-stone-200/80 bg-(--surface)/85 py-1.5 pr-1.5 pl-4 shadow-sm backdrop-blur-md dark:border-stone-700/80"
+            : "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none lg:w-[24rem] dark:md:border-stone-800"
+        } ${typing ? "z-30" : "z-10"}`}
       >
         <header className="flex items-center justify-between gap-2">
           {/* Phones with a trip: one row, the trip itself in place of the app's name. */}
           {compactHeader ? (
             <div className="min-w-0">
-              <h1 className="sr-only">Bike Travelling Guide</h1>
-              <p className="truncate font-semibold">
+              <h1 className="sr-only">{SITE_NAME}</h1>
+              <p className="font-display truncate text-[17px] font-bold">
                 {first?.label} → {last?.label}
               </p>
-              {stops.length > 2 && (
-                <p className="text-xs text-stone-600 dark:text-stone-400">
-                  {stops.length - 2} stop{stops.length > 3 ? "s" : ""} on the way
-                </p>
-              )}
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                {vehicle === "bike" ? "Bike" : "Car"} · within {corridorKm} km
+                {stops.length > 2 &&
+                  ` · ${stops.length - 2} stop${stops.length > 3 ? "s" : ""} on the way`}
+              </p>
             </div>
           ) : (
             <div className="min-w-0">
-              <h1 className="text-brand text-lg font-bold md:text-xl">Bike Travelling Guide</h1>
-              <p className="text-sm text-stone-600 dark:text-stone-400">
-                Every worthwhile stop along your exact route.
-              </p>
+              <h1 className="font-display text-2xl leading-none font-extrabold tracking-tight md:text-3xl">
+                {SITE_NAME}
+              </h1>
+              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{SITE_TAGLINE}</p>
             </div>
           )}
           <div className="flex shrink-0 items-center gap-1">
             <Link
               href="/trips"
-              className="text-brand inline-flex min-h-11 items-center px-2 text-sm font-medium hover:underline"
+              className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
             >
               {compactHeader ? "Trips" : "Saved trips"}
             </Link>
@@ -511,7 +642,7 @@ export function Planner({ savedTrip = null }: Props) {
                 type="button"
                 aria-expanded={showForm}
                 onClick={toggleForm}
-                className="min-h-11 rounded-md border border-stone-300 px-3 text-sm font-medium dark:border-stone-700"
+                className="min-h-11 rounded-xl bg-stone-100 px-4 text-sm font-bold dark:bg-stone-800"
               >
                 {showForm ? "Done" : "Edit trip"}
               </button>
@@ -540,8 +671,17 @@ export function Planner({ savedTrip = null }: Props) {
           </div>
         ) : null}
 
-        {isDesktop && panel}
+        {isDesktop && sidePanel}
       </aside>
+
+      {secondColumn && (
+        <aside
+          aria-label={placePanel ? "Place" : "Places along the road"}
+          className="relative w-[26rem] shrink-0 overflow-y-auto border-r border-stone-200 bg-(--surface) px-4 pt-6 dark:border-stone-800"
+        >
+          {secondColumn}
+        </aside>
+      )}
 
       <div className="relative min-h-0 flex-1">
         <MapView
@@ -556,6 +696,7 @@ export function Planner({ savedTrip = null }: Props) {
           onHoverPlace={setHoverPlaceId}
           onViewChange={(center, zoom) => setMapBias({ center, zoom })}
           bottomInset={sheetInset}
+          topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
         />
       </div>
 
@@ -566,7 +707,7 @@ export function Planner({ savedTrip = null }: Props) {
           onSnapChange={setSheetSnap}
           hidden={!sheetShown}
         >
-          {panel}
+          {sidePanel}
         </BottomSheet>
       )}
     </div>

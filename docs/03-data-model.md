@@ -35,13 +35,15 @@ CREATE TABLE place (
   status        place_status NOT NULL DEFAULT 'unverified',
   source        text NOT NULL,             -- 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
   osm_id        text UNIQUE,               -- 'node/123' | 'way/456' | 'relation/789'; OSM import upserts on it
-  google_place_id text,
+  google_place_id text,                    -- the only Google data we store; looked up when details first open
+  google_place_checked_at timestamptz,     -- last lookup; with no id, not retried for 30 days
   wikidata_id   text,
   population    int,                       -- towns, from OSM; ranks "via" towns on route cards
   osm_tags      jsonb,                     -- selected OSM tags (provenance, later guide fields)
   rating_avg    real,                      -- from our reviews, maintained by trigger
   rating_count  int NOT NULL DEFAULT 0,
   trending_score real NOT NULL DEFAULT 0,
+  photos_checked_at timestamptz,           -- last Wikimedia photo lookup (pnpm db:import-photos)
   created_by    uuid REFERENCES auth.users(id),
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
@@ -99,16 +101,17 @@ CREATE TABLE media (
   kind        text NOT NULL,           -- 'image' | 'video_embed'
   url         text NOT NULL,           -- storage URL, or embed URL for videos
   thumb_url   text,
-  source      text NOT NULL,           -- 'user' | 'wikimedia' | 'youtube' | 'instagram' | 'google'
+  source      text NOT NULL,           -- 'user' | 'wikimedia' | 'youtube' | 'instagram' (never 'google': not storable)
   license     text NOT NULL,           -- 'CC-BY-SA-4.0', 'user-granted', 'embed-only' ...
   author      text,
-  author_url  text,
+  author_url  text,                    -- Wikimedia: the file's Commons page (full credit, licence)
   width       int,
   height      int,
   status      place_status NOT NULL DEFAULT 'unverified',
   uploaded_by uuid REFERENCES auth.users(id),
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+CREATE UNIQUE INDEX media_place_url_key ON media (place_id, url);
 
 -- Reviews -----------------------------------------------------------------
 CREATE TABLE review (
@@ -125,13 +128,16 @@ CREATE TABLE review (
   UNIQUE (place_id, user_id)
 );
 
-CREATE TABLE external_rating (
-  place_id    uuid REFERENCES place(id) ON DELETE CASCADE,
-  source      text NOT NULL,          -- 'google'
-  rating      real,
-  count       int,
-  fetched_at  timestamptz NOT NULL,
-  PRIMARY KEY (place_id, source)
+-- external_rating (Google ratings) is dropped: Google's terms forbid storing them.
+-- Google ratings, reviews and photos are fetched live when a place's details open
+-- (see "Google Maps Platform" in 02-architecture.md).
+
+-- Daily Google call budget: one row per UTC day and SKU ('ids' | 'details_atmosphere' | 'photo').
+CREATE TABLE google_usage (
+  day    date NOT NULL,
+  sku    text NOT NULL,
+  count  int NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, sku)
 );
 
 -- Social discovery (see 05-hidden-places.md) ---------------------------------
@@ -288,12 +294,23 @@ interface PlaceDetail {
   } | null;
   carry: { slug: string; name: string; months: number[]; reason: string | null }[];
   media: { url: string; thumbUrl: string | null; author: string | null; authorUrl: string | null; license: string; source: string }[];
-  externalRatings: { source: string; rating: number; count: number | null }[];
+  googlePlaceId: string | null;  // Google's rating, reviews and photos come separately: GoogleGapFill
   videos: { url: string; source: "youtube" | "instagram"; creator: string | null; title: string | null }[];
   reviews: { id: string; rating: number; body: string | null; visitedMonth: number | null; visitedYear: number | null;
              vehicleUsed: string | null; author: string | null; createdAt: string }[];
   osm: { id: string | null; openingHours: string | null; fee: string | null;   // from OSM tags, shown
          website: string | null; wikipediaUrl: string | null };               // where the guide is empty
+}
+
+// GET /api/places/[slug]/google: live, never stored or cached. Only the fields of the place's gaps are set.
+export interface GoogleGapFill {
+  googleMapsUri: string | null;
+  rating: number | null;
+  ratingCount: number | null;
+  reviews: { authorName: string; authorUri: string | null; authorPhotoUri: string | null;
+             rating: number; text: string | null; relativeTime: string }[];
+  photos: { name: string; widthPx: number; heightPx: number;              // name → /api/google/photo?name=
+            authors: { displayName: string; uri: string | null }[] }[];
 }
 
 interface SavedTrip {           // GET /api/trips/[id]
