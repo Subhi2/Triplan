@@ -11,9 +11,18 @@ import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
+import type { LngLat } from "@/lib/geo";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
-import type { CorridorKm, RouteOption, Vehicle } from "@/lib/trip";
+import {
+  MAX_VIA_STOPS,
+  stopIndexAt,
+  viaInsertIndex,
+  type CorridorKm,
+  type RouteOption,
+  type Vehicle,
+} from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
+import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
@@ -190,6 +199,33 @@ export function Planner() {
     if (!isDesktop && sheetSnap === 0) setSheetSnap(1);
   }
 
+  // "Add to trip": a place becomes a via stop, placed in route order.
+  const stopLocations = stops.map((s) => s.location);
+
+  function placeInTrip(location: LngLat): PlaceInTrip {
+    const i = stopIndexAt(stopLocations, location);
+    if (i === 0) return { kind: "start" };
+    if (i === stops.length - 1) return { kind: "end" };
+    if (i > 0) return { kind: "via", stopNumber: i };
+    return stops.length - 2 >= MAX_VIA_STOPS ? { kind: "full" } : { kind: "add" };
+  }
+
+  function addToTrip({ name, location }: { name: string; location: LngLat }) {
+    const line = (selectedRoute?.geometry.coordinates ?? []) as LngLat[];
+    const index =
+      line.length > 1 ? viaInsertIndex(stopLocations, line, location) : stops.length - 1;
+    setStops([
+      ...stops.slice(0, index),
+      { id: newId(), label: name, location },
+      ...stops.slice(index),
+    ]);
+  }
+
+  function removeFromTrip(location: LngLat) {
+    const i = stopIndexAt(stopLocations, location);
+    if (i > 0 && i < stops.length - 1) setStops(stops.filter((_, j) => j !== i));
+  }
+
   const mapStops: MapStop[] = stops.flatMap((s, i) =>
     s.location
       ? [
@@ -217,6 +253,13 @@ export function Planner() {
       name={openPlace.name}
       along={openAlong}
       vehicle={vehicle}
+      tripAction={
+        <AddToTrip
+          status={placeInTrip(openPlace.location)}
+          onAdd={() => addToTrip(openPlace)}
+          onRemove={() => removeFromTrip(openPlace.location)}
+        />
+      }
       onBack={closePlaceDetail}
     />
   ) : (

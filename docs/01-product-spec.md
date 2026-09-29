@@ -46,7 +46,7 @@ Help riders plan a trip by showing everything worth stopping for along the exact
    - Items to carry (can vary by season; show current-season items first).
    - Timings, entry fee, dress code, where known.
    - Reviews list.
-   - "Add to trip" button: inserts the place as a via stop and recomputes the route.
+   - "Add to trip" button: inserts the place as a via stop at its place along the route (before the first via stop further along) and recomputes the route. Once added, it shows "In your trip (stop N)" and "Remove from trip".
    - Links to related videos / reels (from the hidden-places pipeline).
 5. **Saved trips** (requires sign-in): save, rename, reopen, share a read-only link.
 

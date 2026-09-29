@@ -272,7 +272,7 @@ async function mockPlace(page: Page) {
   );
 }
 
-test("open a place's details and go back to the list", async ({ page }) => {
+test("open a place's details, add it to the trip and remove it again", async ({ page }) => {
   const routeRequests: { stops: { label: string }[] }[] = [];
   await mockApis(page, routeRequests);
   await mockPlace(page);
@@ -298,6 +298,16 @@ test("open a place's details and go back to the list", async ({ page }) => {
     "href",
     "/place/manjarabad-fort",
   );
+
+  // Add to trip: a via stop between start and destination, and the route is recomputed.
+  await page.getByRole("button", { name: "Add to trip" }).click();
+  await expect(page.getByText("In your trip (stop 1)")).toBeVisible();
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Bengaluru", "Manjarabad Fort", "Kalasa"]);
+  await page.getByRole("button", { name: "Remove from trip" }).click();
+  await expect(page.getByRole("button", { name: "Add to trip" })).toBeVisible();
+  await expect.poll(() => routeRequests.at(-1)?.stops).toHaveLength(2);
 
   // Back to the list, with focus on the place's row.
   await page.getByRole("button", { name: "← All places" }).click();
