@@ -11,8 +11,6 @@ import Map, {
 } from "react-map-gl/maplibre";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import type { LngLat } from "@/lib/geo";
-import type { PlaceAlong } from "@/lib/places";
-import type { RouteOption } from "@/lib/trip";
 import {
   PLACE_CLUSTERS_LAYER,
   PLACE_HIT_LAYER,
@@ -22,19 +20,16 @@ import {
   PlaceMarkers,
 } from "./PlaceMarkers";
 import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
+import { bounds, frameKey, framePoints, INDIA_BOUNDS, type MapViewProps } from "./types";
+
+export type { MapStop } from "./types";
 
 // OpenFreeMap needs no API key. Set NEXT_PUBLIC_MAP_STYLE_URL to use MapTiler or another style.
 const MAP_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/liberty";
 
 // Before a trip is chosen, frame India (places are imported for every state).
-const INITIAL_VIEW = {
-  bounds: [
-    [68.1, 6.7],
-    [97.4, 35.7],
-  ] as [[number, number], [number, number]],
-  fitBoundsOptions: { padding: 16 },
-};
+const INITIAL_VIEW = { bounds: INDIA_BOUNDS, fitBoundsOptions: { padding: 16 } };
 const INTERACTIVE_LAYERS = [
   ...ROUTE_LAYER_IDS,
   PLACE_CLUSTERS_LAYER,
@@ -42,46 +37,8 @@ const INTERACTIVE_LAYERS = [
   PLACE_POINTS_LAYER,
 ];
 
-export interface MapStop {
-  id: string;
-  label: string;
-  location: LngLat;
-  role: "start" | "via" | "end";
-}
-
-interface Props {
-  routes: RouteOption[];
-  selectedRouteId: string | null;
-  onSelectRoute: (id: string) => void;
-  stops: MapStop[];
-  places: PlaceAlong[];
-  activePlaceId: string | null;
-  hoverPlaceId: string | null;
-  onSelectPlace: (id: string) => void;
-  onHoverPlace: (id: string | null) => void;
-  /** Pixels hidden at the bottom (the mobile sheet), kept clear when framing. */
-  bottomInset?: number;
-  /** Called with the map centre and zoom after it loads and after every move. */
-  onViewChange?: (center: LngLat, zoom: number) => void;
-}
-
-function bounds(points: LngLat[]): [LngLat, LngLat] | null {
-  if (points.length === 0) return null;
-  let [minLng, minLat] = points[0]!;
-  let [maxLng, maxLat] = points[0]!;
-  for (const [lng, lat] of points) {
-    minLng = Math.min(minLng, lng);
-    minLat = Math.min(minLat, lat);
-    maxLng = Math.max(maxLng, lng);
-    maxLat = Math.max(maxLat, lat);
-  }
-  return [
-    [minLng, minLat],
-    [maxLng, maxLat],
-  ];
-}
-
-export function MapView(props: Props) {
+/** The MapLibre map (OpenStreetMap tiles): used when no Google key is set. */
+export function MapView(props: MapViewProps) {
   const { routes, stops, places, activePlaceId, bottomInset = 0 } = props;
   const mapRef = useRef<MapRef>(null);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -91,22 +48,18 @@ export function MapView(props: Props) {
   const padding = { top: 48, left: 48, right: 48, bottom: 48 + bottomInset };
 
   // Frame all routes when they change; with no routes yet, frame the stops.
-  const frameKey =
-    routes.length > 0 ? routes.map((r) => r.id).join() : stops.map((s) => s.id + s.location).join();
+  const frame = frameKey(routes, stops);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const points =
-      routes.length > 0
-        ? routes.flatMap((r) => r.geometry.coordinates as LngLat[])
-        : stops.map((s) => s.location);
+    const points = framePoints(routes, stops);
     const b = bounds(points);
     if (!b) return;
     if (points.length === 1) map.flyTo({ center: points[0], zoom: 10, duration: 600, padding });
     else map.fitBounds(b, { padding, duration: 600, maxZoom: 12 });
-    // frameKey captures the inputs; re-running on every render would fight the user's panning.
+    // frame captures the inputs; re-running on every render would fight the user's panning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [frameKey]);
+  }, [frame]);
 
   // Pan to the active place if it is off screen (e.g. picked from the list).
   useEffect(() => {

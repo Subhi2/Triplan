@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { MapStop } from "@/components/map/MapView";
+import type { MapStop } from "@/components/map/types";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
@@ -14,6 +14,7 @@ import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/Bottom
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
 import type { LngLat } from "@/lib/geo";
+import { googleEnabled } from "@/lib/google";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
@@ -37,11 +38,18 @@ import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { TripSaveBar } from "./TripSaveBar";
 
-// MapLibre needs the browser.
-const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.MapView), {
-  ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
-});
+// Both maps need the browser. The Google map when its key is set (Google photos and reviews may
+// only be shown with it), else MapLibre (docs/02, "Google Maps Platform").
+const MapView = dynamic(
+  () =>
+    googleEnabled
+      ? import("@/components/map/google/GoogleMapView").then((m) => m.GoogleMapView)
+      : import("@/components/map/MapView").then((m) => m.MapView),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
+  },
+);
 
 /** Places in a GPX file at most: GPS units slow down with thousands of waypoints. */
 const MAX_GPX_PLACES = 300;
