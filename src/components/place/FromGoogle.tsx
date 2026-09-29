@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { googleEnabled } from "@/lib/google";
 import { googlePhotoUrl, type GoogleAuthor, type GoogleGapFill } from "@/lib/googleGap";
 
@@ -29,6 +29,70 @@ function Author({ author }: { author: GoogleAuthor }) {
     </a>
   ) : (
     <>{author.displayName}</>
+  );
+}
+
+/**
+ * A Google photo. Each one is a billed request, so only the first loads at once; the others load
+ * when swiped into view (the browser's own lazy loading fetches a whole sideways row at once).
+ */
+function GooglePhoto({ name, alt, now }: { name: string; alt: string; now: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [show, setShow] = useState(now);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (show || !el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setShow(true);
+      },
+      { root: el.closest("ul"), threshold: 0.25 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [show]);
+
+  return (
+    <div ref={ref} className="h-40 w-64 overflow-hidden rounded-lg bg-stone-200 dark:bg-stone-800">
+      {show && (
+        // Served by Google through our redirect, never stored.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={googlePhotoUrl(name)}
+          alt={alt}
+          referrerPolicy="no-referrer"
+          className="h-40 w-64 object-cover"
+        />
+      )}
+    </div>
+  );
+}
+
+/** Reviews longer than this start folded to 4 lines. */
+const LONG_REVIEW = 240;
+
+function ReviewText({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > LONG_REVIEW;
+  return (
+    <>
+      <p
+        className={`mt-0.5 leading-relaxed whitespace-pre-line ${long && !open ? "line-clamp-4" : ""}`}
+      >
+        {text}
+      </p>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="text-brand inline-flex min-h-11 items-center text-sm font-medium hover:underline md:min-h-0"
+        >
+          {open ? "Less" : "More"}
+        </button>
+      )}
+    </>
   );
 }
 
@@ -84,15 +148,10 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
           {fill.photos.map((p, i) => (
             <li key={p.name} className="w-64 shrink-0 snap-start">
               <figure>
-                {/* Each photo is a billed request: the first loads now, the rest as the row is
-                    swiped. Served by Google through our redirect, never stored. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={googlePhotoUrl(p.name)}
+                <GooglePhoto
+                  name={p.name}
                   alt={`${placeName}${p.authors[0] ? `, photo by ${p.authors[0].displayName}` : ""}`}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  referrerPolicy="no-referrer"
-                  className="h-40 w-64 rounded-lg bg-stone-200 object-cover dark:bg-stone-800"
+                  now={i === 0}
                 />
                 <figcaption className="mt-1 truncate text-xs text-stone-600 dark:text-stone-400">
                   {p.authors.length > 0 ? (
@@ -139,7 +198,7 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
                   <span className="text-stone-600 dark:text-stone-400"> · {r.relativeTime}</span>
                 </span>
               </p>
-              {r.text && <p className="mt-0.5 leading-relaxed whitespace-pre-line">{r.text}</p>}
+              {r.text && <ReviewText text={r.text} />}
             </li>
           ))}
         </ul>
