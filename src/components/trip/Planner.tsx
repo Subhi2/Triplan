@@ -6,10 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { MapStop } from "@/components/map/MapView";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
+import { PlacePanel } from "@/components/place/PlacePanel";
+import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
-import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM } from "@/lib/places";
+import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import type { CorridorKm, RouteOption, Vehicle } from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { RouteCards } from "./RouteCards";
@@ -38,6 +40,7 @@ type RouteState =
 export function Planner() {
   const searchParams = useSearchParams();
   const [initial] = useState(() => parseTripUrl(new URLSearchParams(searchParams.toString())));
+  const [openPlace, setOpenPlace] = useState<PlaceAlong | null>(null);
   const [stops, setStops] = useState<StopDraft[]>(() => [
     draft(initial.from),
     ...initial.via.map(draft),
@@ -162,7 +165,27 @@ export function Planner() {
     setFocusId(s.id);
   }
 
+  function openPlaceDetail(p: PlaceAlong) {
+    setActivePlaceId(p.id);
+    setOpenPlace(p);
+    if (!isDesktop && sheetSnap === 0) setSheetSnap(1);
+  }
+
+  function closePlaceDetail() {
+    const id = openPlace?.id;
+    setOpenPlace(null);
+    // Back on the list, keyboard focus returns to the place's row.
+    if (id) {
+      requestAnimationFrame(() =>
+        document.getElementById(placeRowId(id))?.querySelector("button")?.focus(),
+      );
+    }
+  }
+
   function selectPlaceFromMap(id: string) {
+    // With a place open, a marker opens that place; otherwise it picks its row in the list.
+    const p = places.find((x) => x.id === id);
+    if (openPlace && p) return openPlaceDetail(p);
     setActivePlaceId(id);
     if (!isDesktop && sheetSnap === 0) setSheetSnap(1);
   }
@@ -185,7 +208,18 @@ export function Planner() {
   const sheetInset =
     !isDesktop && typeof window !== "undefined" ? SHEET_SNAPS[sheetSnap] * window.innerHeight : 0;
 
-  const panel = (
+  const openAlong = openPlace ? (allPlaces.find((p) => p.id === openPlace.id) ?? null) : null;
+
+  const panel = openPlace ? (
+    <PlacePanel
+      key={openPlace.slug}
+      slug={openPlace.slug}
+      name={openPlace.name}
+      along={openAlong}
+      vehicle={vehicle}
+      onBack={closePlaceDetail}
+    />
+  ) : (
     <div className="flex flex-col gap-5">
       <section aria-label="Routes" aria-live="polite" aria-busy={routeState.status === "loading"}>
         {routeState.status === "idle" && (
@@ -240,7 +274,10 @@ export function Planner() {
                     places={places}
                     activeId={activePlaceId}
                     hoverId={hoverPlaceId}
-                    onSelect={setActivePlaceId}
+                    onSelect={(id) => {
+                      const p = places.find((x) => x.id === id);
+                      if (p) openPlaceDetail(p);
+                    }}
                     onHover={setHoverPlaceId}
                   />
                   {hiddenCount > 0 && (

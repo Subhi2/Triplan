@@ -23,21 +23,21 @@ Next.js route handlers (src/app/api/*)  ──►  src/server/services/*
 src/
   app/
     page.tsx                    # trip planner
-    place/[slug]/page.tsx
+    place/[slug]/page.tsx       # place page (ISR, 1 hour)
     trips/, contribute/, admin/, login/
     api/
       geocode/route.ts          # GET ?q=
       route/route.ts            # POST trip -> routes
       places/along/route.ts     # POST {routeId | geometry, corridorKm, categories}
-      places/[slug]/route.ts
+      places/[slug]/route.ts    # GET -> PlaceDetail
       trips/route.ts, trips/[id]/route.ts
       reviews/route.ts
       contribute/route.ts
       admin/*
   components/
     map/                        # MapView, RouteLayer, PlaceMarkers
-    trip/                       # TripForm, StopInput, RouteCards
-    place/                      # PlaceList, PlaceRow, PlaceSheet, MonthStrip, CarryList
+    trip/                       # Planner, TripForm, StopInput, RouteCards
+    place/                      # PlaceList, PlaceRow, PlacePanel, PlaceDetailView, MonthStrip, CarryList
     ui/                         # buttons, chips, sheet
   server/
     db/                         # drizzle schema, client, migrations
@@ -145,6 +145,12 @@ LIMIT 500;
 Put this in a Postgres function `places_along_route(geojson text, corridor_m int, categories text[])` so the API calls one RPC.
 
 As built (migrations `0004`–`0006`): the route line is parsed and simplified once (materialized CTEs), km and detour are measured on the simplified line too (fast with tens of thousands of imported places; detour is approximate anyway), and when more than 1000 places fall in the corridor the function keeps the most worthwhile ones (curated first, then Wikidata-linked, by category weight, nearest the route) before ordering by km, so long trips are never cut off before the destination. Towns are excluded unless requested by category. The places API leaves fuel stations out of the list by default (`PLACE_LIST_CATEGORIES` in `src/lib/categories.ts`; they are still imported for the planned fuel-range planner). The app then shows the "best stops" by default (`bestAlongRoute` in `src/lib/places.ts`: up to 5 places per 10 km); picking a category shows all of it.
+
+## Place detail
+
+`GET /api/places/[slug]` (`placeDetailService.getPlaceDetail`) returns a verified place with its guide fields, items to carry, verified photos, external ratings, linked videos and reviews. Imported places rarely have guide fields; their OSM tags fill in timings (`opening_hours`), entry fee (`fee`), website and Wikipedia links, labelled as from OpenStreetMap. The place page `/place/[slug]` and the planner's panel render the same `PlaceDetailView`; empty guide fields say "Not known yet".
+
+In the planner, a place row opens the place in the side panel (desktop) or bottom sheet (mobile); with a place open, a map marker opens that place instead.
 
 ## Ranking
 

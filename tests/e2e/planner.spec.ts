@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import type { PlaceDetail } from "@/lib/placeDetail";
+import type { PlaceAlong } from "@/lib/places";
 import type { GeocodeResult, RouteOption } from "@/lib/trip";
 import { roadMix } from "@/server/services/roadMix";
 import { routeFixture, type RouteFixture } from "../helpers/fixtures";
@@ -207,4 +209,97 @@ test("suggests while typing, ours first, and falls back to Nominatim on Enter", 
   expect(requests.at(-1)!.get("source")).toBe("osm");
   await options.filter({ hasText: "Samse" }).first().click();
   await expect(start).toHaveValue("Samse");
+});
+
+const FORT: PlaceAlong = {
+  id: "fort-id",
+  slug: "manjarabad-fort",
+  name: "Manjarabad Fort",
+  category: "fort",
+  location: [75.7581, 12.9173],
+  kmFromStart: 244,
+  detourKm: 1.6,
+  rating: null,
+  ratingCount: 0,
+  bestMonths: [8, 9, 10, 11, 12, 1],
+  thumbUrl: null,
+  trending: false,
+  notable: true,
+};
+
+const FORT_DETAIL: PlaceDetail = {
+  id: FORT.id,
+  slug: FORT.slug,
+  name: FORT.name,
+  category: "fort",
+  location: FORT.location,
+  district: "Hassan",
+  state: "Karnataka",
+  description: null,
+  rating: null,
+  ratingCount: 0,
+  trending: false,
+  guide: {
+    bestVehicles: ["bike", "car"],
+    lastMileNote: "Right off NH75; about 250 steps up.",
+    roadCondition: null,
+    bestMonths: [8, 9, 10, 11, 12, 1],
+    okMonths: [2, 3, 6, 7],
+    avoidMonths: [],
+    bestTimeOfDay: null,
+    visitDurationMin: 45,
+    timings: null,
+    entryFee: null,
+    dressCode: null,
+    permitNeeded: null,
+    notes: null,
+  },
+  carry: [
+    { slug: "raincoat", name: "Raincoat", months: [6, 7, 8, 9], reason: null },
+    { slug: "grip_shoes", name: "Shoes with good grip", months: [], reason: null },
+  ],
+  media: [],
+  externalRatings: [],
+  videos: [],
+  reviews: [],
+  osm: { id: "relation/5419632", openingHours: null, fee: null, website: null, wikipediaUrl: null },
+};
+
+async function mockPlace(page: Page) {
+  await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [FORT] } }));
+  await page.route("**/api/places/manjarabad-fort", (route) =>
+    route.fulfill({ json: { place: FORT_DETAIL } }),
+  );
+}
+
+test("open a place's details and go back to the list", async ({ page }) => {
+  const routeRequests: { stops: { label: string }[] }[] = [];
+  await mockApis(page, routeRequests);
+  await mockPlace(page);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await cards.filter({ hasText: "via Hassan, Sakleshpur" }).click();
+  await page
+    .getByRole("list", { name: "Places along the route" })
+    .getByRole("button", { name: /Manjarabad Fort/ })
+    .click();
+
+  // The details, with every guide field shown, "Not known yet" when empty.
+  await expect(page.getByRole("heading", { name: "Manjarabad Fort" })).toBeFocused();
+  await expect(page.getByText("Right off NH75; about 250 steps up.")).toBeVisible();
+  await expect(
+    page.getByRole("list", { name: "Months to visit" }).getByRole("listitem"),
+  ).toHaveCount(12);
+  await expect(page.getByText("Best Aug–Jan · OK Feb–Mar, Jun–Jul")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Items to carry" })).toContainText("Raincoat");
+  await expect(page.getByText("Not known yet").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open full page" })).toHaveAttribute(
+    "href",
+    "/place/manjarabad-fort",
+  );
+
+  // Back to the list, with focus on the place's row.
+  await page.getByRole("button", { name: "← All places" }).click();
+  await expect(page.getByRole("button", { name: /Manjarabad Fort/ })).toBeFocused();
 });
