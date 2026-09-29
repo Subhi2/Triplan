@@ -10,11 +10,14 @@ interface NameMatchRow extends Record<string, unknown> {
   osm_id: string | null;
   lng: number;
   lat: number;
+  tier: number;
 }
 
 /** One of our own places matching a search, with its OSM id to drop Photon duplicates. */
 export interface LocalPlaceMatch extends GeocodeResult {
   osmId: string | null;
+  /** Found only as a close misspelling: the name does not contain the query. */
+  fuzzy: boolean;
 }
 
 /** Fuzzy (trigram) matches below this similarity are too loose: "kalasa" would find "Kalady". */
@@ -34,7 +37,14 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
   const startsWith = `${escaped}%`;
   const rows = await getDb().execute<NameMatchRow>(sql`
     SELECT p.slug, p.name, p.district, p.state, p.osm_id,
-           ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat
+           ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
+           CASE
+             WHEN lower(p.name) = lower(${q})
+               OR lower(${q}) = ANY (SELECT lower(a) FROM unnest(p.alt_names) a) THEN 0
+             WHEN p.name ILIKE ${startsWith} THEN 1
+             WHEN p.name ILIKE ${contains} OR alt_names_text(p.alt_names) ILIKE ${contains} THEN 2
+             ELSE 3
+           END AS tier
     FROM place p
     JOIN category c ON c.id = p.category_id
     WHERE p.status = 'verified'
@@ -42,13 +52,7 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
            OR alt_names_text(p.alt_names) ILIKE ${contains}
            OR (p.name % ${q} AND similarity(p.name, ${q}) >= ${MIN_FUZZY_SIMILARITY}))
     ORDER BY
-      CASE
-        WHEN lower(p.name) = lower(${q})
-          OR lower(${q}) = ANY (SELECT lower(a) FROM unnest(p.alt_names) a) THEN 0
-        WHEN p.name ILIKE ${startsWith} THEN 1
-        WHEN p.name ILIKE ${contains} OR alt_names_text(p.alt_names) ILIKE ${contains} THEN 2
-        ELSE 3
-      END,
+      tier,
       (c.slug = 'town') DESC,
       similarity(p.name, ${q}) DESC,
       p.name
@@ -75,6 +79,7 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
       location: [r.lng, r.lat],
       source: "local",
       osmId: r.osm_id,
+      fuzzy: r.tier === 3,
     };
   });
 }

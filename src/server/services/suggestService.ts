@@ -26,7 +26,9 @@ const normalise = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "")
 /**
  * Suggestions while the rider types: our own places first (curated and imported, with their guide
  * data), then Photon results for everything else, minus Photon's copies of places we already list
- * (same OSM id, or the same name within 3 km). If Photon is down, our places still come back.
+ * (same OSM id, or the same name within 3 km). A place of ours found only as a misspelling ("Samsi"
+ * for "samse") comes after Photon's places named exactly what was typed. If Photon is down, our
+ * places still come back.
  */
 export async function suggestPlaces(
   query: string,
@@ -51,20 +53,27 @@ export async function suggestPlaces(
       ),
   );
 
+  const ours = (l: LocalPlaceMatch): GeocodeResult => ({
+    id: l.id,
+    name: l.name,
+    label: l.label,
+    location: l.location,
+    source: l.source,
+  });
+  const theirs = (hit: GeocodeHit): GeocodeResult => ({
+    id: hit.id,
+    name: hit.name,
+    label: hit.label,
+    location: hit.location,
+    source: "photon",
+  });
+  const typed = normalise(query);
+  const exact = others.filter((h) => normalise(h.name) === typed);
+  const rest = others.filter((h) => normalise(h.name) !== typed);
   return [
-    ...local.map(({ id, name, label, location, source }): GeocodeResult => ({
-      id,
-      name,
-      label,
-      location,
-      source,
-    })),
-    ...others.slice(0, MAX_SUGGESTIONS - local.length).map((hit): GeocodeResult => ({
-      id: hit.id,
-      name: hit.name,
-      label: hit.label,
-      location: hit.location,
-      source: "photon",
-    })),
-  ];
+    ...local.filter((l) => !l.fuzzy).map(ours),
+    ...exact.map(theirs),
+    ...local.filter((l) => l.fuzzy).map(ours),
+    ...rest.map(theirs),
+  ].slice(0, MAX_SUGGESTIONS);
 }

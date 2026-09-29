@@ -7,6 +7,7 @@ const local = (
   name: string,
   location: [number, number],
   osmId: string | null,
+  fuzzy = false,
 ): LocalPlaceMatch => ({
   id: `place/${name.toLowerCase()}`,
   name,
@@ -14,6 +15,7 @@ const local = (
   location,
   source: "local",
   osmId,
+  fuzzy,
 });
 const hit = (name: string, location: [number, number], id: string): GeocodeHit => ({
   id,
@@ -63,6 +65,15 @@ describe("suggestPlaces", () => {
       near: [76.75, 15.05],
       zoom: 5,
     });
+  });
+
+  it("puts Photon's exact name before a place of ours found only as a misspelling", async () => {
+    const d = deps(
+      [local("Samsi", [88.0, 25.3], "node/1", true)],
+      [hit("Samse", [75.4, 13.2], "node/2"), hit("Samse Road", [75.5, 13.2], "way/3")],
+    );
+    const names = (await suggestPlaces("samse", {}, d)).map((r) => r.name);
+    expect(names).toEqual(["Samse", "Samsi", "Samse Road"]);
   });
 
   it("returns at most 8 suggestions", async () => {
