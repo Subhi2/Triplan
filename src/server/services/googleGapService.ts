@@ -79,7 +79,14 @@ async function resolveGooglePlaceId(place: PlaceForGoogle): Promise<string | nul
   if (place.googlePlaceId) return place.googlePlaceId;
   const google = getGooglePlacesProvider();
   if (!google || place.recentlyChecked || !(await takeGoogleBudget("ids"))) return null;
-  const id = await google.findPlaceId(place.name, place.location);
+  let id: string | null;
+  try {
+    id = await google.findPlaceId(place.name, place.location);
+  } catch (err) {
+    // Google down or the key refused: links fall back to a name search; the next visit retries.
+    console.error(`Google place id lookup failed for ${place.name}`, err);
+    return null;
+  }
   await saveGooglePlaceId(place.id, id);
   return id;
 }

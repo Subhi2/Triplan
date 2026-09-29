@@ -8,7 +8,8 @@ import {
 } from "@/server/providers/google/places";
 import { jsonFixture } from "../helpers/fixtures";
 
-// tests/fixtures/google follows the documented Places API (New) format (see its README).
+// tests/fixtures/google follows the documented Places API (New) format; real responses are not
+// recorded, since Google content may not be stored (see its README).
 
 describe("parseDetails", () => {
   const fill = parseDetails(detailsSchema.parse(jsonFixture("google/details-reviews-photos.json")));

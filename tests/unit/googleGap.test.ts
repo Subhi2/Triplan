@@ -125,6 +125,14 @@ describe("getGoogleGapFill", () => {
     expect(google.findPlaceId).not.toHaveBeenCalled();
   });
 
+  it("carries on without an id when the lookup fails, and stores nothing", async () => {
+    execute.mockResolvedValueOnce([row({ google_place_id: null })]);
+    google.findPlaceId.mockRejectedValue(new Error("403 API_KEY_HTTP_REFERRER_BLOCKED"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await getGooglePlaceId("manjarabad-fort")).toMatchObject({ googlePlaceId: null });
+    expect(execute).toHaveBeenCalledTimes(1); // no UPDATE: the next visit tries again
+  });
+
   it("forgets an id Google no longer knows", async () => {
     execute.mockResolvedValueOnce([row()]);
     google.details.mockResolvedValue(null);
