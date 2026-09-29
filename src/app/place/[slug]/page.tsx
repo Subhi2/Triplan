@@ -80,7 +80,10 @@ export default async function PlacePage({ params }: Props) {
         }}
       />
       <nav className="flex items-center justify-between gap-2 text-sm">
-        <Link href="/" className="text-brand inline-flex min-h-11 items-center font-bold">
+        <Link
+          href="/"
+          className="font-display inline-flex min-h-11 items-center text-lg font-extrabold tracking-tight"
+        >
           {SITE_NAME}
         </Link>
         <Link

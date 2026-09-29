@@ -1,5 +1,8 @@
 /** The app's name, used in titles, share cards and the manifest. */
-export const SITE_NAME = "Bike Travelling Guide";
+export const SITE_NAME = "Triplan";
+
+/** One line on what the app does, under the name. */
+export const SITE_TAGLINE = "Everything worth stopping for, on your exact road.";
 
 /**
  * The public address of the site, for absolute links in share cards, the sitemap and robots.txt.

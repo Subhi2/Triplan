@@ -1,6 +1,28 @@
 import type { Metadata, Viewport } from "next";
+import { Atkinson_Hyperlegible, Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import "./globals.css";
+
+// "Ghat Road" type (docs/08-design.md): Atkinson Hyperlegible reads well on a phone in sunlight,
+// Bricolage Grotesque for headings, IBM Plex Mono for km and times.
+const body = Atkinson_Hyperlegible({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-body",
+  display: "swap",
+});
+const heading = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-heading",
+  display: "swap",
+});
+const numbers = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-numbers",
+  display: "swap",
+});
 
 const description =
   "Plan a ride and see every temple, fort, viewpoint, waterfall and food stop along your exact route.";
@@ -20,7 +42,7 @@ export const metadata: Metadata = {
     images: [{ url: "/og/plan", width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: { card: "summary_large_image" },
-  appleWebApp: { capable: true, title: "Ride Guide", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
   icons: {
     icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
@@ -37,7 +59,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${body.variable} ${heading.variable} ${numbers.variable}`}>
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );

@@ -1,23 +1,129 @@
 @import "tailwindcss";
 
+/* "Ghat Road" design (docs/08-design.md). Warm paper-and-ink neutrals replace Tailwind's stone,
+   so every stone-* class in the app takes the new palette; teal stays the brand colour. */
 @theme {
   --color-brand: #0f766e;
-  --color-brand-dark: #115e59;
+  --color-brand-dark: #0b4f4a;
+  --color-brand-tint: #e3f0ee;
+  --color-ghat: #c2410c;
+  --color-ghat-dark: #9a3412;
+  --color-marigold: #b45309;
+  --color-marigold-tint: #fbebd7;
+
+  --color-stone-50: #faf8f3;
+  --color-stone-100: #f4f1ea;
+  --color-stone-200: #e2ddd2;
+  --color-stone-300: #cfc8ba;
+  --color-stone-400: #a8a194;
+  --color-stone-500: #736d61;
+  --color-stone-600: #5b574f;
+  --color-stone-700: #45423b;
+  --color-stone-800: #2e2c27;
+  --color-stone-900: #1b1a17;
+  --color-stone-950: #12110f;
+
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1.05);
+
+  --animate-rise: rise 0.45s var(--ease-out-soft) both;
+  --animate-sheet-in: sheet-in 0.45s var(--ease-spring) both;
+  --animate-grow-up: grow-up 0.35s var(--ease-out-soft) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+  }
+  @keyframes grow-up {
+    from {
+      opacity: 0;
+      transform: scaleY(0.4);
+    }
+  }
+  @keyframes shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* Fonts come from next/font in layout.tsx as CSS variables. */
+@theme inline {
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-numbers), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
+  --background: var(--color-stone-100);
+  --surface: #ffffff;
+  --foreground: var(--color-stone-900);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0c0a09;
-    --foreground: #f5f5f4;
+    --background: var(--color-stone-950);
+    --surface: var(--color-stone-900);
+    --foreground: #f4f1ea;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+@layer base {
+  /* Buttons and links respond to touch: a quick press, never a jump. */
+  :where(button, a, summary) {
+    transition:
+      transform 0.18s var(--ease-out-soft),
+      background-color 0.18s,
+      border-color 0.18s,
+      color 0.18s,
+      box-shadow 0.18s;
+  }
+  :where(button:not(:disabled), a[href], summary):active {
+    transform: scale(0.97);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+/* Numbers that line up (km, times). */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Photos and lists that are still loading. */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-stone-200) 0%,
+    var(--color-stone-100) 50%,
+    var(--color-stone-200) 100%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

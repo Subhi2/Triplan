@@ -19,7 +19,7 @@ import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture } from "@/lib/rideCheck";
-import { tripHeadline } from "@/lib/site";
+import { SITE_NAME, SITE_TAGLINE, tripHeadline } from "@/lib/site";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
@@ -548,7 +548,7 @@ export function Planner({ savedTrip = null }: Props) {
           {/* Phones with a trip: one row, the trip itself in place of the app's name. */}
           {compactHeader ? (
             <div className="min-w-0">
-              <h1 className="sr-only">Bike Travelling Guide</h1>
+              <h1 className="sr-only">{SITE_NAME}</h1>
               <p className="truncate font-semibold">
                 {first?.label} → {last?.label}
               </p>
@@ -560,10 +560,10 @@ export function Planner({ savedTrip = null }: Props) {
             </div>
           ) : (
             <div className="min-w-0">
-              <h1 className="text-brand text-lg font-bold md:text-xl">Bike Travelling Guide</h1>
-              <p className="text-sm text-stone-600 dark:text-stone-400">
-                Every worthwhile stop along your exact route.
-              </p>
+              <h1 className="font-display text-2xl leading-none font-extrabold tracking-tight md:text-3xl">
+                {SITE_NAME}
+              </h1>
+              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{SITE_TAGLINE}</p>
             </div>
           )}
           <div className="flex shrink-0 items-center gap-1">
