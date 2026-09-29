@@ -190,6 +190,8 @@ test("suggests while typing, ours first, and falls back to Nominatim on Enter", 
     return route.fulfill({ json: { results } });
   });
   await page.goto("/");
+  // The map only renders after hydration; keys typed before that are lost.
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   const start = page.getByRole("combobox", { name: "Start" });
 
   // Typing quickly sends one request, after the pause, with the map position as a bias.
