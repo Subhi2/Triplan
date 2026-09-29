@@ -38,6 +38,7 @@ Work through the phases in order. Each phase ends with a working app, passing `p
 
 ## Phase 3 · Places along the route
 
+0. **Places for any trip, not just the demo.** Write `scripts/import-osm.ts` (`pnpm db:import-osm -- --region=<name>`) that downloads places from OpenStreetMap through the Overpass API (`https://overpass-api.de/api/interpreter`) region by region, starting with all of Karnataka, then Kerala, Tamil Nadu, Goa and Maharashtra. Tags: `tourism=viewpoint|attraction|museum|camp_site`, `historic=fort|castle|monument|ruins|archaeological_site|memorial`, `natural=waterfall|peak|beach|cave_entrance`, `water=lake|reservoir` with a name, `amenity=place_of_worship` with a `wikidata` or `wikipedia` tag, `amenity=fuel`, and `place=town|city` into the towns table. Map each to a category, upsert on `osm_id`, store as `status='verified'` with `source='osm'` (guide fields empty, shown as "Not known yet"). Throttle to one Overpass request at a time and split large regions into tiles. Test: a trip that isn't Bengaluru → Kalasa (e.g. Bengaluru → Ooty, Mysuru → Coorg, Pune → Goa) returns a sensible place list.
 1. `corridorService.placesAlong(geometry, corridorM, categories)` calling the SQL function. `POST /api/places/along`.
 2. `PlaceList` + `PlaceRow`: km marker, name, category chip, rating, best-time summary, detour label. Sorted by km.
 3. Category filter chips and "hide detours over N km" toggle.
@@ -52,10 +53,10 @@ Work through the phases in order. Each phase ends with a working app, passing `p
 1. `GET /api/places/[slug]` returning `PlaceDetail`.
 2. Place page and sheet: gallery with attribution, rating, `MonthStrip` (12 cells: best / ok / avoid), best vehicle with last-mile note, `CarryList` (current-season first), timings, fee, dress code, reviews, related videos (empty for now).
 3. "Add to trip": insert the place as a via stop at the right position (by km from start) and recompute the route.
-4. Supabase Auth (magic link + Google). `/login`, session in server components.
-5. Save trip, list trips, open trip, share public read-only link.
+4. ~~Supabase Auth~~: dropped. The app is open, no sign-in (decided 2026-09-29).
+5. Save trip, list trips, open trip, share the trip's link. Trips are open: one shared list, no owners.
 
-**Done when:** a signed-in user can plan Bengaluru → Kalasa via Sakleshpur, add Manjarabad Fort, save and reopen the trip.
+**Done when:** a user can plan Bengaluru → Kalasa via Sakleshpur, add Manjarabad Fort, save and reopen the trip.
 
 **MVP complete here.** Deploy to Vercel + Supabase.
 
@@ -95,6 +96,20 @@ Only after Meta app review is approved (see `05`).
 ## Phase 8 · Polish and launch
 
 - Offline trip pack, monsoon warnings on place pages during avoid months, Lighthouse ≥ 90, error monitoring (Sentry), analytics, self-hosted OSRM, terms and privacy pages, image and content takedown process.
+
+## Later · Exact Google Maps links (needs a Google API key)
+
+Decided 2026-09-29 to do this later. Today "Open in Google Maps" searches the place's name with the map at its coordinates (see "Google Maps links" in `02-architecture.md`): a unique name opens the place, but a common one ("Shiva Temple") shows a list of matches. A Google place id opens the exact place every time.
+
+Before starting: create a Google Maps Platform API key with the Places API (New) enabled. This needs a billing account. Restrict the key to the Places API and to the server. Check the current price of ID-only Text Search requests.
+
+1. `GOOGLE_MAPS_API_KEY` in `src/server/env.ts` and `.env.example` (server only, never `NEXT_PUBLIC_`).
+2. Provider `src/server/providers/google/places.ts` behind an interface, mocked in tests: Text Search (New) with the field mask `places.id` only, the place name as the query and a location bias circle of about 300 m around our coordinates. Accept a result only if it lies within that circle.
+3. Resolve lazily: the row and detail links point to our own `GET /api/places/[slug]/google-maps`, which uses `place.google_place_id` when set, otherwise looks it up once, stores it, and redirects to `https://www.google.com/maps/search/?api=1&query=<name>&query_place_id=<id>`. With no match, or if the lookup fails, it redirects to today's name-at-coordinates link. Record when a lookup found nothing (e.g. a `google_place_checked_at` column) so it is not repeated on every click.
+4. Rate-limit and cache like the other providers; never call Google in a loop or from the OSM import.
+5. Store only the place id. Google's ratings, reviews and photos are never stored (see "Things to avoid" in `CLAUDE.md`).
+
+**Done when:** "Open in Google Maps" on a common-named place (a "Shiva Temple" from the OSM import) opens that exact temple's Google Maps page, and a second click needs no Google request.
 
 ---
 

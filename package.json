@@ -17,9 +17,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "db:import-osm": "tsx --env-file=.env.local scripts/import-osm.ts",
     "icons": "tsx scripts/generate-icons.ts",
     "check:pins": "tsx --env-file=.env.local scripts/check-pins.ts",
-    "fixtures:routes": "tsx --env-file=.env.local scripts/record-route-fixtures.ts"
+    "fixtures:routes": "tsx --env-file=.env.local scripts/record-route-fixtures.ts",
+    "fixtures:photon": "tsx --env-file=.env.local scripts/record-photon-fixtures.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

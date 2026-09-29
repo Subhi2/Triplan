@@ -17,6 +17,7 @@ export interface PlaceAlongRow {
   bestMonths: number[];
   thumbUrl: string | null;
   trendingScore: number;
+  notable: boolean;
 }
 
 interface RawRow extends Record<string, unknown> {
@@ -33,6 +34,7 @@ interface RawRow extends Record<string, unknown> {
   best_months: number[];
   thumb_url: string | null;
   trending_score: number;
+  notable: boolean;
 }
 
 /**
@@ -62,6 +64,7 @@ export async function placesAlong(
     bestMonths: r.best_months,
     thumbUrl: r.thumb_url,
     trendingScore: r.trending_score,
+    notable: r.notable,
   }));
 }
 
@@ -79,5 +82,76 @@ export function toPlaceAlong(row: PlaceAlongRow): PlaceAlong {
     bestMonths: row.bestMonths,
     thumbUrl: row.thumbUrl,
     trending: row.trendingScore >= TRENDING_MIN_SCORE,
+    notable: row.notable,
   };
+}
+
+interface TownRawRow extends Record<string, unknown> {
+  name: string;
+  lng: number;
+  lat: number;
+  km_from_start: number;
+  population: number | null;
+  kind: string;
+}
+
+export interface TownAlongRow {
+  name: string;
+  location: LngLat;
+  kmFromStart: number;
+  population: number | null;
+  kind: "city" | "town";
+}
+
+/** Towns and cities within `withinM` of the route, ordered by km, with population for ranking. */
+export async function townsAlong(geometry: LineString, withinM: number): Promise<TownAlongRow[]> {
+  const rows = await getDb().execute<TownRawRow>(sql`
+    WITH r AS (
+      SELECT ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(geometry)}), 4326) AS g
+    ), rl AS (
+      SELECT g, ST_Length(g::geography) AS len,
+             ST_Transform(ST_Simplify(ST_Transform(g, 3857), 50), 4326)::geography AS simple
+      FROM r
+    )
+    SELECT p.name, ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
+           ST_LineLocatePoint(rl.g, p.location::geometry) * rl.len / 1000 AS km_from_start,
+           p.population, coalesce(p.osm_tags->>'place', 'town') AS kind
+    FROM place p
+    JOIN category c ON c.id = p.category_id
+    CROSS JOIN rl
+    WHERE c.slug = 'town' AND p.status = 'verified'
+      AND ST_DWithin(p.location, rl.simple, ${Math.round(withinM)})
+    ORDER BY km_from_start`);
+  return rows.map((r) => ({
+    name: r.name,
+    location: [r.lng, r.lat],
+    kmFromStart: Number(r.km_from_start),
+    population: r.population,
+    kind: r.kind === "city" ? "city" : "town",
+  }));
+}
+
+interface TownBoxRawRow extends Record<string, unknown> {
+  name: string;
+  lng: number;
+  lat: number;
+  population: number | null;
+  kind: string;
+}
+
+/** Towns and cities inside a bounding box [west, south, east, north]. */
+export async function townsInBox([west, south, east, north]: [number, number, number, number]) {
+  const rows = await getDb().execute<TownBoxRawRow>(sql`
+    SELECT p.name, ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
+           p.population, coalesce(p.osm_tags->>'place', 'town') AS kind
+    FROM place p
+    JOIN category c ON c.id = p.category_id
+    WHERE c.slug = 'town' AND p.status = 'verified'
+      AND p.location && ST_MakeEnvelope(${west}, ${south}, ${east}, ${north}, 4326)::geography`);
+  return rows.map((r) => ({
+    name: r.name,
+    location: [r.lng, r.lat] as LngLat,
+    population: r.population,
+    kind: r.kind === "city" ? ("city" as const) : ("town" as const),
+  }));
 }

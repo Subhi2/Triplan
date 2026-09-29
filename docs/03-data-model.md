@@ -9,8 +9,9 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;   -- fuzzy name matching
 -- Categories -----------------------------------------------------------
 CREATE TABLE category (
   id          serial PRIMARY KEY,
-  slug        text UNIQUE NOT NULL,       -- temple, heritage, fort, viewpoint, waterfall, trek, lake,
-                                          -- beach, food, coffee, fuel, stay, town
+  slug        text UNIQUE NOT NULL,       -- temple, worship, heritage, fort, museum, attraction,
+                                          -- viewpoint, waterfall, trek, peak, cave, lake, beach,
+                                          -- food, coffee, fuel, stay, town (src/lib/categories.ts)
   name        text NOT NULL,
   icon        text NOT NULL,
   parent_id   int REFERENCES category(id),
@@ -33,9 +34,11 @@ CREATE TABLE place (
   description   text,
   status        place_status NOT NULL DEFAULT 'unverified',
   source        text NOT NULL,             -- 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
-  osm_id        text,
+  osm_id        text UNIQUE,               -- 'node/123' | 'way/456' | 'relation/789'; OSM import upserts on it
   google_place_id text,
   wikidata_id   text,
+  population    int,                       -- towns, from OSM; ranks "via" towns on route cards
+  osm_tags      jsonb,                     -- selected OSM tags (provenance, later guide fields)
   rating_avg    real,                      -- from our reviews, maintained by trigger
   rating_count  int NOT NULL DEFAULT 0,
   trending_score real NOT NULL DEFAULT 0,
@@ -46,6 +49,10 @@ CREATE TABLE place (
 CREATE INDEX place_location_gix ON place USING gist (location);
 CREATE INDEX place_name_trgm ON place USING gin (name gin_trgm_ops);
 CREATE INDEX place_status_idx ON place (status);
+CREATE INDEX place_category_idx ON place (category_id);
+-- Type-ahead on alternative names ("Ooty" -> Udhagamandalam); alt_names_text is an IMMUTABLE
+-- wrapper around array_to_string so it can be indexed.
+CREATE INDEX place_alt_names_trgm ON place USING gin (alt_names_text(alt_names) gin_trgm_ops);
 
 -- Curated guide fields (one row per place) -------------------------------
 CREATE TYPE vehicle AS ENUM ('bike', 'car', 'suv_4x4', 'on_foot', 'bus');
@@ -165,6 +172,7 @@ CREATE TABLE social_post (
 
 
 -- Trips ---------------------------------------------------------------------
+-- Trips are open (no sign-in): user_id stays empty and every trip is public.
 CREATE TABLE trip (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       uuid REFERENCES auth.users(id),
@@ -172,12 +180,15 @@ CREATE TABLE trip (
   vehicle       vehicle NOT NULL DEFAULT 'bike',
   corridor_m    int NOT NULL DEFAULT 5000,
   route_geom    geography(LineString, 4326),
+  route_id      text,                          -- the picked route option, selected again on reopen
+  via_label     text,                          -- "via Hassan, Sakleshpur"
   distance_m    int,
   duration_s    int,
-  is_public     boolean NOT NULL DEFAULT false,
+  is_public     boolean NOT NULL DEFAULT true,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
+CREATE INDEX trip_updated_at_idx ON trip (updated_at DESC);
 
 CREATE TABLE trip_stop (
   trip_id   uuid REFERENCES trip(id) ON DELETE CASCADE,
@@ -226,6 +237,14 @@ interface RouteOption {
   durationMin: number;
   viaLabel: string;            // "via Sakleshpur"
   towns: string[];
+  roadMix: RoadMix | null;     // null when the routing engine reports no road numbers
+}
+
+interface RoadMix {            // metres; the parts add up to the route distance
+  nationalM: number;           // NH / NE
+  stateM: number;              // SH
+  ghatM: number;               // winding hill sections, from the geometry (any road)
+  otherM: number;              // district and local roads
 }
 
 interface PlaceAlong {
@@ -243,7 +262,18 @@ interface PlaceAlong {
   trending: boolean;
 }
 
-interface PlaceDetail extends PlaceAlong {
+// Route-specific fields (km, detour) come from the places list, so PlaceDetail does not have them.
+interface PlaceDetail {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  location: LngLat;
+  district: string | null;
+  state: string | null;
+  rating: number | null;       // our reviews
+  ratingCount: number;
+  trending: boolean;
   description: string | null;
   guide: {
     bestVehicles: ("bike" | "car" | "suv_4x4" | "on_foot" | "bus")[];
@@ -257,8 +287,31 @@ interface PlaceDetail extends PlaceAlong {
     notes: string | null;
   } | null;
   carry: { slug: string; name: string; months: number[]; reason: string | null }[];
-  media: { url: string; thumbUrl: string | null; author: string | null; license: string; source: string }[];
-  externalRatings: { source: string; rating: number; count: number }[];
+  media: { url: string; thumbUrl: string | null; author: string | null; authorUrl: string | null; license: string; source: string }[];
+  externalRatings: { source: string; rating: number; count: number | null }[];
   videos: { url: string; source: "youtube" | "instagram"; creator: string | null; title: string | null }[];
+  reviews: { id: string; rating: number; body: string | null; visitedMonth: number | null; visitedYear: number | null;
+             vehicleUsed: string | null; author: string | null; createdAt: string }[];
+  osm: { id: string | null; openingHours: string | null; fee: string | null;   // from OSM tags, shown
+         website: string | null; wikipediaUrl: string | null };               // where the guide is empty
+}
+
+interface SavedTrip {           // GET /api/trips/[id]
+  id: string;
+  title: string;
+  vehicle: "bike" | "car";
+  corridorKm: 2 | 5 | 10 | 25;
+  stops: { label: string; location: LngLat }[];   // start, vias, destination
+  routeId: string | null;
+  viaLabel: string | null;
+  distanceKm: number | null;
+  durationMin: number | null;
+  updatedAt: string;
+}
+
+interface TripSummary {         // GET /api/trips (the /trips list)
+  id: string; title: string; vehicle: "bike" | "car";
+  from: string; to: string; viaCount: number; viaLabel: string | null;
+  distanceKm: number | null; durationMin: number | null; updatedAt: string;
 }
 ```

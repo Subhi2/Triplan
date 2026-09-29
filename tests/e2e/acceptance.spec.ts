@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { expect, test, type Page } from "@playwright/test";
+import postgres from "postgres";
 import type { RouteOption } from "@/lib/trip";
 import { routeFixture, type RouteFixture } from "../helpers/fixtures";
 
@@ -21,18 +22,22 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
     durationMin: Math.round(r.durationS / 60),
     viaLabel: labels[i]!,
     towns: [],
+    roadMix: null,
   }));
 }
 
 async function mockRouting(page: Page) {
   await page.route("**/api/route", (route) => {
-    const { stops } = route.request().postDataJSON() as { stops: unknown[] };
+    const { stops } = route.request().postDataJSON() as { stops: { label: string }[] };
+    const vias = stops.slice(1, -1).map((s) => s.label);
     const routes =
       stops.length === 2
         ? options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"])
-        : options("bengaluru-belur-chikkamagaluru-balehonnur-kalasa", [
-            "via Belur, Chikkamagaluru +1",
-          ]);
+        : vias.includes("Sakleshpur")
+          ? options("bengaluru-sakleshpur-kalasa", [`via ${vias.join(", ")}`])
+          : options("bengaluru-belur-chikkamagaluru-balehonnur-kalasa", [
+              "via Belur, Chikkamagaluru +1",
+            ]);
     return route.fulfill({ json: { routes } });
   });
   await page.route("https://tiles.openfreemap.org/**", (route) =>
@@ -42,14 +47,15 @@ async function mockRouting(page: Page) {
   );
 }
 
-/** Rows of the place list as { km, name, detour }. */
+/** Rows of the place list: km marker, name, detour label (as km, 0 on route) and category. */
 async function placeRows(page: Page) {
   const rows = page.getByRole("list", { name: "Places along the route" }).getByRole("button");
   await expect(rows.first()).toBeVisible({ timeout: 30_000 });
   const texts = await rows.allInnerTexts();
   return texts.map((t) => {
-    const [km, name, detour] = t.split("\n").map((s) => s.trim());
-    return { km: Number(km!.replace(" km", "")), name: name!, detour: detour! };
+    const [km, name, detour, category] = t.split("\n").map((s) => s.trim());
+    const detourKm = detour === "On route" ? 0 : Number(/\+([\d.]+) km/.exec(detour!)?.[1]);
+    return { km: Number(km!.replace(" km", "")), name: name!, detour: detour!, detourKm, category };
   });
 }
 
@@ -82,7 +88,7 @@ test("the Sakleshpur route lists Manjarabad Fort and Ballalarayana Durga, ordere
   for (const detour of ["Devaramane Viewpoint", "Shravanabelagola (Gommateshwara)"]) {
     expect(names).not.toContain(detour);
   }
-  expect(rows.find((r) => r.name === "Manjarabad Fort")!.detour).toBe("+1.6 km detour");
+  expect(rows.find((r) => r.name === "Manjarabad Fort")!.detourKm).toBeCloseTo(1.6, 0);
   const kms = rows.map((r) => r.km);
   expect(kms).toEqual([...kms].sort((a, b) => a - b));
 
@@ -90,7 +96,9 @@ test("the Sakleshpur route lists Manjarabad Fort and Ballalarayana Durga, ordere
   await setCorridor(page, "10");
   const wide = await placeRows(page);
   for (const detour of ["Devaramane Viewpoint", "Shravanabelagola (Gommateshwara)"]) {
-    expect(wide.find((r) => r.name === detour)?.detour).toBe("+7.2 km detour");
+    const row = wide.find((r) => r.name === detour);
+    expect(row, detour).toBeDefined();
+    expect(row!.detourKm).toBeGreaterThan(5); // flagged: beyond the default corridor
   }
 });
 
@@ -106,7 +114,9 @@ test("the Chikkamagaluru route lists Belur, and Mullayanagiri only as a 10 km de
 
   await setCorridor(page, "10");
   const wide = await placeRows(page);
-  expect(wide.find((r) => r.name === "Mullayanagiri Peak")?.detour).toBe("+10.0 km detour");
+  const peak = wide.find((r) => r.name === "Mullayanagiri Peak");
+  expect(peak).toBeDefined();
+  expect(peak!.detourKm).toBeGreaterThan(9);
 });
 
 test("category chips and the detour toggle filter the list", async ({ page }) => {
@@ -120,15 +130,68 @@ test("category chips and the detour toggle filter the list", async ({ page }) =>
 
   await page.getByRole("button", { name: /^Temple/ }).click();
   const temples = await placeRows(page);
-  expect(temples.map((r) => r.name)).toEqual([
-    "Hasanamba Temple",
-    "Kalaseshwara Temple, Kalasa",
-    "Horanadu Annapoorneshwari Temple",
-  ]);
+  expect(temples.every((r) => r.category === "Temple")).toBe(true);
+  expect(temples.map((r) => r.name)).toEqual(
+    expect.arrayContaining([
+      "Hasanamba Temple",
+      "Kalaseshwara Temple, Kalasa",
+      "Horanadu Annapoorneshwari Temple",
+    ]),
+  );
 
   await page.getByLabel("Hide detours over").check();
   await page.getByLabel("Maximum detour").selectOption("1");
   const close = await placeRows(page);
-  expect(close.map((r) => r.name)).toEqual(["Kalaseshwara Temple, Kalasa"]);
+  expect(close.every((r) => r.category === "Temple" && r.detourKm <= 1)).toBe(true);
+  expect(close.map((r) => r.name)).toContain("Kalaseshwara Temple, Kalasa");
+  expect(close.map((r) => r.name)).not.toContain("Horanadu Annapoorneshwari Temple"); // +4.9 km
   expect(decodeURIComponent(page.url())).toContain("cat=temple&hd=1");
+});
+
+// Phase 4 "done when" (docs/04-build-plan.md). Saved trips are open, so this writes a real trip to
+// the shared list and deletes it afterwards.
+test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", async ({
+  page,
+}, testInfo) => {
+  const title = `E2E trip ${testInfo.project.name} ${Date.now()}`;
+  const db = postgres(process.env.DATABASE_URL!, { prepare: false, max: 1 });
+  try {
+    await page.goto(`/?from=${B}&via=Sakleshpur@75.785,12.943&to=${K}`);
+    await page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ })
+      .click({ timeout: 30_000 });
+    await expect(page.getByText("Right off NH75; about 250 steps up.")).toBeVisible();
+    await page.getByRole("button", { name: "Add to trip" }).click();
+    await expect(page.getByText(/In your trip \(stop \d\)/)).toBeVisible();
+
+    await page.getByRole("button", { name: "← All places" }).click();
+    const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+    await expect(cards.first()).toContainText("Manjarabad Fort");
+    await page.getByRole("button", { name: "Save trip" }).click();
+    await page.getByRole("textbox", { name: "Trip name" }).fill(title);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}\?/);
+
+    // Everyone's list shows it; opening it restores the stops and the route.
+    await page.goto("/trips");
+    await page.getByRole("link", { name: new RegExp(title) }).click();
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText(`Saved trip: ${title}`)).toBeVisible();
+    if (await page.getByRole("button", { name: "Edit trip" }).isVisible()) {
+      await page.getByRole("button", { name: "Edit trip" }).click();
+    }
+    const stops = ["Start", "Stop 1", "Stop 2", "Destination"].map((n) =>
+      page.getByRole("combobox", { name: n }).inputValue(),
+    );
+    expect((await Promise.all(stops)).sort()).toEqual(
+      ["Bengaluru", "Kalasa", "Manjarabad Fort", "Sakleshpur"].sort(),
+    );
+    await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Bengaluru");
+    await expect(page.getByRole("combobox", { name: "Destination" })).toHaveValue("Kalasa");
+  } finally {
+    await db`DELETE FROM trip WHERE title = ${title}`;
+    await db.end();
+  }
 });

@@ -117,7 +117,8 @@ describe.skipIf(!process.env.DATABASE_URL)("places along real routes", () => {
       expect(all.some((p) => p.category === "town")).toBe(false);
 
       const forts = await placesAlong(ROUTES.sakleshpurNh75.geometry, 5_000, ["fort"]);
-      expect(forts.map((p) => p.slug)).toEqual(["manjarabad-fort"]);
+      expect(forts.map((p) => p.slug)).toContain("manjarabad-fort");
+      expect(forts.every((p) => p.category === "fort")).toBe(true);
     });
   });
 
@@ -131,7 +132,11 @@ describe.skipIf(!process.env.DATABASE_URL)("places along real routes", () => {
           ],
           vehicle: "bike",
         },
-        { routing: { route: async () => direct }, townsAlong: townsAlongDb },
+        {
+          routing: { route: async () => direct },
+          townsAlong: townsAlongDb,
+          townsInBox: async () => [],
+        },
       );
       expect(routes.map((r) => r.viaLabel)).toEqual([
         "via Chikkamagaluru",

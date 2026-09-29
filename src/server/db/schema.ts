@@ -17,6 +17,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
@@ -64,9 +65,11 @@ export const place = pgTable(
     description: text("description"),
     status: placeStatus("status").notNull().default("unverified"),
     source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
-    osmId: text("osm_id"),
+    osmId: text("osm_id"), // "node/123", "way/456"; unique, the OSM import upserts on it
     googlePlaceId: text("google_place_id"),
     wikidataId: text("wikidata_id"),
+    population: integer("population"), // towns, from OSM when tagged
+    osmTags: jsonb("osm_tags"), // selected OSM tags kept for provenance and later guide fields
     ratingAvg: real("rating_avg"),
     ratingCount: integer("rating_count").notNull().default(0),
     trendingScore: real("trending_score").notNull().default(0),
@@ -78,6 +81,8 @@ export const place = pgTable(
     index("place_location_gix").using("gist", t.location),
     index("place_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
     index("place_status_idx").on(t.status),
+    index("place_category_idx").on(t.categoryId),
+    uniqueIndex("place_osm_id_key").on(t.osmId),
   ],
 );
 
@@ -236,19 +241,26 @@ export const socialPost = pgTable(
 
 // Trips -----------------------------------------------------------------------
 
-export const trip = pgTable("trip", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => authUsers.id),
-  title: text("title").notNull(),
-  vehicle: vehicle("vehicle").notNull().default("bike"),
-  corridorM: integer("corridor_m").notNull().default(5000),
-  routeGeom: geographyLine("route_geom"),
-  distanceM: integer("distance_m"),
-  durationS: integer("duration_s"),
-  isPublic: boolean("is_public").notNull().default(false),
-  createdAt: createdAt(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+// Trips are open: no sign-in, so user_id stays empty and every trip is public (see docs/03).
+export const trip = pgTable(
+  "trip",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => authUsers.id),
+    title: text("title").notNull(),
+    vehicle: vehicle("vehicle").notNull().default("bike"),
+    corridorM: integer("corridor_m").notNull().default(5000),
+    routeGeom: geographyLine("route_geom"),
+    routeId: text("route_id"), // the picked route option, selected again when the trip reopens
+    viaLabel: text("via_label"), // "via Hassan, Sakleshpur"
+    distanceM: integer("distance_m"),
+    durationS: integer("duration_s"),
+    isPublic: boolean("is_public").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("trip_updated_at_idx").on(t.updatedAt.desc())],
+);
 
 export const tripStop = pgTable(
   "trip_stop",

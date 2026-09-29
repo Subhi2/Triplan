@@ -7,6 +7,8 @@ const BASE_URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
+  // One dev server compiles routes on demand and shares the database; more workers only time out.
+  workers: process.env.CI ? 1 : 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: "list",
@@ -24,7 +26,8 @@ export default defineConfig({
   ],
   webServer: {
     command: `pnpm exec next dev --port ${PORT}`,
-    env: { NEXT_DIST_DIR: ".next-e2e" },
+    // Photon points nowhere, so the app never calls it from tests (suggestions fall back to ours).
+    env: { NEXT_DIST_DIR: ".next-e2e", PHOTON_BASE_URL: "http://127.0.0.1:9/api" },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

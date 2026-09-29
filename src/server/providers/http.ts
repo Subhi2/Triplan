@@ -31,10 +31,11 @@ export async function fetchJson<T>(
   url: string,
   schema: z.ZodType<T>,
   init: RequestInit = {},
+  timeoutMs = 15_000,
 ): Promise<{ status: number; data: T }> {
   let res: Response;
   try {
-    res = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
+    res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   } catch (err) {
     throw new ProviderError(`${provider} request failed: ${String(err)}`, provider);
   }

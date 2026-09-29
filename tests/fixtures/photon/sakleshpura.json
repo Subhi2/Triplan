@@ -1,0 +1,69 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 670593480,
+        "osm_key": "place",
+        "osm_value": "town",
+        "type": "city",
+        "name": "Sakleshpur",
+        "county": "Sakaleshapura taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "postcode": "573134",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [75.7862318, 12.9434349]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 1672987435,
+        "osm_key": "railway",
+        "osm_value": "station",
+        "type": "house",
+        "name": "Sakleshpur",
+        "street": "Mahatma Gandhi Road",
+        "city": "Sakleshpur",
+        "county": "Sakaleshapura taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "postcode": "573134",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [75.7789505, 12.9453765]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 13328190974,
+        "osm_key": "railway",
+        "osm_value": "stop",
+        "type": "house",
+        "name": "Sakleshpur",
+        "street": "Mahatma Gandhi Road",
+        "city": "Sakleshpur",
+        "county": "Sakaleshapura taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "postcode": "573134",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [75.7789159, 12.9455299]
+      }
+    }
+  ]
+}

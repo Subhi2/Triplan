@@ -1,0 +1,302 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-28T09:32:21Z",
+    "timestamp_areas_base": "2026-09-27T13:54:01Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 1063577355,
+      "lat": 15.3984159,
+      "lon": 73.8128829,
+      "tags": {
+        "capital": "6",
+        "name": "Vasco",
+        "name:ar": "فاسكو دا جاما",
+        "name:en": "Vasco da Gama",
+        "name:gom": "वास्को द गामा",
+        "name:he": "ואסקו דה גאמה",
+        "name:hi": "वास्को द गामा",
+        "name:ja": "ヴァスコ・ダ・ガマ",
+        "name:kn": "ವಾಸ್ಕೋ",
+        "name:ml": "വാസ്കൊ ഡ ഗാമ",
+        "name:mr": "वास्को द गामा",
+        "name:pt": "Vasco da Gama",
+        "name:ru": "Васко да Гама",
+        "name:ta": "வாஸ்கோட காமா",
+        "name:te": "వాస్కో డ గామా",
+        "official_name": "Vasco da Gama",
+        "place": "town",
+        "population": "94393",
+        "postal_code": "403802",
+        "wikidata": "Q978780",
+        "wikipedia": "en:Vasco da Gama, Goa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1688110013,
+      "lat": 15.545594,
+      "lon": 73.7646182,
+      "tags": {
+        "name": "Calangute",
+        "name:kn": "ಕಲಂಗುಟ್",
+        "name:ml": "കലംഗുട്ട്",
+        "name:ru": "Калангут",
+        "name:ta": "கலங்குட்",
+        "place": "town",
+        "wikidata": "Q861976"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4281538990,
+      "lat": 15.39782,
+      "lon": 73.80903,
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Hindustan Petroleum",
+        "brand:wikidata": "Q1619375",
+        "name": "Hp Petrol Pump - Om Shree Vetobaa",
+        "official_name": "Hindustan Petroleum"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8179259958,
+      "lat": 15.5459974,
+      "lon": 73.7849287,
+      "tags": {
+        "amenity": "fuel",
+        "brand": "Indian Oil"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11074780405,
+      "lat": 15.684485,
+      "lon": 73.7815109,
+      "tags": {
+        "name": "Mogacho waterfall",
+        "name:ru": "Водопад Могачо",
+        "waterway": "waterfall"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1166324948,
+      "bounds": {
+        "minlat": 15.4117098,
+        "minlon": 73.7939805,
+        "maxlat": 15.4124571,
+        "maxlon": 73.7948656
+      },
+      "tags": {
+        "historic": "fort",
+        "name": "Mormugão Fort",
+        "wikidata": "Q10283625"
+      }
+    },
+    {
+      "type": "way",
+      "id": 156595303,
+      "bounds": {
+        "minlat": 15.4974993,
+        "minlon": 73.7648022,
+        "maxlat": 15.4986099,
+        "maxlon": 73.7681553
+      },
+      "tags": {
+        "building": "yes",
+        "historic": "fort",
+        "layer": "-1",
+        "level": "0",
+        "location": "surface",
+        "name": "Aguada Fortress",
+        "tourism": "attraction"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1155600557,
+      "bounds": {
+        "minlat": 15.5893212,
+        "minlon": 73.7638405,
+        "maxlat": 15.5905139,
+        "maxlon": 73.7644928
+      },
+      "tags": {
+        "amenity": "place_of_worship",
+        "name": "St. Michael's Church",
+        "religion": "christian",
+        "wikidata": "Q7590657",
+        "wikipedia": "en:St. Michael's Church, Anjuna"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1658757838,
+      "lat": 15.513065,
+      "lon": 73.7698233,
+      "tags": {
+        "amenity": "place_of_worship",
+        "name": "Shri Shantadurga Temple",
+        "religion": "hindu",
+        "wikidata": "Q7489022"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10819036170,
+      "lat": 15.6133842,
+      "lon": 73.7695332,
+      "tags": {
+        "historic": "memorial",
+        "material": "concrete",
+        "memorial": "plaque",
+        "name": "Reginald Fetnandes Road"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2660025329,
+      "lat": 15.5440425,
+      "lon": 73.7651176,
+      "tags": {
+        "historic": "memorial",
+        "memorial": "statue",
+        "name": "Dr. Jack de Sequeira"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1080221892,
+      "bounds": {
+        "minlat": 15.6275819,
+        "minlon": 73.79366,
+        "maxlat": 15.6276817,
+        "maxlon": 73.7937501
+      },
+      "tags": {
+        "man_made": "water_well",
+        "name": "Umalo Well",
+        "natural": "water",
+        "water": "reservoir"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1396814037,
+      "bounds": {
+        "minlat": 15.2938719,
+        "minlon": 74.000355,
+        "maxlat": 15.2991394,
+        "maxlon": 74.0067816
+      },
+      "tags": {
+        "landuse": "reservoir",
+        "name": "Sonben Tolem"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10242095781,
+      "lat": 15.4596344,
+      "lon": 73.7975788,
+      "tags": {
+        "description": "Beautiful view point perched on a hill top, facing Caranzalem bay, accessible by motor road, cobblestoned street and 4 benches available for seating",
+        "name": "Caranzalem Bay View Point",
+        "opening_hours": "24/7",
+        "tourism": "viewpoint"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8409186083,
+      "lat": 15.4948118,
+      "lon": 73.7777614,
+      "tags": {
+        "tourism": "viewpoint"
+      }
+    },
+    {
+      "type": "node",
+      "id": 493623284,
+      "lat": 15.2756507,
+      "lon": 73.9137265,
+      "tags": {
+        "name": "Colva Beach",
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "way",
+      "id": 397058297,
+      "bounds": {
+        "minlat": 15.2690747,
+        "minlon": 73.9047373,
+        "maxlat": 15.301649,
+        "maxlon": 73.9156074
+      },
+      "tags": {
+        "name": "Colva Beach",
+        "name:ru": "Колва",
+        "natural": "beach"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4288424613,
+      "lat": 15.5256419,
+      "lon": 73.7953062,
+      "tags": {
+        "name": "Museum of Goa",
+        "tourism": "museum",
+        "wikidata": "Q24942720"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9417116298,
+      "lat": 15.5630585,
+      "lon": 73.8003588,
+      "tags": {
+        "name": "Monte Guirim",
+        "natural": "peak"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8410667979,
+      "lat": 15.4946528,
+      "lon": 73.7660137,
+      "tags": {
+        "name": "Kaurati's Caves",
+        "natural": "cave_entrance"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3951791157,
+      "lat": 15.2468542,
+      "lon": 73.9813234,
+      "tags": {
+        "name": "BLASCO",
+        "tourism": "camp_site"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4294196690,
+      "lat": 15.462574,
+      "lon": 73.961078,
+      "tags": {
+        "amenity": "fuel",
+        "name": "गैस स्टेशन"
+      }
+    }
+  ]
+}

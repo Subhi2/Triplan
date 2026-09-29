@@ -3,12 +3,63 @@
   "routes": [
     {
       "legs": [
-        { "steps": [], "weight": 15524.2, "summary": "", "duration": 15524.2, "distance": 337647.9 }
+        {
+          "steps": [
+            { "distance": 76.7, "name": "Vittal Mallya Road" },
+            { "distance": 513.8, "name": "" },
+            { "distance": 349.1, "name": "" },
+            { "distance": 56.5, "name": "" },
+            { "distance": 1491, "name": "Sheshadri Road" },
+            { "distance": 1140.1, "name": "Subedar Chatram Road" },
+            { "distance": 81.6, "name": "" },
+            { "distance": 239.8, "name": "Sampige Road" },
+            { "distance": 107.1, "name": "Sampige Road" },
+            { "distance": 334.5, "name": "Mill Corner Road" },
+            { "distance": 297.6, "name": "1st Main Road" },
+            { "distance": 2640.7, "name": "1st Main Road" },
+            { "distance": 525.4, "ref": "NH48", "name": "Tumkur Road" },
+            { "distance": 121.6, "name": "" },
+            { "distance": 1759.4, "name": "Nelamangala - Majestic Service Road" },
+            { "distance": 684.2, "ref": "NH48; NH75", "name": "Tumkur Road" },
+            { "distance": 4533, "name": "Goraguntepalya Flyover" },
+            {
+              "distance": 14982.8,
+              "ref": "NH48; NH75",
+              "name": "Bangalore - Nelamangala Expressway"
+            },
+            { "distance": 577.5, "ref": "NH48", "name": "Delhi - Chennai Highway" },
+            { "distance": 32173.2, "ref": "NH48", "name": "Pune Bangalore Highway" },
+            { "distance": 272.7, "name": "" },
+            { "distance": 6815.8, "ref": "NH73", "name": "Ring Road" },
+            { "distance": 21.6, "ref": "NH73", "name": "Ring Road" },
+            { "distance": 3437.4, "ref": "NH73", "name": "Ring Road" },
+            { "distance": 91862.4, "ref": "NH73", "name": "" },
+            { "distance": 24076, "name": "Arsikere Bypass" },
+            { "distance": 17922.3, "ref": "NH69", "name": "" },
+            { "distance": 2905.2, "name": "" },
+            { "distance": 31583, "ref": "NH173", "name": "Mudigere-Kadur Road" },
+            { "distance": 30591.4, "ref": "NH173", "name": "Mudigere-Kadur Road" },
+            { "distance": 9808.3, "ref": "NH173", "name": "Mudigere-Kadur Road" },
+            { "distance": 14231.3, "ref": "NH73", "name": "" },
+            { "distance": 6637.3, "ref": "SH66", "name": "" },
+            { "distance": 3258.9, "ref": "SH106", "name": "" },
+            { "distance": 241.7, "ref": "SH106", "name": "" },
+            { "distance": 23187.1, "ref": "SH106", "name": "" },
+            { "distance": 7012.6, "ref": "SH106", "name": "" },
+            { "distance": 77.1, "ref": "SH66", "name": "" },
+            { "distance": 639, "ref": "SH66", "name": "" },
+            { "distance": 381.5, "ref": "SH106", "name": "" },
+            { "distance": 0, "ref": "SH106", "name": "" }
+          ],
+          "weight": 15524.2,
+          "summary": "NH73, Mudigere-Kadur Road",
+          "duration": 15524.2,
+          "distance": 337647.9
+        }
       ],
       "weight_name": "routability",
       "geometry": {
         "coordinates": [
-          [77.594697, 12.971848],
           [77.594697, 12.971848],
           [77.59464, 12.971871],
           [77.594553, 12.971901],
@@ -7097,12 +7148,67 @@
     },
     {
       "legs": [
-        { "steps": [], "weight": 16619.8, "summary": "", "duration": 16619.8, "distance": 312280.3 }
+        {
+          "steps": [
+            { "distance": 76.7, "name": "Vittal Mallya Road" },
+            { "distance": 513.8, "name": "" },
+            { "distance": 349.1, "name": "" },
+            { "distance": 56.5, "name": "" },
+            { "distance": 1491, "name": "Sheshadri Road" },
+            { "distance": 1140.1, "name": "Subedar Chatram Road" },
+            { "distance": 81.6, "name": "" },
+            { "distance": 239.8, "name": "Sampige Road" },
+            { "distance": 107.1, "name": "Sampige Road" },
+            { "distance": 334.5, "name": "Mill Corner Road" },
+            { "distance": 297.6, "name": "1st Main Road" },
+            { "distance": 2640.7, "name": "1st Main Road" },
+            { "distance": 525.4, "ref": "NH48", "name": "Tumkur Road" },
+            { "distance": 121.6, "name": "" },
+            { "distance": 1759.4, "name": "Nelamangala - Majestic Service Road" },
+            { "distance": 684.2, "ref": "NH48; NH75", "name": "Tumkur Road" },
+            { "distance": 4533, "name": "Goraguntepalya Flyover" },
+            {
+              "distance": 12520.6,
+              "ref": "NH48; NH75",
+              "name": "Bangalore - Nelamangala Expressway"
+            },
+            { "distance": 715.7, "ref": "NH75", "name": "Bangalore - Mangalore Highway" },
+            { "distance": 52.4, "ref": "NH75", "name": "Bangalore - Mangalore Highway" },
+            { "distance": 15022.1, "ref": "NH75", "name": "Bangalore - Mangalore Highway" },
+            { "distance": 21793.6, "ref": "NH75", "name": "Bengaluru - Mangalore Highway" },
+            { "distance": 25108.1, "ref": "NH75", "name": "Kunigal Bypass" },
+            { "distance": 39704.1, "ref": "NH75", "name": "Bangalore Mangalore Highway" },
+            { "distance": 10782.3, "ref": "NH75", "name": "Bengaluru - Mangalore Highway" },
+            { "distance": 1023.9, "ref": "NH75", "name": "Channarayapattana Bypass" },
+            { "distance": 997, "name": "" },
+            { "distance": 64.4, "ref": "NH75", "name": "Channarayapattana Bypass" },
+            { "distance": 33585.6, "ref": "NH75", "name": "Bengaluru - Mangalore Highway" },
+            { "distance": 5602.1, "ref": "NH75", "name": "Hassan Bypass" },
+            { "distance": 1581.6, "ref": "NH75", "name": "Hassan Bypass" },
+            { "distance": 1379.6, "ref": "NH75", "name": "Hassan Bypass" },
+            { "distance": 26730.3, "ref": "NH75", "name": "Hassan Bypass" },
+            { "distance": 10442.1, "name": "Sakleshpur Bypass" },
+            { "distance": 26218.7, "ref": "SH107", "name": "" },
+            { "distance": 22569.3, "ref": "NH73", "name": "" },
+            { "distance": 6637.3, "ref": "SH66", "name": "" },
+            { "distance": 3258.9, "ref": "SH106", "name": "" },
+            { "distance": 241.7, "ref": "SH106", "name": "" },
+            { "distance": 23187.1, "ref": "SH106", "name": "" },
+            { "distance": 7012.6, "ref": "SH106", "name": "" },
+            { "distance": 77.1, "ref": "SH66", "name": "" },
+            { "distance": 639, "ref": "SH66", "name": "" },
+            { "distance": 381.5, "ref": "SH106", "name": "" },
+            { "distance": 0, "ref": "SH106", "name": "" }
+          ],
+          "weight": 16619.8,
+          "summary": "Bengaluru - Mangalore Highway, SH106",
+          "duration": 16619.8,
+          "distance": 312280.3
+        }
       ],
       "weight_name": "routability",
       "geometry": {
         "coordinates": [
-          [77.594697, 12.971848],
           [77.594697, 12.971848],
           [77.59464, 12.971871],
           [77.594553, 12.971901],

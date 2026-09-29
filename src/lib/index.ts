@@ -4,5 +4,7 @@ export * from "./format";
 export * from "./geo";
 export * from "./months";
 export * from "./places";
+export * from "./placeDetail";
+export * from "./savedTrip";
 export * from "./trip";
 export * from "./tripUrl";

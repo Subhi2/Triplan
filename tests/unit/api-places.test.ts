@@ -9,6 +9,7 @@ vi.mock("@/server/services/routeService", () => ({ getRouteGeometry: vi.fn() }))
 const { placesAlong } = await import("@/server/services/corridorService");
 const { getRouteGeometry } = await import("@/server/services/routeService");
 const { POST } = await import("@/app/api/places/along/route");
+const { PLACE_LIST_CATEGORIES } = await import("@/lib/categories");
 
 const line = {
   type: "LineString" as const,
@@ -39,7 +40,15 @@ describe("POST /api/places/along", () => {
     const res = await post({ routeId, corridorKm: 5 });
     expect(res.status).toBe(200);
     expect(getRouteGeometry).toHaveBeenCalledWith(routeId);
-    expect(placesAlong).toHaveBeenCalledWith(line, 5_000, null);
+    expect(placesAlong).toHaveBeenCalledWith(line, 5_000, PLACE_LIST_CATEGORIES);
+  });
+
+  it("leaves fuel stations and towns out of the default list", async () => {
+    await post({ geometry: line, corridorKm: 5 });
+    const categories = vi.mocked(placesAlong).mock.calls[0]![2]!;
+    expect(categories).toContain("temple");
+    expect(categories).not.toContain("fuel");
+    expect(categories).not.toContain("town");
   });
 
   it("returns 404 ROUTE_NOT_FOUND for an expired route id", async () => {

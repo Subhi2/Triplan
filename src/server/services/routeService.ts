@@ -1,13 +1,32 @@
 import type { LineString } from "geojson";
+import type { LngLat } from "@/lib/geo";
 import { ROUTE_ID_PATTERN } from "@/lib/places";
 import type { RouteOption, TripRequest } from "@/lib/trip";
 import { routeDbCache, type JsonCache } from "../db/cache";
-import { getRoutingProvider, type RouteResult, type RoutingProvider } from "../providers/routing";
+import {
+  getRoutingProvider,
+  type RouteInput,
+  type RouteResult,
+  type RoutingProvider,
+} from "../providers/routing";
 import { routeCacheKey } from "../providers/routing/cached";
-import { placesAlong } from "./corridorService";
-import { viaLabels, type TownOnRoute } from "./viaLabel";
+import {
+  candidateBox,
+  MAX_DISTANCE_FACTOR,
+  MAX_DURATION_FACTOR,
+  MAX_SHARED,
+  sampleRoute,
+  sharedShare,
+  viaTownCandidates,
+  type CandidateTown,
+} from "./altRoutes";
+import { townsAlong, townsInBox } from "./corridorService";
+import { roadMix } from "./roadMix";
+import { mainTowns, viaLabels, type TownOnRoute } from "./viaLabel";
 
 const MAX_ROUTES = 3;
+/** Towns tried as a via point for extra options, per search (one routing request each). */
+const MAX_TOWN_TRIES = 3;
 const TOWN_RADIUS_M = 2_000;
 // Towns this close to either end are the start/destination themselves, not "via" towns.
 const END_MARGIN_KM = 3;
@@ -15,18 +34,18 @@ const END_MARGIN_KM = 3;
 export interface RouteServiceDeps {
   routing: RoutingProvider;
   townsAlong(geometry: LineString): Promise<TownOnRoute[]>;
+  townsInBox(box: [number, number, number, number]): Promise<CandidateTown[]>;
 }
 
 export async function townsAlongDb(geometry: LineString): Promise<TownOnRoute[]> {
-  const rows = await placesAlong(geometry, TOWN_RADIUS_M, ["town"]);
-  return rows.map((r) => ({ name: r.name, location: r.location, kmFromStart: r.kmFromStart }));
+  return townsAlong(geometry, TOWN_RADIUS_M);
 }
 
 function defaultDeps(): RouteServiceDeps {
-  return { routing: getRoutingProvider(), townsAlong: townsAlongDb };
+  return { routing: getRoutingProvider(), townsAlong: townsAlongDb, townsInBox };
 }
 
-const CACHE_KEY_PREFIX = "route:v1:";
+const CACHE_KEY_PREFIX = "route:v2:";
 
 /**
  * A route id is the route_cache hash of the routing request plus the route's index in the
@@ -47,23 +66,88 @@ export async function getRouteGeometry(
   return routes?.[Number(index)]?.geometry ?? null;
 }
 
-/** Routes for a trip: the path through the user's stops, plus engine alternatives when there are none. */
+interface Found {
+  id: string;
+  result: RouteResult;
+}
+
+/**
+ * Tops up the engine's options to three by routing through towns off the routes found so far
+ * ("via Belur" between the Hassan–Sakleshpur and Chikkamagaluru routes). A new option must not be
+ * much longer or slower than the best one, nor mostly the same road as an existing one. Extra
+ * options are a bonus: if routing through a town fails, that town is skipped.
+ */
+async function addTownRoutes(
+  found: Found[],
+  [start, end]: [LngLat, LngLat],
+  profile: RouteInput["profile"],
+  deps: RouteServiceDeps,
+): Promise<Found[]> {
+  const samples = found.map((f) => sampleRoute(f.result.geometry));
+  const towns = await deps.townsInBox(candidateBox(start, end));
+  const candidates = viaTownCandidates(start, end, towns, samples, MAX_TOWN_TRIES);
+  const shortestM = Math.min(...found.map((f) => f.result.distanceM));
+  const fastestS = Math.min(...found.map((f) => f.result.durationS));
+
+  const all = [...found];
+  for (const town of candidates) {
+    if (all.length >= MAX_ROUTES) break;
+    const input: RouteInput = {
+      waypoints: [start, town.location, end],
+      alternatives: false,
+      profile,
+    };
+    let route: RouteResult | undefined;
+    try {
+      [route] = await deps.routing.route(input);
+    } catch (err) {
+      console.warn(`Extra route via ${town.name} failed`, err);
+      continue;
+    }
+    if (
+      !route ||
+      route.distanceM > shortestM * MAX_DISTANCE_FACTOR ||
+      route.durationS > fastestS * MAX_DURATION_FACTOR
+    ) {
+      continue;
+    }
+    const sampled = sampleRoute(route.geometry);
+    if (samples.some((s) => sharedShare(sampled, s) > MAX_SHARED)) continue;
+    all.push({ id: routeIdFor(routeCacheKey(input), 0), result: route });
+    samples.push(sampled);
+  }
+  return all;
+}
+
+/**
+ * Routes for a trip: the path through the user's stops; without via stops, the engine's
+ * alternatives topped up to three with routes through towns on the way.
+ */
 export async function getRoutes(
   trip: TripRequest,
   deps: RouteServiceDeps = defaultDeps(),
 ): Promise<RouteOption[]> {
   const waypoints = trip.stops.map((s) => s.location);
-  const input = { waypoints, alternatives: waypoints.length === 2, profile: trip.vehicle };
+  const input: RouteInput = {
+    waypoints,
+    alternatives: waypoints.length === 2,
+    profile: trip.vehicle,
+  };
   const cacheKey = routeCacheKey(input);
-  const results = (await deps.routing.route(input)).slice(0, MAX_ROUTES);
+  let found: Found[] = (await deps.routing.route(input))
+    .slice(0, MAX_ROUTES)
+    .map((result, i) => ({ id: routeIdFor(cacheKey, i), result }));
+  if (waypoints.length === 2 && found.length < MAX_ROUTES) {
+    found = await addTownRoutes(found, [waypoints[0]!, waypoints[1]!], trip.vehicle, deps);
+  }
 
   const routes = await Promise.all(
-    results.map(async (r) => {
-      const distanceKm = r.distanceM / 1000;
-      const towns = (await deps.townsAlong(r.geometry)).filter(
+    found.map(async ({ id, result }) => {
+      const distanceKm = result.distanceM / 1000;
+      const towns = (await deps.townsAlong(result.geometry)).filter(
         (t) => t.kmFromStart > END_MARGIN_KM && t.kmFromStart < distanceKm - END_MARGIN_KM,
       );
-      return { result: r, distanceKm, towns };
+      return { id, result, distanceKm, towns };
     }),
   );
 
@@ -73,11 +157,12 @@ export async function getRoutes(
   );
 
   return routes.map((r, i) => ({
-    id: routeIdFor(cacheKey, i),
+    id: r.id,
     geometry: r.result.geometry,
     distanceKm: r.distanceKm,
     durationMin: Math.round(r.result.durationS / 60),
     viaLabel: labels[i]!,
-    towns: r.towns.map((t) => t.name),
+    towns: mainTowns(r.towns).map((t) => t.name),
+    roadMix: roadMix(r.result),
   }));
 }

@@ -9,12 +9,15 @@ import Map, {
   type MapLayerMouseEvent,
   type MapRef,
 } from "react-map-gl/maplibre";
+import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import type { LngLat } from "@/lib/geo";
 import type { PlaceAlong } from "@/lib/places";
 import type { RouteOption } from "@/lib/trip";
 import {
   PLACE_CLUSTERS_LAYER,
+  PLACE_HIT_LAYER,
   PLACE_POINTS_LAYER,
+  PLACE_TAP_LAYERS,
   PLACES_SOURCE,
   PlaceMarkers,
 } from "./PlaceMarkers";
@@ -24,8 +27,20 @@ import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
 const MAP_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/liberty";
 
-const KARNATAKA = { longitude: 76.2, latitude: 13.2, zoom: 6.3 };
-const INTERACTIVE_LAYERS = [...ROUTE_LAYER_IDS, PLACE_CLUSTERS_LAYER, PLACE_POINTS_LAYER];
+// Before a trip is chosen, frame India (places are imported for every state).
+const INITIAL_VIEW = {
+  bounds: [
+    [68.1, 6.7],
+    [97.4, 35.7],
+  ] as [[number, number], [number, number]],
+  fitBoundsOptions: { padding: 16 },
+};
+const INTERACTIVE_LAYERS = [
+  ...ROUTE_LAYER_IDS,
+  PLACE_CLUSTERS_LAYER,
+  PLACE_HIT_LAYER,
+  PLACE_POINTS_LAYER,
+];
 
 export interface MapStop {
   id: string;
@@ -46,6 +61,8 @@ interface Props {
   onHoverPlace: (id: string | null) => void;
   /** Pixels hidden at the bottom (the mobile sheet), kept clear when framing. */
   bottomInset?: number;
+  /** Called with the map centre and zoom after it loads and after every move. */
+  onViewChange?: (center: LngLat, zoom: number) => void;
 }
 
 function bounds(points: LngLat[]): [LngLat, LngLat] | null {
@@ -69,6 +86,7 @@ export function MapView(props: Props) {
   const mapRef = useRef<MapRef>(null);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const hovered = useRef<string | null>(null);
+  const coarsePointer = useMediaQuery("(pointer: coarse)");
 
   const padding = { top: 48, left: 48, right: 48, bottom: 48 + bottomInset };
 
@@ -117,7 +135,7 @@ export function MapView(props: Props) {
   function handleMouseMove(e: MapLayerMouseEvent) {
     const f = e.features?.[0];
     setCursor(f ? "pointer" : undefined);
-    const id: unknown = f?.layer.id === PLACE_POINTS_LAYER ? f.properties?.id : null;
+    const id: unknown = f && PLACE_TAP_LAYERS.includes(f.layer.id) ? f.properties?.id : null;
     setHover(typeof id === "string" ? id : null);
   }
 
@@ -126,7 +144,7 @@ export function MapView(props: Props) {
     if (!f) return;
     const layer = f.layer.id;
     const id: unknown = f.properties?.id;
-    if (layer === PLACE_POINTS_LAYER && typeof id === "string") {
+    if (PLACE_TAP_LAYERS.includes(layer) && typeof id === "string") {
       props.onSelectPlace(id);
     } else if (layer === PLACE_CLUSTERS_LAYER && f.geometry.type === "Point") {
       const map = mapRef.current;
@@ -145,8 +163,9 @@ export function MapView(props: Props) {
   return (
     <Map
       ref={mapRef}
-      initialViewState={KARNATAKA}
+      initialViewState={INITIAL_VIEW}
       mapStyle={MAP_STYLE}
+      attributionControl={{ compact: true }}
       style={{ width: "100%", height: "100%" }}
       interactiveLayerIds={INTERACTIVE_LAYERS}
       cursor={cursor}
@@ -156,8 +175,16 @@ export function MapView(props: Props) {
         setHover(null);
       }}
       onClick={(e) => void handleClick(e)}
+      onLoad={(e) => {
+        const c = e.target.getCenter();
+        props.onViewChange?.([c.lng, c.lat], e.target.getZoom());
+      }}
+      onMoveEnd={(e) =>
+        props.onViewChange?.([e.viewState.longitude, e.viewState.latitude], e.viewState.zoom)
+      }
     >
-      <NavigationControl position="top-right" showCompass={false} />
+      {/* Touch screens pinch to zoom; the buttons would only cover the map. */}
+      {!coarsePointer && <NavigationControl position="top-right" showCompass={false} />}
       <RouteLayer routes={routes} selectedId={props.selectedRouteId} />
       <PlaceMarkers places={places} highlightIds={highlightIds} />
       {stops.map((s, i) => (

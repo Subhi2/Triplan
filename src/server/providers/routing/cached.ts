@@ -3,9 +3,12 @@ import type { JsonCache } from "../../db/cache";
 import { hashKey } from "../cacheKey";
 import type { RouteInput, RouteResult, RoutingProvider } from "./types";
 
-/** Cache key: waypoints rounded to 5 decimals, profile and alternatives. */
+/**
+ * Cache key: waypoints rounded to 5 decimals, profile and alternatives. The version changes when
+ * RouteResult does (v2: road stretches for the road mix).
+ */
 export function routeCacheKey(input: RouteInput): string {
-  return hashKey("route:v1", {
+  return hashKey("route:v2", {
     w: input.waypoints.map(([lng, lat]) => [round5(lng), round5(lat)]),
     p: input.profile,
     a: input.alternatives,

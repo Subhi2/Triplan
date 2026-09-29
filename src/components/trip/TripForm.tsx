@@ -29,7 +29,7 @@ import {
   type GeocodeResult,
   type Vehicle,
 } from "@/lib/trip";
-import { StopInput } from "./StopInput";
+import { StopInput, type MapBias } from "./StopInput";
 
 export interface StopDraft {
   id: string;
@@ -42,6 +42,7 @@ interface Props {
   vehicle: Vehicle;
   corridorKm: CorridorKm;
   focusId: string | null;
+  near: MapBias;
   onStopsChange: (stops: StopDraft[]) => void;
   onAddStop: () => void;
   onVehicleChange: (v: Vehicle) => void;
@@ -59,6 +60,7 @@ function SortableStop(props: {
   index: number;
   count: number;
   autoFocus: boolean;
+  near: MapBias;
   onText: (text: string) => void;
   onPick: (r: GeocodeResult) => void;
   onRemove: (() => void) | null;
@@ -73,12 +75,12 @@ function SortableStop(props: {
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-2 ${isDragging ? "relative z-10 opacity-80" : ""}`}
+      className={`flex items-center gap-1 ${isDragging ? "relative z-10 opacity-80" : ""}`}
     >
       <button
         type="button"
         aria-label={`Reorder ${role.name}`}
-        className="cursor-grab touch-none rounded px-1 py-2 text-stone-400 hover:text-stone-700 active:cursor-grabbing dark:hover:text-stone-200"
+        className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded text-stone-400 hover:text-stone-700 active:cursor-grabbing dark:hover:text-stone-200"
         {...attributes}
         {...listeners}
       >
@@ -89,6 +91,7 @@ function SortableStop(props: {
         placeholder={role.placeholder}
         value={stop.label}
         resolved={stop.location !== null}
+        near={props.near}
         autoFocus={props.autoFocus}
         onText={props.onText}
         onPick={props.onPick}
@@ -98,12 +101,12 @@ function SortableStop(props: {
           type="button"
           aria-label={`Remove ${role.name}`}
           onClick={props.onRemove}
-          className="rounded px-2 py-2 text-stone-400 hover:text-red-700 dark:hover:text-red-400"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-stone-400 hover:text-red-700 dark:hover:text-red-400"
         >
           ✕
         </button>
       ) : (
-        <span className="w-8" aria-hidden />
+        <span className="w-11 shrink-0" aria-hidden />
       )}
     </li>
   );
@@ -181,6 +184,7 @@ export function TripForm(props: Props) {
                 index={i}
                 count={stops.length}
                 autoFocus={s.id === props.focusId}
+                near={props.near}
                 onText={(label) => update(s.id, { label, location: null })}
                 onPick={(r) => update(s.id, { label: r.name, location: r.location })}
                 onRemove={
@@ -196,18 +200,18 @@ export function TripForm(props: Props) {
         type="button"
         onClick={props.onAddStop}
         disabled={viaCount >= MAX_VIA_STOPS}
-        className="text-brand ml-7 text-sm font-medium hover:underline disabled:text-stone-400 disabled:no-underline"
+        className="text-brand ml-9 inline-flex min-h-11 items-center text-sm font-medium hover:underline disabled:text-stone-400 disabled:no-underline"
       >
         + Add stop{viaCount >= MAX_VIA_STOPS ? ` (max ${MAX_VIA_STOPS})` : ""}
       </button>
 
-      <div className="flex flex-wrap items-center gap-4 pl-7 text-sm">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9 text-sm">
         <fieldset className="flex items-center gap-1">
           <legend className="sr-only">Vehicle</legend>
           {VEHICLES.map((v) => (
             <label
               key={v}
-              className={`has-[:focus-visible]:ring-brand cursor-pointer rounded-full border px-3 py-1 capitalize has-[:focus-visible]:ring-2 ${
+              className={`has-[:focus-visible]:ring-brand inline-flex min-h-10 cursor-pointer items-center rounded-full border px-4 capitalize has-[:focus-visible]:ring-2 ${
                 props.vehicle === v
                   ? "border-brand bg-brand text-white"
                   : "border-stone-300 dark:border-stone-700"
@@ -230,7 +234,7 @@ export function TripForm(props: Props) {
           <select
             value={props.corridorKm}
             onChange={(e) => props.onCorridorChange(Number(e.target.value) as CorridorKm)}
-            className="rounded-md border border-stone-300 bg-white px-2 py-1 dark:border-stone-700 dark:bg-stone-900"
+            className="min-h-10 rounded-md border border-stone-300 bg-white px-2 text-base md:text-sm dark:border-stone-700 dark:bg-stone-900"
           >
             {CORRIDOR_KM.map((km) => (
               <option key={km} value={km}>

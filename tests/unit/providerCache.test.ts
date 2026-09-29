@@ -50,17 +50,32 @@ describe("route cache", () => {
 });
 
 describe("geocode cache", () => {
-  it("normalises the query and includes limit and viewbox in the key", () => {
-    expect(geocodeCacheKey("  Sakleshpur   Town ")).toBe(geocodeCacheKey("sakleshpur town"));
-    expect(geocodeCacheKey("x", { limit: 3 })).not.toBe(geocodeCacheKey("x", { limit: 5 }));
-    expect(geocodeCacheKey("x", { viewbox: [1, 2, 3, 4] })).not.toBe(geocodeCacheKey("x"));
+  it("normalises the query and keys on provider, limit and viewbox", () => {
+    expect(geocodeCacheKey("photon", "  Sakleshpur   Town ")).toBe(
+      geocodeCacheKey("photon", "sakleshpur town"),
+    );
+    expect(geocodeCacheKey("photon", "x")).not.toBe(geocodeCacheKey("nominatim", "x"));
+    expect(geocodeCacheKey("photon", "x", { limit: 3 })).not.toBe(
+      geocodeCacheKey("photon", "x", { limit: 5 }),
+    );
+    expect(geocodeCacheKey("nominatim", "x", { viewbox: [1, 2, 3, 4] })).not.toBe(
+      geocodeCacheKey("nominatim", "x"),
+    );
+  });
+
+  it("rounds the map bias so small pans still hit the cache", () => {
+    const key = (near: [number, number], zoom: number) =>
+      geocodeCacheKey("photon", "samse", { near, zoom });
+    expect(key([76.74, 15.04], 5)).toBe(key([76.6, 15.1], 5.4)); // same 0.5° cell
+    expect(key([76.74, 15.04], 5)).not.toBe(key([75.36, 13.23], 5));
+    expect(key([76.74, 15.04], 5)).not.toBe(key([76.74, 15.04], 12));
   });
 
   it("serves repeats from the cache", async () => {
     const search = vi.fn(async () => [
       { id: "node/1", name: "A", label: "A", location: [1, 2] as [number, number], kind: "x/y" },
     ]);
-    const cached = withGeocodeCache({ search }, mapCache());
+    const cached = withGeocodeCache({ search }, mapCache(), "photon");
     await cached.search("Kalasa");
     await cached.search("kalasa ");
     expect(search).toHaveBeenCalledTimes(1);

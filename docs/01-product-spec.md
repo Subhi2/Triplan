@@ -30,29 +30,31 @@ Help riders plan a trip by showing everything worth stopping for along the exact
    - Vehicle selector: bike, car. (Affects "best vehicle" warnings only.)
    - Corridor width selector.
 2. **Route options**
-   - Show up to 3 routes: the one through the user's via stops, plus alternatives returned by the routing engine.
-   - Each route card shows distance (km), ride time, and main towns passed through.
+   - Show 2–3 routes where they exist: the one through the user's via stops, or without via stops the routing engine's alternatives, topped up to 3 with routes through towns on the way (e.g. Bengaluru → Samse via Chikkamagaluru, via Hassan–Sakleshpur and via Arasikere–Belur).
+   - Each route card shows distance (km), ride time, main towns passed through, and how the distance splits by road: national highway, state highway, ghat roads and other roads, in % and km.
    - Selecting a route card highlights it on the map.
    - One tap turns a town on an alternative route into a via stop (e.g. "via Sakleshpur").
 3. **Places along the route**
    - List sorted by km from start. Each row: km marker, name, category chip, rating, best-time summary, "On route" or "+N km detour".
    - Filter chips by category. Toggle "hide detours over N km".
    - Map markers coloured by category; clicking a marker scrolls the list and vice versa.
+   - Tick places in the list (or on a place's details) and "Open in Google Maps" opens the trip in Google Maps ready to navigate: start, destination, and the via stops and ticked places as stops in the order they come along the route. Google Maps takes up to 9 stops (3 in mobile browsers; the app takes 9).
 4. **Place detail** (sheet on mobile, side panel on desktop, own URL `/place/[slug]`)
    - Photo gallery with attribution.
+   - "Open in Google Maps" (also on each row of the list): the place's Google Maps page, for its photos, reviews and directions. Most places have no photos of our own yet.
    - Rating (our reviews, plus external rating if available, labelled by source).
    - Best vehicle, last-mile note (e.g. "narrow road, bike only for last 3 km").
    - Best months (12-month strip, good / ok / avoid), best time of day.
    - Items to carry (can vary by season; show current-season items first).
    - Timings, entry fee, dress code, where known.
    - Reviews list.
-   - "Add to trip" button: inserts the place as a via stop and recomputes the route.
+   - "Add to trip" button: inserts the place as a via stop at its place along the route (before the first via stop further along) and recomputes the route. Once added, it shows "In your trip (stop N)" and "Remove from trip".
    - Links to related videos / reels (from the hidden-places pipeline).
-5. **Saved trips** (requires sign-in): save, rename, reopen, share a read-only link.
+5. **Saved trips** (open, no sign-in): save, rename, reopen, save changes or save as a new trip, and share the trip's link (`/trips/[id]`). There are no owners: every saved trip is in one list that everyone sees, and anyone with a trip's link can open and update it. A reopened trip selects the route option it was saved with.
 
 ### v1 (phases 5–7)
 
-6. Accounts via Supabase Auth (email magic link, Google).
+6. Accounts via Supabase Auth (email magic link, Google). Not needed for the MVP, which is open without sign-in; decide with reviews and contributions (phase 5) whether they need accounts.
 7. User reviews with rating, month visited, vehicle used, text, up to 5 photos.
 8. "Add a place" form: drop a pin, name, category, photos, optional YouTube/Instagram link. Goes to moderation.
 9. Admin moderation queue for places, reviews, photos, and discovered social posts.
@@ -71,10 +73,10 @@ Help riders plan a trip by showing everything worth stopping for along the exact
 
 1. **Home / Trip planner** (`/`): trip form on top (collapsible on mobile), map, route cards, place list. Mobile: map on top half, list in a draggable bottom sheet.
 2. **Place detail** (`/place/[slug]`).
-3. **Saved trips** (`/trips`), **trip view** (`/trips/[id]`, shareable).
+3. **Saved trips** (`/trips`, everyone's trips), **trip** (`/trips/[id]`: the planner opened with the trip; this is its share link).
 4. **Add a place** (`/contribute`).
 5. **Admin** (`/admin/*`): moderation queues, discovery queue.
-6. **Sign in** (`/login`).
+6. **Sign in** (`/login`), only if accounts are added later.
 
 The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the intended planner layout.
 

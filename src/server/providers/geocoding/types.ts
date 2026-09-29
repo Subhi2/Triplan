@@ -12,6 +12,9 @@ export interface GeocodeOptions {
   limit?: number;
   /** Only return results inside [minLng, minLat, maxLng, maxLat]. */
   viewbox?: [number, number, number, number];
+  /** Prefer results near this point (the map centre), within a radius set by `zoom`. */
+  near?: LngLat;
+  zoom?: number;
 }
 
 export interface GeocodingProvider {
