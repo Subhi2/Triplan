@@ -21,7 +21,8 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 ## Stack (decided)
 
 - **Next.js 15 (App Router) + TypeScript**, deployed as a PWA. Tailwind CSS for styling.
-- **MapLibre GL JS** via `react-map-gl/maplibre` for maps. OpenStreetMap-based tiles (MapTiler free tier or OpenFreeMap).
+- **Maps**: **Google Maps JavaScript API** via `@vis.gl/react-google-maps` when a Google key is set; **MapLibre GL JS** via `react-map-gl/maplibre` with OpenStreetMap tiles (OpenFreeMap) otherwise (dev without a key, tests, the offline pack). Both behind the same `MapView` props.
+- **Google Maps Platform fills gaps only** (decided 2026-09-29): photos, rating and reviews for places that have none of our own, and exact Google Maps links. Our own data, OSRM, Photon and the PostGIS corridor search stay the core. See "Google Maps Platform" in `docs/02-architecture.md`.
 - **Supabase**: Postgres with **PostGIS**, Auth, Storage.
 - **Routing**: OSRM (public demo server in dev, self-hosted later) behind a `RoutingProvider` interface so Google Routes / GraphHopper can be swapped in.
 - **Geocoding**: Photon (komoot, `https://photon.komoot.io/api`) for suggestions while the user types, Nominatim as the fallback when Enter is pressed, both behind the `GeocodingProvider` interface. Our own places are listed before Photon results (see "Place search" in `docs/02-architecture.md`).
@@ -67,6 +68,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 DATABASE_URL=
 NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=  # browser key: Maps JavaScript API only, HTTP-referrer restricted; empty = MapLibre, no Google content
+NEXT_PUBLIC_GOOGLE_MAP_ID=        # Map ID for Advanced Markers
+GOOGLE_MAPS_API_KEY=              # server key: Places API (New) only; never NEXT_PUBLIC_
 OSRM_BASE_URL=https://router.project-osrm.org
 NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
 NOMINATIM_USER_AGENT=bike-travelling-guide/0.1 (contact email)   # also sent to Photon and Overpass
@@ -81,6 +85,8 @@ ANTHROPIC_API_KEY=                # phase 6, place-name extraction
 ## Things to avoid
 
 - Do not scrape Instagram, YouTube or Google. Use official APIs only.
-- Do not store Google Places content beyond what its terms allow (place IDs can be stored; ratings, reviews, photos are display-only and cached briefly).
+- Never store or cache Google content (Maps ToS 3.2.3(b)): only `place.google_place_id` is stored. Ratings, reviews, photos, names and hours are fetched live, shown, and thrown away: never in the DB, `media`, ISR/static HTML, the sitemap, JSON-LD or share cards.
+- Never show Google content on or near a MapLibre map (Maps ToS 3.2.3(e)). Google content appears only when the Google map is on, or on a screen with no map, with Google's attribution.
+- Call Google only to fill a gap (a place with no photos or reviews of our own, an exact link), never for list rows, in a loop or from imports, and always through the daily budget in `src/server/providers/google/budget.ts`.
 - Public OSRM and Nominatim servers have strict usage limits (Nominatim: max 1 request/second, custom User-Agent required). Cache responses and never call them in a loop without throttling.
 - Never use Nominatim for search-as-you-type (its usage policy forbids it); suggestions come from our own places and Photon. Photon's public server asks for fair use: keep suggestions debounced (300 ms), cached, and for 2+ characters only.

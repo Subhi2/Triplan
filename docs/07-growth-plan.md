@@ -44,7 +44,7 @@ Our edge: the corridor search (places on *this* road, in km order), India-wide o
 | G2.3 | "Scenic / back roads" route option (avoids highways) | Valhalla (MIT) `motorcycle` costing with `use_highways` near 0 and `use_trails`. Public FOSSGIS server: 1 request per second per user, send `X-Client-Id`, announce the app in Valhalla's GitHub Discussions; self-host before launch. GraphHopper (Apache-2.0) with a curvature custom model is the self-hosted alternative for "twisty roads" |
 | G2.4 | Popular route pages (`/routes/bengaluru-to-kalasa`): top places, route options, best months; generated from saved trips | Existing corridor search, ISR |
 | G2.5 | Multi-day planner: split by riding hours per day, suggest overnight towns and stays near the split | Stay places from OSM (1,100+ imported) |
-| G2.6 | Offline trip pack: route, places and map tiles for the corridor saved on the phone | Serwist (already used, MIT), PMTiles (BSD-3), `maplibre-offline-pmtiles` |
+| G2.6 | Offline trip pack: route, places and map tiles for the corridor saved on the phone | Serwist (already used, MIT), PMTiles (BSD-3), `maplibre-offline-pmtiles`. Uses the MapLibre view: Google's map tiles cannot be saved offline |
 | G2.7 | Languages: Kannada, Hindi, Tamil, Malayalam, Marathi | `next-intl` (MIT) |
 | G2.8 | Measure it: which features get used, where visitors come from | Umami (MIT, self-host or free cloud tier) or Vercel Web Analytics (free tier); GlitchTip (open source) or Sentry free plan for errors |
 
@@ -53,7 +53,7 @@ Our edge: the corridor search (places on *this* road, in km order), India-wide o
 - Reviews, rider photos, "Add a place" (Phase 5). Decide how to stop spam without sign-in.
 - Group ride: a live link where the group sees each other's position (Supabase Realtime).
 - Hidden places from YouTube (Phase 6).
-- Exact Google Maps links (needs a Google API key, see `04`).
+- Google fills the gaps (decided 2026-09-29, step list in `04` "Growth G1-Google"): Google map, exact Google Maps links, and Google photos and reviews for places with none of our own, within Google's free monthly usage.
 
 ## Making money
 

@@ -41,8 +41,9 @@ Help riders plan a trip by showing everything worth stopping for along the exact
    - Tick places in the list (or on a place's details) and "Open in Google Maps" opens the trip in Google Maps ready to navigate: start, destination, and the via stops and ticked places as stops in the order they come along the route. Google Maps takes up to 9 stops (3 in mobile browsers; the app takes 9).
 4. **Place detail** (sheet on mobile, side panel on desktop, own URL `/place/[slug]`)
    - Photo gallery with attribution.
-   - "Open in Google Maps" (also on each row of the list): the place's Google Maps page, for its photos, reviews and directions. Most places have no photos of our own yet.
-   - Rating (our reviews, plus external rating if available, labelled by source).
+   - "Open in Google Maps" (also on each row of the list): the place's Google Maps page, for its photos, reviews and directions; the exact place once its Google place id is known.
+   - Rating (our reviews).
+   - "From Google" (when the Google map is on): photos, Google rating and reviews, only for places with no photos or fewer than 3 reviews of our own, loaded after the details show, each photo and review credited to its author. Our own photos and reviews come first. Not shown when the day's Google budget is used up.
    - Best vehicle, last-mile note (e.g. "narrow road, bike only for last 3 km").
    - Best months (12-month strip, good / ok / avoid), best time of day.
    - Items to carry (can vary by season; show current-season items first).
