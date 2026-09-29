@@ -21,6 +21,13 @@ const serverEnvSchema = z.object({
         .filter(Boolean),
     )
     .pipe(z.array(z.url()).min(1)),
+  // Google fills gaps only (docs/02, "Google Maps Platform"). Server key: Places API (New) only.
+  // Without it (or without the browser key, see src/lib/google.ts) no Google call is made.
+  GOOGLE_MAPS_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((s) => s || undefined),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
