@@ -13,6 +13,7 @@ import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM } from "@/lib/places";
 import type { CorridorKm, RouteOption, Vehicle } from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { RouteCards } from "./RouteCards";
+import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 
 // MapLibre needs the browser.
@@ -51,6 +52,8 @@ export function Planner() {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [activePlaceId, setActivePlaceId] = useState<string | null>(null);
   const [hoverPlaceId, setHoverPlaceId] = useState<string | null>(null);
+  // Where the map is looking, to bias place suggestions. Starts at the initial map view's centre.
+  const [mapBias, setMapBias] = useState<MapBias>({ center: [76.75, 15.05], zoom: 5 });
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>(1);
@@ -292,6 +295,7 @@ export function Planner() {
             vehicle={vehicle}
             corridorKm={corridorKm}
             focusId={focusId}
+            near={mapBias}
             onStopsChange={setStops}
             onAddStop={addStop}
             onVehicleChange={setVehicle}
@@ -323,6 +327,7 @@ export function Planner() {
           hoverPlaceId={hoverPlaceId}
           onSelectPlace={selectPlaceFromMap}
           onHoverPlace={setHoverPlaceId}
+          onViewChange={(center, zoom) => setMapBias({ center, zoom })}
           bottomInset={sheetInset}
         />
       </div>

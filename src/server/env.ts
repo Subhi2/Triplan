@@ -3,8 +3,9 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   OSRM_BASE_URL: z.url().default("https://router.project-osrm.org"),
   NOMINATIM_BASE_URL: z.url().default("https://nominatim.openstreetmap.org"),
-  // Nominatim's usage policy requires an identifying User-Agent. Also sent to Overpass.
+  // Nominatim's usage policy requires an identifying User-Agent. Also sent to Photon and Overpass.
   NOMINATIM_USER_AGENT: z.string().min(1),
+  PHOTON_BASE_URL: z.url().default("https://photon.komoot.io/api"),
   // Comma-separated Overpass endpoints, tried in order when one is down or unreachable.
   OVERPASS_URLS: z
     .string()

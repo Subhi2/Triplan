@@ -1,0 +1,168 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 245619208,
+        "osm_key": "place",
+        "osm_value": "town",
+        "type": "city",
+        "name": "Kalasa",
+        "county": "Kalasa taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "postcode": "577124",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [75.3582366, 13.2322235]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 1269829485,
+        "osm_key": "place",
+        "osm_value": "village",
+        "type": "city",
+        "name": "Kalasa",
+        "county": "Kundagola taluku",
+        "state": "Karnataka",
+        "country": "India",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [75.4051183, 15.0980246]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 4486585290,
+        "osm_key": "place",
+        "osm_value": "village",
+        "type": "city",
+        "name": "Kalasa",
+        "county": "Shirasi Taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.6685653, 14.6179052]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 7335802801,
+        "osm_key": "place",
+        "osm_value": "village",
+        "type": "city",
+        "name": "Kalasar",
+        "county": "Bikaner Tehsil",
+        "state": "Rajasthan",
+        "country": "India",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [73.3095359, 28.372522]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 7905397624,
+        "osm_key": "place",
+        "osm_value": "hamlet",
+        "type": "district",
+        "name": "Kalasan",
+        "county": "Bhattiyat",
+        "state": "Himachal Pradesh",
+        "country": "India",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.1144131, 32.4209471]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "R",
+        "osm_id": 14934566,
+        "osm_key": "boundary",
+        "osm_value": "administrative",
+        "type": "county",
+        "name": "Kalasa taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "countrycode": "IN",
+        "extra": {
+          "admin_level": "6"
+        },
+        "extent": [75.1578672, 13.3242056, 75.4660531, 13.1244026]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [75.3140416, 13.2243066]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "R",
+        "osm_id": 10219051,
+        "osm_key": "boundary",
+        "osm_value": "administrative",
+        "type": "county",
+        "name": "Kalasapadu",
+        "state": "Andhra Pradesh",
+        "country": "India",
+        "postcode": "516217",
+        "countrycode": "IN",
+        "extra": {
+          "admin_level": "6"
+        },
+        "extent": [78.7502976, 15.2289123, 79.0157747, 15.0268259]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [78.8810354, 15.1275566]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "R",
+        "osm_id": 10816630,
+        "osm_key": "boundary",
+        "osm_value": "administrative",
+        "type": "county",
+        "name": "Kalasapakkam",
+        "state": "Tamil Nadu",
+        "country": "India",
+        "countrycode": "IN",
+        "extra": {
+          "admin_level": "6"
+        },
+        "extent": [78.834672, 12.6204888, 79.2294073, 12.369808]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [78.9522193, 12.4955349]
+      }
+    }
+  ]
+}

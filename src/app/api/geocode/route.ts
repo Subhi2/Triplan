@@ -1,15 +1,19 @@
 import { z } from "zod";
 import type { GeocodeResult } from "@/lib/trip";
 import { getGeocodingProvider } from "@/server/providers/geocoding";
-import { searchPlacesByName } from "@/server/services/placeService";
+import { suggestPlaces } from "@/server/services/suggestService";
 
 const querySchema = z.object({
   q: z.string().trim().min(2).max(200),
-  // local: our places and towns, fine for type-ahead. osm: Nominatim, only on explicit search.
-  source: z.enum(["local", "osm"]).default("local"),
+  // suggest: our places, then Photon, while the rider types. osm: Nominatim, when Enter is pressed.
+  source: z.enum(["suggest", "osm"]).default("suggest"),
+  // Map centre and zoom, to prefer nearby suggestions.
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lon: z.coerce.number().min(-180).max(180).optional(),
+  zoom: z.coerce.number().min(0).max(22).optional(),
 });
 
-/** GET ?q=&source=local|osm -> { results: GeocodeResult[] } */
+/** GET ?q=&source=suggest|osm&lat=&lon=&zoom= -> { results: GeocodeResult[] } */
 export async function GET(request: Request) {
   const params = Object.fromEntries(new URL(request.url).searchParams);
   const parsed = querySchema.safeParse(params);
@@ -19,15 +23,23 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
-  const { q, source } = parsed.data;
+  const { q, source, lat, lon, zoom } = parsed.data;
 
   try {
     let results: GeocodeResult[];
-    if (source === "local") {
-      results = await searchPlacesByName(q);
+    if (source === "suggest") {
+      const near =
+        lat !== undefined && lon !== undefined ? ([lon, lat] as [number, number]) : undefined;
+      results = await suggestPlaces(q, { near, zoom });
     } else {
       const hits = await getGeocodingProvider().search(q, { limit: 5 });
-      results = hits.map((h) => ({ ...h, source: "osm" }));
+      results = hits.map((h) => ({
+        id: h.id,
+        name: h.name,
+        label: h.label,
+        location: h.location,
+        source: "osm",
+      }));
     }
     return Response.json(
       { results },

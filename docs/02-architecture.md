@@ -11,7 +11,7 @@ Next.js route handlers (src/app/api/*)  ──►  src/server/services/*
              ┌──────────────────┬───────────────┼──────────────────┐
              ▼                  ▼               ▼                  ▼
       RoutingProvider   GeocodingProvider   Postgres+PostGIS   Social providers
-      (OSRM)            (Nominatim)         (Supabase)         (YouTube, Instagram)
+      (OSRM)            (Photon, Nominatim) (Supabase)         (YouTube, Instagram)
                                                 ▲
                                    Scheduled jobs (src/jobs/*)
                                    discovery, rating refresh
@@ -43,7 +43,7 @@ src/
     db/                         # drizzle schema, client, migrations
     providers/
       routing/                  # RoutingProvider interface, osrm.ts, google.ts (later)
-      geocoding/                # GeocodingProvider, nominatim.ts
+      geocoding/                # GeocodingProvider, photon.ts (suggestions), nominatim.ts (Enter)
       social/                   # youtube.ts, instagram.ts
       llm/                      # extractPlace.ts (Anthropic API)
     services/
@@ -100,6 +100,17 @@ To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the
 
 As built (`src/server/services/viaLabel.ts`): towns are `place` rows with category `town`, imported from OSM with `population`. Each alternative is labelled with its largest unique town plus its last unique town before the destination (usually the ghat riders name the route by), in road order: "via Hassan, Sakleshpur". A lone route uses its largest town; with via stops, the stops name the route.
 
+## Place search (start, destination and stops)
+
+`StopInput` searches as the rider types, through `GET /api/geocode`:
+
+1. **Suggestions while typing** (`source=suggest`, 300 ms after typing stops, 2+ characters). The request carries the map centre and zoom (`lat`, `lon`, `zoom`). `suggestService.suggestPlaces` returns:
+   - our own places first (`placeService.searchPlacesByName`: curated and imported places and towns; exact name or alternative name, then prefix, then substring, then close misspellings via trigram similarity ≥ 0.45; towns first within each tier; at most 4), then
+   - **Photon** results (`providers/geocoding/photon.ts`, `https://photon.komoot.io/api`): restricted to India (bbox, `countrycode=IN`), biased to the map centre with a radius set by the zoom, `lang=en`, waterways excluded. Photon tolerates typos and knows villages we have not imported. Results that duplicate one of ours (same OSM id, or the same name within 3 km) are dropped. At most 8 suggestions in all. If Photon fails, our places still come back.
+2. **Enter** without picking a suggestion (`source=osm`) searches **Nominatim** as the fallback. Nominatim's public usage policy forbids search-as-you-type, so it is never called while typing.
+
+Both providers sit behind the `GeocodingProvider` interface (`getSuggestionProvider()` and `getGeocodingProvider()`) and the `geocode_cache` table. The dropdown credits Photon or Nominatim and OpenStreetMap.
+
 ## Corridor search (places along the route)
 
 Do it in one SQL query with PostGIS:
@@ -143,7 +154,7 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 ## Caching
 
 - Route responses: DB cache, 7 days.
-- Geocoding: DB cache, 30 days. Throttle Nominatim to 1 req/s with a queue.
+- Geocoding: DB cache (`geocode_cache`), 30 days, keyed by provider, query and the map bias rounded to a 0.5° grid. Throttle Nominatim to 1 req/s with a queue; Photon requests are debounced 300 ms in the browser and spaced 200 ms apart on the server.
 - Places along route: no cache needed at MVP scale; add one keyed on (route hash, corridor, categories) if needed.
 - Next.js: place detail pages are statically generated with revalidation (ISR, 1 hour).
 
@@ -159,4 +170,4 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - Unit: geo utils, ranking, provider response parsing (with recorded fixtures in `tests/fixtures/`), LLM extraction parsing.
 - Integration: `places_along_route` against a test DB with seed data (use the acceptance criteria in `01-product-spec.md`).
 - E2E (Playwright): search Bengaluru → Kalasa, add via Sakleshpur, open Manjarabad Fort, add it to trip.
-- Mock all external providers in tests; never hit OSRM, Nominatim, Overpass, YouTube or Instagram in CI. OSRM responses are recorded as fixtures (`pnpm fixtures:routes`).
+- Mock all external providers in tests; never hit OSRM, Nominatim, Photon, Overpass, YouTube or Instagram in CI. Provider responses are recorded as fixtures (`pnpm fixtures:routes`, `pnpm fixtures:photon`), and the Playwright dev server gets an unreachable `PHOTON_BASE_URL`.

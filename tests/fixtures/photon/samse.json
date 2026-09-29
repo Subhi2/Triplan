@@ -1,0 +1,173 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 903206643,
+        "osm_key": "place",
+        "osm_value": "village",
+        "type": "city",
+        "name": "Samse",
+        "county": "Kalasa taluk",
+        "state": "Karnataka",
+        "country": "India",
+        "postcode": "577124",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [75.3343192, 13.1879829]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "R",
+        "osm_id": 10364719,
+        "osm_key": "boundary",
+        "osm_value": "administrative",
+        "type": "county",
+        "name": "Samserganj",
+        "state": "West Bengal",
+        "country": "India",
+        "postcode": "742202",
+        "countrycode": "IN",
+        "extra": {
+          "admin_level": "6"
+        },
+        "extent": [87.8758323, 24.7039866, 88.0374717, 24.6054808]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [87.9665224, 24.6548681]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 8022800874,
+        "osm_key": "place",
+        "osm_value": "hamlet",
+        "type": "district",
+        "name": "Samserpadar",
+        "city": "Khamtari",
+        "county": "Khariar",
+        "state": "Odisha",
+        "country": "India",
+        "postcode": "766118",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [82.7468294, 20.2149453]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 9763436632,
+        "osm_key": "place",
+        "osm_value": "village",
+        "type": "city",
+        "name": "Samsergaon",
+        "county": "Islampur",
+        "state": "West Bengal",
+        "country": "India",
+        "postcode": "733202",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [88.1714574, 26.2199854]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 9780083280,
+        "osm_key": "place",
+        "osm_value": "hamlet",
+        "type": "district",
+        "name": "Samsera",
+        "county": "Pakaur",
+        "state": "Jharkhand",
+        "country": "India",
+        "postcode": "816107",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [87.7999793, 24.6579254]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 12778196578,
+        "osm_key": "place",
+        "osm_value": "hamlet",
+        "type": "district",
+        "name": "Samserpur",
+        "county": "Mahur",
+        "state": "Assam",
+        "country": "India",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.1595778, 25.222122]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "N",
+        "osm_id": 11727392456,
+        "osm_key": "shop",
+        "osm_value": "wholesale",
+        "type": "house",
+        "name": "Samser Ali Xerox Centre",
+        "street": "P.O-Jagannathpur",
+        "city": "P.S- Harishchandrapur",
+        "county": "Harischandrapur - II",
+        "state": "West Bengal",
+        "country": "India",
+        "postcode": "732125",
+        "countrycode": "IN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [87.8673268, 25.3265461]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 425518407,
+        "osm_key": "building",
+        "osm_value": "semi-permanent",
+        "type": "house",
+        "housenumber": "422",
+        "name": "Samser Akon bari",
+        "street": "Janjalia wabda sharok",
+        "city": "Ayla Patakata",
+        "county": "Barguna Sadar Subdistrict",
+        "state": "Barishal Division",
+        "country": "Bangladesh",
+        "countrycode": "BD",
+        "extent": [90.224098, 22.1893897, 90.2241847, 22.1893126]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [90.2241414, 22.1893512]
+      }
+    }
+  ]
+}
