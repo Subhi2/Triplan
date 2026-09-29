@@ -97,6 +97,20 @@ Only after Meta app review is approved (see `05`).
 
 - Offline trip pack, monsoon warnings on place pages during avoid months, Lighthouse ≥ 90, error monitoring (Sentry), analytics, self-hosted OSRM, terms and privacy pages, image and content takedown process.
 
+## Later · Exact Google Maps links (needs a Google API key)
+
+Decided 2026-09-29 to do this later. Today "Open in Google Maps" searches the place's name with the map at its coordinates (see "Google Maps links" in `02-architecture.md`): a unique name opens the place, but a common one ("Shiva Temple") shows a list of matches. A Google place id opens the exact place every time.
+
+Before starting: create a Google Maps Platform API key with the Places API (New) enabled. This needs a billing account. Restrict the key to the Places API and to the server. Check the current price of ID-only Text Search requests.
+
+1. `GOOGLE_MAPS_API_KEY` in `src/server/env.ts` and `.env.example` (server only, never `NEXT_PUBLIC_`).
+2. Provider `src/server/providers/google/places.ts` behind an interface, mocked in tests: Text Search (New) with the field mask `places.id` only, the place name as the query and a location bias circle of about 300 m around our coordinates. Accept a result only if it lies within that circle.
+3. Resolve lazily: the row and detail links point to our own `GET /api/places/[slug]/google-maps`, which uses `place.google_place_id` when set, otherwise looks it up once, stores it, and redirects to `https://www.google.com/maps/search/?api=1&query=<name>&query_place_id=<id>`. With no match, or if the lookup fails, it redirects to today's name-at-coordinates link. Record when a lookup found nothing (e.g. a `google_place_checked_at` column) so it is not repeated on every click.
+4. Rate-limit and cache like the other providers; never call Google in a loop or from the OSM import.
+5. Store only the place id. Google's ratings, reviews and photos are never stored (see "Things to avoid" in `CLAUDE.md`).
+
+**Done when:** "Open in Google Maps" on a common-named place (a "Shiva Temple" from the OSM import) opens that exact temple's Google Maps page, and a second click needs no Google request.
+
 ---
 
 ## Suggested first message to Claude Code
