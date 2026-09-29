@@ -192,13 +192,15 @@ Rides are planned in groups, and in India the plan goes to a WhatsApp group, so 
 - **Search engines**: `sitemap.xml` lists the verified places of every place-list category (not fuel stations or towns), richest first (a guide, a photo or a Wikidata id), up to 45,000 URLs, rebuilt daily. `robots.txt` allows everything but `/api/`. Place pages have a canonical URL and schema.org `TouristAttraction` JSON-LD (location, area, photo, rating, Wikipedia link). Saved trips are `noindex` because anyone can write them; their links still unfurl.
 - Absolute URLs come from `siteUrl()`: `NEXT_PUBLIC_SITE_URL` when set (a custom domain), else Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`), else localhost.
 
-## Ride check
+## Ride check and GPX
 
 **Ride check** (`RideCheck.tsx`, logic in `src/lib/rideCheck.ts`), under the save bar for the selected route. Open on wide screens; on phones one line ("Ride check · Fuel gap 38 km · Arrive 11:29") that opens on tap, so the place list stays in view.
 
 - **Fuel**: fuel stations within 2 km of the route (the places API with `categories: ["fuel"]`; 18,000+ stations from OSM). The longest stretch between pumps, counting from the start and to the destination, is compared with the range on a full tank (default 200 km for a bike, 450 km for a car, remembered per vehicle in `localStorage`): "ok" up to 3/4 of the range, "tight" up to the range, "short" beyond it. The note says the stations come from OSM and some may be missing.
 - **Daylight**: start time (default 06:00 tomorrow, the browser's time zone) plus riding time plus 15 minutes of breaks per full 2 hours gives the arrival. Sunset at the destination and civil dawn at the start come from `suncalc` (BSD-2, computed in the browser, no API). "day" arrives an hour or more before sunset, "dusk" within that hour, "dark" after it, with the latest start that still arrives an hour before sunset. It also flags a start before dawn and more than 10 hours on the road.
 - The start time is kept in the planner (not in the URL) so the weather check can use it too.
+
+**GPX export**: the "GPX" button in the bar at the bottom of the panel downloads `src/lib/gpx.ts`'s GPX 1.1 file: the selected route as a track, the stops as waypoints (flags: green start, blue stops, red destination) and the ticked places, or with none ticked the places in the list (at most 300), each described with its category and km. OsmAnd, Organic Maps, Komoot and GPS units navigate it offline. Built in the browser; nothing is sent to the server.
 
 ## Phone layout
 

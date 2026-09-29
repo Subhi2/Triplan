@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import type { PlaceDetail } from "@/lib/placeDetail";
 import type { PlaceAlong } from "@/lib/places";
@@ -501,4 +502,32 @@ test.describe("ride check", () => {
     await expect(check).toContainText("Daylight: you would ride after dark");
     await expect(check).toContainText(/Start by .+ to arrive an hour before sunset/);
   });
+});
+
+test("download the trip as a GPX file with the route, stops and places", async ({ page }) => {
+  await mockApis(page, []);
+  await mockPlace(page);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  await expect(
+    page.getByRole("list", { name: "Places along the route" }).getByRole("button", {
+      name: /Manjarabad Fort/,
+    }),
+  ).toBeVisible();
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download GPX file" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("bengaluru-to-kalasa.gpx");
+  const gpx = await readFile((await download.path())!, "utf8");
+  expect(gpx).toContain('<gpx version="1.1"');
+  expect(gpx).toContain("<name>Bengaluru</name>");
+  expect(gpx).toContain("<desc>Destination</desc>");
+  expect(gpx).toContain("<name>Manjarabad Fort</name>");
+  expect(gpx.match(/<trkpt /g)!.length).toBeGreaterThan(100);
 });

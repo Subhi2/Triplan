@@ -12,10 +12,13 @@ import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
+import { categoryStyle } from "@/lib/categories";
 import type { LngLat } from "@/lib/geo";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
+import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture } from "@/lib/rideCheck";
+import { tripHeadline } from "@/lib/site";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
@@ -39,6 +42,9 @@ const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.M
   ssr: false,
   loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
 });
+
+/** Places in a GPX file at most: GPS units slow down with thousands of waypoints. */
+const MAX_GPX_PLACES = 300;
 
 let nextId = 0;
 const newId = () => `stop-${++nextId}`;
@@ -301,6 +307,44 @@ export function Planner({ savedTrip = null }: Props) {
     selectedRoute ? ` ${selectedRoute.viaLabel}` : ""
   }`.slice(0, 120);
 
+  /**
+   * The trip as a GPX file: the route, the stops, and the ticked places (or, with none ticked,
+   * the places in the list), for navigating offline in OsmAnd, Organic Maps or a GPS unit.
+   */
+  function downloadGpx() {
+    if (!selectedRoute) return;
+    const resolved = stops.flatMap((s) => (s.location ? [{ ...s, location: s.location }] : []));
+    const title = saved?.title ?? tripHeadline(resolved.map((s) => s.label));
+    const gpx = tripGpx({
+      name: title,
+      link: saved ? `${window.location.origin}/trips/${saved.id}` : window.location.href,
+      route: selectedRoute.geometry.coordinates as LngLat[],
+      stops: resolved.map((s, i) => {
+        const role = i === 0 ? "Start" : i === resolved.length - 1 ? "Destination" : `Stop ${i}`;
+        return {
+          name: s.label,
+          location: s.location,
+          description: role,
+          symbol: i === 0 ? "Flag, Green" : i === resolved.length - 1 ? "Flag, Red" : "Flag, Blue",
+        };
+      }),
+      places: (picked.length > 0 ? picked : places).slice(0, MAX_GPX_PLACES).map((p) => ({
+        name: p.name,
+        location: p.location,
+        description: `${categoryStyle(p.category).name} · km ${Math.round(p.kmFromStart)}`,
+        symbol: "Scenic Area",
+      })),
+    });
+    const url = URL.createObjectURL(new Blob([gpx], { type: "application/gpx+xml" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = gpxFileName(title);
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
+
   function onSaved(trip: SavedTrip) {
     setSaved(trip);
     // The trip's own link from now on; the query string keeps the planner's state for reloads.
@@ -481,6 +525,7 @@ export function Planner({ savedTrip = null }: Props) {
           trip={googleTrip}
           pickedCount={picked.length}
           onClear={() => setPicked([])}
+          onDownloadGpx={downloadGpx}
         />
       )}
     </div>

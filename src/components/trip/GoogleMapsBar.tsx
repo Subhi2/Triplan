@@ -6,14 +6,16 @@ interface Props {
   trip: GoogleMapsTrip;
   pickedCount: number;
   onClear: () => void;
+  /** Downloads the trip as a GPX file, for OsmAnd, Organic Maps and GPS units. */
+  onDownloadGpx: () => void;
 }
 
 /**
  * Stays at the bottom of the panel: opens the trip in Google Maps, ready to navigate, with its
- * via stops and the ticked places as stops in route order. The negative bottom undoes the
- * panel padding (and the safe area below it on phones).
+ * via stops and the ticked places as stops in route order, or downloads it as GPX. The negative
+ * bottom undoes the panel padding (and the safe area below it on phones).
  */
-export function GoogleMapsBar({ trip, pickedCount, onClear }: Props) {
+export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Props) {
   const tooMany = trip.url === null && trip.waypointCount > MAX_GOOGLE_WAYPOINTS;
   return (
     <div
@@ -42,6 +44,15 @@ export function GoogleMapsBar({ trip, pickedCount, onClear }: Props) {
           </span>
         )}
       </span>
+      <button
+        type="button"
+        onClick={onDownloadGpx}
+        aria-label="Download GPX file"
+        title="Download the route, stops and places as a GPX file, for OsmAnd, Organic Maps and GPS units"
+        className="inline-flex min-h-11 items-center rounded-md border border-stone-300 px-3 font-medium whitespace-nowrap hover:border-stone-500 md:min-h-0 md:py-1.5 dark:border-stone-700"
+      >
+        GPX
+      </button>
       {trip.url ? (
         <a
           href={trip.url}
