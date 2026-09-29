@@ -1,8 +1,15 @@
 import { z } from "zod";
 import { createTripSchema } from "@/lib/savedTrip";
 import { createTrip, listTrips } from "@/server/services/tripService";
+import { allowWrite } from "@/server/services/writeLimit";
 
 // Saved trips are open: no sign-in, one shared list (see docs/02, "Saved trips").
+
+const tooMany = () =>
+  Response.json(
+    { error: "Too many trip changes from here. Try again in an hour." },
+    { status: 429, headers: { "Retry-After": "3600" } },
+  );
 
 /** GET -> { trips: TripSummary[] }, most recently changed first. */
 export async function GET() {
@@ -25,6 +32,7 @@ export async function POST(request: Request) {
     );
   }
   try {
+    if (!(await allowWrite(request))) return tooMany();
     return Response.json({ trip: await createTrip(parsed.data) }, { status: 201 });
   } catch (err) {
     console.error("POST /api/trips failed", err);

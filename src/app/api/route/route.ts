@@ -4,6 +4,10 @@ import { ProviderError } from "@/server/providers/http";
 import { NoRouteError } from "@/server/providers/routing";
 import { getRoutes } from "@/server/services/routeService";
 
+// Up to four routing requests (the trip, then towns for extra options), spaced 1 s apart for the
+// public OSRM server: allow more than the platform's default time.
+export const maxDuration = 60;
+
 /** POST { stops: [{label, location: [lng, lat]}], vehicle } -> { routes: RouteOption[] } */
 export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => undefined);

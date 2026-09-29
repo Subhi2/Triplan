@@ -57,6 +57,13 @@
       "when": 1790666322527,
       "tag": "0007_open_trips",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790684213961,
+      "tag": "0008_write_limit",
+      "breakpoints": true
     }
   ]
 }

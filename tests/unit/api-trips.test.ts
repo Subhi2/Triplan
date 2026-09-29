@@ -7,8 +7,10 @@ vi.mock("@/server/services/tripService", () => ({
   listTrips: vi.fn(),
   updateTrip: vi.fn(),
 }));
+vi.mock("@/server/services/writeLimit", () => ({ allowWrite: vi.fn() }));
 
 const { createTrip, getTrip, updateTrip } = await import("@/server/services/tripService");
+const { allowWrite } = await import("@/server/services/writeLimit");
 const trips = await import("@/app/api/trips/route");
 const trip = await import("@/app/api/trips/[id]/route");
 
@@ -48,6 +50,7 @@ beforeEach(() => {
   vi.mocked(createTrip).mockReset().mockResolvedValue(savedTrip);
   vi.mocked(getTrip).mockReset().mockResolvedValue(savedTrip);
   vi.mocked(updateTrip).mockReset().mockResolvedValue(savedTrip);
+  vi.mocked(allowWrite).mockReset().mockResolvedValue(true);
 });
 
 describe("POST /api/trips", () => {
@@ -56,6 +59,14 @@ describe("POST /api/trips", () => {
     expect(res.status).toBe(201);
     expect(await res.json()).toEqual({ trip: savedTrip });
     expect(createTrip).toHaveBeenCalledWith(body);
+  });
+
+  it("is 429 once the visitor is over the hourly limit, without saving", async () => {
+    vi.mocked(allowWrite).mockResolvedValue(false);
+    const res = await trips.POST(request("POST", body));
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("3600");
+    expect(createTrip).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid trip without saving it", async () => {
@@ -82,6 +93,13 @@ describe("/api/trips/[id]", () => {
     const res = await trip.PATCH(request("PATCH", { title: " New name " }), ctx({ id: ID }));
     expect(res.status).toBe(200);
     expect(updateTrip).toHaveBeenCalledWith(ID, { title: "New name" });
+  });
+
+  it("limits renames too", async () => {
+    vi.mocked(allowWrite).mockResolvedValue(false);
+    const res = await trip.PATCH(request("PATCH", { title: "x" }), ctx({ id: ID }));
+    expect(res.status).toBe(429);
+    expect(updateTrip).not.toHaveBeenCalled();
   });
 
   it("rejects an empty update", async () => {

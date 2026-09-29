@@ -1,10 +1,16 @@
 import { z } from "zod";
 import { tripIdSchema, updateTripSchema } from "@/lib/savedTrip";
 import { getTrip, updateTrip } from "@/server/services/tripService";
+import { allowWrite } from "@/server/services/writeLimit";
 
 type Context = { params: Promise<{ id: string }> };
 
 const notFound = () => Response.json({ error: "Trip not found" }, { status: 404 });
+const tooMany = () =>
+  Response.json(
+    { error: "Too many trip changes from here. Try again in an hour." },
+    { status: 429, headers: { "Retry-After": "3600" } },
+  );
 
 /** GET -> { trip: SavedTrip } */
 export async function GET(_request: Request, { params }: Context) {
@@ -32,6 +38,7 @@ export async function PATCH(request: Request, { params }: Context) {
     );
   }
   try {
+    if (!(await allowWrite(request))) return tooMany();
     const trip = await updateTrip(id.data, parsed.data);
     return trip ? Response.json({ trip }) : notFound();
   } catch (err) {
