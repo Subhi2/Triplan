@@ -124,7 +124,11 @@ describe.skipIf(!process.env.DATABASE_URL)("places for any trip", () => {
         if (!trip.states.every((s) => imported.has(s)) || trip.labels.length === 0) ctx.skip();
         const options = await getRoutes(
           { stops: trip.stops.map(([label, location]) => ({ label, location })), vehicle: "bike" },
-          { routing: { route: async () => routes }, townsAlong: townsAlongDb },
+          {
+            routing: { route: async () => routes },
+            townsAlong: townsAlongDb,
+            townsInBox: async () => [],
+          },
         );
         expect(options.map((o) => o.viaLabel)).toEqual(trip.labels);
       });

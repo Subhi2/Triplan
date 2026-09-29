@@ -130,3 +130,28 @@ export async function townsAlong(geometry: LineString, withinM: number): Promise
     kind: r.kind === "city" ? "city" : "town",
   }));
 }
+
+interface TownBoxRawRow extends Record<string, unknown> {
+  name: string;
+  lng: number;
+  lat: number;
+  population: number | null;
+  kind: string;
+}
+
+/** Towns and cities inside a bounding box [west, south, east, north]. */
+export async function townsInBox([west, south, east, north]: [number, number, number, number]) {
+  const rows = await getDb().execute<TownBoxRawRow>(sql`
+    SELECT p.name, ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
+           p.population, coalesce(p.osm_tags->>'place', 'town') AS kind
+    FROM place p
+    JOIN category c ON c.id = p.category_id
+    WHERE c.slug = 'town' AND p.status = 'verified'
+      AND p.location && ST_MakeEnvelope(${west}, ${south}, ${east}, ${north}, 4326)::geography`);
+  return rows.map((r) => ({
+    name: r.name,
+    location: [r.lng, r.lat] as LngLat,
+    population: r.population,
+    kind: r.kind === "city" ? ("city" as const) : ("town" as const),
+  }));
+}

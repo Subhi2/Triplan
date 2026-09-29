@@ -6,6 +6,8 @@ export type RouteFixture =
   | "bengaluru-kalasa"
   | "bengaluru-sakleshpur-kalasa"
   | "bengaluru-belur-chikkamagaluru-balehonnur-kalasa"
+  | "bengaluru-samse"
+  | "bengaluru-belur-samse"
   | "bengaluru-ooty"
   | "pune-goa";
 

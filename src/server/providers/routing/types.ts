@@ -9,11 +9,19 @@ export interface RouteInput {
   profile: RoutingProfile;
 }
 
+/** A stretch of road along a route; `ref` is its road number ("NH75", "SH 57") or null. */
+export interface RoadStretch {
+  distanceM: number;
+  ref: string | null;
+}
+
 export interface RouteResult {
   geometry: LineString; // full resolution
   distanceM: number;
   durationS: number;
   legs: { distanceM: number; durationS: number; summary: string }[];
+  /** Road stretches in route order, when the provider reports them. */
+  roads?: RoadStretch[];
 }
 
 export interface RoutingProvider {

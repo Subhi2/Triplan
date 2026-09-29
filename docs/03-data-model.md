@@ -233,6 +233,14 @@ interface RouteOption {
   durationMin: number;
   viaLabel: string;            // "via Sakleshpur"
   towns: string[];
+  roadMix: RoadMix | null;     // null when the routing engine reports no road numbers
+}
+
+interface RoadMix {            // metres; the parts add up to the route distance
+  nationalM: number;           // NH / NE
+  stateM: number;              // SH
+  ghatM: number;               // winding hill sections, from the geometry (any road)
+  otherM: number;              // district and local roads
 }
 
 interface PlaceAlong {

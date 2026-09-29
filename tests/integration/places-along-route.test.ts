@@ -132,7 +132,11 @@ describe.skipIf(!process.env.DATABASE_URL)("places along real routes", () => {
           ],
           vehicle: "bike",
         },
-        { routing: { route: async () => direct }, townsAlong: townsAlongDb },
+        {
+          routing: { route: async () => direct },
+          townsAlong: townsAlongDb,
+          townsInBox: async () => [],
+        },
       );
       expect(routes.map((r) => r.viaLabel)).toEqual([
         "via Chikkamagaluru",

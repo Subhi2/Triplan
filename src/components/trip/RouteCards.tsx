@@ -2,6 +2,7 @@
 
 import { formatDuration, formatKm } from "@/lib/format";
 import type { RouteOption } from "@/lib/trip";
+import { RoadMixBar } from "./RoadMixBar";
 
 interface Props {
   routes: RouteOption[];
@@ -36,6 +37,7 @@ export function RouteCards({ routes, selectedId, onSelect }: Props) {
                 {formatKm(r.distanceKm * 1000)}
                 {r.towns.length > 0 && <> · {r.towns.join(" · ")}</>}
               </div>
+              {r.roadMix && <RoadMixBar mix={r.roadMix} />}
             </button>
           </li>
         );

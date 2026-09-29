@@ -3,13 +3,80 @@
   "routes": [
     {
       "legs": [
-        { "steps": [], "weight": 11430, "summary": "", "duration": 11430, "distance": 237432.9 },
-        { "steps": [], "weight": 4905.6, "summary": "", "duration": 4905.6, "distance": 93400.1 }
+        {
+          "steps": [
+            { "distance": 76.7, "name": "Vittal Mallya Road" },
+            { "distance": 513.8, "name": "" },
+            { "distance": 349.1, "name": "" },
+            { "distance": 56.5, "name": "" },
+            { "distance": 1491, "name": "Sheshadri Road" },
+            { "distance": 1140.1, "name": "Subedar Chatram Road" },
+            { "distance": 81.6, "name": "" },
+            { "distance": 239.8, "name": "Sampige Road" },
+            { "distance": 107.1, "name": "Sampige Road" },
+            { "distance": 334.5, "name": "Mill Corner Road" },
+            { "distance": 297.6, "name": "1st Main Road" },
+            { "distance": 2640.7, "name": "1st Main Road" },
+            { "distance": 525.4, "ref": "NH48", "name": "Tumkur Road" },
+            { "distance": 121.6, "name": "" },
+            { "distance": 1759.4, "name": "Nelamangala - Majestic Service Road" },
+            { "distance": 684.2, "ref": "NH48; NH75", "name": "Tumkur Road" },
+            { "distance": 4533, "name": "Goraguntepalya Flyover" },
+            {
+              "distance": 14982.8,
+              "ref": "NH48; NH75",
+              "name": "Bangalore - Nelamangala Expressway"
+            },
+            { "distance": 577.5, "ref": "NH48", "name": "Delhi - Chennai Highway" },
+            { "distance": 32173.2, "ref": "NH48", "name": "Pune Bangalore Highway" },
+            { "distance": 272.7, "name": "" },
+            { "distance": 6815.8, "ref": "NH73", "name": "Ring Road" },
+            { "distance": 21.6, "ref": "NH73", "name": "Ring Road" },
+            { "distance": 3437.4, "ref": "NH73", "name": "Ring Road" },
+            { "distance": 72609.7, "ref": "NH73", "name": "" },
+            { "distance": 36474.2, "ref": "SH71", "name": "Tiptur - Hassan Road" },
+            { "distance": 6660.1, "ref": "SH71", "name": "" },
+            { "distance": 11285.5, "ref": "SH71", "name": "" },
+            { "distance": 140.4, "name": "" },
+            { "distance": 551.9, "name": "" },
+            { "distance": 466.3, "ref": "NH75", "name": "Hassan Bypass" },
+            { "distance": 1379.6, "ref": "NH75", "name": "Hassan Bypass" },
+            { "distance": 26730.3, "ref": "NH75", "name": "Hassan Bypass" },
+            { "distance": 3760.5, "name": "Sakleshpur Bypass" },
+            { "distance": 3660.1, "name": "" },
+            { "distance": 481.2, "name": "" },
+            { "distance": 0, "name": "" }
+          ],
+          "weight": 11430,
+          "summary": "NH73, SH71",
+          "duration": 11430,
+          "distance": 237432.9
+        },
+        {
+          "steps": [
+            { "distance": 1037.2, "name": "" },
+            { "distance": 2139.9, "ref": "NH75", "name": "Sakleshpur Bypass" },
+            { "distance": 26218.7, "ref": "SH107", "name": "" },
+            { "distance": 22569.3, "ref": "NH73", "name": "" },
+            { "distance": 6637.3, "ref": "SH66", "name": "" },
+            { "distance": 3258.9, "ref": "SH106", "name": "" },
+            { "distance": 241.7, "ref": "SH106", "name": "" },
+            { "distance": 23187.1, "ref": "SH106", "name": "" },
+            { "distance": 7012.6, "ref": "SH106", "name": "" },
+            { "distance": 77.1, "ref": "SH66", "name": "" },
+            { "distance": 639, "ref": "SH66", "name": "" },
+            { "distance": 381.5, "ref": "SH106", "name": "" },
+            { "distance": 0, "ref": "SH106", "name": "" }
+          ],
+          "weight": 4905.6,
+          "summary": "SH107, SH106",
+          "duration": 4905.6,
+          "distance": 93400.1
+        }
       ],
       "weight_name": "routability",
       "geometry": {
         "coordinates": [
-          [77.594697, 12.971848],
           [77.594697, 12.971848],
           [77.59464, 12.971871],
           [77.594553, 12.971901],

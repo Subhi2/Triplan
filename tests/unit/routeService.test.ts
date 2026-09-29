@@ -1,21 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RoutingProvider } from "@/server/providers/routing";
+import type { RouteInput, RoutingProvider } from "@/server/providers/routing";
 import { getRouteGeometry, getRoutes, type RouteServiceDeps } from "@/server/services/routeService";
+import type { CandidateTown } from "@/server/services/altRoutes";
 import type { TownOnRoute } from "@/server/services/viaLabel";
 import { routeFixture } from "../helpers/fixtures";
 
 const BENGALURU = { label: "Bengaluru", location: [77.5946, 12.9716] as [number, number] };
 const SAKLESHPUR = { label: "Sakleshpur", location: [75.785, 12.943] as [number, number] };
 const KALASA = { label: "Kalasa", location: [75.356, 13.234] as [number, number] };
+const SAMSE = { label: "Samse", location: [75.33432, 13.18798] as [number, number] };
 
 function deps(
   fixture: Parameters<typeof routeFixture>[0],
   towns: TownOnRoute[][],
+  candidates: CandidateTown[] = [],
 ): RouteServiceDeps {
   let call = 0;
   return {
     routing: { route: vi.fn(async () => routeFixture(fixture, "bike")) } satisfies RoutingProvider,
     townsAlong: vi.fn(async () => towns[call++] ?? []),
+    townsInBox: vi.fn(async () => candidates),
   };
 }
 
@@ -64,6 +68,87 @@ describe("getRoutes", () => {
     );
     expect(routes).toHaveLength(1);
     expect(routes[0]!.viaLabel).toBe("via Sakleshpur");
+    // Via stops mean the rider chose the path: no extra options.
+    expect(d.townsInBox).not.toHaveBeenCalled();
+  });
+
+  it("reports the road mix of each route", async () => {
+    const d = deps("bengaluru-samse", []);
+    const [route] = await getRoutes({ stops: [BENGALURU, SAMSE], vehicle: "bike" }, d);
+    const mix = route!.roadMix!;
+    expect(mix.nationalM + mix.stateM + mix.ghatM + mix.otherM).toBeCloseTo(
+      route!.distanceKm * 1000,
+      0,
+    );
+    expect(mix.ghatM).toBeGreaterThan(40_000); // the Mudigere–Samse hills
+  });
+});
+
+describe("extra route options through towns", () => {
+  const BELUR: CandidateTown = {
+    name: "Belur",
+    location: [75.8636, 13.1648],
+    population: null,
+    kind: "town",
+  };
+  const HASSAN: CandidateTown = {
+    name: "Hassan",
+    location: [76.0996, 13.0068], // on the NH75 route already
+    population: 133_400,
+    kind: "town",
+  };
+
+  /** Engine alternatives for the direct search; `viaRoute` for any search through a town. */
+  function routing(viaRoute: () => ReturnType<typeof routeFixture>) {
+    return {
+      route: vi.fn(async (input: RouteInput) =>
+        input.waypoints.length === 2 ? routeFixture("bengaluru-samse", "bike") : viaRoute(),
+      ),
+    };
+  }
+
+  it("tops up OSRM's two routes to three with a route through a town off both", async () => {
+    const d = { ...deps("bengaluru-samse", [], [HASSAN, BELUR]) };
+    d.routing = routing(() => routeFixture("bengaluru-belur-samse", "bike"));
+    const routes = await getRoutes({ stops: [BENGALURU, SAMSE], vehicle: "bike" }, d);
+
+    expect(routes).toHaveLength(3);
+    // Hassan is on an existing route, so only Belur is tried.
+    expect(d.routing.route).toHaveBeenCalledTimes(2);
+    expect(d.routing.route).toHaveBeenLastCalledWith({
+      waypoints: [BENGALURU.location, BELUR.location, SAMSE.location],
+      alternatives: false,
+      profile: "bike",
+    });
+    expect(routes[2]!.distanceKm).toBeCloseTo(344.5, 1);
+    expect(routes[2]!.id).toMatch(/^[0-9a-f]{32}-0$/);
+    expect(new Set(routes.map((r) => r.id)).size).toBe(3);
+  });
+
+  it("skips a town whose route is much longer than the best one", async () => {
+    const d = { ...deps("bengaluru-samse", [], [BELUR]) };
+    d.routing = routing(() =>
+      routeFixture("bengaluru-belur-samse", "bike").map((r) => ({
+        ...r,
+        distanceM: r.distanceM * 2,
+      })),
+    );
+    expect(await getRoutes({ stops: [BENGALURU, SAMSE], vehicle: "bike" }, d)).toHaveLength(2);
+  });
+
+  it("skips a town whose route is mostly the same road as an existing one", async () => {
+    const d = { ...deps("bengaluru-samse", [], [BELUR]) };
+    d.routing = routing(() => routeFixture("bengaluru-samse", "bike").slice(0, 1));
+    expect(await getRoutes({ stops: [BENGALURU, SAMSE], vehicle: "bike" }, d)).toHaveLength(2);
+  });
+
+  it("keeps the engine's routes when routing through a town fails", async () => {
+    const d = { ...deps("bengaluru-samse", [], [BELUR]) };
+    d.routing = routing(() => {
+      throw new Error("OSRM down");
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await getRoutes({ stops: [BENGALURU, SAMSE], vehicle: "bike" }, d)).toHaveLength(2);
   });
 });
 
@@ -74,7 +159,7 @@ describe("getRouteGeometry", () => {
     const cache = { get: async (k: string) => store.get(k), set: async () => {} };
     const d = deps("bengaluru-kalasa", []);
     const [, second] = await getRoutes({ stops: [BENGALURU, KALASA], vehicle: "bike" }, d);
-    store.set(`route:v1:${second!.id.split("-")[0]}`, routes);
+    store.set(`route:v2:${second!.id.split("-")[0]}`, routes);
 
     expect(await getRouteGeometry(second!.id, cache)).toEqual(routes[1]!.geometry);
     expect(await getRouteGeometry(second!.id.replace(/-1$/, "-2"), cache)).toBeNull();

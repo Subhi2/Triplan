@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { GeocodeResult, RouteOption } from "@/lib/trip";
+import { roadMix } from "@/server/services/roadMix";
 import { routeFixture, type RouteFixture } from "../helpers/fixtures";
 
 // The planner's own API is mocked with recorded OSRM geometry, so this never hits OSRM,
@@ -37,6 +38,7 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
     durationMin: Math.round(r.durationS / 60),
     viaLabel: labels[i]!,
     towns: [],
+    roadMix: roadMix(r),
   }));
 }
 
@@ -89,6 +91,9 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
   await expect(cards.nth(0)).toContainText("via Chikkamagaluru");
   await expect(cards.nth(0)).toContainText("337.6 km");
   await expect(cards.nth(1)).toContainText("via Hassan, Sakleshpur");
+  // Each card splits the distance by kind of road.
+  await expect(cards.nth(1)).toContainText(/NH \d+% · [\d.]+ km/);
+  await expect(cards.nth(1)).toContainText(/Ghat \d+% · [\d.]+ km/);
   await expect(cards.nth(0)).toHaveAttribute("aria-pressed", "true");
 
   await cards.nth(1).click();
