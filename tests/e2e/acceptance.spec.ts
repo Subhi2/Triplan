@@ -161,7 +161,10 @@ test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", as
       .getByRole("list", { name: "Places along the route" })
       .getByRole("button", { name: /Manjarabad Fort/ })
       .click({ timeout: 30_000 });
-    await expect(page.getByText("Right off NH75; about 250 steps up.")).toBeVisible();
+    // First visit: the dev server compiles the place details API.
+    await expect(page.getByText("Right off NH75; about 250 steps up.")).toBeVisible({
+      timeout: 30_000,
+    });
     await page.getByRole("button", { name: "Add to trip" }).click();
     await expect(page.getByText(/In your trip \(stop \d\)/)).toBeVisible();
 
@@ -176,7 +179,8 @@ test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", as
     // Everyone's list shows it; opening it restores the stops and the route.
     await page.goto("/trips");
     await page.getByRole("link", { name: new RegExp(title) }).click();
-    await expect(cards).toHaveCount(1);
+    // The dev server compiles the trip page on first visit, then routes with the real OSRM.
+    await expect(cards).toHaveCount(1, { timeout: 30_000 });
     await expect(cards.first()).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText(`Saved trip: ${title}`)).toBeVisible();
     if (await page.getByRole("button", { name: "Edit trip" }).isVisible()) {

@@ -441,3 +441,64 @@ test("on phones the map comes first, then a one-line header and the sheet", asyn
     expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
 });
+
+const pump = (name: string, kmFromStart: number): PlaceAlong => ({
+  ...FORT,
+  id: `pump-${kmFromStart}`,
+  slug: `pump-${kmFromStart}`,
+  name,
+  category: "fuel",
+  kmFromStart,
+  detourKm: 0.2,
+  notable: false,
+});
+
+test.describe("ride check", () => {
+  // Sunset times depend on the clock; India's is the one riders use.
+  test.use({ timezoneId: "Asia/Kolkata" });
+
+  test("fuel gaps against the tank's range, and the arrival against sunset", async ({ page }) => {
+    await mockApis(page, []);
+    await page.route("**/api/places/along", (route) => {
+      const body = route.request().postDataJSON() as { categories?: string[] };
+      const places =
+        body.categories?.[0] === "fuel"
+          ? [pump("Nelamangala Fuels", 20), pump("Kunigal HP", 60), pump("Hassan IOCL", 250)]
+          : [];
+      return route.fulfill({ json: { places } });
+    });
+    await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+    await page
+      .getByRole("list", { name: "Route options" })
+      .getByRole("button")
+      .filter({ hasText: "via Hassan, Sakleshpur" })
+      .click();
+
+    // Folded to one line on phones, open on wide screens.
+    const toggle = page.getByRole("button", { name: /^Ride check/ });
+    await expect(toggle).toContainText(/Ride check/);
+    if ((await toggle.getAttribute("aria-expanded")) === "false") {
+      await expect(toggle).toContainText("Fuel gap 190 km");
+      await toggle.click();
+    }
+    const check = page.getByRole("region", { name: "Ride check" });
+
+    // Default range for a bike is 200 km: a 190 km stretch leaves too little reserve.
+    await expect(check).toContainText("Fuel: fill up before a 190 km stretch");
+    await expect(check).toContainText("From Kunigal HP (km 60) to Hassan IOCL (km 250)");
+    await expect(check).toContainText("3 fuel stations within 2 km of the route");
+    const range = check.getByRole("spinbutton", { name: "Range on a full tank (km)" });
+    await range.fill("300");
+    await expect(check).toContainText("Fuel: longest stretch without a pump is 190 km");
+    await range.fill("150");
+    await expect(check).toContainText("190 km without a pump, more than your range");
+
+    const start = check.getByLabel("Start");
+    await start.fill("2026-10-03T06:00");
+    await expect(check).toContainText(/Daylight: arrive about .+, before dark/);
+    await expect(check).toContainText(/Sunset at Kalasa: (6:\d\d\sPM|18:\d\d)/i);
+    await start.fill("2026-10-03T15:00");
+    await expect(check).toContainText("Daylight: you would ride after dark");
+    await expect(check).toContainText(/Start by .+ to arrive an hour before sunset/);
+  });
+});

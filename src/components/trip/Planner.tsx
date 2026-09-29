@@ -15,6 +15,7 @@ import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import type { LngLat } from "@/lib/geo";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
+import { defaultDeparture } from "@/lib/rideCheck";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
@@ -27,6 +28,7 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
+import { RideCheck } from "./RideCheck";
 import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
@@ -93,6 +95,8 @@ export function Planner({ savedTrip = null }: Props) {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [activePlaceId, setActivePlaceId] = useState<string | null>(null);
   const [hoverPlaceId, setHoverPlaceId] = useState<string | null>(null);
+  // When the rider sets off, for the ride check and the weather on the way. Local time.
+  const [departure, setDeparture] = useState(() => defaultDeparture());
   // Where the map is looking, to bias place suggestions. Starts at the initial map view's centre.
   const [mapBias, setMapBias] = useState<MapBias>({ center: [76.75, 15.05], zoom: 5 });
 
@@ -395,6 +399,16 @@ export function Planner({ savedTrip = null }: Props) {
       </section>
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
+      )}
+      {selectedRoute && first?.location && last?.location && (
+        <RideCheck
+          route={selectedRoute}
+          vehicle={vehicle}
+          from={{ label: first.label, location: first.location }}
+          to={{ label: last.label, location: last.location }}
+          departure={departure}
+          onDepartureChange={setDeparture}
+        />
       )}
 
       {selectedRoute && (

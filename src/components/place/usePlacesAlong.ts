@@ -11,12 +11,19 @@ export type PlacesState =
   | { status: "error"; message: string };
 
 /**
- * Loads every place within the corridor of the route (all categories; filtering is client-side).
+ * Loads every place within the corridor of the route: the place-list categories (filtering is
+ * client-side), or only `categories` when given (e.g. fuel stations for the ride check).
  * Sends the small route id first and falls back to the full geometry if the server no longer
  * has that route cached.
  */
-export function usePlacesAlong(route: RouteOption | null, corridorKm: CorridorKm): PlacesState {
+export function usePlacesAlong(
+  route: RouteOption | null,
+  corridorKm: CorridorKm,
+  categories?: string[],
+): PlacesState {
   const [state, setState] = useState<PlacesState>({ status: "idle" });
+  // A string, so a new array with the same categories does not reload.
+  const categoryKey = categories?.join(",") ?? "";
 
   useEffect(() => {
     if (!route) {
@@ -28,7 +35,11 @@ export function usePlacesAlong(route: RouteOption | null, corridorKm: CorridorKm
       fetch("/api/places/along", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, corridorKm }),
+        body: JSON.stringify({
+          ...body,
+          corridorKm,
+          ...(categoryKey && { categories: categoryKey.split(",") }),
+        }),
         signal: ctrl.signal,
       });
 
@@ -47,7 +58,7 @@ export function usePlacesAlong(route: RouteOption | null, corridorKm: CorridorKm
       });
     });
     return () => ctrl.abort();
-  }, [route, corridorKm]);
+  }, [route, corridorKm, categoryKey]);
 
   return state;
 }
