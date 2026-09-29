@@ -8,7 +8,9 @@ Place pins were checked against OpenStreetMap on 2026-09-28 with `scripts/check-
 
 ## Categories
 
-`temple, heritage, fort, viewpoint, waterfall, trek, lake, beach, food, coffee, fuel, stay, town`
+`temple, worship, heritage, fort, museum, attraction, viewpoint, waterfall, trek, peak, cave, lake, beach, food, coffee, fuel, stay, town`
+
+`worship`, `museum`, `attraction`, `peak` and `cave` were added for the OpenStreetMap import (`scripts/import-osm.ts`). `worship` is for places of worship that are not Hindu, Jain or Buddhist temples.
 
 ## Carry items
 
@@ -129,4 +131,4 @@ Place pins were checked against OpenStreetMap on 2026-09-28 with `scripts/check-
 ]
 ```
 
-After the MVP, import more places from OpenStreetMap with an Overpass query over Karnataka for `tourism=viewpoint|attraction`, `historic=*`, `natural=waterfall|peak`, `amenity=place_of_worship` (filtered to notable ones via `wikidata` tag), as `status='unverified'`, `source='osm'`.
+Places beyond this demo come from OpenStreetMap: `pnpm db:import-osm -- --region=all` imports every Indian state and union territory through the Overpass API, as `status='verified'`, `source='osm'` (tags and rules in `docs/04-build-plan.md`, Phase 3 step 0; regions in `src/server/services/osmRegions.ts`). OSM duplicates of the curated places above are linked to them, not imported twice.

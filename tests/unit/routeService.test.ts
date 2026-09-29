@@ -19,20 +19,22 @@ function deps(
   };
 }
 
-const t = (name: string, kmFromStart: number): TownOnRoute => ({
+const t = (name: string, kmFromStart: number, population: number | null = null): TownOnRoute => ({
   name,
   kmFromStart,
+  population,
+  kind: "town",
   location: [0, 0],
 });
 
 describe("getRoutes", () => {
   it("asks for alternatives with two stops and labels each route", async () => {
     const d = deps("bengaluru-kalasa", [
-      [t("Bengaluru", 0), t("Chikkamagaluru", 250), t("Mudigere", 280), t("Kalasa", 337)],
+      [t("Bengaluru", 0), t("Chikkamagaluru", 250, 118_496), t("Mudigere", 280), t("Kalasa", 337)],
       [
         t("Bengaluru", 0),
-        t("Hassan", 182),
-        t("Sakleshpur", 220),
+        t("Hassan", 182, 155_006),
+        t("Sakleshpur", 220, 23_352),
         t("Mudigere", 257),
         t("Kalasa", 312),
       ],

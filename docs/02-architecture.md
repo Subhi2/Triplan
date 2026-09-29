@@ -92,6 +92,8 @@ export interface RouteResult {
 
 To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the largest towns (OSM `place=town|city`) within 2 km of each route that are not within 2 km of the other routes. Show the top 1–2 as the card label. Store towns in `place` with category `town`, or a separate `settlement` table.
 
+As built (`src/server/services/viaLabel.ts`): towns are `place` rows with category `town`, imported from OSM with `population`. Each alternative is labelled with its largest unique town plus its last unique town before the destination (usually the ghat riders name the route by), in road order: "via Hassan, Sakleshpur". A lone route uses its largest town; with via stops, the stops name the route.
+
 ## Corridor search (places along the route)
 
 Do it in one SQL query with PostGIS:
@@ -125,6 +127,8 @@ LIMIT 500;
 
 Put this in a Postgres function `places_along_route(geojson text, corridor_m int, categories text[])` so the API calls one RPC.
 
+As built (migrations `0004`–`0006`): the route line is parsed and simplified once (materialized CTEs), km and detour are measured on the simplified line too (fast with tens of thousands of imported places; detour is approximate anyway), and when more than 1000 places fall in the corridor the function keeps the most worthwhile ones (curated first, then Wikidata-linked, by category weight, nearest the route) before ordering by km, so long trips are never cut off before the destination. Towns are excluded unless requested by category. The places API leaves fuel stations out of the list by default (`PLACE_LIST_CATEGORIES` in `src/lib/categories.ts`; they are still imported for the planned fuel-range planner). The app then shows the "best stops" by default (`bestAlongRoute` in `src/lib/places.ts`: up to 5 places per 10 km); picking a category shows all of it.
+
 ## Ranking
 
 Default list order is by km. Also compute a `score` for "top picks" badges:
@@ -149,4 +153,4 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - Unit: geo utils, ranking, provider response parsing (with recorded fixtures in `tests/fixtures/`), LLM extraction parsing.
 - Integration: `places_along_route` against a test DB with seed data (use the acceptance criteria in `01-product-spec.md`).
 - E2E (Playwright): search Bengaluru → Kalasa, add via Sakleshpur, open Manjarabad Fort, add it to trip.
-- Mock all external providers in tests; never hit OSRM, Nominatim, YouTube or Instagram in CI.
+- Mock all external providers in tests; never hit OSRM, Nominatim, Overpass, YouTube or Instagram in CI. OSRM responses are recorded as fixtures (`pnpm fixtures:routes`).

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CATEGORIES, isCategorySlug } from "./categories";
 import type { LngLat } from "./geo";
 import { CORRIDOR_KM, lngLatSchema } from "./trip";
 
@@ -16,6 +17,7 @@ export interface PlaceAlong {
   bestMonths: number[];
   thumbUrl: string | null;
   trending: boolean;
+  notable: boolean; // curated, reviewed or linked to Wikidata
 }
 
 /** Places this close to the route line count as "On route". */
@@ -49,4 +51,34 @@ export type PlacesAlongRequest = z.infer<typeof placesAlongRequestSchema>;
 
 export function detourLabel(detourKm: number): string {
   return detourKm <= ON_ROUTE_MAX_KM ? "On route" : `+${detourKm.toFixed(1)} km detour`;
+}
+
+/** The default list shows at most this many places per stretch of route. */
+export const BEST_PER_STRETCH = 5;
+export const STRETCH_KM = 10;
+
+function rank(p: PlaceAlong): number {
+  const weight = isCategorySlug(p.category) ? CATEGORIES[p.category].weight : 1;
+  return weight + (p.notable ? 1 : 0) + (p.rating ?? 0) / 5;
+}
+
+/**
+ * The default ("best stops") list: per 10 km of route, the 5 best places (category weight,
+ * notable, rating, then the smallest detour). Cities have hundreds of mapped places; this keeps
+ * the list readable on any trip. Picking a category shows every place in it instead.
+ */
+export function bestAlongRoute(places: PlaceAlong[]): PlaceAlong[] {
+  const stretches = new Map<number, PlaceAlong[]>();
+  for (const p of places) {
+    const key = Math.floor(p.kmFromStart / STRETCH_KM);
+    stretches.set(key, [...(stretches.get(key) ?? []), p]);
+  }
+  const kept = new Set<string>();
+  for (const group of stretches.values()) {
+    group
+      .sort((a, b) => rank(b) - rank(a) || a.detourKm - b.detourKm)
+      .slice(0, BEST_PER_STRETCH)
+      .forEach((p) => kept.add(p.id));
+  }
+  return places.filter((p) => kept.has(p.id));
 }

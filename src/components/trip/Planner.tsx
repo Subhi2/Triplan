@@ -9,6 +9,7 @@ import { PlaceList } from "@/components/place/PlaceList";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
+import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM } from "@/lib/places";
 import type { CorridorKm, RouteOption, Vehicle } from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { RouteCards } from "./RouteCards";
@@ -137,15 +138,20 @@ export function Planner() {
     for (const p of allPlaces) counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
     return [...counts].sort(([a], [b]) => a.localeCompare(b));
   }, [allPlaces, categories]);
-  const places = useMemo(
-    () =>
-      allPlaces.filter(
-        (p) =>
-          (categories.length === 0 || categories.includes(p.category)) &&
-          (maxDetourKm === null || p.detourKm <= maxDetourKm),
-      ),
-    [allPlaces, categories, maxDetourKm],
-  );
+  const places = useMemo(() => {
+    const matching = allPlaces.filter(
+      (p) =>
+        (categories.length === 0 || categories.includes(p.category)) &&
+        (maxDetourKm === null || p.detourKm <= maxDetourKm),
+    );
+    // No category picked: the best stops only. A picked category shows every place in it.
+    return categories.length === 0 ? bestAlongRoute(matching) : matching;
+  }, [allPlaces, categories, maxDetourKm]);
+  const hiddenCount =
+    categories.length === 0
+      ? allPlaces.filter((p) => maxDetourKm === null || p.detourKm <= maxDetourKm).length -
+        places.length
+      : 0;
 
   function addStop() {
     const s = draft(null);
@@ -216,7 +222,9 @@ export function Planner() {
               {allPlaces.length > 0 && (
                 <PlaceFilters
                   counts={categoryCounts}
-                  total={allPlaces.length}
+                  bestCount={
+                    categories.length === 0 ? places.length : bestAlongRoute(allPlaces).length
+                  }
                   selected={categories}
                   maxDetourKm={maxDetourKm}
                   onSelectedChange={setCategories}
@@ -232,6 +240,12 @@ export function Planner() {
                     onSelect={setActivePlaceId}
                     onHover={setHoverPlaceId}
                   />
+                  {hiddenCount > 0 && (
+                    <p className="text-sm text-stone-600 dark:text-stone-400">
+                      Showing the best stops: up to {BEST_PER_STRETCH} every {STRETCH_KM} km. Pick a
+                      category to see all {hiddenCount + places.length} places.
+                    </p>
+                  )}
                   <p className="text-xs text-stone-500">
                     Detours are straight-line distances from the route; the road may be longer.
                   </p>

@@ -44,12 +44,7 @@ const seedTown = z.object({ name: z.string().min(1), lat, lng });
 export type SeedPlace = z.infer<typeof seedPlace>;
 export type SeedTown = z.infer<typeof seedTown>;
 
-export function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
+export { slugify } from "../src/lib/slug";
 
 /** Returns the inline `a, b, c` list under a "## heading". */
 function inlineList(doc: string, heading: string): string[] {

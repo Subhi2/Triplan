@@ -3,8 +3,23 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   OSRM_BASE_URL: z.url().default("https://router.project-osrm.org"),
   NOMINATIM_BASE_URL: z.url().default("https://nominatim.openstreetmap.org"),
-  // Nominatim's usage policy requires an identifying User-Agent.
+  // Nominatim's usage policy requires an identifying User-Agent. Also sent to Overpass.
   NOMINATIM_USER_AGENT: z.string().min(1),
+  // Comma-separated Overpass endpoints, tried in order when one is down or unreachable.
+  OVERPASS_URLS: z
+    .string()
+    .default(
+      "https://overpass-api.de/api/interpreter," +
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter," +
+        "https://overpass.kumi.systems/api/interpreter",
+    )
+    .transform((s) =>
+      s
+        .split(",")
+        .map((u) => u.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.url()).min(1)),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

@@ -2,26 +2,10 @@
 // Idempotent: upserts on slug, and replaces each seeded place's guide and carry rows.
 // Run with `pnpm db:seed` (reads DATABASE_URL from .env.local).
 import { eq, sql } from "drizzle-orm";
+import { CATEGORIES } from "../src/lib/categories";
 import { closeDb, getDb } from "../src/server/db";
 import { carryItem, category, place, placeCarry, placeGuide } from "../src/server/db/schema";
 import { readSeedDoc, slugify, type SeedPlace } from "./seed-doc";
-
-// Display metadata for the slugs listed in the seed doc. Icons are lucide icon names.
-const CATEGORY_META: Record<string, { name: string; icon: string; weight?: number }> = {
-  temple: { name: "Temple", icon: "landmark" },
-  heritage: { name: "Heritage", icon: "castle", weight: 1.2 },
-  fort: { name: "Fort", icon: "castle" },
-  viewpoint: { name: "Viewpoint", icon: "binoculars", weight: 1.1 },
-  waterfall: { name: "Waterfall", icon: "droplets", weight: 1.1 },
-  trek: { name: "Trek", icon: "footprints" },
-  lake: { name: "Lake", icon: "waves" },
-  beach: { name: "Beach", icon: "umbrella" },
-  food: { name: "Food", icon: "utensils", weight: 0.8 },
-  coffee: { name: "Coffee", icon: "coffee", weight: 0.8 },
-  fuel: { name: "Fuel", icon: "fuel", weight: 0.5 },
-  stay: { name: "Stay", icon: "bed", weight: 0.7 },
-  town: { name: "Town", icon: "building-2", weight: 0 },
-};
 
 const CARRY_META: Record<string, { name: string; icon: string }> = {
   raincoat: { name: "Raincoat", icon: "cloud-rain" },
@@ -48,14 +32,19 @@ const CARRY_META: Record<string, { name: string; icon: string }> = {
 function withMeta<T>(slugs: string[], meta: Record<string, T>, kind: string) {
   return slugs.map((slug) => {
     const m = meta[slug];
-    if (!m) throw new Error(`No display metadata for ${kind} "${slug}"; add it in scripts/seed.ts`);
+    if (!m)
+      throw new Error(
+        `No metadata for ${kind} "${slug}" (src/lib/categories.ts or scripts/seed.ts)`,
+      );
     return { slug, ...m };
   });
 }
 
 async function main() {
   const { categorySlugs, carryItemSlugs, places, towns } = await readSeedDoc();
-  const categories = withMeta(categorySlugs, CATEGORY_META, "category");
+  const categories = withMeta(categorySlugs, CATEGORIES, "category").map(
+    ({ slug, name, icon, weight }) => ({ slug, name, icon, weight }),
+  );
   const carryItems = withMeta(carryItemSlugs, CARRY_META, "carry item");
 
   const db = getDb();
@@ -119,7 +108,8 @@ async function main() {
           categoryId: sql`excluded.category_id`,
           location: sql`excluded.location`,
           district: sql`excluded.district`,
-          osmId: sql`excluded.osm_id`,
+          // Keep an osm_id the OSM import linked to a seeded town.
+          osmId: sql`coalesce(excluded.osm_id, ${place.osmId})`,
           state: sql`excluded.state`,
           status: sql`excluded.status`,
           source: sql`excluded.source`,

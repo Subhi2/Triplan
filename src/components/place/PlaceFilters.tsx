@@ -6,7 +6,7 @@ import type { DetourLimitKm } from "@/lib/tripUrl";
 
 interface Props {
   counts: [category: string, count: number][]; // categories present on this route
-  total: number;
+  bestCount: number; // places in the default "best stops" list
   selected: string[]; // empty = all
   maxDetourKm: DetourLimitKm | null;
   onSelectedChange: (categories: string[]) => void;
@@ -26,8 +26,7 @@ export function PlaceFilters(props: Props) {
     const next = selected.includes(category)
       ? selected.filter((c) => c !== category)
       : [...selected, category];
-    // Selecting every category is the same as "All".
-    props.onSelectedChange(next.length === counts.length ? [] : next);
+    props.onSelectedChange(next);
   }
 
   return (
@@ -39,7 +38,7 @@ export function PlaceFilters(props: Props) {
           onClick={() => props.onSelectedChange([])}
           className={`${chip} ${all ? chipOn : chipOff}`}
         >
-          All <span className="opacity-75">{props.total}</span>
+          Best stops <span className="opacity-75">{props.bestCount}</span>
         </button>
         {counts.map(([category, count]) => {
           const on = selected.includes(category);
