@@ -15,6 +15,8 @@ import {
   RANGE_LIMITS_KM,
 } from "@/lib/rideCheck";
 import type { RouteOption, Vehicle } from "@/lib/trip";
+import { summarizeWeather, type WeatherPoint } from "@/lib/weather";
+import { useWeatherAlong } from "./useWeatherAlong";
 
 interface Props {
   route: RouteOption;
@@ -70,9 +72,28 @@ function Check({ tone, title, children }: { tone: Tone; title: string; children:
 const inputClass =
   "min-h-11 w-full rounded-md border border-stone-300 bg-white px-2 text-base md:min-h-0 md:py-1 md:text-sm dark:border-stone-700 dark:bg-stone-900";
 
+const RAIN_WORDS = { light: "Light rain", rain: "Rain", heavy: "Heavy rain" } as const;
+const kmh = (ms: number) => Math.round(ms * 3.6);
+
+function pointWeather(p: WeatherPoint): string {
+  const f = p.forecast;
+  if (!f) return "no forecast yet";
+  const rain =
+    f.rain === "dry"
+      ? "dry"
+      : `${RAIN_WORDS[f.rain].toLowerCase()} (${f.rainMm} mm/${f.rainHours} h)`;
+  return [
+    f.tempC !== null && `${Math.round(f.tempC)} °C`,
+    f.thunder ? "thunder" : rain,
+    f.windMs !== null && f.windMs >= 8 && `wind ${kmh(f.windMs)} km/h`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 /**
- * Before you ride: the longest stretch without a fuel station against the vehicle's range, and
- * the arrival time against sunset (docs/07, G1.3).
+ * Before you ride: the longest stretch without a fuel station against the vehicle's range, the
+ * arrival time against sunset (docs/07, G1.3) and the weather on the way (G1.5).
  */
 export function RideCheck({ route, vehicle, from, to, departure, onDepartureChange }: Props) {
   const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
@@ -134,6 +155,49 @@ export function RideCheck({ route, vehicle, from, to, departure, onDepartureChan
         ? "warn"
         : "bad";
 
+  const weather = useWeatherAlong(route, departAt);
+  // The first and last points are the trip's own start and destination.
+  const points = useMemo(
+    () =>
+      weather.status === "ok"
+        ? weather.points.map((p, i, all) => ({
+            ...p,
+            label: i === 0 ? short(from.label) : i === all.length - 1 ? short(to.label) : p.label,
+          }))
+        : [],
+    [weather, from.label, to.label],
+  );
+  const sky = summarizeWeather(points);
+  const skyTone: Tone =
+    weather.status !== "ok" || sky.level === "none"
+      ? "muted"
+      : sky.level === "thunder" || sky.level === "heavy"
+        ? "bad"
+        : sky.level === "rain" || sky.windy
+          ? "warn"
+          : "ok";
+  const at = (p: WeatherPoint) => time.format(new Date(p.eta));
+  const temps =
+    sky.minTempC !== null && sky.maxTempC !== null
+      ? `${Math.round(sky.minTempC)}–${Math.round(sky.maxTempC)} °C`
+      : null;
+  const skyTitle =
+    sky.level === "none"
+      ? "Weather: no forecast yet for that day (about 9 days ahead)"
+      : sky.level === "thunder"
+        ? `Weather: thunderstorms near ${sky.worst!.label} around ${at(sky.worst!)}`
+        : sky.level === "dry"
+          ? `Weather: dry on the way${temps ? `, ${temps}` : ""}`
+          : `Weather: ${RAIN_WORDS[sky.level].toLowerCase()} near ${sky.worst!.label} around ${at(sky.worst!)}`;
+  const skyShort =
+    weather.status !== "ok" || sky.level === "none"
+      ? "Weather"
+      : sky.level === "dry"
+        ? "Dry"
+        : sky.level === "thunder"
+          ? "Thunder"
+          : RAIN_WORDS[sky.level];
+
   // Open on wide screens; on phones a one-line summary keeps the place list in view.
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(window.matchMedia("(min-width: 768px)").matches), []);
@@ -161,6 +225,10 @@ export function RideCheck({ route, vehicle, from, to, departure, onDepartureChan
               <span className="inline-flex items-center gap-1 truncate">
                 <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT[dayTone]}`} />
                 {daylight ? `Arrive ${fmtArrive(daylight.arriveAt)}` : "Daylight"}
+              </span>
+              <span className="inline-flex items-center gap-1 truncate">
+                <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT[skyTone]}`} />
+                {skyShort}
               </span>
             </span>
           )}
@@ -266,6 +334,52 @@ export function RideCheck({ route, vehicle, from, to, departure, onDepartureChan
               {daylight.longDay && daylight.verdict === "day" && (
                 <p>That is over 10 hours on the road: think about a night stop on the way.</p>
               )}
+            </Check>
+          )}
+
+          {(weather.status === "loading" || weather.status === "idle") && (
+            <Check tone="muted" title="Weather">
+              <p className="text-stone-600 dark:text-stone-400">Checking the forecast…</p>
+            </Check>
+          )}
+          {weather.status === "error" && (
+            <Check tone="muted" title="Weather">
+              <p className="text-stone-600 dark:text-stone-400">Could not load the forecast.</p>
+            </Check>
+          )}
+          {weather.status === "ok" && (
+            <Check tone={skyTone} title={skyTitle}>
+              {sky.windy && (
+                <p>
+                  Strong wind near {sky.windy.label}: {kmh(sky.windy.forecast!.windMs!)} km/h.
+                </p>
+              )}
+              {sky.level !== "none" && (
+                <ol aria-label="Weather along the route" className="mt-1 space-y-0.5 text-xs">
+                  {points.map((p) => (
+                    <li key={p.km} className="flex gap-2">
+                      <span className="w-14 shrink-0 text-stone-600 tabular-nums dark:text-stone-400">
+                        {at(p)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="font-medium">{p.label}</span> · {pointWeather(p)}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                Forecast by{" "}
+                <a
+                  href="https://www.met.no/en"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  MET Norway
+                </a>{" "}
+                (CC BY 4.0), for the time you reach each point.
+              </p>
             </Check>
           )}
         </ul>

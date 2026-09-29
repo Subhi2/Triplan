@@ -63,6 +63,8 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
     return route.fulfill({ json: { routes } });
   });
   await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
+  // No forecast (as if the trip were too far ahead), so tests never reach MET Norway.
+  await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   // A blank local map style instead of the network tile server.
   await page.route("https://tiles.openfreemap.org/**", (route) =>
     route.fulfill({
@@ -501,6 +503,34 @@ test.describe("ride check", () => {
     await start.fill("2026-10-03T15:00");
     await expect(check).toContainText("Daylight: you would ride after dark");
     await expect(check).toContainText(/Start by .+ to arrive an hour before sunset/);
+
+    // Weather along the way, at the time the rider gets to each point.
+    await page.unroute("**/api/weather");
+    const weatherAt = (label: string, eta: string, rain: string, rainMm: number) => ({
+      km: 0,
+      label,
+      location: [75.8, 12.95],
+      eta,
+      forecast: { tempC: 24, windMs: 2, rainMm, rainHours: 1, symbol: rain, rain, thunder: false },
+    });
+    await page.route("**/api/weather", (route) =>
+      route.fulfill({
+        json: {
+          points: [
+            weatherAt("start", "2026-10-03T00:30:00Z", "dry", 0),
+            weatherAt("Sakleshpur", "2026-10-03T04:30:00Z", "rain", 2.5),
+            weatherAt("end", "2026-10-03T06:00:00Z", "light", 0.4),
+          ],
+        },
+      }),
+    );
+    await start.fill("2026-10-03T06:00");
+    await expect(check).toContainText("Weather: rain near Sakleshpur around 10:00");
+    const along = check.getByRole("list", { name: "Weather along the route" });
+    await expect(along.getByRole("listitem")).toHaveCount(3);
+    await expect(along.getByRole("listitem").first()).toContainText("Bengaluru · 24 °C · dry");
+    await expect(along.getByRole("listitem").last()).toContainText("Kalasa");
+    await expect(check).toContainText("Forecast by MET Norway (CC BY 4.0)");
   });
 });
 

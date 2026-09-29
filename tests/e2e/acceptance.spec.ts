@@ -27,6 +27,8 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
 }
 
 async function mockRouting(page: Page) {
+  // The weather comes from MET Norway; these tests never call it.
+  await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   await page.route("**/api/route", (route) => {
     const { stops } = route.request().postDataJSON() as { stops: { label: string }[] };
     const vias = stops.slice(1, -1).map((s) => s.label);
