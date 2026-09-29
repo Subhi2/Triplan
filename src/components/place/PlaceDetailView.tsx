@@ -1,6 +1,7 @@
 import { categoryStyle } from "@/lib/categories";
 import { formatDuration } from "@/lib/format";
-import { googleMapsPlaceUrl } from "@/lib/googleMaps";
+import { googleEnabled } from "@/lib/google";
+import { placeGoogleMapsHref } from "@/lib/googleMaps";
 import { MONTH_SHORT } from "@/lib/months";
 import { VEHICLE_LABELS, type PlaceDetail } from "@/lib/placeDetail";
 import { detourLabel } from "@/lib/places";
@@ -134,18 +135,11 @@ export function PlaceDetailView({
           ) : (
             <span className="text-stone-600 dark:text-stone-400">No reviews yet</span>
           )}
-          {place.externalRatings.map((r) => (
-            <span key={r.source} className="text-stone-600 dark:text-stone-400">
-              {" "}
-              · <span className="capitalize">{r.source}</span> <Stars rating={r.rating} />
-              {r.count !== null && ` (${r.count.toLocaleString("en-IN")})`}
-            </span>
-          ))}
         </p>
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {actions}
           <a
-            href={googleMapsPlaceUrl(place)}
+            href={placeGoogleMapsHref(place, googleEnabled)}
             target="_blank"
             rel={external}
             className="inline-flex min-h-11 items-center rounded-md border border-stone-300 px-3 text-sm font-medium hover:border-stone-500 md:min-h-0 md:py-1.5 dark:border-stone-700"

@@ -11,15 +11,41 @@ export const MAX_GOOGLE_WAYPOINTS = 9;
 const latLng = ([lng, lat]: LngLat) => `${round5(lat)},${round5(lng)}`;
 
 /**
- * Google Maps' page for a place, so its photos and reviews show: a search for its name with the
- * map at its exact spot. A unique name ("Manjarabad Fort") opens that place directly; a common
- * one ("Shiva Temple") lists matches, with the map on the right spot. Only a Google place id
- * opens the exact place every time. This path form is not one of the documented Maps URLs
- * (those cannot search at a position), but Google uses it for its own links.
+ * Google Maps' page for a place, so its photos and reviews show. With its Google place id, that
+ * exact place. Without one, a search for its name with the map at its exact spot: a unique name
+ * ("Manjarabad Fort") opens that place directly; a common one ("Shiva Temple") lists matches,
+ * with the map on the right spot. This path form is not one of the documented Maps URLs (those
+ * cannot search at a position), but Google uses it for its own links.
  */
-export function googleMapsPlaceUrl(place: { name: string; location: LngLat }): string {
+export function googleMapsPlaceUrl(place: {
+  name: string;
+  location: LngLat;
+  googlePlaceId?: string | null;
+}): string {
+  if (place.googlePlaceId) {
+    const params = new URLSearchParams({
+      api: "1",
+      query: place.name,
+      query_place_id: place.googlePlaceId,
+    });
+    return `https://www.google.com/maps/search/?${params.toString()}`;
+  }
   const [lng, lat] = place.location;
   return `https://www.google.com/maps/search/${encodeURIComponent(place.name)}/@${round5(lat)},${round5(lng)},17z`;
+}
+
+/**
+ * The "Open in Google Maps" link of one of our places. With Google set up and the place id not
+ * known yet, our redirect looks it up (free) so the link opens the exact place.
+ */
+export function placeGoogleMapsHref(
+  place: { slug: string; name: string; location: LngLat; googlePlaceId?: string | null },
+  googleEnabled: boolean,
+): string {
+  if (googleEnabled && !place.googlePlaceId) {
+    return `/api/places/${encodeURIComponent(place.slug)}/google-maps`;
+  }
+  return googleMapsPlaceUrl(place);
 }
 
 export interface GoogleMapsTrip {

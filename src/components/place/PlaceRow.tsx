@@ -1,7 +1,8 @@
 "use client";
 
 import { categoryStyle } from "@/lib/categories";
-import { googleMapsPlaceUrl } from "@/lib/googleMaps";
+import { googleEnabled } from "@/lib/google";
+import { placeGoogleMapsHref } from "@/lib/googleMaps";
 import { bestTimeSummary } from "@/lib/months";
 import { detourLabel, ON_ROUTE_MAX_KM, type PlaceAlong } from "@/lib/places";
 
@@ -116,7 +117,7 @@ export function PlaceRow(props: Props) {
         </button>
         {/* Outside the button (a link cannot sit inside one), lined up under the name. */}
         <a
-          href={googleMapsPlaceUrl(place)}
+          href={placeGoogleMapsHref(place, googleEnabled)}
           target="_blank"
           rel="noopener noreferrer nofollow"
           aria-label={`Open ${place.name} in Google Maps`}
