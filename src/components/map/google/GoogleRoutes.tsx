@@ -4,6 +4,7 @@ import { useMap } from "@vis.gl/react-google-maps";
 import { useEffect, useRef } from "react";
 import type { LngLat } from "@/lib/geo";
 import type { RouteOption } from "@/lib/trip";
+import { linePart, useDrawIn } from "../useDrawIn";
 
 interface Props {
   routes: RouteOption[];
@@ -11,12 +12,16 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-const path = (r: RouteOption) =>
-  (r.geometry.coordinates as LngLat[]).map(([lng, lat]) => ({ lng, lat }));
+const latLngs = (coords: LngLat[]) => coords.map(([lng, lat]) => ({ lng, lat }));
+const path = (r: RouteOption) => latLngs(r.geometry.coordinates as LngLat[]);
 
 /** All route options: the selected one thick, the others thin and dashed (and clickable). */
 export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
   const map = useMap();
+  const selectedLines = useRef<google.maps.Polyline[]>([]);
+  const selected = routes.find((r) => r.id === selectedId) ?? null;
+  // The picked route draws itself along the road.
+  const progress = useDrawIn(selected?.id ?? "");
   const onSelectRef = useRef(onSelect);
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -28,26 +33,26 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
     for (const r of routes) {
       if (r.id === selectedId) {
         // A white casing under the teal line, as on the MapLibre map.
-        lines.push(
-          new google.maps.Polyline({
-            map,
-            path: path(r),
-            strokeColor: "#ffffff",
-            strokeWeight: 9,
-            strokeOpacity: 1,
-            zIndex: 20,
-            clickable: false,
-          }),
-          new google.maps.Polyline({
-            map,
-            path: path(r),
-            strokeColor: "#0f766e",
-            strokeWeight: 5,
-            strokeOpacity: 1,
-            zIndex: 21,
-            clickable: false,
-          }),
-        );
+        const casing = new google.maps.Polyline({
+          map,
+          path: path(r),
+          strokeColor: "#ffffff",
+          strokeWeight: 9,
+          strokeOpacity: 1,
+          zIndex: 20,
+          clickable: false,
+        });
+        const line = new google.maps.Polyline({
+          map,
+          path: path(r),
+          strokeColor: "#0f766e",
+          strokeWeight: 5,
+          strokeOpacity: 1,
+          zIndex: 21,
+          clickable: false,
+        });
+        selectedLines.current = [casing, line];
+        lines.push(casing, line);
       } else {
         // Dashes are repeated symbols on an invisible line (Polylines have no dash style).
         const line = new google.maps.Polyline({
@@ -69,12 +74,19 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
       }
     }
     return () => {
+      selectedLines.current = [];
       for (const l of lines) {
         google.maps.event.clearInstanceListeners(l);
         l.setMap(null);
       }
     };
   }, [map, routes, selectedId]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const part = latLngs(linePart(selected.geometry.coordinates as LngLat[], progress));
+    for (const l of selectedLines.current) l.setPath(part);
+  }, [selected, progress]);
 
   return null;
 }
