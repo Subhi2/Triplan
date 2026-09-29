@@ -159,6 +159,15 @@ As built (migrations `0004`–`0006`): the route line is parsed and simplified o
 
 In the planner, a place row opens the place in the side panel (desktop) or bottom sheet (mobile); with a place open, a map marker opens that place instead. "Add to trip" projects the place and every via stop onto the selected route (`metresAlong` in `src/lib/geo.ts`) and inserts the place before the first via stop further along (`viaInsertIndex` in `src/lib/trip.ts`), then the route is recomputed. A stop within 150 m of the place counts as the place.
 
+### Photos from Wikimedia Commons
+
+`pnpm db:import-photos [-- --limit=N]` (`photoImportService.ts`, provider `src/server/providers/wikimedia/`) gives places with a Wikidata id the item's main image (`P18`):
+
+- Wikidata's query service returns the image file names for 200 items per request; the Commons API returns each file's author, licence, file page and a 960 px and 330 px URL for 50 files per request. The run pauses 1 s between requests and identifies itself with `NOMINATIM_USER_AGENT`.
+- Only photos are kept (JPEG, PNG, WebP; no SVG maps or logos), and only files with a stated licence. Rows go into `media` with `source = 'wikimedia'`, `status = 'verified'`, the author as plain text and `author_url` set to the file's Commons page, where the full credit and licence are. The `utm_*` parameters Commons adds to URLs are dropped.
+- Images are shown from Wikimedia's servers (`thumb.wikimedia.org`, `upload.wikimedia.org`), never copied. The place details show each photo with its author (linked to the file page), licence and "Wikimedia Commons"; list rows show the 330 px thumbnail without a credit, which is one tap away in the details.
+- Every place looked up gets `place.photos_checked_at`, found or not, and is skipped for 90 days. Fuel stations and towns are skipped. Re-run after an OSM import to cover new places.
+
 ### Google Maps links
 
 `src/lib/googleMaps.ts` builds links to Google Maps with the documented Maps URLs; nothing is fetched from Google or stored. A place's link (on its list row and in its details) searches its name with the map at its exact coordinates (`/maps/search/<name>/@lat,lng,17z`; the documented `api=1` form cannot search at a position, and a name-and-state search listed every match in the state). A unique name opens that place's page with photos and reviews; a common name ("Shiva Temple") still lists matches, with the map on the right spot. Opening the exact place every time needs its Google place id (`place.google_place_id`, via the Places API); planned in `04-build-plan.md` ("Later · Exact Google Maps links"). Ticked places open with the trip as directions (`/maps/dir/?api=1&origin=&destination=&waypoints=`, coordinates, `travelmode=driving` since Maps URLs have no two-wheeler mode): via stops and ticked places are sorted by their distance along the selected route, places already in the trip are not repeated, and more than 9 stops gives no link.

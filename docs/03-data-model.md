@@ -42,6 +42,7 @@ CREATE TABLE place (
   rating_avg    real,                      -- from our reviews, maintained by trigger
   rating_count  int NOT NULL DEFAULT 0,
   trending_score real NOT NULL DEFAULT 0,
+  photos_checked_at timestamptz,           -- last Wikimedia photo lookup (pnpm db:import-photos)
   created_by    uuid REFERENCES auth.users(id),
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
@@ -102,13 +103,14 @@ CREATE TABLE media (
   source      text NOT NULL,           -- 'user' | 'wikimedia' | 'youtube' | 'instagram' | 'google'
   license     text NOT NULL,           -- 'CC-BY-SA-4.0', 'user-granted', 'embed-only' ...
   author      text,
-  author_url  text,
+  author_url  text,                    -- Wikimedia: the file's Commons page (full credit, licence)
   width       int,
   height      int,
   status      place_status NOT NULL DEFAULT 'unverified',
   uploaded_by uuid REFERENCES auth.users(id),
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+CREATE UNIQUE INDEX media_place_url_key ON media (place_id, url);
 
 -- Reviews -----------------------------------------------------------------
 CREATE TABLE review (

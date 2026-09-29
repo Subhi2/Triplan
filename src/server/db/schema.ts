@@ -73,6 +73,8 @@ export const place = pgTable(
     ratingAvg: real("rating_avg"),
     ratingCount: integer("rating_count").notNull().default(0),
     trendingScore: real("trending_score").notNull().default(0),
+    // When the photo import last looked for this place's Wikimedia Commons image (docs/07, G1.2).
+    photosCheckedAt: timestamp("photos_checked_at", { withTimezone: true }),
     createdBy: uuid("created_by").references(() => authUsers.id),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -133,24 +135,29 @@ export const placeCarry = pgTable(
 
 // Media -----------------------------------------------------------------------
 
-export const media = pgTable("media", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  placeId: uuid("place_id")
-    .notNull()
-    .references(() => place.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull(), // 'image' | 'video_embed'
-  url: text("url").notNull(),
-  thumbUrl: text("thumb_url"),
-  source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' | 'google'
-  license: text("license").notNull(),
-  author: text("author"),
-  authorUrl: text("author_url"),
-  width: integer("width"),
-  height: integer("height"),
-  status: placeStatus("status").notNull().default("unverified"),
-  uploadedBy: uuid("uploaded_by").references(() => authUsers.id),
-  createdAt: createdAt(),
-});
+export const media = pgTable(
+  "media",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => place.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // 'image' | 'video_embed'
+    url: text("url").notNull(),
+    thumbUrl: text("thumb_url"),
+    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' | 'google'
+    license: text("license").notNull(),
+    author: text("author"),
+    authorUrl: text("author_url"),
+    width: integer("width"),
+    height: integer("height"),
+    status: placeStatus("status").notNull().default("unverified"),
+    uploadedBy: uuid("uploaded_by").references(() => authUsers.id),
+    createdAt: createdAt(),
+  },
+  // The photo import re-runs safely: one row per place and image.
+  (t) => [uniqueIndex("media_place_url_key").on(t.placeId, t.url)],
+);
 
 // Reviews ---------------------------------------------------------------------
 

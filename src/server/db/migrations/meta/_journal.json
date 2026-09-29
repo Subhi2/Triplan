@@ -64,6 +64,13 @@
       "when": 1790684213961,
       "tag": "0008_write_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790705567322,
+      "tag": "0009_photo_import",
+      "breakpoints": true
     }
   ]
 }

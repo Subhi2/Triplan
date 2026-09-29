@@ -102,6 +102,17 @@ export function PlaceRow(props: Props) {
               )}
             </span>
           </span>
+          {place.thumbUrl && (
+            // Credit and licence are on the place's details, one tap away (docs/02).
+            // eslint-disable-next-line @next/next/no-img-element -- photos come from many hosts
+            <img
+              src={place.thumbUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-12 w-12 shrink-0 self-center rounded-md bg-stone-200 object-cover md:h-14 md:w-14 dark:bg-stone-800"
+            />
+          )}
         </button>
         {/* Outside the button (a link cannot sit inside one), lined up under the name. */}
         <a
