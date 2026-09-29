@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { expect, test, type Page } from "@playwright/test";
+import postgres from "postgres";
 import type { RouteOption } from "@/lib/trip";
 import { routeFixture, type RouteFixture } from "../helpers/fixtures";
 
@@ -27,13 +28,16 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
 
 async function mockRouting(page: Page) {
   await page.route("**/api/route", (route) => {
-    const { stops } = route.request().postDataJSON() as { stops: unknown[] };
+    const { stops } = route.request().postDataJSON() as { stops: { label: string }[] };
+    const vias = stops.slice(1, -1).map((s) => s.label);
     const routes =
       stops.length === 2
         ? options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"])
-        : options("bengaluru-belur-chikkamagaluru-balehonnur-kalasa", [
-            "via Belur, Chikkamagaluru +1",
-          ]);
+        : vias.includes("Sakleshpur")
+          ? options("bengaluru-sakleshpur-kalasa", [`via ${vias.join(", ")}`])
+          : options("bengaluru-belur-chikkamagaluru-balehonnur-kalasa", [
+              "via Belur, Chikkamagaluru +1",
+            ]);
     return route.fulfill({ json: { routes } });
   });
   await page.route("https://tiles.openfreemap.org/**", (route) =>
@@ -142,4 +146,52 @@ test("category chips and the detour toggle filter the list", async ({ page }) =>
   expect(close.map((r) => r.name)).toContain("Kalaseshwara Temple, Kalasa");
   expect(close.map((r) => r.name)).not.toContain("Horanadu Annapoorneshwari Temple"); // +4.9 km
   expect(decodeURIComponent(page.url())).toContain("cat=temple&hd=1");
+});
+
+// Phase 4 "done when" (docs/04-build-plan.md). Saved trips are open, so this writes a real trip to
+// the shared list and deletes it afterwards.
+test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", async ({
+  page,
+}, testInfo) => {
+  const title = `E2E trip ${testInfo.project.name} ${Date.now()}`;
+  const db = postgres(process.env.DATABASE_URL!, { prepare: false, max: 1 });
+  try {
+    await page.goto(`/?from=${B}&via=Sakleshpur@75.785,12.943&to=${K}`);
+    await page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ })
+      .click({ timeout: 30_000 });
+    await expect(page.getByText("Right off NH75; about 250 steps up.")).toBeVisible();
+    await page.getByRole("button", { name: "Add to trip" }).click();
+    await expect(page.getByText(/In your trip \(stop \d\)/)).toBeVisible();
+
+    await page.getByRole("button", { name: "← All places" }).click();
+    const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+    await expect(cards.first()).toContainText("Manjarabad Fort");
+    await page.getByRole("button", { name: "Save trip" }).click();
+    await page.getByRole("textbox", { name: "Trip name" }).fill(title);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}\?/);
+
+    // Everyone's list shows it; opening it restores the stops and the route.
+    await page.goto("/trips");
+    await page.getByRole("link", { name: new RegExp(title) }).click();
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText(`Saved trip: ${title}`)).toBeVisible();
+    if (await page.getByRole("button", { name: "Edit trip" }).isVisible()) {
+      await page.getByRole("button", { name: "Edit trip" }).click();
+    }
+    const stops = ["Start", "Stop 1", "Stop 2", "Destination"].map((n) =>
+      page.getByRole("combobox", { name: n }).inputValue(),
+    );
+    expect((await Promise.all(stops)).sort()).toEqual(
+      ["Bengaluru", "Kalasa", "Manjarabad Fort", "Sakleshpur"].sort(),
+    );
+    await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Bengaluru");
+    await expect(page.getByRole("combobox", { name: "Destination" })).toHaveValue("Kalasa");
+  } finally {
+    await db`DELETE FROM trip WHERE title = ${title}`;
+    await db.end();
+  }
 });

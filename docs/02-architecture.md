@@ -24,19 +24,22 @@ src/
   app/
     page.tsx                    # trip planner
     place/[slug]/page.tsx       # place page (ISR, 1 hour)
-    trips/, contribute/, admin/, login/
+    trips/page.tsx              # everyone's saved trips
+    trips/[id]/page.tsx         # the planner opened with a saved trip (its share link)
+    contribute/, admin/
     api/
       geocode/route.ts          # GET ?q=
       route/route.ts            # POST trip -> routes
       places/along/route.ts     # POST {routeId | geometry, corridorKm, categories}
       places/[slug]/route.ts    # GET -> PlaceDetail
-      trips/route.ts, trips/[id]/route.ts
+      trips/route.ts            # GET list, POST save
+      trips/[id]/route.ts       # GET, PATCH {title?, plan?}
       reviews/route.ts
       contribute/route.ts
       admin/*
   components/
     map/                        # MapView, RouteLayer, PlaceMarkers
-    trip/                       # Planner, TripForm, StopInput, RouteCards, AddToTrip
+    trip/                       # Planner, TripForm, StopInput, RouteCards, AddToTrip, TripSaveBar
     place/                      # PlaceList, PlaceRow, PlacePanel, PlaceDetailView, MonthStrip, CarryList
     ui/                         # buttons, chips, sheet
   server/
@@ -152,6 +155,14 @@ As built (migrations `0004`–`0006`): the route line is parsed and simplified o
 
 In the planner, a place row opens the place in the side panel (desktop) or bottom sheet (mobile); with a place open, a map marker opens that place instead. "Add to trip" projects the place and every via stop onto the selected route (`metresAlong` in `src/lib/geo.ts`) and inserts the place before the first via stop further along (`viaInsertIndex` in `src/lib/trip.ts`), then the route is recomputed. A stop within 150 m of the place counts as the place.
 
+## Saved trips
+
+Saved trips are open: no sign-in and no owners (`trip.user_id` stays empty, `is_public` is always true). `/trips` lists everyone's trips, most recently changed first, and `/trips/[id]` opens the planner with a trip; that URL is the share link. Anyone can rename a trip or save changes to it.
+
+- Saving sends the stops, vehicle, corridor and the selected route (id, geometry, distance, time, label). The geometry is stored in `trip.route_geom`; the route id is stored so reopening selects the same route option (route ids are deterministic hashes of the routing request). Stops that match one of our places (same name within 150 m) get `trip_stop.place_id`.
+- In the planner the URL keeps the working state (`/trips/[id]?from=...`), so a reload keeps unsaved edits; the bare link opens the saved version. The save bar shows "Changes not saved" when the stops, vehicle, corridor or selected route differ from the saved trip, with "Save changes" and "Save as new trip".
+- The app server writes trips with the table owner's connection; the RLS policies on `trip` only matter for requests made with the Supabase keys.
+
 ## Ranking
 
 Default list order is by km. Also compute a `score` for "top picks" badges:
@@ -166,7 +177,7 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 
 ## Auth and security
 
-- Supabase Auth; server components read the session with `@supabase/ssr`.
+- No sign-in for the MVP: the app is open, and saved trips have no owner (see "Saved trips"). If accounts are added later: Supabase Auth, with server components reading the session through `@supabase/ssr`.
 - Row Level Security on every user-writable table (`review`, `trip`, `place_submission`, `media` uploads): users can read public rows and write their own; admins (role in `profile.role`) can moderate.
 - API route handlers validate input with Zod and rate-limit writes per user (e.g. 20 reviews/day).
 - Uploaded images: max 8 MB, resized to 1600 px and 400 px thumbnails, EXIF location stripped unless the user opts in to use it as the place pin.

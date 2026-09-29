@@ -53,10 +53,10 @@ Work through the phases in order. Each phase ends with a working app, passing `p
 1. `GET /api/places/[slug]` returning `PlaceDetail`.
 2. Place page and sheet: gallery with attribution, rating, `MonthStrip` (12 cells: best / ok / avoid), best vehicle with last-mile note, `CarryList` (current-season first), timings, fee, dress code, reviews, related videos (empty for now).
 3. "Add to trip": insert the place as a via stop at the right position (by km from start) and recompute the route.
-4. Supabase Auth (magic link + Google). `/login`, session in server components.
-5. Save trip, list trips, open trip, share public read-only link.
+4. ~~Supabase Auth~~: dropped. The app is open, no sign-in (decided 2026-09-29).
+5. Save trip, list trips, open trip, share the trip's link. Trips are open: one shared list, no owners.
 
-**Done when:** a signed-in user can plan Bengaluru → Kalasa via Sakleshpur, add Manjarabad Fort, save and reopen the trip.
+**Done when:** a user can plan Bengaluru → Kalasa via Sakleshpur, add Manjarabad Fort, save and reopen the trip.
 
 **MVP complete here.** Deploy to Vercel + Supabase.
 

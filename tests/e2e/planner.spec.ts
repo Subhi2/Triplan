@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { PlaceDetail } from "@/lib/placeDetail";
 import type { PlaceAlong } from "@/lib/places";
+import type { SavedTrip } from "@/lib/savedTrip";
 import type { GeocodeResult, RouteOption } from "@/lib/trip";
 import { roadMix } from "@/server/services/roadMix";
 import { routeFixture, type RouteFixture } from "../helpers/fixtures";
@@ -312,4 +313,50 @@ test("open a place's details, add it to the trip and remove it again", async ({ 
   // Back to the list, with focus on the place's row.
   await page.getByRole("button", { name: "← All places" }).click();
   await expect(page.getByRole("button", { name: /Manjarabad Fort/ })).toBeFocused();
+});
+
+test("save the trip with its route, then see changes that are not saved", async ({ page }) => {
+  await mockApis(page, []);
+  const saves: Record<string, unknown>[] = [];
+  await page.route("**/api/trips", (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    saves.push(body);
+    const trip: SavedTrip = {
+      id: "0b7e4b8e-2f4e-4c55-9d8e-3f1f5b0a9c11",
+      title: body.title as string,
+      vehicle: "bike",
+      corridorKm: 5,
+      stops: body.stops as SavedTrip["stops"],
+      routeId: (body.route as { id: string }).id,
+      viaLabel: "via Hassan, Sakleshpur",
+      distanceKm: 330,
+      durationMin: 400,
+      updatedAt: new Date().toISOString(),
+    };
+    return route.fulfill({ status: 201, json: { trip } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  // The selected route is saved with the trip, and the page moves to the trip's link.
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await cards.filter({ hasText: "via Hassan, Sakleshpur" }).click();
+  await page.getByRole("button", { name: "Save trip" }).click();
+  const name = page.getByRole("textbox", { name: "Trip name" });
+  await expect(name).toHaveValue("Bengaluru → Kalasa via Hassan, Sakleshpur");
+  await name.fill("Coffee country");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText("Saved trip: Coffee country")).toBeVisible();
+  await expect(page).toHaveURL(/\/trips\/0b7e4b8e-2f4e-4c55-9d8e-3f1f5b0a9c11\?from=/);
+  expect(saves[0]).toMatchObject({
+    title: "Coffee country",
+    vehicle: "bike",
+    corridorKm: 5,
+    route: { id: "bengaluru-kalasa-1", viaLabel: "via Hassan, Sakleshpur" },
+    stops: [{ label: "Bengaluru" }, { label: "Kalasa" }],
+  });
+
+  // A change to the saved trip can be saved or kept as a new trip.
+  await cards.filter({ hasText: "via Chikkamagaluru" }).click();
+  await expect(page.getByText("Changes not saved.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
 });

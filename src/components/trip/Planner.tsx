@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MapStop } from "@/components/map/MapView";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
@@ -13,6 +14,7 @@ import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/Bottom
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import type { LngLat } from "@/lib/geo";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
+import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
   stopIndexAt,
@@ -26,6 +28,7 @@ import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
+import { TripSaveBar } from "./TripSaveBar";
 
 // MapLibre needs the browser.
 const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.MapView), {
@@ -46,9 +49,31 @@ type RouteState =
   | { status: "ok"; routes: RouteOption[] }
   | { status: "error"; message: string };
 
-export function Planner() {
+interface Props {
+  /** A saved trip to open (/trips/[id]). */
+  savedTrip?: SavedTrip | null;
+}
+
+export function Planner({ savedTrip = null }: Props) {
   const searchParams = useSearchParams();
-  const [initial] = useState(() => parseTripUrl(new URLSearchParams(searchParams.toString())));
+  const [initial] = useState(() => {
+    const fromUrl = parseTripUrl(new URLSearchParams(searchParams.toString()));
+    // A saved trip opens as saved, unless the URL already holds the planner's state (a reload).
+    if (!savedTrip || fromUrl.from || fromUrl.to) return fromUrl;
+    const [from, ...via] = savedTrip.stops;
+    const to = via.pop();
+    return {
+      ...fromUrl,
+      from: from ?? null,
+      via,
+      to: to ?? null,
+      vehicle: savedTrip.vehicle,
+      corridorKm: savedTrip.corridorKm,
+    };
+  });
+  const [saved, setSaved] = useState<SavedTrip | null>(savedTrip);
+  // Reopening a saved trip selects the route option it was saved with, once.
+  const preferredRouteId = useRef(savedTrip?.routeId ?? null);
   const [openPlace, setOpenPlace] = useState<PlaceAlong | null>(null);
   const [stops, setStops] = useState<StopDraft[]>(() => [
     draft(initial.from),
@@ -126,7 +151,9 @@ export function Planner() {
         const data = (await res.json()) as { routes?: RouteOption[]; error?: string };
         if (!res.ok || !data.routes) throw new Error(data.error ?? `HTTP ${res.status}`);
         setRouteState({ status: "ok", routes: data.routes });
-        setSelectedRouteId(data.routes[0]?.id ?? null);
+        const preferred = data.routes.find((r) => r.id === preferredRouteId.current);
+        preferredRouteId.current = null;
+        setSelectedRouteId((preferred ?? data.routes[0])?.id ?? null);
         setActivePlaceId(null);
       })
       .catch((err: unknown) => {
@@ -226,6 +253,37 @@ export function Planner() {
     if (i > 0 && i < stops.length - 1) setStops(stops.filter((_, j) => j !== i));
   }
 
+  // The trip as shown, for saving: resolved stops and the selected route.
+  const plan: TripPlan | null =
+    selectedRoute && first?.location && last?.location
+      ? {
+          stops: stops.flatMap((s) =>
+            s.location ? [{ label: s.label, location: s.location }] : [],
+          ),
+          vehicle,
+          corridorKm,
+          route: {
+            id: selectedRoute.id,
+            geometry: selectedRoute.geometry as TripPlan["route"]["geometry"],
+            distanceKm: selectedRoute.distanceKm,
+            durationMin: selectedRoute.durationMin,
+            viaLabel: selectedRoute.viaLabel,
+          },
+        }
+      : null;
+  const defaultTitle = `${first?.label ?? ""} → ${last?.label ?? ""}${
+    selectedRoute ? ` ${selectedRoute.viaLabel}` : ""
+  }`.slice(0, 120);
+
+  function onSaved(trip: SavedTrip) {
+    setSaved(trip);
+    // The trip's own link from now on; the query string keeps the planner's state for reloads.
+    const url = `/trips/${trip.id}?${query}`;
+    if (`${window.location.pathname}${window.location.search}` !== url) {
+      window.history.replaceState(null, "", url);
+    }
+  }
+
   const mapStops: MapStop[] = stops.flatMap((s, i) =>
     s.location
       ? [
@@ -264,6 +322,9 @@ export function Planner() {
     />
   ) : (
     <div className="flex flex-col gap-5">
+      {(saved || plan) && (
+        <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
+      )}
       <section aria-label="Routes" aria-live="polite" aria-busy={routeState.status === "loading"}>
         {routeState.status === "idle" && (
           <p className="text-sm text-stone-500">Choose a start and destination to see routes.</p>
@@ -354,7 +415,13 @@ export function Planner() {
           <div>
             <h1 className="text-brand text-xl font-bold">Bike Travelling Guide</h1>
             <p className="text-sm text-stone-600 dark:text-stone-400">
-              Every worthwhile stop along your exact route.
+              Every worthwhile stop along your exact route.{" "}
+              <Link
+                href="/trips"
+                className="text-brand font-medium whitespace-nowrap hover:underline"
+              >
+                Saved trips
+              </Link>
             </p>
           </div>
           {!isDesktop && hasTrip && (
