@@ -60,6 +60,18 @@ Work through the phases in order. Each phase ends with a working app, passing `p
 
 **MVP complete here.** Deploy to Vercel + Supabase.
 
+## Growth G1 · Share, photos and ride check
+
+From `07-growth-plan.md`: features that need no API key, cost nothing and need no product decision. One commit each.
+
+1. **Share cards and SEO**: share images for saved trips, planner links and places (`next/og`); a Share button (phone share sheet, WhatsApp, copy link); `sitemap.xml`, `robots.txt`, canonical URLs and schema.org JSON-LD on place pages.
+2. **Photos from Wikimedia Commons**: `pnpm db:import-photos` takes each place's Wikidata image (`P18`) with its author and licence from Commons, into `media` with `source = 'wikimedia'`. Throttled, identifies itself with the User-Agent, resumable.
+3. **Ride check** on the selected route: the longest stretch without a fuel station against the vehicle's range, and the start time with arrival against sunset (`suncalc`).
+4. **GPX export** of the route, stops and ticked places, for OsmAnd, Organic Maps and GPS units.
+5. **Weather on the ride** from MET Norway (free, commercial use allowed, CC BY 4.0): rain, temperature and wind at points along the route at the time the rider reaches them.
+
+**Done when:** a pasted trip link shows its route card in WhatsApp; Manjarabad Fort's page shows a Wikimedia photo with credit; Bengaluru → Kalasa shows the longest fuel gap, the arrival against sunset, the weather along the way, and downloads as a GPX file that opens in OsmAnd.
+
 ## Phase 5 · Community content
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.

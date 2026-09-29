@@ -16,6 +16,7 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 | `docs/04-build-plan.md` | Phased build steps. Work through phases in order |
 | `docs/05-hidden-places.md` | YouTube / Instagram discovery pipeline and its rules |
 | `docs/06-seed-data.md` | Seed places for the Bengaluru → Kalasa demo |
+| `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, making money |
 
 ## Stack (decided)
 
