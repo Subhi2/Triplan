@@ -258,7 +258,18 @@ interface PlaceAlong {
   trending: boolean;
 }
 
-interface PlaceDetail extends PlaceAlong {
+// Route-specific fields (km, detour) come from the places list, so PlaceDetail does not have them.
+interface PlaceDetail {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  location: LngLat;
+  district: string | null;
+  state: string | null;
+  rating: number | null;       // our reviews
+  ratingCount: number;
+  trending: boolean;
   description: string | null;
   guide: {
     bestVehicles: ("bike" | "car" | "suv_4x4" | "on_foot" | "bus")[];
@@ -272,8 +283,12 @@ interface PlaceDetail extends PlaceAlong {
     notes: string | null;
   } | null;
   carry: { slug: string; name: string; months: number[]; reason: string | null }[];
-  media: { url: string; thumbUrl: string | null; author: string | null; license: string; source: string }[];
-  externalRatings: { source: string; rating: number; count: number }[];
+  media: { url: string; thumbUrl: string | null; author: string | null; authorUrl: string | null; license: string; source: string }[];
+  externalRatings: { source: string; rating: number; count: number | null }[];
   videos: { url: string; source: "youtube" | "instagram"; creator: string | null; title: string | null }[];
+  reviews: { id: string; rating: number; body: string | null; visitedMonth: number | null; visitedYear: number | null;
+             vehicleUsed: string | null; author: string | null; createdAt: string }[];
+  osm: { id: string | null; openingHours: string | null; fee: string | null;   // from OSM tags, shown
+         website: string | null; wikipediaUrl: string | null };               // where the guide is empty
 }
 ```
