@@ -274,6 +274,16 @@ export const tripStop = pgTable(
   (t) => [primaryKey({ columns: [t.tripId, t.position] })],
 );
 
+// Write limits ------------------------------------------------------------------
+// With no sign-in, saving and renaming trips is limited per visitor: a salted hash of the IP
+// address (never the address itself), counted per one-hour window.
+
+export const writeLimit = pgTable("write_limit", {
+  key: text("key").primaryKey(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+  count: integer("count").notNull().default(0),
+});
+
 // Caches ----------------------------------------------------------------------
 
 export const routeCache = pgTable("route_cache", {
