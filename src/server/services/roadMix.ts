@@ -72,7 +72,7 @@ export function roadMix(route: RouteResult): RoadMix | null {
   if (!roads || roadsM <= 0) return null;
 
   const ghats = ghatSections(route.geometry);
-  const mix: RoadMix = { nationalM: 0, stateM: 0, ghatM: 0, otherM: 0 };
+  const mix: RoadMix = { nationalM: 0, stateM: 0, ghatM: 0, otherM: 0, ghats };
   let at = 0;
   for (const road of roads) {
     const span: [number, number] = [at / roadsM, (at + road.distanceM) / roadsM];

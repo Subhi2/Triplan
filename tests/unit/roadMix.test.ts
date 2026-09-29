@@ -113,5 +113,9 @@ describe("roadMix", () => {
     const share = (m: number) => m / viaChikkamagaluru!.distanceM;
     expect(share(mix.nationalM)).toBeGreaterThan(0.6); // NH48, NH73 most of the way
     expect(share(mix.ghatM)).toBeGreaterThan(0.12); // Mudigere–Kottigehara–Samse
+    // The ghats are near the end of the ride, in road order.
+    expect(mix.ghats.length).toBeGreaterThan(0);
+    expect(mix.ghats[0]![0]).toBeGreaterThan(0.5);
+    for (const [from, to] of mix.ghats) expect(to).toBeGreaterThan(from);
   });
 });

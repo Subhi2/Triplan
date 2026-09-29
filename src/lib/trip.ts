@@ -38,6 +38,8 @@ export interface RoadMix {
   stateM: number; // state highways (SH)
   ghatM: number; // winding hill (ghat) sections, detected from the road's shape
   otherM: number; // district and local roads
+  /** Where the ghat sections are: [from, to] fractions (0–1) of the route, in road order. */
+  ghats: [number, number][];
 }
 
 export interface RouteOption {
