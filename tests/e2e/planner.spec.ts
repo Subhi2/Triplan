@@ -344,6 +344,13 @@ test("save the trip with its route, then see changes that are not saved", async 
   // The selected route is saved with the trip, and the page moves to the trip's link.
   const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
   await cards.filter({ hasText: "via Hassan, Sakleshpur" }).click();
+  // Before saving, WhatsApp shares the planner link, which holds the whole trip.
+  const whatsApp = page.getByRole("link", { name: "WhatsApp" });
+  const sharedText = async () =>
+    new URL((await whatsApp.getAttribute("href"))!).searchParams.get("text");
+  expect(await sharedText()).toMatch(
+    /^Bengaluru → Kalasa · places along the route http:\/\/\S+\/\?from=Bengaluru/,
+  );
   await page.getByRole("button", { name: "Save trip" }).click();
   const name = page.getByRole("textbox", { name: "Trip name" });
   await expect(name).toHaveValue("Bengaluru → Kalasa via Hassan, Sakleshpur");
@@ -351,6 +358,8 @@ test("save the trip with its route, then see changes that are not saved", async 
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Saved trip: Coffee country")).toBeVisible();
   await expect(page).toHaveURL(/\/trips\/0b7e4b8e-2f4e-4c55-9d8e-3f1f5b0a9c11\?from=/);
+  // After saving, it shares the trip's own short link.
+  expect(await sharedText()).toMatch(/\/trips\/0b7e4b8e-2f4e-4c55-9d8e-3f1f5b0a9c11$/);
   expect(saves[0]).toMatchObject({
     title: "Coffee country",
     vehicle: "bike",

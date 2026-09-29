@@ -1,11 +1,25 @@
 import type { Metadata, Viewport } from "next";
+import { SITE_NAME, siteUrl } from "@/lib/site";
 import "./globals.css";
 
+const description =
+  "Plan a ride and see every temple, fort, viewpoint, waterfall and food stop along your exact route.";
+
 export const metadata: Metadata = {
-  title: "Bike Travelling Guide",
-  description:
-    "Plan a ride and see every temple, fort, viewpoint, waterfall and food stop along your exact route.",
-  applicationName: "Bike Travelling Guide",
+  metadataBase: new URL(siteUrl()),
+  title: SITE_NAME,
+  description,
+  applicationName: SITE_NAME,
+  // Pages that set their own openGraph replace this whole object (Next merges metadata shallowly).
+  openGraph: {
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description,
+    type: "website",
+    locale: "en_IN",
+    images: [{ url: "/og/plan", width: 1200, height: 630, alt: SITE_NAME }],
+  },
+  twitter: { card: "summary_large_image" },
   appleWebApp: { capable: true, title: "Ride Guide", statusBarStyle: "default" },
   icons: {
     icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],

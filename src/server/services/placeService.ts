@@ -78,3 +78,31 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
     };
   });
 }
+
+export interface SitemapPlace {
+  slug: string;
+  updatedAt: Date;
+  /** Has a curated guide, a photo or a Wikipedia article: worth more to searchers. */
+  rich: boolean;
+}
+
+/**
+ * Verified places that have a page worth indexing: every category in the place list (fuel
+ * stations and towns only label and support routes). Richest first, capped for one sitemap file.
+ */
+export async function listSitemapPlaces(limit = 45000): Promise<SitemapPlace[]> {
+  const rows = await getDb().execute<{ slug: string; updated_at: string | Date; rich: boolean }>(
+    sql`
+      SELECT p.slug, p.updated_at,
+             (p.wikidata_id IS NOT NULL
+               OR EXISTS (SELECT 1 FROM place_guide g WHERE g.place_id = p.id)
+               OR EXISTS (SELECT 1 FROM media m WHERE m.place_id = p.id AND m.status = 'verified'))
+               AS rich
+      FROM place p
+      JOIN category c ON c.id = p.category_id
+      WHERE p.status = 'verified' AND c.slug NOT IN ('fuel', 'town')
+      ORDER BY rich DESC, p.updated_at DESC
+      LIMIT ${limit}`,
+  );
+  return rows.map((r) => ({ slug: r.slug, updatedAt: new Date(r.updated_at), rich: r.rich }));
+}

@@ -181,3 +181,13 @@ export async function listTrips(limit = MAX_LIST): Promise<TripSummary[]> {
     updatedAt: iso(r.updated_at),
   }));
 }
+
+/** A trip's route line, simplified to about 200 m, for drawing on its share card. */
+export async function getTripLine(id: string): Promise<[number, number][]> {
+  const [row] = await getDb().execute<{ geojson: string | null }>(sql`
+    SELECT ST_AsGeoJSON(ST_Simplify(route_geom::geometry, 0.002), 5) AS geojson
+    FROM trip WHERE id = ${id}`);
+  if (!row?.geojson) return [];
+  const geometry = JSON.parse(row.geojson) as { type: string; coordinates: [number, number][] };
+  return geometry.type === "LineString" ? geometry.coordinates : [];
+}

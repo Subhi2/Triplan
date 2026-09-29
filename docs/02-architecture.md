@@ -26,6 +26,9 @@ src/
     place/[slug]/page.tsx       # place page (ISR, 1 hour)
     trips/page.tsx              # everyone's saved trips
     trips/[id]/page.tsx         # the planner opened with a saved trip (its share link)
+    place/[slug]/opengraph-image.tsx, trips/[id]/opengraph-image.tsx   # share cards
+    og/plan/route.tsx           # share card of an unsaved planner link
+    sitemap.ts, robots.ts
     contribute/, admin/
     api/
       geocode/route.ts          # GET ?q=
@@ -44,6 +47,7 @@ src/
     ui/                         # buttons, chips, sheet
   server/
     db/                         # drizzle schema, client, migrations
+    og/                         # share card layouts and their bundled fonts
     providers/
       routing/                  # RoutingProvider interface, osrm.ts, google.ts (later)
       geocoding/                # GeocodingProvider, photon.ts (suggestions), nominatim.ts (Enter)
@@ -166,6 +170,18 @@ Saved trips are open: no sign-in and no owners (`trip.user_id` stays empty, `is_
 - Saving sends the stops, vehicle, corridor and the selected route (id, geometry, distance, time, label). The geometry is stored in `trip.route_geom`; the route id is stored so reopening selects the same route option (route ids are deterministic hashes of the routing request). Stops that match one of our places (same name within 150 m) get `trip_stop.place_id`.
 - In the planner the URL keeps the working state (`/trips/[id]?from=...`), so a reload keeps unsaved edits; the bare link opens the saved version. The save bar shows "Changes not saved" when the stops, vehicle, corridor or selected route differ from the saved trip, with "Save changes" and "Save as new trip".
 - The app server writes trips with the table owner's connection; the RLS policies on `trip` only matter for requests made with the Supabase keys.
+
+## Share cards and search engines
+
+Rides are planned in groups, and in India the plan goes to a WhatsApp group, so every link must unfurl into a useful card (see `07-growth-plan.md`).
+
+- **Share cards** (1200 × 630 PNG, `next/og`), laid out in `src/server/og/shareCards.tsx` with bundled Noto Sans regular and bold (OFL; the built-in font has no bold):
+  - a saved trip (`/trips/[id]/opengraph-image`): the route line (simplified to about 200 m), stops, distance, time and vehicle;
+  - an unsaved planner link (`/og/plan?from=…&via=…&to=…&v=`): the stops joined with dashed lines. The home page sets it as the link's image when the URL holds a trip, and uses the trip as the page title;
+  - a place (`/place/[slug]/opengraph-image`): its first photo, category, district and state, best months and best vehicle.
+- **Share button** in the save bar: the phone's share sheet on touch screens (`navigator.share`), "WhatsApp" (`wa.me` link) and "Copy link" elsewhere. An unsaved trip shares the planner link; a saved one shares `/trips/[id]` unless it has unsaved changes.
+- **Search engines**: `sitemap.xml` lists the verified places of every place-list category (not fuel stations or towns), richest first (a guide, a photo or a Wikidata id), up to 45,000 URLs, rebuilt daily. `robots.txt` allows everything but `/api/`. Place pages have a canonical URL and schema.org `TouristAttraction` JSON-LD (location, area, photo, rating, Wikipedia link). Saved trips are `noindex` because anyone can write them; their links still unfurl.
+- Absolute URLs come from `siteUrl()`: `NEXT_PUBLIC_SITE_URL` when set (a custom domain), else Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`), else localhost.
 
 ## Phone layout
 
