@@ -50,3 +50,34 @@ export function resampleLine(coords: LngLat[], stepM: number): LngLat[] {
 export function round5(n: number): number {
   return Math.round(n * 1e5) / 1e5;
 }
+
+/**
+ * Distance in metres along a line to the point on it nearest to `point`. Each segment is treated
+ * as straight in a local flat projection, which is accurate enough for route geometry.
+ */
+export function metresAlong(coords: LngLat[], point: LngLat): number {
+  const kx = Math.cos(toRad(point[1])); // shrink longitude to match latitude at this point
+  let nearest = Infinity;
+  let along = 0;
+  let travelled = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const a = coords[i - 1]!;
+    const b = coords[i]!;
+    const dx = (b[0] - a[0]) * kx;
+    const dy = b[1] - a[1];
+    const len2 = dx * dx + dy * dy;
+    const t =
+      len2 === 0
+        ? 0
+        : Math.max(0, Math.min(1, ((point[0] - a[0]) * kx * dx + (point[1] - a[1]) * dy) / len2));
+    const foot: LngLat = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const d = haversineM(point, foot);
+    const segment = haversineM(a, b);
+    if (d < nearest) {
+      nearest = d;
+      along = travelled + segment * t;
+    }
+    travelled += segment;
+  }
+  return along;
+}

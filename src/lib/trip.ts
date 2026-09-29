@@ -1,5 +1,6 @@
 import type { LineString } from "geojson";
 import { z } from "zod";
+import { haversineM, metresAlong, type LngLat } from "./geo";
 
 export const MAX_VIA_STOPS = 5;
 export const CORRIDOR_KM = [2, 5, 10, 25] as const;
@@ -55,4 +56,30 @@ export interface GeocodeResult {
   label: string;
   location: [number, number];
   source: "local" | "photon" | "osm"; // our places, Photon suggestions, Nominatim (Enter)
+}
+
+/** A stop this close to a place is that place: "Add to trip" shows it as already added. */
+export const SAME_STOP_M = 150;
+
+/** Index of the stop at `location` (within SAME_STOP_M), or -1. Unresolved stops are skipped. */
+export function stopIndexAt(stops: (LngLat | null)[], location: LngLat): number {
+  return stops.findIndex((s) => s !== null && haversineM(s, location) <= SAME_STOP_M);
+}
+
+/**
+ * Where a new via stop goes in a trip's stops (start, vias, destination) so the route still
+ * visits them in order along `route`: before the first via stop further along than the new one,
+ * otherwise just before the destination. Unresolved (empty) via stops keep their place.
+ */
+export function viaInsertIndex(
+  stops: (LngLat | null)[],
+  route: LngLat[],
+  location: LngLat,
+): number {
+  const at = metresAlong(route, location);
+  for (let i = 1; i < stops.length - 1; i++) {
+    const s = stops[i];
+    if (s && metresAlong(route, s) > at) return i;
+  }
+  return Math.max(1, stops.length - 1);
 }
