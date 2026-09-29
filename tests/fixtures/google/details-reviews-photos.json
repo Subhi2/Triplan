@@ -1,0 +1,59 @@
+{
+  "id": "ChIJexampleManjarabad0",
+  "googleMapsUri": "https://maps.google.com/?cid=1234567890",
+  "rating": 4.4,
+  "userRatingCount": 11873,
+  "reviews": [
+    {
+      "name": "places/ChIJexampleManjarabad0/reviews/r1",
+      "relativePublishTimeDescription": "2 months ago",
+      "rating": 5,
+      "text": {
+        "text": "Star shaped fort right off NH75. Go early, the view of the ghats is great.\n",
+        "languageCode": "en"
+      },
+      "originalText": {
+        "text": "Star shaped fort right off NH75. Go early, the view of the ghats is great.\n",
+        "languageCode": "en"
+      },
+      "authorAttribution": {
+        "displayName": "Ravi K",
+        "uri": "https://www.google.com/maps/contrib/100000000000000000001/reviews",
+        "photoUri": "//lh3.googleusercontent.com/a/example=s128-c0x00000000-cc-rp-mo"
+      },
+      "publishTime": "2026-07-28T09:12:00Z"
+    },
+    {
+      "name": "places/ChIJexampleManjarabad0/reviews/r2",
+      "relativePublishTimeDescription": "a year ago",
+      "rating": 4,
+      "authorAttribution": {
+        "displayName": "",
+        "uri": "https://www.google.com/maps/contrib/100000000000000000002/reviews"
+      },
+      "publishTime": "2025-09-02T15:40:00Z"
+    }
+  ],
+  "photos": [
+    {
+      "name": "places/ChIJexampleManjarabad0/photos/AUc7tXexamplePhoto1",
+      "widthPx": 4032,
+      "heightPx": 3024,
+      "authorAttributions": [
+        {
+          "displayName": "Meera S",
+          "uri": "//maps.google.com/maps/contrib/100000000000000000003",
+          "photoUri": "//lh3.googleusercontent.com/a-/example=s100-p-k-no-mo"
+        }
+      ],
+      "flagContentUri": "https://www.google.com/local/imagery/report/?cb_client=maps_api_places&image_key=example",
+      "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sexample"
+    },
+    {
+      "name": "places/../../evil",
+      "widthPx": 10,
+      "heightPx": 10,
+      "authorAttributions": []
+    }
+  ]
+}
