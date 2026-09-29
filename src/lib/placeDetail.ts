@@ -82,7 +82,8 @@ export interface PlaceDetail {
   guide: PlaceGuide | null;
   carry: CarryEntry[];
   media: PlaceMedia[];
-  externalRatings: { source: string; rating: number; count: number | null }[];
+  /** Google's id for the place, once looked up: the only Google data we store. */
+  googlePlaceId: string | null;
   videos: PlaceVideo[];
   reviews: PlaceReview[];
   /** Facts from the place's OpenStreetMap tags, shown where the guide has nothing. */

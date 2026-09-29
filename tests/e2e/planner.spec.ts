@@ -267,7 +267,7 @@ const FORT_DETAIL: PlaceDetail = {
     { slug: "grip_shoes", name: "Shoes with good grip", months: [], reason: null },
   ],
   media: [],
-  externalRatings: [],
+  googlePlaceId: null,
   videos: [],
   reviews: [],
   osm: { id: "relation/5419632", openingHours: null, fee: null, website: null, wikipediaUrl: null },

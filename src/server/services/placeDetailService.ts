@@ -24,6 +24,7 @@ interface DetailRow extends Record<string, unknown> {
   rating_count: number;
   trending_score: number;
   osm_id: string | null;
+  google_place_id: string | null;
   osm_tags: Record<string, string> | null;
   has_guide: boolean;
   best_vehicles: string[] | null;
@@ -110,12 +111,6 @@ interface MediaRow extends Record<string, unknown> {
   source: string;
 }
 
-interface ExternalRatingRow extends Record<string, unknown> {
-  source: string;
-  rating: number;
-  count: number | null;
-}
-
 interface VideoRow extends Record<string, unknown> {
   url: string;
   source: PlaceVideo["source"];
@@ -142,7 +137,7 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
     SELECT p.id, p.slug, p.name, c.slug AS category,
            ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
            p.district, p.state, p.description, p.rating_avg, p.rating_count, p.trending_score,
-           p.osm_id, p.osm_tags,
+           p.osm_id, p.osm_tags, p.google_place_id,
            pg.place_id IS NOT NULL AS has_guide, pg.best_vehicles::text[] AS best_vehicles,
            pg.last_mile_note, pg.road_condition, pg.best_months, pg.ok_months, pg.avoid_months,
            pg.best_time_of_day, pg.visit_duration_min, pg.timings, pg.entry_fee, pg.dress_code,
@@ -153,7 +148,7 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
     WHERE p.slug = ${slug} AND p.status = 'verified'`);
   if (!row) return null;
 
-  const [carry, media, external, videos, reviews] = await Promise.all([
+  const [carry, media, videos, reviews] = await Promise.all([
     db.execute<CarryRow>(sql`
       SELECT ci.slug, ci.name, pc.months, pc.reason
       FROM place_carry pc JOIN carry_item ci ON ci.id = pc.item_id
@@ -165,10 +160,6 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
       WHERE place_id = ${row.id} AND kind = 'image' AND status = 'verified'
       ORDER BY created_at
       LIMIT ${MAX_MEDIA}`),
-    db.execute<ExternalRatingRow>(sql`
-      SELECT source, rating, count FROM external_rating
-      WHERE place_id = ${row.id} AND rating IS NOT NULL
-      ORDER BY source`),
     db.execute<VideoRow>(sql`
       SELECT url, source, creator_name, title FROM social_post
       WHERE place_id = ${row.id} AND status IN ('matched', 'verified')
@@ -207,7 +198,7 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
       license: m.license,
       source: m.source,
     })),
-    externalRatings: external.map((e) => ({ source: e.source, rating: e.rating, count: e.count })),
+    googlePlaceId: row.google_place_id,
     videos: videos.map((v) => ({
       url: v.url,
       source: v.source,

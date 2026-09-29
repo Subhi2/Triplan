@@ -148,7 +148,7 @@ export const media = pgTable(
     kind: text("kind").notNull(), // 'image' | 'video_embed'
     url: text("url").notNull(),
     thumbUrl: text("thumb_url"),
-    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' | 'google'
+    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' (never 'google')
     license: text("license").notNull(),
     author: text("author"),
     authorUrl: text("author_url"),
@@ -189,17 +189,8 @@ export const review = pgTable(
   ],
 );
 
-export const externalRating = pgTable(
-  "external_rating",
-  {
-    placeId: uuid("place_id").references(() => place.id, { onDelete: "cascade" }),
-    source: text("source").notNull(), // 'google'
-    rating: real("rating"),
-    count: integer("count"),
-    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.placeId, t.source] })],
-);
+// No external_rating table: Google's ratings may not be stored (Maps ToS 3.2.3(b)); they are
+// fetched live when a place's details open (services/googleGapService.ts).
 
 // Social discovery (see docs/05-hidden-places.md) -----------------------------
 

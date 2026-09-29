@@ -78,6 +78,13 @@
       "when": 1790708151467,
       "tag": "0010_google_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790708464840,
+      "tag": "0011_drop_external_rating",
+      "breakpoints": true
     }
   ]
 }
