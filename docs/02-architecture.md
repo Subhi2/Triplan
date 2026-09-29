@@ -167,6 +167,19 @@ Saved trips are open: no sign-in and no owners (`trip.user_id` stays empty, `is_
 - In the planner the URL keeps the working state (`/trips/[id]?from=...`), so a reload keeps unsaved edits; the bare link opens the saved version. The save bar shows "Changes not saved" when the stops, vehicle, corridor or selected route differ from the saved trip, with "Save changes" and "Save as new trip".
 - The app server writes trips with the table owner's connection; the RLS policies on `trip` only matter for requests made with the Supabase keys.
 
+## Phone layout
+
+Most riders plan on a phone, so the layout below 768 px is designed for it, and checked at 320, 360 and 390 px wide and in landscape (audit of 2026-09-29). The rules follow Apple's Human Interface Guidelines (44 pt touch targets), Material Design (48 dp) and WCAG 2.2 (2.5.8, target size):
+
+- **Touch targets at least 44 px** high on phones (`min-h-11`), including tickboxes (the label around the box is the target), chips, links in rows and the sheet handle. Desktop keeps its denser sizes (`md:` variants).
+- **Input text at least 16 px** on phones (`text-base md:text-sm`): iOS Safari zooms the page into any smaller input when it gets focus.
+- **The map comes first.** No bottom sheet until there is a trip to show. Once start and destination are picked the form folds into a one-row header (the trip, "Trips", "Edit trip"), and the sheet opens at half height on the route cards. "Edit trip" drops the sheet to its smallest size, so the map stays in view.
+- **Typing:** on touch screens the sheet slides away while a stop field has focus (the on-screen keyboard needs the room), and a tapped suggestion closes the keyboard. The suggestion list fits above the keyboard (sized from `window.visualViewport`) and scrolls, since the form itself does not.
+- **Category chips** are one row that scrolls sideways on phones, so the places stay in view; they wrap on wider screens.
+- **The map:** no zoom buttons on touch screens (pinch to zoom), compact attribution, white clusters with a teal ring so the teal route stays visible, and an invisible 20 px circle under each place dot so a finger can hit it.
+- **Safe areas:** `viewport-fit=cover`, with `env(safe-area-inset-*)` padding at the top of the header and the bottom of the sheet and the Google Maps bar, so nothing sits under a notch or the home bar.
+- **Bias hints never fail a search:** the map zoom sent with suggestions is clamped to 0–22 (a small map fits India below zoom 0).
+
 ## Ranking
 
 Default list order is by km. Also compute a `score` for "top picks" badges:

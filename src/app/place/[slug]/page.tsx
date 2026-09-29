@@ -35,10 +35,13 @@ export default async function PlacePage({ params }: Props) {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
       <nav className="flex items-center justify-between gap-2 text-sm">
-        <Link href="/" className="text-brand font-bold">
+        <Link href="/" className="text-brand inline-flex min-h-11 items-center font-bold">
           Bike Travelling Guide
         </Link>
-        <Link href="/trips" className="text-brand font-medium hover:underline">
+        <Link
+          href="/trips"
+          className="text-brand inline-flex min-h-11 items-center font-medium hover:underline"
+        >
           Saved trips
         </Link>
       </nav>
@@ -49,7 +52,7 @@ export default async function PlacePage({ params }: Props) {
         actions={
           <Link
             href={`/?${new URLSearchParams({ to: destination }).toString()}`}
-            className="bg-brand hover:bg-brand-dark rounded-md px-3 py-1.5 text-sm font-medium text-white"
+            className="bg-brand hover:bg-brand-dark inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-white md:min-h-0 md:py-1.5"
           >
             Plan a ride here
           </Link>

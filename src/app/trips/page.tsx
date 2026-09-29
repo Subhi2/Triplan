@@ -20,7 +20,7 @@ export default async function TripsPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
       <nav className="text-sm">
-        <Link href="/" className="text-brand font-bold">
+        <Link href="/" className="text-brand inline-flex min-h-11 items-center font-bold">
           Bike Travelling Guide
         </Link>
       </nav>
@@ -33,7 +33,7 @@ export default async function TripsPage() {
         </div>
         <Link
           href="/"
-          className="bg-brand hover:bg-brand-dark rounded-md px-3 py-1.5 text-sm font-medium text-white"
+          className="bg-brand hover:bg-brand-dark inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-white md:min-h-0 md:py-1.5"
         >
           Plan a trip
         </Link>

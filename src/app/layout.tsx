@@ -17,6 +17,8 @@ export const viewport: Viewport = {
   themeColor: "#0f766e",
   width: "device-width",
   initialScale: 1,
+  // Full screen under notches and the home bar; the layout pads with env(safe-area-inset-*).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

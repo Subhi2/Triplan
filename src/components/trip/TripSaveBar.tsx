@@ -26,8 +26,9 @@ async function send(url: string, method: "POST" | "PATCH", body: object): Promis
 }
 
 const primary =
-  "bg-brand hover:bg-brand-dark rounded-md px-3 py-1 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50";
-const link = "text-brand font-medium hover:underline disabled:text-stone-400 disabled:no-underline";
+  "bg-brand hover:bg-brand-dark inline-flex min-h-11 shrink-0 items-center rounded-md px-3 font-medium whitespace-nowrap md:min-h-0 md:py-1 text-white disabled:cursor-not-allowed disabled:opacity-50";
+const link =
+  "text-brand inline-flex min-h-11 items-center font-medium hover:underline md:min-h-0 disabled:text-stone-400 disabled:no-underline";
 
 /**
  * Save the trip, rename it, save changes to it or save it as a new trip, and copy its link.
@@ -103,7 +104,7 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
             maxLength={120}
             required
             autoFocus
-            className="min-w-40 flex-1 rounded-md border border-stone-300 bg-white px-2 py-1 dark:border-stone-700 dark:bg-stone-900"
+            className="min-h-11 min-w-40 flex-1 rounded-md border border-stone-300 bg-white px-2 text-base md:min-h-0 md:py-1 md:text-sm dark:border-stone-700 dark:bg-stone-900"
           />
           <button type="submit" disabled={busy || !title.trim()} className={primary}>
             {busy ? "Saving…" : mode === "renaming" ? "Rename" : "Save"}

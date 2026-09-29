@@ -50,6 +50,7 @@ Add these scripts to `package.json` as the phases introduce them.
 - TypeScript `strict: true`. No `any` without a comment explaining why.
 - Server-only code (DB, API keys, external APIs) lives under `src/server/`. Never import it from client components.
 - All external API calls go through a provider interface in `src/server/providers/`, so each can be mocked in tests.
+- Phones first: touch targets at least 44 px and input text at least 16 px below 768 px wide (see "Phone layout" in `docs/02-architecture.md`).
 - Distances are stored in metres and shown as km with one decimal. Coordinates are `[lng, lat]` (GeoJSON order) everywhere in code.
 - Months are stored as integers 1–12.
 - Every image stored or displayed must carry `source`, `license` and `author`. Never re-host social media videos or photos; embed or link them.

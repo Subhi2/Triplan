@@ -97,9 +97,13 @@ export function Planner({ savedTrip = null }: Props) {
   const [mapBias, setMapBias] = useState<MapBias>({ center: [76.75, 15.05], zoom: 5 });
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  // A touch screen: typing brings up an on-screen keyboard.
+  const coarsePointer = useMediaQuery("(pointer: coarse)");
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>(1);
   // On mobile the form folds away once a full trip is loaded, leaving room for the map.
   const [formOpen, setFormOpen] = useState(() => !(initial.from && initial.to));
+  // A stop field has focus: on phones the sheet steps aside for the keyboard and suggestions.
+  const [typing, setTyping] = useState(false);
 
   // Keep the trip in the URL so it can be shared. replaceState avoids a server round trip.
   const first = stops[0];
@@ -317,8 +321,30 @@ export function Planner({ savedTrip = null }: Props) {
 
   const hasTrip = Boolean(first?.location && last?.location);
   const showForm = isDesktop || formOpen || !hasTrip;
+  const compactHeader = !isDesktop && hasTrip;
+  // Phones: no sheet until there is a trip to show (the map gets the room), and none while the
+  // on-screen keyboard is up. Elsewhere the form rises above the sheet while typing instead.
+  const sheetShown = !isDesktop && routeState.status !== "idle" && !(typing && coarsePointer);
   const sheetInset =
-    !isDesktop && typeof window !== "undefined" ? SHEET_SNAPS[sheetSnap] * window.innerHeight : 0;
+    sheetShown && typeof window !== "undefined" ? SHEET_SNAPS[sheetSnap] * window.innerHeight : 0;
+
+  function toggleForm() {
+    // Editing on a phone: the sheet drops to its smallest size so the map stays in view.
+    const open = !showForm;
+    setFormOpen(open);
+    setSheetSnap(open ? 0 : 1);
+    if (!open) setTyping(false);
+  }
+
+  const [hadTrip, setHadTrip] = useState(hasTrip);
+  if (hasTrip !== hadTrip) {
+    setHadTrip(hasTrip);
+    if (hasTrip && !isDesktop && formOpen && stops.length === 2) {
+      setFormOpen(false);
+      setTyping(false);
+      setSheetSnap(1);
+    }
+  }
 
   const openAlong = openPlace ? (allPlaces.find((p) => p.id === openPlace.id) ?? null) : null;
 
@@ -336,12 +362,12 @@ export function Planner({ savedTrip = null }: Props) {
             onAdd={() => addToTrip(openPlace)}
             onRemove={() => removeFromTrip(openPlace.location)}
           />
-          <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm">
+          <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm md:min-h-0">
             <input
               type="checkbox"
               checked={pickedIds.has(openPlace.id)}
               onChange={(e) => setPlacePicked(openPlace, e.target.checked)}
-              className="accent-brand h-4 w-4"
+              className="accent-brand h-5 w-5 md:h-4 md:w-4"
             />
             Tick for Google Maps
           </label>
@@ -351,9 +377,6 @@ export function Planner({ savedTrip = null }: Props) {
     />
   ) : (
     <div className="flex flex-col gap-5">
-      {(saved || plan) && (
-        <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
-      )}
       <section aria-label="Routes" aria-live="polite" aria-busy={routeState.status === "loading"}>
         {routeState.status === "idle" && (
           <p className="text-sm text-stone-500">Choose a start and destination to see routes.</p>
@@ -370,6 +393,9 @@ export function Planner({ savedTrip = null }: Props) {
           <RouteCards routes={routes} selectedId={selectedRouteId} onSelect={setSelectedRouteId} />
         )}
       </section>
+      {(saved || plan) && (
+        <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
+      )}
 
       {selectedRoute && (
         <section aria-labelledby="places-heading" className="flex flex-col gap-3">
@@ -448,55 +474,71 @@ export function Planner({ savedTrip = null }: Props) {
 
   return (
     <div className="flex h-dvh flex-col md:flex-row">
-      <aside className="relative z-10 flex shrink-0 flex-col gap-4 border-stone-200 bg-(--background) p-4 shadow-sm md:w-[26rem] md:overflow-y-auto md:border-r md:shadow-none dark:border-stone-800">
-        <header className="flex items-start justify-between gap-2">
-          <div>
-            <h1 className="text-brand text-xl font-bold">Bike Travelling Guide</h1>
-            <p className="text-sm text-stone-600 dark:text-stone-400">
-              Every worthwhile stop along your exact route.{" "}
-              <Link
-                href="/trips"
-                className="text-brand font-medium whitespace-nowrap hover:underline"
-              >
-                Saved trips
-              </Link>
-            </p>
-          </div>
-          {!isDesktop && hasTrip && (
-            <button
-              type="button"
-              aria-expanded={showForm}
-              onClick={() => setFormOpen((o) => !o)}
-              className="shrink-0 rounded-md border border-stone-300 px-3 py-1 text-sm dark:border-stone-700"
-            >
-              {showForm ? "Done" : "Edit trip"}
-            </button>
+      <aside
+        className={`relative flex shrink-0 flex-col gap-3 border-stone-200 bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-4 md:overflow-y-auto md:border-r md:p-4 md:shadow-none dark:border-stone-800 ${typing ? "z-30" : "z-10"}`}
+      >
+        <header className="flex items-center justify-between gap-2">
+          {/* Phones with a trip: one row, the trip itself in place of the app's name. */}
+          {compactHeader ? (
+            <div className="min-w-0">
+              <h1 className="sr-only">Bike Travelling Guide</h1>
+              <p className="truncate font-semibold">
+                {first?.label} → {last?.label}
+              </p>
+              {stops.length > 2 && (
+                <p className="text-xs text-stone-600 dark:text-stone-400">
+                  {stops.length - 2} stop{stops.length > 3 ? "s" : ""} on the way
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="min-w-0">
+              <h1 className="text-brand text-lg font-bold md:text-xl">Bike Travelling Guide</h1>
+              <p className="text-sm text-stone-600 dark:text-stone-400">
+                Every worthwhile stop along your exact route.
+              </p>
+            </div>
           )}
+          <div className="flex shrink-0 items-center gap-1">
+            <Link
+              href="/trips"
+              className="text-brand inline-flex min-h-11 items-center px-2 text-sm font-medium hover:underline"
+            >
+              {compactHeader ? "Trips" : "Saved trips"}
+            </Link>
+            {!isDesktop && hasTrip && (
+              <button
+                type="button"
+                aria-expanded={showForm}
+                onClick={toggleForm}
+                className="min-h-11 rounded-md border border-stone-300 px-3 text-sm font-medium dark:border-stone-700"
+              >
+                {showForm ? "Done" : "Edit trip"}
+              </button>
+            )}
+          </div>
         </header>
 
         {showForm ? (
-          <TripForm
-            stops={stops}
-            vehicle={vehicle}
-            corridorKm={corridorKm}
-            focusId={focusId}
-            near={mapBias}
-            onStopsChange={setStops}
-            onAddStop={addStop}
-            onVehicleChange={setVehicle}
-            onCorridorChange={setCorridorKm}
-          />
-        ) : (
-          <p className="truncate text-sm font-medium">
-            {first?.label} → {last?.label}
-            {stops.length > 2 && (
-              <span className="font-normal text-stone-500">
-                {" "}
-                · {stops.length - 2} stop{stops.length > 3 ? "s" : ""}
-              </span>
-            )}
-          </p>
-        )}
+          <div
+            onFocusCapture={(e) => {
+              if (e.target instanceof HTMLInputElement && e.target.type === "text") setTyping(true);
+            }}
+            onBlurCapture={() => setTyping(false)}
+          >
+            <TripForm
+              stops={stops}
+              vehicle={vehicle}
+              corridorKm={corridorKm}
+              focusId={focusId}
+              near={mapBias}
+              onStopsChange={setStops}
+              onAddStop={addStop}
+              onVehicleChange={setVehicle}
+              onCorridorChange={setCorridorKm}
+            />
+          </div>
+        ) : null}
 
         {isDesktop && panel}
       </aside>
@@ -518,7 +560,12 @@ export function Planner({ savedTrip = null }: Props) {
       </div>
 
       {!isDesktop && (
-        <BottomSheet label="Routes and places" snap={sheetSnap} onSnapChange={setSheetSnap}>
+        <BottomSheet
+          label="Routes and places"
+          snap={sheetSnap}
+          onSnapChange={setSheetSnap}
+          hidden={!sheetShown}
+        >
           {panel}
         </BottomSheet>
       )}
