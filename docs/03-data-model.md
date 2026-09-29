@@ -172,6 +172,7 @@ CREATE TABLE social_post (
 
 
 -- Trips ---------------------------------------------------------------------
+-- Trips are open (no sign-in): user_id stays empty and every trip is public.
 CREATE TABLE trip (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       uuid REFERENCES auth.users(id),
@@ -179,12 +180,15 @@ CREATE TABLE trip (
   vehicle       vehicle NOT NULL DEFAULT 'bike',
   corridor_m    int NOT NULL DEFAULT 5000,
   route_geom    geography(LineString, 4326),
+  route_id      text,                          -- the picked route option, selected again on reopen
+  via_label     text,                          -- "via Hassan, Sakleshpur"
   distance_m    int,
   duration_s    int,
-  is_public     boolean NOT NULL DEFAULT false,
+  is_public     boolean NOT NULL DEFAULT true,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
+CREATE INDEX trip_updated_at_idx ON trip (updated_at DESC);
 
 CREATE TABLE trip_stop (
   trip_id   uuid REFERENCES trip(id) ON DELETE CASCADE,
@@ -290,5 +294,24 @@ interface PlaceDetail {
              vehicleUsed: string | null; author: string | null; createdAt: string }[];
   osm: { id: string | null; openingHours: string | null; fee: string | null;   // from OSM tags, shown
          website: string | null; wikipediaUrl: string | null };               // where the guide is empty
+}
+
+interface SavedTrip {           // GET /api/trips/[id]
+  id: string;
+  title: string;
+  vehicle: "bike" | "car";
+  corridorKm: 2 | 5 | 10 | 25;
+  stops: { label: string; location: LngLat }[];   // start, vias, destination
+  routeId: string | null;
+  viaLabel: string | null;
+  distanceKm: number | null;
+  durationMin: number | null;
+  updatedAt: string;
+}
+
+interface TripSummary {         // GET /api/trips (the /trips list)
+  id: string; title: string; vehicle: "bike" | "car";
+  from: string; to: string; viaCount: number; viaLabel: string | null;
+  distanceKm: number | null; durationMin: number | null; updatedAt: string;
 }
 ```

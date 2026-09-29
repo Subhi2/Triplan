@@ -38,6 +38,9 @@ export default async function PlacePage({ params }: Props) {
         <Link href="/" className="text-brand font-bold">
           Bike Travelling Guide
         </Link>
+        <Link href="/trips" className="text-brand font-medium hover:underline">
+          Saved trips
+        </Link>
       </nav>
       <PlaceDetailView
         place={place}
