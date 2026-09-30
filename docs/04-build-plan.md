@@ -93,6 +93,24 @@ Before starting (the owner does this in the Google Cloud console):
 
 **Done when:** with the keys set on a preview deploy, the planner shows a Google map with routes and clustered places; opening a place with no photos of our own shows Google photos and reviews with credit and the exact "Open in Google Maps" link; opening a place that has our photos and 3+ reviews makes no Google call (check the `google_usage` table); nothing from Google is in the DB but place ids; without the keys the app looks and works as before.
 
+## Growth G2 · Near me
+
+Decided 2026-09-30: well-known places around the rider, by road time. Design in "Nearby search" (`02-architecture.md`), the product in `01-product-spec.md` (features 12–15), the look in `08-design.md`. One commit per step.
+
+1. **`places_near_point`** (migration 0012, a new function only): verified places within a radius of a point, most worthwhile first. `placesNearDb` in `nearbyService.ts`.
+2. **OSRM table**: `RoutingTableProvider` (one source to at most 99 destinations), sharing the routing throttle, 6 s timeout, cached in `route_cache` under `table:v1:`.
+3. **`GET /api/places/near`**: candidates by fame spread over distance, one table request, places over the time dropped; straight-line fallback; ride mode without OSRM. Position rounded to 3 decimals, `no-store`, never logged.
+4. **Maps**: shared `DynamicMapView`; place pins; "you are here" dot; framing without routes; tap on the map.
+5. **`/nearby`**: Use my location (on a tap only) / type a place / pick on the map; 30 min to half a day; Bike / Car; top 20 nearest first; category chips; details; link from the planner.
+6. **Ride there** from a place to the planner.
+7. **Use my location** in the planner's start field.
+8. **In season** badge and ranking boost.
+9. **Ahead of you** ride mode: heading from the device or movement, a cone ahead, wake lock.
+
+**Done when:** at Sakleshpur, "Within 1 h by bike" lists Manjarabad Fort first (about 7 min); nothing asks for the position until a tap; the URL and requests carry 3 decimals; Ride there routes in the planner; ride mode heading north from Sakleshpur shows Belur and not Bisle; `tests/e2e/nearby.spec.ts` passes on desktop and at 375 px.
+
+Next ideas (not built): label "My location" by the nearest town from our own data ("Near Hassan") for shared trips; an offline copy of the last Near me list for ride mode in areas without signal.
+
 ## Phase 5 · Community content
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.
