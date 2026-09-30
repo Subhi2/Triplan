@@ -20,6 +20,7 @@ import {
   PlaceMarkers,
 } from "./PlaceMarkers";
 import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
+import { MeDot } from "./MeDot";
 import { bounds, frameKey, framePoints, INDIA_BOUNDS, type MapViewProps } from "./types";
 
 export type { MapStop } from "./types";
@@ -47,12 +48,12 @@ export function MapView(props: MapViewProps) {
 
   const padding = { top: 48 + topInset, left: 48, right: 48, bottom: 48 + bottomInset };
 
-  // Frame all routes when they change; with no routes yet, frame the stops.
-  const frame = frameKey(routes, stops);
+  // Frame all routes when they change; with no routes yet, the given frame or the stops.
+  const frame = frameKey(routes, stops, props.frame);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const points = framePoints(routes, stops);
+    const points = framePoints(routes, stops, props.frame);
     const b = bounds(points);
     if (!b) return;
     if (points.length === 1) map.flyTo({ center: points[0], zoom: 10, duration: 600, padding });
@@ -94,7 +95,10 @@ export function MapView(props: MapViewProps) {
 
   async function handleClick(e: MapLayerMouseEvent) {
     const f = e.features?.[0];
-    if (!f) return;
+    if (!f) {
+      props.onMapClick?.([e.lngLat.lng, e.lngLat.lat]);
+      return;
+    }
     const layer = f.layer.id;
     const id: unknown = f.properties?.id;
     if (PLACE_TAP_LAYERS.includes(layer) && typeof id === "string") {
@@ -152,6 +156,11 @@ export function MapView(props: MapViewProps) {
           </div>
         </Marker>
       ))}
+      {props.me && (
+        <Marker longitude={props.me.location[0]} latitude={props.me.location[1]} anchor="center">
+          <MeDot headingDeg={props.me.headingDeg} />
+        </Marker>
+      )}
     </Map>
   );
 }

@@ -8,15 +8,15 @@ const PADDING = 48;
 /** Framing a route never zooms in closer than this. */
 const MAX_FRAME_ZOOM = 12;
 
-/** Frames the routes (or stops) when they change, and brings the active place into view. */
+/** Frames the routes (or the given frame, or stops) when they change, and brings the active place into view. */
 export function useGoogleFraming(props: MapViewProps) {
   const map = useMap();
   const { routes, stops, places, activePlaceId, topInset = 0 } = props;
 
-  const frame = frameKey(routes, stops);
+  const frame = frameKey(routes, stops, props.frame);
   useEffect(() => {
     if (!map) return;
-    const points = framePoints(routes, stops);
+    const points = framePoints(routes, stops, props.frame);
     const b = bounds(points);
     if (!b) return;
     if (points.length === 1) {

@@ -3,7 +3,7 @@
 import type { FeatureCollection, Point } from "geojson";
 import { Layer, Source } from "react-map-gl/maplibre";
 import { categoryStyle } from "@/lib/categories";
-import type { PlaceAlong } from "@/lib/places";
+import type { PlacePin } from "./types";
 
 export const PLACE_POINTS_LAYER = "place-points";
 export const PLACE_CLUSTERS_LAYER = "place-clusters";
@@ -13,10 +13,10 @@ export const PLACE_HIT_LAYER = "place-hit";
 export const PLACE_TAP_LAYERS = [PLACE_HIT_LAYER, PLACE_POINTS_LAYER];
 export const PLACES_SOURCE = "places";
 
-type Props = { places: PlaceAlong[]; highlightIds: string[] };
+type Props = { places: PlacePin[]; highlightIds: string[] };
 type PlaceProps = { id: string; name: string; color: string };
 
-function toFeatures(places: PlaceAlong[]): FeatureCollection<Point, PlaceProps> {
+function toFeatures(places: PlacePin[]): FeatureCollection<Point, PlaceProps> {
   return {
     type: "FeatureCollection",
     features: places.map((p) => ({

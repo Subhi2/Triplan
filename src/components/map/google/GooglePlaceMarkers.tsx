@@ -8,10 +8,10 @@ import {
 import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { useEffect, useRef } from "react";
 import { categoryStyle } from "@/lib/categories";
-import type { PlaceAlong } from "@/lib/places";
+import type { PlacePin } from "../types";
 
 interface Props {
-  places: PlaceAlong[];
+  places: PlacePin[];
   highlightIds: string[];
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;

@@ -8,6 +8,7 @@ import {
 } from "@vis.gl/react-google-maps";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { GOOGLE_MAP_ID, GOOGLE_MAPS_BROWSER_KEY } from "@/lib/google";
+import { MeDot } from "../MeDot";
 import { INDIA_BOUNDS, type MapViewProps } from "../types";
 import { GooglePlaceMarkers } from "./GooglePlaceMarkers";
 import { GoogleRoutes } from "./GoogleRoutes";
@@ -40,6 +41,10 @@ export function GoogleMapView(props: MapViewProps) {
           zoomControl={!coarsePointer}
           clickableIcons={false}
           className="h-full w-full"
+          onClick={(e) => {
+            const at = e.detail.latLng;
+            if (at) props.onMapClick?.([at.lng, at.lat]);
+          }}
           onIdle={(e) => {
             const c = e.map.getCenter();
             const zoom = e.map.getZoom();
@@ -87,6 +92,16 @@ function MapContents(props: MapViewProps) {
           </div>
         </AdvancedMarker>
       ))}
+      {props.me && (
+        <AdvancedMarker
+          position={{ lng: props.me.location[0], lat: props.me.location[1] }}
+          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          title="You are here"
+          zIndex={3000}
+        >
+          <MeDot headingDeg={props.me.headingDeg} />
+        </AdvancedMarker>
+      )}
     </>
   );
 }
