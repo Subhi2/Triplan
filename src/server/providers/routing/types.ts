@@ -34,3 +34,24 @@ export class NoRouteError extends Error {
     this.name = "NoRouteError";
   }
 }
+
+/** The public OSRM server allows 100 coordinates per table request, the origin included. */
+export const MAX_TABLE_DESTINATIONS = 99;
+
+export interface TableInput {
+  origin: LngLat;
+  destinations: LngLat[];
+  profile: RoutingProfile;
+}
+
+/** Road distance and time from the origin to one destination. */
+export interface TableCell {
+  distanceM: number;
+  durationS: number;
+}
+
+/** Road times from one point to many (one request), for "within 1 h" on the Near me screen. */
+export interface RoutingTableProvider {
+  /** One cell per destination, in order; null when the road network cannot reach it. */
+  table(input: TableInput): Promise<(TableCell | null)[]>;
+}

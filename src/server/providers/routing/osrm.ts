@@ -2,15 +2,19 @@ import { z } from "zod";
 import { round5 } from "@/lib/geo";
 import { createThrottle, fetchJson, ProviderError } from "../http";
 import {
+  MAX_TABLE_DESTINATIONS,
   NoRouteError,
   type RoadStretch,
   type RouteInput,
   type RouteResult,
   type RoutingProvider,
+  type RoutingTableProvider,
+  type TableCell,
+  type TableInput,
 } from "./types";
 
 // The public demo server only has the car profile; bikes use it with a slower pace.
-const BIKE_DURATION_FACTOR = 1.1;
+export const BIKE_DURATION_FACTOR = 1.1;
 // Up to 3 routes in total. OSRM only returns alternatives for exactly two waypoints.
 const MAX_ALTERNATIVES = 2;
 
@@ -99,8 +103,59 @@ function mergeRoads(steps: { distance: number; ref?: string }[]): RoadStretch[] 
   return roads;
 }
 
-// One throttle per process: the public demo server is for light use only.
+const osrmTableSchema = z.object({
+  code: z.string(),
+  message: z.string().optional(),
+  durations: z.array(z.array(z.number().nonnegative().nullable())).optional(),
+  distances: z.array(z.array(z.number().nonnegative().nullable())).optional(),
+});
+
+/** One source (the origin, index 0) to every destination: /table/v1/driving/{o;d1;...}. */
+export function buildOsrmTableUrl(baseUrl: string, input: TableInput): string {
+  const coords = [input.origin, ...input.destinations]
+    .map(([lng, lat]) => `${round5(lng)},${round5(lat)}`)
+    .join(";");
+  const params = new URLSearchParams({ sources: "0", annotations: "duration,distance" });
+  return `${baseUrl.replace(/\/$/, "")}/table/v1/driving/${coords}?${params}`;
+}
+
+/**
+ * Validates a raw OSRM /table response for `count` destinations and returns one cell per
+ * destination (the origin's own column dropped). null: no road to that destination.
+ */
+export function parseOsrmTableResponse(
+  body: unknown,
+  count: number,
+  profile: TableInput["profile"],
+): (TableCell | null)[] {
+  const parsed = osrmTableSchema.safeParse(body);
+  if (!parsed.success) throw new ProviderError("OSRM returned an unexpected response", "osrm");
+  const { code, message, durations, distances } = parsed.data;
+  if (code !== "Ok") {
+    throw new ProviderError(`OSRM error ${code}${message ? `: ${message}` : ""}`, "osrm");
+  }
+  const times = durations?.[0];
+  const lengths = distances?.[0];
+  if (!times || !lengths || times.length !== count + 1 || lengths.length !== count + 1) {
+    throw new ProviderError("OSRM table has the wrong size", "osrm");
+  }
+  const factor = profile === "bike" ? BIKE_DURATION_FACTOR : 1;
+  return times.slice(1).map((t, i) => {
+    const d = lengths[i + 1];
+    return t === null || d === null || d === undefined
+      ? null
+      : { distanceM: d, durationS: t * factor };
+  });
+}
+
+// One throttle per process for routes and tables: the public demo server is for light use only.
 const throttle = createThrottle(1_000);
+
+/**
+ * Well under the service worker's 10 s network timeout for /api/* (Serwist defaultCache), so the
+ * Near me screen gets an answer, or its straight-line fallback, rather than a stale cached one.
+ */
+const TABLE_TIMEOUT_MS = 6_000;
 
 export function createOsrmProvider(baseUrl: string): RoutingProvider {
   return {
@@ -108,6 +163,24 @@ export function createOsrmProvider(baseUrl: string): RoutingProvider {
       await throttle();
       const { data } = await fetchJson("osrm", buildOsrmRouteUrl(baseUrl, input), z.unknown());
       return parseOsrmResponse(data, input.profile);
+    },
+  };
+}
+
+export function createOsrmTableProvider(baseUrl: string): RoutingTableProvider {
+  return {
+    async table(input) {
+      if (input.destinations.length === 0) return [];
+      if (input.destinations.length > MAX_TABLE_DESTINATIONS) {
+        throw new ProviderError(
+          `OSRM table takes at most ${MAX_TABLE_DESTINATIONS} destinations`,
+          "osrm",
+        );
+      }
+      await throttle();
+      const url = buildOsrmTableUrl(baseUrl, input);
+      const { data } = await fetchJson("osrm", url, z.unknown(), {}, TABLE_TIMEOUT_MS);
+      return parseOsrmTableResponse(data, input.destinations.length, input.profile);
     },
   };
 }
