@@ -21,10 +21,10 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useRef } from "react";
 import type { LngLat } from "@/lib/geo";
+import { VehicleToggle } from "@/components/ui/VehicleToggle";
 import {
   CORRIDOR_KM,
   MAX_VIA_STOPS,
-  VEHICLES,
   type CorridorKm,
   type GeocodeResult,
   type Vehicle,
@@ -222,29 +222,7 @@ export function TripForm(props: Props) {
       </button>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9 text-sm">
-        <fieldset className="flex items-center rounded-full bg-stone-100 p-1 dark:bg-stone-800">
-          <legend className="sr-only">Vehicle</legend>
-          {VEHICLES.map((v) => (
-            <label
-              key={v}
-              className={`has-[:focus-visible]:ring-brand inline-flex min-h-9 cursor-pointer items-center rounded-full px-4 font-bold capitalize transition-colors has-[:focus-visible]:ring-2 ${
-                props.vehicle === v
-                  ? "bg-brand text-white shadow-sm"
-                  : "text-stone-600 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white"
-              }`}
-            >
-              <input
-                type="radio"
-                name="vehicle"
-                value={v}
-                checked={props.vehicle === v}
-                onChange={() => props.onVehicleChange(v)}
-                className="sr-only"
-              />
-              {v}
-            </label>
-          ))}
-        </fieldset>
+        <VehicleToggle value={props.vehicle} onChange={props.onVehicleChange} />
         <label className="flex items-center gap-2">
           <span>Places within</span>
           <select

@@ -7,6 +7,7 @@ import {
   reachRadiusM,
   serializeNearbyUrl,
   straightReachKm,
+  topNearby,
 } from "@/lib/nearby";
 
 describe("Near me URL", () => {
@@ -110,10 +111,33 @@ describe("formatRideShort", () => {
   it.each([
     [4.4, { value: "4", unit: "MIN" }],
     [59.4, { value: "59", unit: "MIN" }],
-    [65, { value: "1:05", unit: "H" }],
-    [240, { value: "4:00", unit: "H" }],
+    [65, { value: "1:05", unit: "HRS" }],
+    [240, { value: "4:00", unit: "HRS" }],
     [0.2, { value: "1", unit: "MIN" }],
   ])("%s min", (min, expected) => {
     expect(formatRideShort(min)).toEqual(expected);
+  });
+});
+
+describe("topNearby", () => {
+  it("keeps the best 20 and shows them nearest first", () => {
+    const places = Array.from({ length: 30 }, (_, i) => ({
+      id: `p${i}`,
+      fame: i, // p29 is the best
+      rideMin: 100 - i, // and the nearest
+      distanceKm: 100 - i,
+    }));
+    const top = topNearby(places);
+    expect(top).toHaveLength(20);
+    expect(top[0]!.id).toBe("p29");
+    expect(top.map((p) => p.id)).not.toContain("p9");
+  });
+
+  it("orders by straight-line distance without road times", () => {
+    const top = topNearby([
+      { id: "far", fame: 3, rideMin: null, distanceKm: 30 },
+      { id: "near", fame: 1, rideMin: null, distanceKm: 3 },
+    ]);
+    expect(top.map((p) => p.id)).toEqual(["near", "far"]);
   });
 });

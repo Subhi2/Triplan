@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapStop } from "@/components/map/types";
+import { CrosshairIcon } from "@/components/nearby/OriginBar";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
@@ -617,6 +618,15 @@ export function Planner({ savedTrip = null }: Props) {
             </div>
           )}
           <div className="flex shrink-0 items-center gap-1">
+            <Link
+              href={`/nearby?v=${vehicle}`}
+              aria-label={compactHeader ? "Near me" : undefined}
+              title="Well-known places near you"
+              className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-sm font-bold hover:underline dark:text-teal-300"
+            >
+              <CrosshairIcon size={18} />
+              {!compactHeader && "Near me"}
+            </Link>
             <Link
               href="/trips"
               className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"

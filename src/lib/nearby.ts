@@ -150,12 +150,29 @@ export function pickCandidates<T extends { distanceKm: number }>(
   return byRank.filter((p) => picked.has(p)).slice(0, max);
 }
 
-/** The ride time column of a row: "35" MIN, "1:05" H. */
-export function formatRideShort(minutes: number): { value: string; unit: "MIN" | "H" } {
+/** The default Near me list: this many of the best places, nearest first. */
+export const NEARBY_TOP = 20;
+
+/**
+ * The best `NEARBY_TOP` places by rank, shown nearest first (by ride time, or by distance when
+ * road times are unavailable). Picking a category shows every place in it instead.
+ */
+export function topNearby<T extends Pick<PlaceNear, "fame" | "rideMin" | "distanceKm">>(
+  places: T[],
+  rank: (p: T) => number = nearbyRank,
+): T[] {
+  return [...places]
+    .sort((a, b) => rank(b) - rank(a) || a.distanceKm - b.distanceKm)
+    .slice(0, NEARBY_TOP)
+    .sort((a, b) => (a.rideMin ?? a.distanceKm) - (b.rideMin ?? b.distanceKm));
+}
+
+/** The ride time column of a row: "35" MIN, "1:05" HRS. */
+export function formatRideShort(minutes: number): { value: string; unit: "MIN" | "HRS" } {
   const total = Math.max(1, Math.round(minutes));
   if (total < 60) return { value: String(total), unit: "MIN" };
   const h = Math.floor(total / 60);
-  return { value: `${h}:${String(total % 60).padStart(2, "0")}`, unit: "H" };
+  return { value: `${h}:${String(total % 60).padStart(2, "0")}`, unit: "HRS" };
 }
 
 /** The point the Near me screen searches around. */
