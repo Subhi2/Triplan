@@ -5,10 +5,12 @@ import {
   parseNearbyUrl,
   pickCandidates,
   reachRadiusM,
+  rideThereHref,
   serializeNearbyUrl,
   straightReachKm,
   topNearby,
 } from "@/lib/nearby";
+import { parseTripUrl } from "@/lib/tripUrl";
 
 describe("Near me URL", () => {
   it("round-trips a position, kept to 3 decimals", () => {
@@ -139,5 +141,21 @@ describe("topNearby", () => {
       { id: "near", fame: 1, rideMin: null, distanceKm: 3 },
     ]);
     expect(top.map((p) => p.id)).toEqual(["near", "far"]);
+  });
+});
+
+describe("rideThereHref", () => {
+  it("opens the planner from the point to the place, the start at 3 decimals", () => {
+    const href = rideThereHref(
+      { label: "Your location", location: [75.7851234, 12.9434567] },
+      { name: "Manjarabad Fort", location: [75.7581, 12.9173] },
+      "car",
+    );
+    expect(href.startsWith("/?")).toBe(true);
+    const trip = parseTripUrl(new URLSearchParams(href.slice(2)));
+    expect(trip.from).toEqual({ label: "Your location", location: [75.785, 12.943] });
+    expect(trip.to).toEqual({ label: "Manjarabad Fort", location: [75.7581, 12.9173] });
+    expect(trip.vehicle).toBe("car");
+    expect(decodeURIComponent(href)).not.toMatch(/75\.7851/);
   });
 });

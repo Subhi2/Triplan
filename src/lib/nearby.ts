@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { CATEGORIES, isCategorySlug } from "./categories";
-import { round3, type LngLat } from "./geo";
-import { VEHICLES, type Vehicle } from "./trip";
-import { decodeStop } from "./tripUrl";
+import { round3, roundLngLat3, type LngLat } from "./geo";
+import { DEFAULT_CORRIDOR_KM, VEHICLES, type Vehicle } from "./trip";
+import { decodeStop, serializeTripUrl, type UrlStop } from "./tripUrl";
 
 /**
  * The Near me screen: well-known places the rider can reach from one point within a time budget,
@@ -229,4 +229,24 @@ export function serializeNearbyUrl(state: NearbyUrlState): string {
   params.set("v", state.vehicle);
   if (state.categories.length > 0) params.set("cat", state.categories.join(","));
   return params.toString();
+}
+
+/**
+ * "Ride there": the planner from the point searched around to a place, so the places along that
+ * road take over. The start is kept to 3 decimals: planner links and saved trips are shareable.
+ */
+export function rideThereHref(
+  from: UrlStop,
+  to: { name: string; location: LngLat },
+  vehicle: Vehicle,
+): string {
+  return `/?${serializeTripUrl({
+    from: { label: from.label, location: roundLngLat3(from.location) },
+    via: [],
+    to: { label: to.name, location: to.location },
+    vehicle,
+    corridorKm: DEFAULT_CORRIDOR_KM,
+    categories: [],
+    maxDetourKm: null,
+  })}`;
 }
