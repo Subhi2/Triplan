@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocate } from "@/components/geo/useLocate";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapFrame, MapStop } from "@/components/map/types";
@@ -29,6 +29,7 @@ import { NearbyFilters, NearbyList } from "./NearbyList";
 import { nearbyRowId } from "./NearbyRow";
 import { OriginBar } from "./OriginBar";
 import { ReachChips } from "./ReachChips";
+import { RideMode } from "./RideMode";
 import { useNearbyPlaces } from "./useNearbyPlaces";
 
 /** Height of the header floating over the map on phones, kept clear when framing. */
@@ -64,6 +65,13 @@ export function Nearby() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [mapBias, setMapBias] = useState<MapBias>({ center: [76.75, 15.05], zoom: 5 });
   const { state: locateState, locate, reset: resetLocate } = useLocate();
+  // Ride mode ("Ahead of you") covers the screen while on; focus returns to its button after.
+  const [riding, setRiding] = useState(false);
+  const rideButton = useRef<HTMLButtonElement>(null);
+  const stopRiding = useCallback(() => {
+    setRiding(false);
+    requestAnimationFrame(() => rideButton.current?.focus());
+  }, []);
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const coarsePointer = useMediaQuery("(pointer: coarse)");
@@ -328,6 +336,29 @@ export function Nearby() {
           resetLocate();
         }}
       />
+      {!picking && (
+        <button
+          ref={rideButton}
+          type="button"
+          onClick={() => setRiding(true)}
+          className="bg-brand-tint text-brand-dark inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold active:scale-[0.97] dark:bg-teal-950/60 dark:text-teal-200"
+        >
+          <svg
+            aria-hidden
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 3l7 18-7-4-7 4z" />
+          </svg>
+          Riding? See what&apos;s ahead
+        </button>
+      )}
       {origin && !choosing && !picking && (
         <ReachChips
           within={within}
@@ -422,6 +453,8 @@ export function Nearby() {
           topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
         />
       </div>
+
+      {riding && <RideMode month={month} onStop={stopRiding} />}
 
       {!isDesktop && (
         <BottomSheet label="Places near you" snap={sheetSnap} onSnapChange={setSheetSnap}>
