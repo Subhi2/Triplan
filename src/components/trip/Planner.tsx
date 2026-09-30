@@ -1,10 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapStop } from "@/components/map/types";
+import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
@@ -14,7 +15,6 @@ import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/Bottom
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
 import type { LngLat } from "@/lib/geo";
-import { googleEnabled } from "@/lib/google";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
@@ -38,19 +38,6 @@ import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { TripSaveBar } from "./TripSaveBar";
-
-// Both maps need the browser. The Google map when its key is set (Google photos and reviews may
-// only be shown with it), else MapLibre (docs/02, "Google Maps Platform").
-const MapView = dynamic(
-  () =>
-    googleEnabled
-      ? import("@/components/map/google/GoogleMapView").then((m) => m.GoogleMapView)
-      : import("@/components/map/MapView").then((m) => m.MapView),
-  {
-    ssr: false,
-    loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
-  },
-);
 
 /** Height of the header floating over the map on phones, kept clear when framing the route. */
 const FLOATING_HEADER_PX = 72;
@@ -631,6 +618,15 @@ export function Planner({ savedTrip = null }: Props) {
             </div>
           )}
           <div className="flex shrink-0 items-center gap-1">
+            <Link
+              href={`/nearby?v=${vehicle}`}
+              aria-label={compactHeader ? "Near me" : undefined}
+              title="Well-known places near you"
+              className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-sm font-bold hover:underline dark:text-teal-300"
+            >
+              <CrosshairIcon size={18} />
+              {!compactHeader && "Near me"}
+            </Link>
             <Link
               href="/trips"
               className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"

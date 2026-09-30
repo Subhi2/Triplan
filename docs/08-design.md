@@ -43,6 +43,10 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 - **Route cards.** The picked route on a white card with a 2 px teal border; the others quieter and compact. Road mix bar: NH teal, SH `state-road`, ghat `ghat`, other `stone-300`, 2 px gaps.
 - **Road strip** (`RoadStrip`). A teal ribbon from 0 to the route length, ghat stretches thicker in `ghat` with a "GHAT" label, each listed place as a dot in its category colour (the active or hovered one larger, ringed in ink), round km marks below. Ghat positions come from `RoadMix.ghats`.
 - **Place rows** (`PlaceRow`). "KM" over the km in mono, the name bold, then category · detour (on route in `brand-dark`, detours in `marigold`), then rating · best time. The tick box on the right. Rows carry `data-km`, `data-name`, `data-detour`, `data-category` for the end-to-end tests.
+- **Near me rows** (`NearbyRow`). Near me reads by time, not km: the ride time in mono leads ("MIN" over "35", or "HRS" over "1:05"; "KM" over the straight-line km when road times are unavailable), then the name bold, category · "34.2 km by road", then rating · best time. No tick box (there is no trip). Rows carry `data-name`, `data-category`, `data-ride-min`, `data-km`.
+- **Time chips** (Near me). "Within" then 30 min / 1 h / 2 h / Half day as chips (ink when chosen), next to the Bike / Car segmented control.
+- **Ride mode** (`RideMode`, "Ahead of you"). Full screen on paper, for a glance: the heading and count in 16 px, rows at least 80 px with the name in `font-display` 22 px, category and side ("ahead on the left"), and the km in 28 px mono; a teal arrow in a `brand-tint` disc points at the place relative to the way of travel. One ink "Stop" button, 48 px. The screen stays on (Wake Lock); the footer says "Glance only; pull over before tapping."
+- **You are here** (`MeDot`, both maps). A teal dot with a white ring on a soft teal halo; while riding, a 70° teal fan points the way of travel.
 - **Month chart** (`MonthStrip`). Twelve bars: best tall teal, OK medium `brand-soft`, avoid short `ghat`, unknown a stub. This month ringed in ink, with "Best time: now, in September" above.
 - **Fact tiles.** White with a `stone-200` border, label above value; sentences span the full row.
 - **Carry chips.** Items needed this month in `marigold-tint` with "needed now"; others outlined.
@@ -52,6 +56,8 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 - **≥ 1024 px:** three columns: trip and routes (24rem, paper) | road strip and places, or the open place (26rem, white) | map.
 - **768–1023 px:** one side panel (26rem) holding everything, then the map.
 - **< 768 px:** the map full screen. With a trip, the header floats over it (frosted, `backdrop-blur`), and the bottom sheet holds routes and places; the map keeps its framing clear of both (`topInset`, `bottomInset`).
+
+- **Near me** follows the same layout: side panel (26rem) and map from 768 px; on phones the map full screen, a frosted header, and the chooser, chips and list in the bottom sheet (typing a place opens the sheet fully; picking on the map drops it to its smallest).
 
 ## Motion
 

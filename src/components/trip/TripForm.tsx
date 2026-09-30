@@ -19,12 +19,15 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useLocate } from "@/components/geo/useLocate";
+import { MY_LOCATION } from "@/lib/nearby";
+import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import type { LngLat } from "@/lib/geo";
+import { VehicleToggle } from "@/components/ui/VehicleToggle";
 import {
   CORRIDOR_KM,
   MAX_VIA_STOPS,
-  VEHICLES,
   type CorridorKm,
   type GeocodeResult,
   type Vehicle,
@@ -61,6 +64,7 @@ function SortableStop(props: {
   count: number;
   autoFocus: boolean;
   near: MapBias;
+  trailing?: React.ReactNode;
   onText: (text: string) => void;
   onPick: (r: GeocodeResult) => void;
   onRemove: (() => void) | null;
@@ -93,6 +97,7 @@ function SortableStop(props: {
         resolved={stop.location !== null}
         near={props.near}
         autoFocus={props.autoFocus}
+        trailing={props.trailing}
         onText={props.onText}
         onPick={props.onPick}
       />
@@ -121,6 +126,24 @@ export function TripForm(props: Props) {
 
   function update(id: string, patch: Partial<StopDraft>) {
     onStopsChange(stops.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  }
+
+  // "Use my location" for the start. The stops may change while the browser looks for the
+  // position, so the update applies to the latest ones.
+  const { state: locateState, locate } = useLocate();
+  const latestStops = useRef(stops);
+  useEffect(() => {
+    latestStops.current = stops;
+  }, [stops]);
+  async function locateStart() {
+    const at = await locate();
+    const start = latestStops.current[0];
+    if (!at || !start) return;
+    onStopsChange(
+      latestStops.current.map((s) =>
+        s.id === start.id ? { ...s, label: MY_LOCATION, location: at } : s,
+      ),
+    );
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
@@ -189,6 +212,27 @@ export function TripForm(props: Props) {
                 count={stops.length}
                 autoFocus={s.id === props.focusId}
                 near={props.near}
+                trailing={
+                  i === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => void locateStart()}
+                      disabled={locateState.status === "locating"}
+                      aria-label="Use my location"
+                      title="Use my location"
+                      className="text-brand-dark flex h-11 w-11 items-center justify-center rounded-xl hover:bg-stone-100 disabled:opacity-70 dark:text-teal-300 dark:hover:bg-stone-800"
+                    >
+                      {locateState.status === "locating" ? (
+                        <span
+                          aria-hidden
+                          className="border-brand/30 border-t-brand h-4 w-4 animate-spin rounded-full border-2 motion-reduce:animate-none"
+                        />
+                      ) : (
+                        <CrosshairIcon size={18} />
+                      )}
+                    </button>
+                  ) : undefined
+                }
                 onText={(label) => update(s.id, { label, location: null })}
                 onPick={(r) => update(s.id, { label: r.name, location: r.location })}
                 onRemove={
@@ -198,6 +242,11 @@ export function TripForm(props: Props) {
             ))}
           </ol>
         </SortableContext>
+        {locateState.status === "error" && (
+          <p role="status" className="text-ghat-dark ml-9 text-sm dark:text-orange-300">
+            {locateState.message}
+          </p>
+        )}
       </DndContext>
 
       <button
@@ -222,29 +271,7 @@ export function TripForm(props: Props) {
       </button>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9 text-sm">
-        <fieldset className="flex items-center rounded-full bg-stone-100 p-1 dark:bg-stone-800">
-          <legend className="sr-only">Vehicle</legend>
-          {VEHICLES.map((v) => (
-            <label
-              key={v}
-              className={`has-[:focus-visible]:ring-brand inline-flex min-h-9 cursor-pointer items-center rounded-full px-4 font-bold capitalize transition-colors has-[:focus-visible]:ring-2 ${
-                props.vehicle === v
-                  ? "bg-brand text-white shadow-sm"
-                  : "text-stone-600 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white"
-              }`}
-            >
-              <input
-                type="radio"
-                name="vehicle"
-                value={v}
-                checked={props.vehicle === v}
-                onChange={() => props.onVehicleChange(v)}
-                className="sr-only"
-              />
-              {v}
-            </label>
-          ))}
-        </fieldset>
+        <VehicleToggle value={props.vehicle} onChange={props.onVehicleChange} />
         <label className="flex items-center gap-2">
           <span>Places within</span>
           <select

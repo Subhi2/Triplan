@@ -53,6 +53,20 @@ Help riders plan a trip by showing everything worth stopping for along the exact
    - Links to related videos / reels (from the hidden-places pipeline).
 5. **Saved trips** (open, no sign-in): save, rename, reopen, save changes or save as a new trip, and share the trip's link (`/trips/[id]`). There are no owners: every saved trip is in one list that everyone sees, and anyone with a trip's link can open and update it. A reopened trip selects the route option it was saved with.
 
+### Near me (G2, added 2026-09-30)
+
+12. **Near me** (`/nearby`): well-known places the rider can reach from where they are, within 30 min, 1 h, 2 h or half a day **on the road** (not as the crow flies), by bike or car. The point is the rider's position (asked for only when they tap "Use my location"), a typed place, or a spot tapped on the map. The list shows the top 20 by how well-known they are, nearest first, led by the ride time; category chips show every place in a category. Each place opens its details, with **Ride there**, which opens the planner from here to that place.
+13. **Use my location** in the planner's start field.
+14. **In season** badge on places whose best months include this month.
+15. **Ahead of you** (ride mode on `/nearby`): while riding, the well-known places coming up in the direction of travel, in large glanceable rows, with the screen kept on.
+
+User stories:
+- As a rider stopped for tea in Sakleshpur, I want to see what is worth seeing within an hour of here, so I can decide on a side trip without planning a route.
+- As a rider on the road, I want to glance at what is coming up ahead, so I don't ride past a waterfall I would have stopped for.
+- As a rider who finds a place nearby, I want to ride there in one tap, with the places along that road.
+
+Privacy: the position is taken only on a tap, rounded to about 100 m before it leaves the phone, never stored or logged, and not written into a shared link except as that rounded point.
+
 ### v1 (phases 5–7)
 
 6. Accounts via Supabase Auth (email magic link, Google). Not needed for the MVP, which is open without sign-in; decide with reviews and contributions (phase 5) whether they need accounts.
@@ -78,6 +92,7 @@ Help riders plan a trip by showing everything worth stopping for along the exact
 4. **Add a place** (`/contribute`).
 5. **Admin** (`/admin/*`): moderation queues, discovery queue.
 6. **Sign in** (`/login`), only if accounts are added later.
+7. **Near me** (`/nearby`): the chooser (Use my location / type a place / pick on the map), time and vehicle chips, the list and the map; on phones the list is in the bottom sheet. Ride mode ("Ahead of you") covers the screen.
 
 The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the intended planner layout.
 
@@ -90,3 +105,13 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 - Place detail shows all guide fields, with "Not known yet" for empty ones rather than hiding them.
 - Works at 375 px width; Lighthouse PWA and accessibility scores ≥ 90.
 - Route + places response under 2 s for a 350 km route with 5,000 places in the DB (routing cached).
+
+## Acceptance criteria for Near me
+
+- With the position at Sakleshpur, "Within 1 h by bike" lists Manjarabad Fort (about 5 km by road) and not Mullayanagiri; every place listed has a road time under the limit.
+- The page never asks for the position on load; only a tap on "Use my location" (or the locate button in the planner) does. Denying it shows a message and the other ways to choose a point.
+- The URL and every request carry the position to 3 decimals at most.
+- If road times are unavailable, the list falls back to straight-line distances and says so.
+- "Ride there" opens the planner with the start and that place, and routes.
+- Ride mode shows places ahead (within about 35° of the heading) and not those behind, and stops watching the position when closed.
+- Works at 375 px width with 44 px touch targets.

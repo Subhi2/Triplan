@@ -3,7 +3,12 @@
 //   pnpm fixtures:routes
 import { mkdir, writeFile } from "node:fs/promises";
 import type { LngLat } from "../src/lib/geo";
-import { buildOsrmRouteUrl, parseOsrmResponse } from "../src/server/providers/routing/osrm";
+import {
+  buildOsrmRouteUrl,
+  buildOsrmTableUrl,
+  parseOsrmResponse,
+  parseOsrmTableResponse,
+} from "../src/server/providers/routing/osrm";
 
 const BENGALURU: LngLat = [77.5946, 12.9716];
 const SAKLESHPUR: LngLat = [75.785, 12.943];
@@ -38,6 +43,17 @@ export const ROUTE_FIXTURES = {
   "pune-goa": [PUNE, PANAJI],
 } satisfies Record<string, LngLat[]>;
 
+// Road times from Sakleshpur for the Near me screen (one /table request).
+const MANJARABAD_FORT: LngLat = [75.7581, 12.9173];
+const BISLE_VIEWPOINT: LngLat = [75.6943, 12.7107];
+const HASSAN: LngLat = [76.0996, 13.0068];
+export const TABLE_FIXTURES = {
+  "table-sakleshpur": {
+    origin: SAKLESHPUR,
+    destinations: [MANJARABAD_FORT, BISLE_VIEWPOINT, HASSAN, BELUR, KALASA],
+  },
+} satisfies Record<string, { origin: LngLat; destinations: LngLat[] }>;
+
 const baseUrl = process.env.OSRM_BASE_URL ?? "https://router.project-osrm.org";
 const dir = "tests/fixtures/osrm";
 
@@ -71,6 +87,23 @@ async function main() {
       );
     }
     await new Promise((resolve) => setTimeout(resolve, 1_500)); // stay well under the demo limit
+  }
+  for (const [name, input] of Object.entries(TABLE_FIXTURES)) {
+    if (only.length > 0 && !only.includes(name)) continue;
+    const url = buildOsrmTableUrl(baseUrl, { ...input, profile: "car" });
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    const body: unknown = await res.json();
+    const cells = parseOsrmTableResponse(body, input.destinations.length, "car");
+    await writeFile(`${dir}/${name}.json`, JSON.stringify(body));
+    console.log(name);
+    for (const c of cells) {
+      console.log(
+        c
+          ? `  ${(c.distanceM / 1000).toFixed(1)} km, ${(c.durationS / 60).toFixed(0)} min`
+          : "  no road",
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
   }
 }
 

@@ -2,8 +2,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JsonCache } from "@/server/db/cache";
 import { geocodeCacheKey, withGeocodeCache } from "@/server/providers/geocoding/cached";
 import { createThrottle } from "@/server/providers/http";
-import { routeCacheKey, withRouteCache } from "@/server/providers/routing/cached";
-import type { RouteInput, RoutingProvider } from "@/server/providers/routing";
+import {
+  routeCacheKey,
+  tableCacheKey,
+  withRouteCache,
+  withTableCache,
+} from "@/server/providers/routing/cached";
+import type {
+  RouteInput,
+  RoutingProvider,
+  RoutingTableProvider,
+  TableInput,
+} from "@/server/providers/routing";
 import { routeFixture } from "../helpers/fixtures";
 
 function mapCache(): JsonCache & { store: Map<string, unknown> } {
@@ -46,6 +56,37 @@ describe("route cache", () => {
     expect(await cached.route(input)).toEqual(routes);
     expect(await cached.route(input)).toEqual(routes);
     expect(inner.route).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("table cache", () => {
+  const table: TableInput = {
+    origin: [75.785, 12.943],
+    destinations: [
+      [75.7581, 12.9173],
+      [76.0996, 13.0068],
+    ],
+    profile: "bike",
+  };
+
+  it("keys on the origin at 3 decimals, the destinations and the profile", () => {
+    expect(tableCacheKey({ ...table, origin: [75.7851, 12.9432] })).toBe(tableCacheKey(table));
+    expect(tableCacheKey({ ...table, origin: [75.79, 12.943] })).not.toBe(tableCacheKey(table));
+    expect(tableCacheKey({ ...table, destinations: table.destinations.slice(1) })).not.toBe(
+      tableCacheKey(table),
+    );
+    expect(tableCacheKey({ ...table, profile: "car" })).not.toBe(tableCacheKey(table));
+    expect(tableCacheKey(table)).toMatch(/^table:v1:/);
+  });
+
+  it("calls the provider once and serves repeats from the cache", async () => {
+    const cells = [{ distanceM: 5000, durationS: 400 }, null];
+    const inner: RoutingTableProvider = { table: vi.fn(async () => cells) };
+    const cached = withTableCache(inner, mapCache());
+
+    expect(await cached.table(table)).toEqual(cells);
+    expect(await cached.table(table)).toEqual(cells);
+    expect(inner.table).toHaveBeenCalledTimes(1);
   });
 });
 

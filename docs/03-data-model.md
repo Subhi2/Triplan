@@ -230,6 +230,7 @@ Also add:
 - A trigger that sets `updated_at`.
 - RLS policies as described in `02-architecture.md`.
 - The `places_along_route` function from `02-architecture.md`.
+- `places_near_point(origin_lng, origin_lat, radius_m, categories text[] = NULL, lim = 400)` (migration 0012), for the Near me screen. Verified places within `radius_m` (straight line) of the point, with the same columns as `places_along_route` except `distance_m` and `priority` in place of `km_from_start` and `detour_m`. `priority` is the category weight, +1 when curated (not OSM only) and +0.5 with a Wikidata link. Results are ordered by priority, then rating, then distance, and capped at `lim` (at most 1000). `categories` NULL means every category except towns. Inputs are named `origin_*` because the returned `lng`/`lat` columns are OUT parameters.
 
 ## API response types (TypeScript)
 
@@ -266,6 +267,26 @@ interface PlaceAlong {
   bestMonths: number[];
   thumbUrl: string | null;
   trending: boolean;
+}
+
+// GET /api/places/near (the Near me screen)
+interface PlaceNear {
+  id: string; slug: string; name: string; category: string;
+  location: LngLat;
+  distanceKm: number;          // straight line from the origin
+  roadKm: number | null;       // OSRM; null when road times are unavailable
+  rideMin: number | null;
+  bearingDeg: number;          // from the origin, 0–360 clockwise from north
+  rating: number | null; ratingCount: number;
+  bestMonths: number[]; thumbUrl: string | null;
+  trending: boolean; notable: boolean;
+  fame: number;                // priority + rating / 5 + 0.3 if trending
+}
+
+interface NearbyResponse {
+  places: PlaceNear[];
+  roadTimes: "osrm" | "straight";   // "straight": OSRM failed, a straight-line guess
+  radiusKm: number;
 }
 
 // Route-specific fields (km, detour) come from the places list, so PlaceDetail does not have them.

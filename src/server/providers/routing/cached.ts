@@ -1,7 +1,14 @@
-import { round5 } from "@/lib/geo";
+import { round3, round5 } from "@/lib/geo";
 import type { JsonCache } from "../../db/cache";
 import { hashKey } from "../cacheKey";
-import type { RouteInput, RouteResult, RoutingProvider } from "./types";
+import type {
+  RouteInput,
+  RouteResult,
+  RoutingProvider,
+  RoutingTableProvider,
+  TableCell,
+  TableInput,
+} from "./types";
 
 /**
  * Cache key: waypoints rounded to 5 decimals, profile and alternatives. The version changes when
@@ -24,6 +31,35 @@ export function withRouteCache(inner: RoutingProvider, cache: JsonCache): Routin
       const routes = await inner.route(input);
       await cache.set(key, routes);
       return routes;
+    },
+  };
+}
+
+/**
+ * Cache key for road times from a point: the origin at 3 decimals (the precision the app keeps of
+ * a user's position), the destinations at 5, and the profile. Kept in route_cache (7 days) under
+ * "table:" keys, which route lookups (getRouteGeometry, "route:v2:") never read.
+ */
+export function tableCacheKey(input: TableInput): string {
+  return hashKey("table:v1", {
+    o: [round3(input.origin[0]), round3(input.origin[1])],
+    d: input.destinations.map(([lng, lat]) => [round5(lng), round5(lat)]),
+    p: input.profile,
+  });
+}
+
+export function withTableCache(
+  inner: RoutingTableProvider,
+  cache: JsonCache,
+): RoutingTableProvider {
+  return {
+    async table(input) {
+      const key = tableCacheKey(input);
+      const hit = (await cache.get(key)) as (TableCell | null)[] | undefined;
+      if (hit) return hit;
+      const cells = await inner.table(input);
+      await cache.set(key, cells);
+      return cells;
     },
   };
 }
