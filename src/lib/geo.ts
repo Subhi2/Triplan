@@ -52,6 +52,19 @@ export function round5(n: number): number {
 }
 
 /**
+ * Rounds to 3 decimals (~100 m), the precision kept for the user's own position: enough to find
+ * places around them, not enough to pinpoint a home. Used before a position reaches any URL,
+ * request or stop.
+ */
+export function round3(n: number): number {
+  return Math.round(n * 1e3) / 1e3;
+}
+
+export function roundLngLat3([lng, lat]: LngLat): LngLat {
+  return [round3(lng), round3(lat)];
+}
+
+/**
  * Distance in metres along a line to the point on it nearest to `point`. Each segment is treated
  * as straight in a local flat projection, which is accurate enough for route geometry.
  */
