@@ -38,3 +38,13 @@ export function bestTimeSummary(bestMonths: number[]): string {
   const ranges = formatMonthRanges(bestMonths);
   return ranges ? `Best ${ranges}` : "Best time not known yet";
 }
+
+/** Whether this month is one of a place's best months (1–12). */
+export function isInSeason(bestMonths: number[], month: number): boolean {
+  return bestMonths.includes(month);
+}
+
+/** The month (1–12) in a time zone, e.g. "Asia/Kolkata" on the server. */
+export function monthIn(timeZone: string, date: Date = new Date()): number {
+  return Number(new Intl.DateTimeFormat("en-IN", { month: "numeric", timeZone }).format(date));
+}

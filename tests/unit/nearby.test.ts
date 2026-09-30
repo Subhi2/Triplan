@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   formatRideShort,
+  IN_SEASON_BOOST,
+  nearbyRank,
   nearbyQuerySchema,
   parseNearbyUrl,
   pickCandidates,
@@ -157,5 +159,13 @@ describe("rideThereHref", () => {
     expect(trip.to).toEqual({ label: "Manjarabad Fort", location: [75.7581, 12.9173] });
     expect(trip.vehicle).toBe("car");
     expect(decodeURIComponent(href)).not.toMatch(/75\.7851/);
+  });
+});
+
+describe("nearbyRank", () => {
+  it("lifts places at their best this month", () => {
+    const fort = { fame: 2, bestMonths: [9, 10, 11] };
+    expect(nearbyRank(fort, 10)).toBe(2 + IN_SEASON_BOOST);
+    expect(nearbyRank(fort, 5)).toBe(2);
   });
 });

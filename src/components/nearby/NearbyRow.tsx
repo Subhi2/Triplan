@@ -4,13 +4,15 @@ import { categoryStyle } from "@/lib/categories";
 import { formatDuration, formatKm } from "@/lib/format";
 import { googleEnabled } from "@/lib/google";
 import { placeGoogleMapsHref } from "@/lib/googleMaps";
-import { bestTimeSummary } from "@/lib/months";
+import { bestTimeSummary, isInSeason } from "@/lib/months";
 import { formatRideShort, type PlaceNear } from "@/lib/nearby";
 import type { Vehicle } from "@/lib/trip";
 
 interface Props {
   place: PlaceNear;
   vehicle: Vehicle;
+  /** This month (1–12), for the "In season" badge. */
+  month: number;
   /** Position in the list, to stagger the rows as they appear. */
   index: number;
   active: boolean;
@@ -35,6 +37,7 @@ export function NearbyRow(props: Props) {
   const cat = categoryStyle(place.category);
   const time = place.rideMin !== null ? formatRideShort(place.rideMin) : null;
   const verb = vehicle === "bike" ? "ride" : "drive";
+  const inSeason = isInSeason(place.bestMonths, props.month);
   const distance =
     place.roadKm !== null
       ? `${formatKm(place.roadKm * 1000)} by road`
@@ -48,6 +51,7 @@ export function NearbyRow(props: Props) {
       data-category={cat.name}
       data-ride-min={place.rideMin !== null ? Math.round(place.rideMin) : undefined}
       data-km={(place.roadKm ?? place.distanceKm).toFixed(1)}
+      data-in-season={inSeason || undefined}
       className={`animate-rise flex items-stretch border-b border-stone-200/70 last:border-b-0 dark:border-stone-800 ${
         active
           ? "bg-brand-tint dark:bg-teal-950/60"
@@ -92,6 +96,11 @@ export function NearbyRow(props: Props) {
               <span>{cat.name}</span>
               <span aria-hidden>·</span>
               <span className="tabular font-mono text-xs">{distance}</span>
+              {inSeason && (
+                <span className="bg-brand-tint text-brand-dark rounded-full px-2 text-xs font-bold dark:bg-teal-950 dark:text-teal-200">
+                  In season
+                </span>
+              )}
               {place.trending && (
                 <span className="text-ghat-dark rounded-full bg-orange-100 px-2 text-xs font-bold dark:bg-orange-950 dark:text-orange-300">
                   Trending

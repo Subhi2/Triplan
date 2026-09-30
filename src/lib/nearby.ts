@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CATEGORIES, isCategorySlug } from "./categories";
+import { isInSeason } from "./months";
 import { round3, roundLngLat3, type LngLat } from "./geo";
 import { DEFAULT_CORRIDOR_KM, VEHICLES, type Vehicle } from "./trip";
 import { decodeStop, serializeTripUrl, type UrlStop } from "./tripUrl";
@@ -115,9 +116,12 @@ export function fameScore(p: {
   return p.priority + (p.rating ?? 0) / 5 + (p.trending ? 0.3 : 0);
 }
 
-/** Ranking for the Near me list and the places sent for road times. */
-export function nearbyRank(p: Pick<PlaceNear, "fame">): number {
-  return p.fame;
+/** A place at its best this month ranks a little higher ("In season"). */
+export const IN_SEASON_BOOST = 0.3;
+
+/** Ranking for the Near me list and the places sent for road times. `month` is 1–12. */
+export function nearbyRank(p: Pick<PlaceNear, "fame" | "bestMonths">, month: number): number {
+  return p.fame + (isInSeason(p.bestMonths, month) ? IN_SEASON_BOOST : 0);
 }
 
 /**
@@ -159,7 +163,7 @@ export const NEARBY_TOP = 20;
  */
 export function topNearby<T extends Pick<PlaceNear, "fame" | "rideMin" | "distanceKm">>(
   places: T[],
-  rank: (p: T) => number = nearbyRank,
+  rank: (p: T) => number = (p) => p.fame,
 ): T[] {
   return [...places]
     .sort((a, b) => rank(b) - rank(a) || a.distanceKm - b.distanceKm)

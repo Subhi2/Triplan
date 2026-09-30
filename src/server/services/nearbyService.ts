@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { PLACE_LIST_CATEGORIES } from "@/lib/categories";
 import { bearingDeg, type LngLat } from "@/lib/geo";
+import { monthIn } from "@/lib/months";
 import {
   fameScore,
   nearbyRank,
@@ -93,6 +94,8 @@ const RIDE_LIMIT = 150;
 export interface NearbyDeps {
   placesNear: typeof placesNearDb;
   table: RoutingTableProvider;
+  /** This month (1–12), for the in-season boost; India time by default. */
+  month?: number;
 }
 
 function defaultDeps(): NearbyDeps {
@@ -133,6 +136,8 @@ export async function findNearby(
 ): Promise<NearbyResponse> {
   const origin: LngLat = [q.lng, q.lat];
   const categories = q.categories ?? PLACE_LIST_CATEGORIES;
+  const month = deps.month ?? monthIn("Asia/Kolkata");
+  const rank = (p: PlaceNear) => nearbyRank(p, month);
 
   if (q.mode === "ride") {
     const rows = await deps.placesNear(origin, RIDE_RADIUS_M, categories, DB_LIMIT);
@@ -146,7 +151,7 @@ export async function findNearby(
   const radiusM = reachRadiusM(q.within, q.vehicle);
   const rows = await deps.placesNear(origin, radiusM, categories, DB_LIMIT);
   const all = rows.map((r) => toPlaceNear(origin, r));
-  const candidates = pickCandidates(all, radiusM / 1000, nearbyRank, MAX_TABLE_DESTINATIONS);
+  const candidates = pickCandidates(all, radiusM / 1000, rank, MAX_TABLE_DESTINATIONS);
 
   try {
     const cells = await deps.table.table({
@@ -166,7 +171,7 @@ export async function findNearby(
     console.warn("Nearby road times unavailable:", err instanceof Error ? err.message : "error");
     const cutKm = straightReachKm(q.within, q.vehicle);
     const within = all.filter((p) => p.distanceKm <= cutKm);
-    const places = pickCandidates(within, cutKm, nearbyRank, MAX_TABLE_DESTINATIONS).sort(
+    const places = pickCandidates(within, cutKm, rank, MAX_TABLE_DESTINATIONS).sort(
       (a, b) => a.distanceKm - b.distanceKm,
     );
     return { places, roadTimes: "straight", radiusKm: cutKm };

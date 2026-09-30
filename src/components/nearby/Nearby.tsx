@@ -14,6 +14,7 @@ import { roundLngLat3, type LngLat } from "@/lib/geo";
 import {
   MY_LOCATION,
   NEARBY_TOP,
+  nearbyRank,
   parseNearbyUrl,
   rideThereHref,
   serializeNearbyUrl,
@@ -85,7 +86,9 @@ export function Nearby() {
     for (const p of all) counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
     return [...counts].sort(([a], [b]) => a.localeCompare(b));
   }, [all, categories]);
-  const top = useMemo(() => topNearby(all), [all]);
+  // This month in the rider's own time, as the place details' month chart.
+  const [month] = useState(() => new Date().getMonth() + 1);
+  const top = useMemo(() => topNearby(all, (p) => nearbyRank(p, month)), [all, month]);
   const places = useMemo(() => {
     if (categories.length > 0) return all.filter((p) => categories.includes(p.category));
     return showAll ? all : top;
@@ -258,6 +261,7 @@ export function Nearby() {
               <NearbyList
                 places={places}
                 vehicle={vehicle}
+                month={month}
                 activeId={activeId}
                 hoverId={hoverId}
                 onSelect={(id) => {

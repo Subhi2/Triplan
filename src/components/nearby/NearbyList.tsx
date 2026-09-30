@@ -67,13 +67,15 @@ export function NearbyFilters({ counts, topCount, selected, onSelectedChange }: 
 interface ListProps {
   places: PlaceNear[]; // already filtered, nearest first
   vehicle: Vehicle;
+  month: number;
   activeId: string | null;
   hoverId: string | null;
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
 }
 
-export function NearbyList({ places, vehicle, activeId, hoverId, onSelect, onHover }: ListProps) {
+export function NearbyList(props: ListProps) {
+  const { places, vehicle, month, activeId, hoverId, onSelect, onHover } = props;
   // Bring the active place into view, e.g. after its marker was tapped on the map.
   useEffect(() => {
     if (activeId) {
@@ -90,6 +92,7 @@ export function NearbyList({ places, vehicle, activeId, hoverId, onSelect, onHov
           key={p.id}
           place={p}
           vehicle={vehicle}
+          month={month}
           index={i}
           active={p.id === activeId}
           highlighted={p.id === hoverId}

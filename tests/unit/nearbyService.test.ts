@@ -83,6 +83,18 @@ describe("findNearby", () => {
     warn.mockRestore();
   });
 
+  it("sends places in season this month for road times first", async () => {
+    // 150 equal places; only p149 is at its best in October.
+    const rows = Array.from({ length: 150 }, (_, i) => ({
+      ...row(`p${i}`, 10),
+      bestMonths: i === 149 ? [10] : [],
+    }));
+    const d = { ...deps(rows, (dest) => dest.map(() => null)), month: 10 };
+    await findNearby(query({ within: "60", vehicle: "car" }), d);
+    const sent = vi.mocked(d.table.table).mock.calls[0]![0].destinations;
+    expect(sent[0]).toEqual(rows[149]!.location);
+  });
+
   it("never asks OSRM in ride mode", async () => {
     const d = deps([row("a", 10)], () => []);
     const res = await findNearby(query({ mode: "ride" }), d);
