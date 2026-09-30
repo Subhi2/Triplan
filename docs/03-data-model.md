@@ -269,6 +269,26 @@ interface PlaceAlong {
   trending: boolean;
 }
 
+// GET /api/places/near (the Near me screen)
+interface PlaceNear {
+  id: string; slug: string; name: string; category: string;
+  location: LngLat;
+  distanceKm: number;          // straight line from the origin
+  roadKm: number | null;       // OSRM; null when road times are unavailable
+  rideMin: number | null;
+  bearingDeg: number;          // from the origin, 0–360 clockwise from north
+  rating: number | null; ratingCount: number;
+  bestMonths: number[]; thumbUrl: string | null;
+  trending: boolean; notable: boolean;
+  fame: number;                // priority + rating / 5 + 0.3 if trending
+}
+
+interface NearbyResponse {
+  places: PlaceNear[];
+  roadTimes: "osrm" | "straight";   // "straight": OSRM failed, a straight-line guess
+  radiusKm: number;
+}
+
 // Route-specific fields (km, detour) come from the places list, so PlaceDetail does not have them.
 interface PlaceDetail {
   id: string;

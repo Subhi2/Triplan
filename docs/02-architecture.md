@@ -24,6 +24,7 @@ Next.js route handlers (src/app/api/*)  ──►  src/server/services/*
 src/
   app/
     page.tsx                    # trip planner
+    nearby/page.tsx             # Near me: well-known places within reach of a point
     place/[slug]/page.tsx       # place page (ISR, 1 hour)
     trips/page.tsx              # everyone's saved trips
     trips/[id]/page.tsx         # the planner opened with a saved trip (its share link)
@@ -35,6 +36,7 @@ src/
       geocode/route.ts          # GET ?q=
       route/route.ts            # POST trip -> routes
       places/along/route.ts     # POST {routeId | geometry, corridorKm, categories}
+      places/near/route.ts      # GET ?lng&lat&within&vehicle&categories&mode -> NearbyResponse
       places/[slug]/route.ts    # GET -> PlaceDetail
       trips/route.ts            # GET list, POST save
       trips/[id]/route.ts       # GET, PATCH {title?, plan?}
@@ -58,6 +60,7 @@ src/
     services/
       routeService.ts
       corridorService.ts
+      nearbyService.ts          # places_near_point + OSRM table (Near me)
       placeService.ts
       discoveryService.ts
   jobs/
@@ -154,6 +157,20 @@ LIMIT 500;
 Put this in a Postgres function `places_along_route(geojson text, corridor_m int, categories text[])` so the API calls one RPC.
 
 As built (migrations `0004`–`0006`): the route line is parsed and simplified once (materialized CTEs), km and detour are measured on the simplified line too (fast with tens of thousands of imported places; detour is approximate anyway), and when more than 1000 places fall in the corridor the function keeps the most worthwhile ones (curated first, then Wikidata-linked, by category weight, nearest the route) before ordering by km, so long trips are never cut off before the destination. Towns are excluded unless requested by category. The places API leaves fuel stations out of the list by default (`PLACE_LIST_CATEGORIES` in `src/lib/categories.ts`; they are still imported for the planned fuel-range planner). The app then shows the "best stops" by default (`bestAlongRoute` in `src/lib/places.ts`: up to 5 places per 10 km); picking a category shows all of it.
+
+## Nearby search (Near me)
+
+The `/nearby` screen lists well-known places the rider can reach from one point (their position, a typed place or a point tapped on the map) within 30 min, 1 h, 2 h or half a day, measured on the road. Straight-line radius is misleading in the ghats, where a place 20 km across a valley can be 60 km by road.
+
+1. **Candidates** (`places_near_point`, migration 0012): verified places within a generous straight-line radius (the time at 60 km/h, bikes 10 % slower, at most 250 km), most worthwhile first. Priority is the same as for the corridor: category weight, +1 when curated, +0.5 with a Wikidata link. At most 400 rows.
+2. **Fame**: `priority + rating / 5 + 0.3 if trending` (`fameScore` in `src/lib/nearby.ts`). Google ratings are never used: they may not be stored.
+3. **Road times**: `pickCandidates` keeps the best 99 spread over four distance rings (so a half-day search does not spend every slot at the edge), and **one** OSRM `table` request (`/table/v1/driving/{origin;d1;...}?sources=0&annotations=duration,distance`) gives road km and time to each. The public server allows 100 coordinates per table request, origin included. The request shares the 1 request/s throttle with routing and has a 6 s timeout (the service worker falls back to its cache for `/api/*` after 10 s). Places over the time, or with no road, are dropped; the rest are ordered by ride time.
+4. **Fallback**: if OSRM fails, places within a straight-line guess (35 km/h) are shown by distance, and the response says `roadTimes: "straight"` so the screen can say so.
+5. **Ride mode** (`mode=ride`, "Ahead of you"): everything worthwhile within 35 km, straight line, no OSRM. The phone filters to a cone around the heading as the rider moves and asks again at most every 2 km and 60 s.
+
+Caching: table answers go in `route_cache` for 7 days under `table:v1:` keys (origin at 3 decimals, destinations, profile).
+
+Privacy: the position is only ever taken on a tap (never on page load) and is rounded to 3 decimals (~100 m) before it reaches a URL, a request, a cache key or a trip stop. `/api/places/near` answers `Cache-Control: private, no-store`, stores nothing, and logs only error messages, never the request or the position. Saved trips are public (`/trips`), which is why "My location" as a trip start is rounded too.
 
 ## Place detail and "Add to trip"
 
@@ -271,7 +288,7 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 
 ## Caching
 
-- Route responses: DB cache, 7 days.
+- Route responses: DB cache, 7 days. OSRM table answers (Near me) share the table under `table:v1:` keys.
 - Geocoding: DB cache (`geocode_cache`), 30 days, keyed by provider, query and the map bias rounded to a 0.5° grid. Throttle Nominatim to 1 req/s with a queue; Photon requests are debounced 300 ms in the browser and spaced 200 ms apart on the server.
 - Places along route: no cache needed at MVP scale; add one keyed on (route hash, corridor, categories) if needed.
 - Next.js: place detail pages are statically generated with revalidation (ISR, 1 hour).
@@ -291,7 +308,7 @@ Vercel (Hobby, free, non-commercial) runs the app; the database stays on Supabas
 - `vercel.json` pins serverless functions to Mumbai (`bom1`), next to the database, and runs a daily cron on `/api/health`. The health check queries the database, which keeps the free Supabase project from pausing (it pauses after 7 days without activity), and clears old write-limit counters.
 - `DATABASE_URL` on Vercel is Supabase's **transaction pooler** (port 6543), not the session pooler used in development: serverless instances come and go, and the session pooler allows only 15 connections for the whole project. Queries already run with `prepare: false`, which the transaction pooler needs.
 - Required settings: `DATABASE_URL` and `NOMINATIM_USER_AGENT`; the routing and geocoding URLs have defaults. `WRITE_LIMIT_SALT` is optional. The Google keys are optional: without them the app runs as before on MapLibre with no Google content.
-- `/api/route` may run up to 60 s (`maxDuration`): up to four OSRM requests, spaced 1 s apart.
+- `/api/route` may run up to 60 s (`maxDuration`): up to four OSRM requests, spaced 1 s apart. `/api/places/near` may run 30 s (one OSRM table request after a database query).
 - Saving and renaming trips is limited to 30 per visitor per hour (`writeLimit.ts`), counted in the `write_limit` table under a salted hash of the IP address.
 - Moving to Vercel Pro or Cloudflare Workers Paid is needed before commercial use (see the comparison of 2026-09-29: Cloudflare's free plan allows 10 ms of CPU per request, and a route search needs 15-20 ms).
 

@@ -2,7 +2,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { LngLat } from "@/lib/geo";
 import { haversineM } from "@/lib/geo";
 import { closeDb } from "@/server/db";
-import { placesNearDb } from "@/server/services/nearbyService";
+import { nearbyQuerySchema } from "@/lib/nearby";
+import { findNearby, placesNearDb } from "@/server/services/nearbyService";
 
 // Read-only: the integration DB is the live one (.env.local).
 const SAKLESHPUR: LngLat = [75.785, 12.943];
@@ -53,5 +54,23 @@ describe.skipIf(!process.env.DATABASE_URL)("places near a point", () => {
       (p) => p.slug === "manjarabad-fort",
     );
     expect(fort?.bestMonths.length).toBeGreaterThan(0);
+  });
+
+  it("finds Manjarabad Fort within 30 min of Sakleshpur by road (road times faked)", async () => {
+    const q = nearbyQuerySchema.parse({ lng: "75.785", lat: "12.943", within: "30" });
+    const res = await findNearby(q, {
+      placesNear: placesNearDb,
+      // 1.3 × the straight line at 40 km/h.
+      table: {
+        table: async ({ origin, destinations }) =>
+          destinations.map((d) => {
+            const m = haversineM(origin, d) * 1.3;
+            return { distanceM: m, durationS: m / (40 / 3.6) };
+          }),
+      },
+    });
+    expect(res.roadTimes).toBe("osrm");
+    expect(res.places.map((p) => p.slug)).toContain("manjarabad-fort");
+    expect(res.places.every((p) => p.rideMin !== null && p.rideMin <= 30)).toBe(true);
   });
 });
