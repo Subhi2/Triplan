@@ -22,6 +22,8 @@ interface Props {
   resolved: boolean;
   near: MapBias;
   autoFocus?: boolean;
+  /** A button inside the field's right edge (the start's "Use my location"). */
+  trailing?: React.ReactNode;
   onText: (text: string) => void;
   onPick: (result: GeocodeResult) => void;
 }
@@ -54,6 +56,7 @@ export function StopInput({
   resolved,
   near,
   autoFocus,
+  trailing,
   onText,
   onPick,
 }: Props) {
@@ -172,10 +175,11 @@ export function StopInput({
         onKeyDown={handleKeyDown}
         onFocus={() => results.length > 0 && setOpen(true)}
         onBlur={() => setOpen(false)}
-        className={`focus:ring-brand w-full rounded-xl border bg-stone-50 px-3 py-2.5 text-base text-stone-900 outline-none focus:bg-(--surface) focus:ring-2 md:py-2 dark:bg-stone-950 dark:text-stone-100 ${
+        className={`focus:ring-brand w-full rounded-xl border bg-stone-50 py-2.5 pl-3 text-base ${trailing ? "pr-12" : "pr-3"} text-stone-900 outline-none focus:bg-(--surface) focus:ring-2 md:py-2 dark:bg-stone-950 dark:text-stone-100 ${
           resolved ? "border-brand/50" : "border-stone-200 dark:border-stone-700"
         }`}
       />
+      {trailing && <div className="absolute inset-y-0 right-0 flex items-center">{trailing}</div>}
       {showPanel && (
         <div
           style={{ maxHeight: panelMaxPx }}

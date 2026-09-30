@@ -231,6 +231,9 @@ export function serializeNearbyUrl(state: NearbyUrlState): string {
   return params.toString();
 }
 
+/** A trip stop at the rider's own position (kept to ~100 m), from "Use my location". */
+export const MY_LOCATION = "My location";
+
 /**
  * "Ride there": the planner from the point searched around to a place, so the places along that
  * road take over. The start is kept to 3 decimals: planner links and saved trips are shareable.

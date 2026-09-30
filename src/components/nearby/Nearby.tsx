@@ -12,6 +12,7 @@ import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/Bottom
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { roundLngLat3, type LngLat } from "@/lib/geo";
 import {
+  MY_LOCATION,
   NEARBY_TOP,
   parseNearbyUrl,
   rideThereHref,
@@ -166,7 +167,10 @@ export function Nearby() {
         origin && (
           <Link
             href={rideThereHref(
-              { label: originName ?? "Start", location: origin.location },
+              {
+                label: source === "gps" ? MY_LOCATION : (originName ?? "Start"),
+                location: origin.location,
+              },
               openPlace,
               vehicle,
             )}
