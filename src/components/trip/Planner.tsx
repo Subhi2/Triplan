@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapStop } from "@/components/map/types";
-import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
@@ -19,7 +17,7 @@ import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture } from "@/lib/rideCheck";
-import { SITE_NAME, SITE_TAGLINE, tripHeadline } from "@/lib/site";
+import { tripHeadline } from "@/lib/site";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
@@ -32,6 +30,7 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
+import { PlannerHeader } from "./PlannerHeader";
 import { RideCheck } from "./RideCheck";
 import { RoadStrip } from "./RoadStrip";
 import { RouteCards } from "./RouteCards";
@@ -595,56 +594,15 @@ export function Planner({ savedTrip = null }: Props) {
             : "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none lg:w-[24rem] dark:md:border-stone-800"
         } ${typing ? "z-30" : "z-10"}`}
       >
-        <header className="flex items-center justify-between gap-2">
-          {/* Phones with a trip: one row, the trip itself in place of the app's name. */}
-          {compactHeader ? (
-            <div className="min-w-0">
-              <h1 className="sr-only">{SITE_NAME}</h1>
-              <p className="font-display truncate text-[17px] font-bold">
-                {first?.label} → {last?.label}
-              </p>
-              <p className="text-xs text-stone-600 dark:text-stone-400">
-                {vehicle === "bike" ? "Bike" : "Car"} · within {corridorKm} km
-                {stops.length > 2 &&
-                  ` · ${stops.length - 2} stop${stops.length > 3 ? "s" : ""} on the way`}
-              </p>
-            </div>
-          ) : (
-            <div className="min-w-0">
-              <h1 className="font-display text-2xl leading-none font-extrabold tracking-tight md:text-3xl">
-                {SITE_NAME}
-              </h1>
-              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{SITE_TAGLINE}</p>
-            </div>
-          )}
-          <div className="flex shrink-0 items-center gap-1">
-            <Link
-              href={`/nearby?v=${vehicle}`}
-              aria-label={compactHeader ? "Near me" : undefined}
-              title="Well-known places near you"
-              className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-sm font-bold hover:underline dark:text-teal-300"
-            >
-              <CrosshairIcon size={18} />
-              {!compactHeader && "Near me"}
-            </Link>
-            <Link
-              href="/trips"
-              className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
-            >
-              {compactHeader ? "Trips" : "Saved trips"}
-            </Link>
-            {!isDesktop && hasTrip && (
-              <button
-                type="button"
-                aria-expanded={showForm}
-                onClick={toggleForm}
-                className="min-h-11 rounded-xl bg-stone-100 px-4 text-sm font-bold dark:bg-stone-800"
-              >
-                {showForm ? "Done" : "Edit trip"}
-              </button>
-            )}
-          </div>
-        </header>
+        <PlannerHeader
+          compact={compactHeader}
+          fromLabel={first?.label ?? ""}
+          toLabel={last?.label ?? ""}
+          vehicle={vehicle}
+          corridorKm={corridorKm}
+          viaCount={stops.length - 2}
+          formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
+        />
 
         {showForm ? (
           <div
