@@ -112,6 +112,18 @@ export interface RouteResult {
 
 A hairpin is a stretch of at most 125 m that turns 150° or more, leaves heading the other way (the headings 50 m before and after differ by 150° or more) and turns no more than 240° in all: roundabouts leave in the direction they came and loop ramps turn too far. Hairpins within 100 m are one; the first and last 300 m and 300 m around each stop are skipped, because the router may turn round there. Calibrated on Pollachi → Valparai (40 numbered hairpins above Aliyar; we find 40) and the Kottigehara–Kalasa and Gudalur–Ooty ghats. The public OSRM server does not route the Kalhatti ghat (Masinagudi–Ooty) in either direction, so it is neither a fixture nor a famous ride.
 
+### Elevation profile
+
+`POST /api/route/profile { routeId | geometry }` → `{ profile }` (`src/server/services/elevationService.ts`, pure parts in `src/lib/elevation.ts`). Loaded after the route cards show, like places, so routing never waits for it.
+
+- **Heights**: `ElevationProvider` (`src/server/providers/elevation/`) reads AWS Terrain Tiles: global Terrarium PNGs (height = R·256 + G + B/256 − 32768), SRTM for India, open data, no key, CORS open for the browser. Credit: "AWS Terrain Tiles (Mapzen) · SRTM, GMTED2010 courtesy of USGS · ETOPO1 NOAA" (`TERRAIN_ATTRIBUTION`). Mapterhorn was considered and does not cover India. The URL template is `NEXT_PUBLIC_TERRAIN_TILES_URL`, shared with the 3D preview; every use goes through `src/lib/terrain.ts`.
+- **Sampling**: a point every 100 m; zoom 12 (about 37 m a pixel, close to SRTM's own resolution), coarser when a route would need more than 160 tiles (a 1,000 km route needs about 130). Tiles are decoded with `fast-png` (pure JS, no native code on Vercel), six fetched at a time, 64 decoded tiles kept per server instance; heights are bilinear between pixel centres.
+- **Cleaning**: gaps filled by straight lines (more than 10% missing and there is no profile), a median of 5 for bridge and valley spikes, then heights are kept under a 12% slope from either side, because the tiles show the hill above a tunnel (Katraj on NH48 is only partly flattened: the profile can still show a bump over a long tunnel), then a mean of 3. Ascent and descent ignore wiggles under 10 m.
+- **Climbs**: runs of road whose gradient over the surrounding km is 2% or more, carried over flat gaps up to 1 km that lose at most 40 m, measured from their lowest to highest point; kept at 200 m or more at an average of 3% or more. Descents are climbs read backwards. Each is named after the town (from `townsAlong`) nearest its top within 15 km. Checked on real routes: Aliyar–Valparai 853 m at 5.3%, Gudalur–Naduvattam 1,096 m at 5.3%, Khambatki 237 m, the Amboli descent 659 m.
+- **Output**: about 300 points (`[km, m]`, downsampled with Largest-Triangle-Three-Buckets so peaks survive), ascent, descent, highest and lowest points, climbs; about 5 KB. Cached in `route_cache` under `elev:v1:<route id>` (or a hash of the geometry) for 7 days.
+
+The public OSRM server reports no road classes (tunnels, tolls), so tunnels cannot be taken from the route.
+
 ### Suggesting "via" towns
 
 To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the largest towns (OSM `place=town|city`) within 2 km of each route that are not within 2 km of the other routes. Show the top 1–2 as the card label. Store towns in `place` with category `town`, or a separate `settlement` table.
