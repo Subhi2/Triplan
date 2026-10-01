@@ -50,6 +50,7 @@ async function mockRouting(page: Page, trip: Trip) {
     viaLabel: trip.labels[i]!,
     towns: [],
     roadMix: null,
+    curvature: null,
   }));
   await page.route("**/api/route", (route) => route.fulfill({ json: { routes } }));
   await page.route("https://tiles.openfreemap.org/**", (route) =>

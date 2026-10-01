@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
+import { routeCurvature } from "@/lib/curvature";
 import type { PlaceDetail } from "@/lib/placeDetail";
 import type { PlaceAlong } from "@/lib/places";
 import type { SavedTrip } from "@/lib/savedTrip";
@@ -43,6 +44,7 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
     viaLabel: labels[i]!,
     towns: [],
     roadMix: roadMix(r),
+    curvature: routeCurvature(r.geometry),
   }));
 }
 
@@ -113,6 +115,8 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
 
   await expect(cards).toHaveCount(1);
   await expect(cards.nth(0)).toContainText("via Sakleshpur");
+  // The ghats to Kalasa: hairpins worked out from the road's shape.
+  await expect(cards.nth(0).locator("[data-hairpins]")).toContainText(/\d+ hairpins/);
   await expect(cards.nth(0)).toContainText("330.8 km");
   expect(routeRequests.at(-1)).toEqual({
     stops: [

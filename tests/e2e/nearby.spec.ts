@@ -122,6 +122,7 @@ async function mockApis(
         viaLabel: "",
         towns: [],
         roadMix: null,
+        curvature: null,
       }));
     return route.fulfill({ json: { routes } });
   });

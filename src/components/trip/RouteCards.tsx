@@ -1,5 +1,6 @@
 "use client";
 
+import type { RouteCurvature } from "@/lib/curvature";
 import { formatDuration, formatKm } from "@/lib/format";
 import type { RouteOption } from "@/lib/trip";
 import { RoadMixBar } from "./RoadMixBar";
@@ -44,11 +45,47 @@ export function RouteCards({ routes, selectedId, onSelect }: Props) {
                 <span className="tabular font-mono">{formatKm(r.distanceKm * 1000)}</span>
                 {r.towns.length > 0 && <> · {r.towns.join(" · ")}</>}
               </span>
+              {r.curvature && <TwistLine curvature={r.curvature} />}
               {r.roadMix && <RoadMixBar mix={r.roadMix} compact={!selected} />}
             </button>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/** "24 hairpins · 55 km twisty" under the towns; nothing on a road without real bends. */
+function TwistLine({ curvature }: { curvature: RouteCurvature }) {
+  const { hairpins, twistyKm, label } = curvature;
+  if (hairpins === 0 && twistyKm < 5) return null;
+  return (
+    <span
+      className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm"
+      data-hairpins={hairpins}
+      title={`${label}: bends worked out from the road's shape (approximate)`}
+    >
+      {hairpins > 0 && (
+        <span className="text-ghat-dark inline-flex items-center gap-1 font-bold dark:text-orange-300">
+          <HairpinIcon />
+          <span className="tabular font-mono">{hairpins}</span>{" "}
+          {hairpins === 1 ? "hairpin" : "hairpins"}
+        </span>
+      )}
+      {twistyKm >= 5 && (
+        <span className="text-stone-600 dark:text-stone-300">
+          {hairpins > 0 && <span aria-hidden>· </span>}
+          <span className="tabular font-mono">{formatKm(twistyKm * 1000)}</span> twisty
+        </span>
+      )}
+    </span>
+  );
+}
+
+function HairpinIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden fill="none" stroke="currentColor">
+      <path d="M4 15V6a4 4 0 0 1 8 0v9" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }

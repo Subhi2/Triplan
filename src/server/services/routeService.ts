@@ -1,4 +1,5 @@
 import type { LineString } from "geojson";
+import { routeCurvature } from "@/lib/curvature";
 import type { LngLat } from "@/lib/geo";
 import { ROUTE_ID_PATTERN } from "@/lib/places";
 import type { RouteOption, TripRequest } from "@/lib/trip";
@@ -164,5 +165,6 @@ export async function getRoutes(
     viaLabel: labels[i]!,
     towns: mainTowns(r.towns).map((t) => t.name),
     roadMix: roadMix(r.result),
+    curvature: routeCurvature(r.result.geometry, waypoints),
   }));
 }

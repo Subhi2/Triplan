@@ -106,6 +106,12 @@ export interface RouteResult {
 
 `src/server/services/roadMix.ts` splits each route's distance into national highway (NH/NE refs), state highway (SH refs), ghat and other roads; the parts do not overlap and add up to the route distance, with ghat sections counted as ghat whatever road they are on. OSM has no "ghat" tag, so ghats are found from the geometry: resampled every 25 m, a stretch that turns at least 300° per km (averaged over 2 km) for 2 km or more. This was calibrated on real routes (the Gudalur–Nilgiris climb to Ooty, Kottigehara–Samse, Khambatki and Amboli ghats) and is labelled approximate in the UI.
 
+### Hairpins and twistiness
+
+`src/lib/curvature.ts` (`RouteOption.curvature`, computed in `getRoutes`) follows the method roadcurvature.com describes, written as our own code. The route is resampled every 25 m; at each sample the circle through it and its neighbours gives the bend radius, R = s / (2·sin(θ/2)). Each 25 m is weighted by radius: over 175 m 0, 100–175 m 1, 60–100 m 1.3, 30–60 m 1.6, 30 m or less 2. The sum is the route's `curvatureM`; `twistyKm` is the road whose surrounding km reaches 450 weighted metres, labelled Straight (under 5 km), Some bends, Twisty (25 km or more) or Very twisty (60 km or more).
+
+A hairpin is a stretch of at most 125 m that turns 150° or more, leaves heading the other way (the headings 50 m before and after differ by 150° or more) and turns no more than 240° in all: roundabouts leave in the direction they came and loop ramps turn too far. Hairpins within 100 m are one; the first and last 300 m and 300 m around each stop are skipped, because the router may turn round there. Calibrated on Pollachi → Valparai (40 numbered hairpins above Aliyar; we find 40) and the Kottigehara–Kalasa and Gudalur–Ooty ghats. The public OSRM server does not route the Kalhatti ghat (Masinagudi–Ooty) in either direction, so it is neither a fixture nor a famous ride.
+
 ### Suggesting "via" towns
 
 To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the largest towns (OSM `place=town|city`) within 2 km of each route that are not within 2 km of the other routes. Show the top 1–2 as the card label. Store towns in `place` with category `town`, or a separate `settlement` table.

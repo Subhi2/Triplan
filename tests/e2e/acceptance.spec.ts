@@ -23,6 +23,7 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
     viaLabel: labels[i]!,
     towns: [],
     roadMix: null,
+    curvature: null,
   }));
 }
 

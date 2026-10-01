@@ -54,6 +54,9 @@ describe("getRoutes", () => {
     // Start and destination towns are not "via" towns.
     expect(routes[1]!.towns).toEqual(["Hassan", "Sakleshpur", "Mudigere"]);
     expect(routes[0]!.distanceKm).toBeCloseTo(337.6, 1);
+    // Both reach Kalasa through the hills: hairpins from the road's shape.
+    expect(routes[0]!.curvature!.hairpins).toBeGreaterThan(10);
+    expect(routes[1]!.curvature!.hairpins).toBeGreaterThan(10);
     // Ids point at the cached routing response: same hash, different index.
     expect(routes[0]!.id).toMatch(/^[0-9a-f]{32}-0$/);
     expect(routes[1]!.id).toBe(routes[0]!.id.replace(/-0$/, "-1"));
