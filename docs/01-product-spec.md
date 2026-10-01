@@ -70,7 +70,7 @@ Privacy: the position is taken only on a tap, rounded to about 100 m before it l
 ### Showcase (G3, added 2026-10-02)
 
 16. **Hairpins and twistiness** on each route card ("24 hairpins · 55 km twisty"), worked out from the road's shape.
-17. **Elevation profile** of the selected route: total climb and descent, the highest point, and each big climb ("climbs 900 m in 18 km near Kottigehara"). Scrubbing the chart moves a marker along the route on the map.
+17. **Elevation profile** of the selected route: total climb and descent, the highest point, and each big climb ("climbs 853 m in 16 km to Valparai"). Scrubbing the chart moves a marker along the route on the map.
 18. **3D ride preview**: the camera rides the route over 3D terrain, slower through ghats, with km, height and the places as it passes them. It can be saved as a video for Instagram or WhatsApp.
 19. **Ride story**: a tall poster of the trip (route, km, time, climb, hairpins, top stops) shared from the phone's share sheet.
 20. **Famous rides** (`/rides`): about 20 well-known Indian rides, each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. The empty planner offers them as "Try a famous ride".
@@ -140,8 +140,8 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 
 ## Acceptance criteria for the showcase
 
-- Bengaluru → Kalasa via Sakleshpur shows 20–30 hairpins, all between Kottigehara and Kalasa; the NH75 stretch to Hassan shows none.
-- Its profile shows the climb near Kottigehara, and total climb within 25% of what a GPS track of the road gives.
+- Bengaluru → Kalasa via Sakleshpur shows 15–30 hairpins, all in the hills past Sakleshpur and most between Kottigehara and Kalasa; the NH75 stretch to Hassan shows none.
+- Its profile shows the descents into Kalasa; Pollachi → Valparai shows the climb above Aliyar (about 850 m at 5%) and its 40 hairpins.
 - The 3D preview opens without asking for anything, flies the whole route, keeps the map and terrain credits on screen (and in the saved video), and does not move on its own under reduced motion.
 - The story poster for a route opens as a 1080×1920 PNG and shares from a phone's share sheet.
 - `/rides` lists every famous ride; each page shows its route and opens it in the planner with the same stops.
