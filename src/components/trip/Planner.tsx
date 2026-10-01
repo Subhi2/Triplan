@@ -10,9 +10,11 @@ import { PlacePanel } from "@/components/place/PlacePanel";
 import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
+import { RouteProfile } from "@/components/route/RouteProfile";
+import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
-import type { LngLat } from "@/lib/geo";
+import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
@@ -187,6 +189,23 @@ export function Planner({ savedTrip = null }: Props) {
   const routes = routeState.status === "ok" ? routeState.routes : [];
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
   const placesState = usePlacesAlong(selectedRoute, corridorKm);
+  const profiles = useRouteProfiles(routes, selectedRouteId);
+  const climbM = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(profiles).flatMap(([id, p]) =>
+          p.status === "ok" ? [[id, p.profile.ascentM]] : [],
+        ),
+      ),
+    [profiles],
+  );
+  // The elevation chart's scrubber, for the selected route only.
+  const [scrub, setScrub] = useState<{ routeId: string; km: number } | null>(null);
+  const scrubKm = scrub && scrub.routeId === selectedRouteId ? scrub.km : null;
+  const mapCursor =
+    scrubKm !== null && selectedRoute
+      ? pointAtKm(selectedRoute.geometry.coordinates as LngLat[], scrubKm)
+      : null;
 
   // Category and detour filters apply in the browser; the list is already ordered by km.
   const allPlaces = useMemo(
@@ -460,10 +479,21 @@ export function Planner({ savedTrip = null }: Props) {
               routes={routes}
               selectedId={selectedRouteId}
               onSelect={setSelectedRouteId}
+              climbM={climbM}
             />
           </>
         )}
       </section>
+      {selectedRoute && (
+        <RouteProfile
+          key={selectedRoute.id}
+          state={profiles[selectedRoute.id]}
+          ghats={selectedRoute.roadMix?.ghats ?? []}
+          cursorKm={scrubKm}
+          onCursorChange={(km) => setScrub(km === null ? null : { routeId: selectedRoute.id, km })}
+          markKm={allPlaces.find((p) => p.id === (hoverPlaceId ?? activePlaceId))?.kmFromStart}
+        />
+      )}
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
       )}
@@ -649,6 +679,7 @@ export function Planner({ savedTrip = null }: Props) {
           onSelectPlace={selectPlaceFromMap}
           onHoverPlace={setHoverPlaceId}
           onViewChange={(center, zoom) => setMapBias({ center, zoom })}
+          cursor={mapCursor}
           bottomInset={sheetInset}
           topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
         />

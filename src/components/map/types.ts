@@ -49,6 +49,8 @@ export interface MapViewProps {
   frame?: MapFrame | null;
   /** A tap on the map away from any marker or route. */
   onMapClick?: (at: LngLat) => void;
+  /** A point on the route picked on the elevation chart. */
+  cursor?: LngLat | null;
 }
 
 /** Before a trip is chosen, frame India (places are imported for every state). */

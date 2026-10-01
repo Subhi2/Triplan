@@ -42,6 +42,8 @@ const TRIPS: Record<string, Trip> = {
 async function mockRouting(page: Page, trip: Trip) {
   // The weather comes from MET Norway; these tests never call it.
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
+  // No elevation profile, so tests never read the terrain tiles.
+  await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
   const routes: RouteOption[] = routeFixture(trip.fixture, "bike").map((r, i) => ({
     id: `${trip.fixture}-${i}`, // not a cache id, so the client sends the geometry
     geometry: r.geometry,

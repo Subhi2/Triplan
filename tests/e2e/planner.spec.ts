@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { routeCurvature } from "@/lib/curvature";
+import type { ElevationProfile } from "@/lib/elevation";
 import type { PlaceDetail } from "@/lib/placeDetail";
 import type { PlaceAlong } from "@/lib/places";
 import type { SavedTrip } from "@/lib/savedTrip";
@@ -35,6 +36,21 @@ const PLACES: GeocodeResult[] = [
   },
 ];
 
+/** A made-up profile: flat, a 900 m climb from km 280 to 298, then down into Kalasa. */
+const PROFILE: ElevationProfile = {
+  v: 1,
+  zoom: 12,
+  points: Array.from({ length: 34 }, (_, i): [number, number] => {
+    const km = i * 10;
+    return [km, km < 280 ? 900 : km < 300 ? 900 + (km - 280) * 45 : 1800 - (km - 300) * 30];
+  }),
+  ascentM: 1662,
+  descentM: 1761,
+  highest: { km: 300, m: 1800 },
+  lowest: { km: 0, m: 900 },
+  climbs: [{ fromKm: 280, toKm: 298, gainM: 900, gradePct: 5, dir: "up", near: "Kottigehara" }],
+};
+
 function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
   return routeFixture(fixture, "bike").map((r, i) => ({
     id: `${fixture}-${i}`,
@@ -65,6 +81,10 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
     return route.fulfill({ json: { routes } });
   });
   await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
+  // Never the terrain tiles: one made-up profile for every route.
+  await page.route("**/api/route/profile", (route) =>
+    route.fulfill({ json: { profile: PROFILE } }),
+  );
   // No forecast (as if the trip were too far ahead), so tests never reach MET Norway.
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   // A blank local map style instead of the network tile server.
@@ -136,6 +156,29 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
   await openTripForm(page);
   await expect(page.getByRole("combobox", { name: "Stop 1" })).toHaveValue("Sakleshpur");
   await expect(cards).toHaveCount(1);
+});
+
+test("the route's ups and downs, scrubbed from the keyboard", async ({ page }) => {
+  await mockApis(page, []);
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
+  );
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.nth(0).locator("[data-climb]")).toContainText("↑ 1,662 m");
+  await expect(page.getByRole("heading", { name: "Ups and downs" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Big climbs and descents" })).toContainText(
+    "900 m up in 18.0 km · 5% · to Kottigehara",
+  );
+
+  const chart = page.getByRole("slider", { name: "Height along the route" });
+  await chart.focus();
+  await expect(chart).toHaveAttribute("aria-valuetext", "km 0.0, 900 m");
+  await page.keyboard.press("End");
+  await expect(chart).toHaveAttribute("aria-valuetext", "km 330.0, 900 m");
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Shift+ArrowRight"); // a tenth of the way
+  await expect(chart).toHaveAttribute("aria-valuetext", "km 33.0, 900 m");
 });
 
 test("stops can be reordered from the keyboard", async ({ page }) => {

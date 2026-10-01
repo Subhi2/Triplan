@@ -20,6 +20,7 @@ import {
   PlaceMarkers,
 } from "./PlaceMarkers";
 import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
+import { CursorDot } from "./CursorDot";
 import { MeDot } from "./MeDot";
 import { bounds, frameKey, framePoints, INDIA_BOUNDS, type MapViewProps } from "./types";
 
@@ -159,6 +160,11 @@ export function MapView(props: MapViewProps) {
       {props.me && (
         <Marker longitude={props.me.location[0]} latitude={props.me.location[1]} anchor="center">
           <MeDot headingDeg={props.me.headingDeg} />
+        </Marker>
+      )}
+      {props.cursor && (
+        <Marker longitude={props.cursor[0]} latitude={props.cursor[1]} anchor="center">
+          <CursorDot />
         </Marker>
       )}
     </Map>

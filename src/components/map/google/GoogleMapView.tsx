@@ -8,6 +8,7 @@ import {
 } from "@vis.gl/react-google-maps";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { GOOGLE_MAP_ID, GOOGLE_MAPS_BROWSER_KEY } from "@/lib/google";
+import { CursorDot } from "../CursorDot";
 import { MeDot } from "../MeDot";
 import { INDIA_BOUNDS, type MapViewProps } from "../types";
 import { GooglePlaceMarkers } from "./GooglePlaceMarkers";
@@ -100,6 +101,15 @@ function MapContents(props: MapViewProps) {
           zIndex={3000}
         >
           <MeDot headingDeg={props.me.headingDeg} />
+        </AdvancedMarker>
+      )}
+      {props.cursor && (
+        <AdvancedMarker
+          position={{ lng: props.cursor[0], lat: props.cursor[1] }}
+          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          zIndex={3500}
+        >
+          <CursorDot />
         </AdvancedMarker>
       )}
     </>

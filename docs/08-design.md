@@ -23,6 +23,8 @@ Decided 2026-09-30. Mockups: the "Triplan website design" canvas (claude.ai arti
 | `marigold` / `marigold-tint` | `#B45309` / `#FBEBD7` | Ratings, detours, items needed now |
 | `state-road` | `#E0A63A` | State highways in the road mix |
 
+Chart marks have their own tokens, `--chart-road` (`#0D9488`, dark `#13A494`) and `--chart-ghat` (`#C2410C`, dark `#E8651B`), checked with the dataviz palette validator against each surface (the brand teal reads too grey as a 2 px line), and `--chart-grid` (stone-200, dark stone-800).
+
 The whole `stone` scale is remapped to these warm tones, so `stone-*` classes anywhere take the palette. Dark mode keeps working through the same scale (`--background` stone-950, `--surface` stone-900). Category colours stay in `src/lib/categories.ts`.
 
 ## Type (`src/app/layout.tsx`, next/font)
@@ -42,6 +44,7 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 - **Segmented control** (Bike / Car): a `stone-100` pill holding the options; the chosen one `bg-brand`.
 - **Route cards.** The picked route on a white card with a 2 px teal border; the others quieter and compact. Under the towns, a hairpin line: a hairpin icon and "24 hairpins" bold in `ghat-dark`, then "· 54.6 km twisty" in `stone-600` (hidden on roads with no hairpins and under 5 km twisty). Road mix bar: NH teal, SH `state-road`, ghat `ghat`, other `stone-300`, 2 px gaps.
 - **Road strip** (`RoadStrip`). A teal ribbon from 0 to the route length, ghat stretches thicker in `ghat` with a "GHAT" label, each listed place as a dot in its category colour (the active or hovered one larger, ringed in ink), round km marks below. Ghat positions come from `RoadMix.ghats`.
+- **Elevation profile** (`RouteProfile`, `ElevationChart`). Under the route cards: "Ups and downs" with ↑ climb and ↓ descent in mono, then one 2 px `--chart-road` line over a 10% wash, ghat stretches redrawn in `--chart-ghat`, hairline gridlines at round heights, mono tick labels, and only the highest point labelled (a 4 px dot with a 2 px surface ring). A crosshair follows the pointer or the arrow keys (the chart is a `role=slider`), with a one-line readout pill in the top margin ("1,317 m km 55.2 · 4.8% down") and an ink dot at the same point on the map (`CursorDot`, both maps). Below: a Road / Ghat line key, the big climbs as rows ("↑ 853 m up in 16.0 km · 5.3% · to Valparai", tap to show it on the map), and a folded table of heights with the terrain credit. The selected route's card adds "↑ 1,262 m" after the hairpins.
 - **Place rows** (`PlaceRow`). "KM" over the km in mono, the name bold, then category · detour (on route in `brand-dark`, detours in `marigold`), then rating · best time. The tick box on the right. Rows carry `data-km`, `data-name`, `data-detour`, `data-category` for the end-to-end tests.
 - **Near me rows** (`NearbyRow`). Near me reads by time, not km: the ride time in mono leads ("MIN" over "35", or "HRS" over "1:05"; "KM" over the straight-line km when road times are unavailable), then the name bold, category · "34.2 km by road", then rating · best time. No tick box (there is no trip). Rows carry `data-name`, `data-category`, `data-ride-min`, `data-km`.
 - **Time chips** (Near me). "Within" then 30 min / 1 h / 2 h / Half day as chips (ink when chosen), next to the Bike / Car segmented control.

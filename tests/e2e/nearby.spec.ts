@@ -128,6 +128,8 @@ async function mockApis(
   });
   await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
+  // No elevation profile, so tests never read the terrain tiles.
+  await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
   await page.route("https://tiles.openfreemap.org/**", (route) =>
     route.fulfill({
       json: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: {} }] },

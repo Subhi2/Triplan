@@ -1,7 +1,7 @@
 "use client";
 
 import type { RouteCurvature } from "@/lib/curvature";
-import { formatDuration, formatKm } from "@/lib/format";
+import { formatDuration, formatKm, formatMetres } from "@/lib/format";
 import type { RouteOption } from "@/lib/trip";
 import { RoadMixBar } from "./RoadMixBar";
 
@@ -9,10 +9,12 @@ interface Props {
   routes: RouteOption[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Total climb of each route (from its elevation profile), once loaded. */
+  climbM?: Record<string, number>;
 }
 
 /** The route options: the picked one raised on a white card, the others quieter. */
-export function RouteCards({ routes, selectedId, onSelect }: Props) {
+export function RouteCards({ routes, selectedId, onSelect, climbM = {} }: Props) {
   return (
     <ul className="flex flex-col gap-2" aria-label="Route options">
       {routes.map((r, i) => {
@@ -45,7 +47,7 @@ export function RouteCards({ routes, selectedId, onSelect }: Props) {
                 <span className="tabular font-mono">{formatKm(r.distanceKm * 1000)}</span>
                 {r.towns.length > 0 && <> · {r.towns.join(" · ")}</>}
               </span>
-              {r.curvature && <TwistLine curvature={r.curvature} />}
+              <RouteFacts curvature={r.curvature} climbM={climbM[r.id]} />
               {r.roadMix && <RoadMixBar mix={r.roadMix} compact={!selected} />}
             </button>
           </li>
@@ -55,15 +57,30 @@ export function RouteCards({ routes, selectedId, onSelect }: Props) {
   );
 }
 
-/** "24 hairpins · 55 km twisty" under the towns; nothing on a road without real bends. */
-function TwistLine({ curvature }: { curvature: RouteCurvature }) {
-  const { hairpins, twistyKm, label } = curvature;
-  if (hairpins === 0 && twistyKm < 5) return null;
+/**
+ * "20 hairpins · 54.6 km twisty · ↑ 1,662 m" under the towns. Hairpins and twisty km only on
+ * roads with real bends; the climb once the route's profile has loaded.
+ */
+function RouteFacts({
+  curvature,
+  climbM,
+}: {
+  curvature: RouteCurvature | null;
+  climbM: number | undefined;
+}) {
+  const hairpins = curvature?.hairpins ?? 0;
+  const twistyKm = curvature?.twistyKm ?? 0;
+  const showClimb = climbM !== undefined && climbM >= 100;
+  if (hairpins === 0 && twistyKm < 5 && !showClimb) return null;
   return (
     <span
       className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm"
       data-hairpins={hairpins}
-      title={`${label}: bends worked out from the road's shape (approximate)`}
+      title={
+        curvature
+          ? `${curvature.label}: bends worked out from the road's shape (approximate)`
+          : undefined
+      }
     >
       {hairpins > 0 && (
         <span className="text-ghat-dark inline-flex items-center gap-1 font-bold dark:text-orange-300">
@@ -76,6 +93,17 @@ function TwistLine({ curvature }: { curvature: RouteCurvature }) {
         <span className="text-stone-600 dark:text-stone-300">
           {hairpins > 0 && <span aria-hidden>· </span>}
           <span className="tabular font-mono">{formatKm(twistyKm * 1000)}</span> twisty
+        </span>
+      )}
+      {showClimb && (
+        <span
+          className="text-stone-600 dark:text-stone-300"
+          title="Total climb"
+          data-climb={climbM}
+        >
+          {(hairpins > 0 || twistyKm >= 5) && <span aria-hidden>· </span>}
+          <span className="tabular font-mono">↑ {formatMetres(climbM)}</span>
+          <span className="sr-only"> of climbing</span>
         </span>
       )}
     </span>
