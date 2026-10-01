@@ -20,6 +20,7 @@
     "db:import-osm": "tsx --env-file=.env.local scripts/import-osm.ts",
     "db:import-photos": "tsx --env-file=.env.local scripts/import-photos.ts",
     "icons": "tsx scripts/generate-icons.ts",
+    "screenshots": "tsx scripts/screenshots.ts",
     "check:pins": "tsx --env-file=.env.local scripts/check-pins.ts",
     "fixtures:routes": "tsx --env-file=.env.local scripts/record-route-fixtures.ts",
     "fixtures:photon": "tsx --env-file=.env.local scripts/record-photon-fixtures.ts"
