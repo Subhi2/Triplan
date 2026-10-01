@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapStop } from "@/components/map/types";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
@@ -10,6 +10,8 @@ import { PlacePanel } from "@/components/place/PlacePanel";
 import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
+import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
+import { PreviewButton } from "@/components/ride/PreviewButton";
 import { RouteProfile } from "@/components/route/RouteProfile";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
@@ -202,6 +204,8 @@ export function Planner({ savedTrip = null }: Props) {
   // The elevation chart's scrubber, for the selected route only.
   const [scrub, setScrub] = useState<{ routeId: string; km: number } | null>(null);
   const scrubKm = scrub && scrub.routeId === selectedRouteId ? scrub.km : null;
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const closePreview = useCallback(() => setPreviewOpen(false), []);
   const mapCursor =
     scrubKm !== null && selectedRoute
       ? pointAtKm(selectedRoute.geometry.coordinates as LngLat[], scrubKm)
@@ -494,6 +498,7 @@ export function Planner({ savedTrip = null }: Props) {
           markKm={allPlaces.find((p) => p.id === (hoverPlaceId ?? activePlaceId))?.kmFromStart}
         />
       )}
+      {selectedRoute && <PreviewButton onClick={() => setPreviewOpen(true)} />}
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
       )}
@@ -684,6 +689,21 @@ export function Planner({ savedTrip = null }: Props) {
           topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
         />
       </div>
+
+      {previewOpen && selectedRoute && (
+        <DynamicRidePreview
+          title={tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])))}
+          geometry={selectedRoute.geometry}
+          ghats={selectedRoute.roadMix?.ghats ?? []}
+          hairpinKm={selectedRoute.curvature?.hairpinKm ?? []}
+          profile={(() => {
+            const p = profiles[selectedRoute.id];
+            return p?.status === "ok" ? p.profile : null;
+          })()}
+          places={places}
+          onClose={closePreview}
+        />
+      )}
 
       {!isDesktop && (
         <BottomSheet

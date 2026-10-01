@@ -124,6 +124,18 @@ A hairpin is a stretch of at most 125 m that turns 150° or more, leaves heading
 
 The public OSRM server reports no road classes (tunnels, tolls), so tunnels cannot be taken from the route.
 
+### 3D ride preview
+
+`src/components/ride/RidePreview.tsx`, loaded with `next/dynamic` only when "Preview the ride in 3D" is tapped, so MapLibre and the terrain stay out of the planner's bundle. It drives `maplibre-gl` directly (not `react-map-gl`), because the camera, the rider dot and the route's progress change every frame.
+
+- **Always MapLibre**, full screen over whichever map the planner shows, with no Google content in it (Maps ToS 3.2.3(e)). Place cards use our own data only.
+- **Terrain**: a `raster-dem` source of the same Terrarium tiles (`encoding: terrarium`, maxzoom 13, exaggeration 1.4) and a second source for hillshade (skipped on low-end devices: 4 cores or fewer, or 4 GB of memory or less). The tiles are served with `Access-Control-Allow-Origin: *`. The attribution stays expanded and adds the terrain credit.
+- **Camera** (`src/lib/flyover.ts`, pure and unit tested): the route resampled every 50 m; the target averaged over ±150 m; the camera faces the road 1.2 km ahead (0.6 km in ghats); pitch 62°, zoom 11.6 on open road easing to 13.4 in ghats; bearing turns along the shorter arc with a 0.8 s time constant; padding keeps the rider low on the screen. Screen time is weighted: ghats ×4, the km around a hairpin or listed place ×3, so a 300 km route takes about 90 s at 1× (45–150 s by length).
+- **Layers**: the route with a `line-gradient` on `line-progress` (done in teal, ahead in white), the listed places, and the rider as a circle layer updated with `setData` (no React render per frame). The HUD (km, height from the profile, ghat, climb grade) updates at 10 Hz.
+- **Controls**: play / pause, 0.5×–4×, and a scrubber drawn over a small profile. Escape closes and focus returns to the opener.
+- **Comfort and speed**: under reduced motion it opens on an overview and moves only when played or scrubbed. If frames average over 50 ms for 2 s it drops to pixel ratio 1, then turns the terrain off. Without WebGL it says so and points to the profile.
+- MapLibre gives its container `position: relative`, so the container sits inside an absolutely placed box (an absolute container collapses to 0 px).
+
 ### Suggesting "via" towns
 
 To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the largest towns (OSM `place=town|city`) within 2 km of each route that are not within 2 km of the other routes. Show the top 1–2 as the card label. Store towns in `place` with category `town`, or a separate `settlement` table.

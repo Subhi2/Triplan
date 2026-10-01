@@ -87,6 +87,10 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
   );
   // No forecast (as if the trip were too far ahead), so tests never reach MET Norway.
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
+  // No terrain tiles for the 3D preview: it carries on with a flat map.
+  await page.route("https://s3.amazonaws.com/elevation-tiles-prod/**", (route) =>
+    route.fulfill({ status: 404, body: "" }),
+  );
   // A blank local map style instead of the network tile server.
   await page.route("https://tiles.openfreemap.org/**", (route) =>
     route.fulfill({
@@ -179,6 +183,41 @@ test("the route's ups and downs, scrubbed from the keyboard", async ({ page }) =
   await page.keyboard.press("Home");
   await page.keyboard.press("Shift+ArrowRight"); // a tenth of the way
   await expect(chart).toHaveAttribute("aria-valuetext", "km 33.0, 900 m");
+});
+
+test.describe("3D ride preview", () => {
+  const TRIP =
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234";
+
+  test("rides the route from the start and closes with Escape", async ({ page }) => {
+    await mockApis(page, []);
+    await page.goto(TRIP);
+    await page.getByRole("button", { name: "Preview the ride in 3D" }).click();
+    const dialog = page.getByRole("dialog", {
+      name: /3D ride preview: Bengaluru → Kalasa via Sakleshpur/,
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Close the preview" })).toBeFocused();
+    await expect(dialog.getByText(/of 331/)).toBeVisible();
+    // The camera moves on by itself.
+    await expect(dialog.locator("[data-hud-km]")).not.toHaveText("0.0", { timeout: 20_000 });
+    await dialog.getByRole("button", { name: "Pause" }).click();
+    await dialog.getByRole("slider", { name: "Position along the route" }).fill("3000");
+    await expect(dialog.locator("[data-hud-km]")).toHaveText("300.0");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
+  test("waits to be played when the rider asked for reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await mockApis(page, []);
+    await page.goto(TRIP);
+    await page.getByRole("button", { name: "Preview the ride in 3D" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("button", { name: "Play", exact: true })).toBeVisible();
+    await page.waitForTimeout(1500);
+    await expect(dialog.locator("[data-hud-km]")).toHaveText("0.0");
+  });
 });
 
 test("stops can be reordered from the keyboard", async ({ page }) => {
