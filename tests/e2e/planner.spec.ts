@@ -220,6 +220,38 @@ test.describe("3D ride preview", () => {
   });
 });
 
+test("open the ride story poster and download it", async ({ page }) => {
+  await mockApis(page, []);
+  const storyRequests: string[] = [];
+  await page.route("**/og/story?**", (route) => {
+    storyRequests.push(route.request().url());
+    // A 1×1 PNG stands in for the poster.
+    return route.fulfill({
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  });
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
+  );
+  await page.getByRole("button", { name: "Ride story" }).click();
+  const dialog = page.getByRole("dialog", { name: "Ride story" });
+  await expect(
+    dialog.getByRole("img", { name: /Ride story poster: Bengaluru → Kalasa/ }),
+  ).toBeVisible();
+  expect(decodeURIComponent(storyRequests[0]!)).toMatch(
+    /\/og\/story\?route=bengaluru-sakleshpur-kalasa-0&from=Bengaluru@77\.5946,12\.9716&via=Sakleshpur/,
+  );
+  const download = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Download" }).click();
+  expect((await download).suggestedFilename()).toBe("story-bengaluru-kalasa-via-sakleshpur.png");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+});
+
 test("stops can be reordered from the keyboard", async ({ page }) => {
   await mockApis(page, []);
   await page.goto(

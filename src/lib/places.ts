@@ -57,7 +57,8 @@ export function detourLabel(detourKm: number): string {
 export const BEST_PER_STRETCH = 5;
 export const STRETCH_KM = 10;
 
-function rank(p: PlaceAlong): number {
+/** How worth stopping a place is: category weight, notable, rating. */
+export function placeRank(p: PlaceAlong): number {
   const weight = isCategorySlug(p.category) ? CATEGORIES[p.category].weight : 1;
   return weight + (p.notable ? 1 : 0) + (p.rating ?? 0) / 5;
 }
@@ -76,7 +77,7 @@ export function bestAlongRoute(places: PlaceAlong[]): PlaceAlong[] {
   const kept = new Set<string>();
   for (const group of stretches.values()) {
     group
-      .sort((a, b) => rank(b) - rank(a) || a.detourKm - b.detourKm)
+      .sort((a, b) => placeRank(b) - placeRank(a) || a.detourKm - b.detourKm)
       .slice(0, BEST_PER_STRETCH)
       .forEach((p) => kept.add(p.id));
   }

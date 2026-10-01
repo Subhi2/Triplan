@@ -286,6 +286,14 @@ Rides are planned in groups, and in India the plan goes to a WhatsApp group, so 
 - **Search engines**: `sitemap.xml` lists the verified places of every place-list category (not fuel stations or towns), richest first (a guide, a photo or a Wikidata id), up to 45,000 URLs, rebuilt daily. `robots.txt` allows everything but `/api/`. Place pages have a canonical URL and schema.org `TouristAttraction` JSON-LD (location, area, photo, rating, Wikipedia link). Saved trips are `noindex` because anyone can write them; their links still unfurl.
 - Absolute URLs come from `siteUrl()`: `NEXT_PUBLIC_SITE_URL` when set (a custom domain), else Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`), else localhost.
 
+## Ride story
+
+`GET /og/story` (`src/app/og/story/route.tsx`, `StoryCard` in `src/server/og/shareCards.tsx`, data from `src/server/services/storyService.ts`) draws a 1080×1920 PNG with next/og: the route with its ghats in orange (`splitByGhats`), the stops, distance, ride time, climb and hairpins (or the highest point), the elevation profile, up to four places spread along the road (`storyStops`: the best in each stretch, by `placeRank`), the app's address and the data credits. No photos, so there is nothing to credit but OpenStreetMap, the terrain and OSRM.
+
+- `?route=<route id>&from=…&via=…&to=…&v=` for a planner route: geometry, distance and time from `route_cache` (`getRouteResult`), the profile from its own cache. The id is a hash of the routing request, so the CDN caches the image for a week. Once the route has left the cache the poster has the app's name and no numbers, cached for a minute.
+- `?trip=<id>` for a saved trip: its cached route when still there, otherwise its stored line (without ghats).
+- In the planner, "Ride story" (`StoryShare`) fetches the poster, shows it, then shares it as a file through `navigator.share({ files })` (Instagram stories, WhatsApp status) or downloads it. Two taps on purpose: iOS opens the share sheet only straight from a tap.
+
 ## Ride check and GPX
 
 **Ride check** (`RideCheck.tsx`, logic in `src/lib/rideCheck.ts`), under the save bar for the selected route. Open on wide screens; on phones one line ("Ride check · Fuel gap 38 km · Arrive 11:29") that opens on tap, so the place list stays in view.

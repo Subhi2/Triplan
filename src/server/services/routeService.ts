@@ -56,15 +56,23 @@ export function routeIdFor(cacheKey: string, index: number): string {
   return `${cacheKey.slice(CACHE_KEY_PREFIX.length)}-${index}`;
 }
 
+/** The routing result for a route id from route_cache, or null if unknown or expired. */
+export async function getRouteResult(
+  id: string,
+  cache: JsonCache = routeDbCache,
+): Promise<RouteResult | null> {
+  if (!ROUTE_ID_PATTERN.test(id)) return null;
+  const [hash, index] = id.split("-") as [string, string];
+  const routes = (await cache.get(`${CACHE_KEY_PREFIX}${hash}`)) as RouteResult[] | undefined;
+  return routes?.[Number(index)] ?? null;
+}
+
 /** Geometry for a route id from route_cache, or null if the id is unknown or has expired. */
 export async function getRouteGeometry(
   id: string,
   cache: JsonCache = routeDbCache,
 ): Promise<LineString | null> {
-  if (!ROUTE_ID_PATTERN.test(id)) return null;
-  const [hash, index] = id.split("-") as [string, string];
-  const routes = (await cache.get(`${CACHE_KEY_PREFIX}${hash}`)) as RouteResult[] | undefined;
-  return routes?.[Number(index)]?.geometry ?? null;
+  return (await getRouteResult(id, cache))?.geometry ?? null;
 }
 
 interface Found {

@@ -12,6 +12,7 @@ import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
 import { PreviewButton } from "@/components/ride/PreviewButton";
+import { StoryShare } from "@/components/ride/StoryShare";
 import { RouteProfile } from "@/components/route/RouteProfile";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
@@ -498,7 +499,16 @@ export function Planner({ savedTrip = null }: Props) {
           markKm={allPlaces.find((p) => p.id === (hoverPlaceId ?? activePlaceId))?.kmFromStart}
         />
       )}
-      {selectedRoute && <PreviewButton onClick={() => setPreviewOpen(true)} />}
+      {selectedRoute && (
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <PreviewButton onClick={() => setPreviewOpen(true)} />
+          <StoryShare
+            storyUrl={`/og/story?route=${selectedRoute.id}&${query}`}
+            title={tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])))}
+            link={typeof window === "undefined" ? "" : window.location.href}
+          />
+        </div>
+      )}
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
       )}
