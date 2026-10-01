@@ -67,6 +67,26 @@ User stories:
 
 Privacy: the position is taken only on a tap, rounded to about 100 m before it leaves the phone, never stored or logged, and not written into a shared link except as that rounded point.
 
+### Showcase (G3, added 2026-10-02)
+
+16. **Hairpins and twistiness** on each route card ("24 hairpins · 55 km twisty"), worked out from the road's shape.
+17. **Elevation profile** of the selected route: total climb and descent, the highest point, and each big climb ("climbs 900 m in 18 km near Kottigehara"). Scrubbing the chart moves a marker along the route on the map.
+18. **3D ride preview**: the camera rides the route over 3D terrain, slower through ghats, with km, height and the places as it passes them. It can be saved as a video for Instagram or WhatsApp.
+19. **Ride story**: a tall poster of the trip (route, km, time, climb, hairpins, top stops) shared from the phone's share sheet.
+20. **Famous rides** (`/rides`): about 20 well-known Indian rides, each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. The empty planner offers them as "Try a famous ride".
+21. **Plan in plain words** (when the AI key is set): "2-day monsoon ride from Pune with waterfalls, under 250 km" fills the planner. Typed text is sent to the AI provider to read it, and is never stored.
+22. **Safety stops** along the route: hospitals, police, ATMs, puncture and repair shops, with how many there are per 50 km and the longest stretch without a hospital.
+23. **Multi-day split**: riding hours per day, an overnight town near each split with stays nearby, the place list in Day 1 / Day 2 sections, one GPX track per day.
+24. **About** (`/about`): the story, how it works, every data source and its licence, and live numbers (rides planned, places, trips saved).
+
+For developers: one command (`pnpm db:setup`) loads a fresh database with all our public data from the latest data snapshot.
+
+User stories:
+- As a rider choosing between two roads, I want to see which one has the ghat, how many hairpins and how much climbing, so I pick the ride I want.
+- As a rider before a trip, I want to preview the ride, so I know what is coming and can show my group.
+- As someone who has never used the app, I want to see a famous ride in one tap, so I understand what it does.
+- As a family on a long drive, I want the trip split into days with a town to stay in, so we don't drive after dark.
+
 ### v1 (phases 5–7)
 
 6. Accounts via Supabase Auth (email magic link, Google). Not needed for the MVP, which is open without sign-in; decide with reviews and contributions (phase 5) whether they need accounts.
@@ -81,7 +101,6 @@ Privacy: the position is taken only on a tap, rounded to about 100 m before it l
 - Monsoon / ghat closure alerts, weather on the trip date.
 - Offline trip pack (PWA cache of route, places and photos).
 - Fuel range planner (tank size, mileage, fuel stations on route).
-- Multi-day trips with overnight stays.
 - Native apps.
 
 ## Screens
@@ -93,6 +112,9 @@ Privacy: the position is taken only on a tap, rounded to about 100 m before it l
 5. **Admin** (`/admin/*`): moderation queues, discovery queue.
 6. **Sign in** (`/login`), only if accounts are added later.
 7. **Near me** (`/nearby`): the chooser (Use my location / type a place / pick on the map), time and vehicle chips, the list and the map; on phones the list is in the bottom sheet. Ride mode ("Ahead of you") covers the screen.
+8. **Famous rides** (`/rides`, `/rides/[slug]`).
+9. **About** (`/about`).
+10. **3D ride preview**: covers the screen over the planner or a ride page.
 
 The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the intended planner layout.
 
@@ -114,4 +136,15 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 - If road times are unavailable, the list falls back to straight-line distances and says so.
 - "Ride there" opens the planner with the start and that place, and routes.
 - Ride mode shows places ahead (within about 35° of the heading) and not those behind, and stops watching the position when closed.
+- Works at 375 px width with 44 px touch targets.
+
+## Acceptance criteria for the showcase
+
+- Bengaluru → Kalasa via Sakleshpur shows 20–30 hairpins, all between Kottigehara and Kalasa; the NH75 stretch to Hassan shows none.
+- Its profile shows the climb near Kottigehara, and total climb within 25% of what a GPS track of the road gives.
+- The 3D preview opens without asking for anything, flies the whole route, keeps the map and terrain credits on screen (and in the saved video), and does not move on its own under reduced motion.
+- The story poster for a route opens as a 1080×1920 PNG and shares from a phone's share sheet.
+- `/rides` lists every famous ride; each page shows its route and opens it in the planner with the same stops.
+- Without `ANTHROPIC_API_KEY` there is no "plan in plain words" box and no AI call.
+- On an empty database, `pnpm db:setup` loads the snapshot and the place count matches its manifest.
 - Works at 375 px width with 44 px touch targets.
