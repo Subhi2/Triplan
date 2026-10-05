@@ -40,6 +40,8 @@ async function build(
   durationMin: number | null,
   ghats: [number, number][],
   knownProfile?: ElevationProfile | null,
+  /** A famous ride's stored count, so the poster matches its page. */
+  knownHairpins?: number,
 ): Promise<StoryData> {
   const coords = geometry.coordinates as LngLat[];
   const [profile, places] = await Promise.all([
@@ -50,16 +52,18 @@ async function build(
       .then((rows) => rows.map(toPlaceAlong))
       .catch(() => []),
   ]);
-  const curvature = routeCurvature(
-    geometry,
-    stops.map((s) => s.location),
-  );
+  const hairpins =
+    knownHairpins ??
+    routeCurvature(
+      geometry,
+      stops.map((s) => s.location),
+    ).hairpins;
   const facts = [
     { label: "Distance", value: formatKm(distanceKm * 1000) },
     durationMin !== null && { label: "Ride time", value: formatDuration(durationMin) },
     profile && { label: "Climb", value: formatMetres(profile.ascentM) },
-    curvature.hairpins > 0
-      ? { label: "Hairpins", value: String(curvature.hairpins) }
+    hairpins > 0
+      ? { label: "Hairpins", value: String(hairpins) }
       : profile && { label: "Highest", value: formatMetres(profile.highest.m) },
   ].filter((f): f is { label: string; value: string } => Boolean(f));
   return {
@@ -132,6 +136,7 @@ export async function storyForRide(slug: string): Promise<StoryData | null> {
     ride.durationMin,
     ride.roadMix?.ghats ?? [],
     ride.profile,
+    ride.hairpins,
   );
   return { ...story, headline: ride.title };
 }
