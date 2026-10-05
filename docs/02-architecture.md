@@ -397,6 +397,18 @@ A route longer than a day's riding is cut into days, each night in a town on the
 - **Per-visitor limits** for new endpoints: `allowRequest(request, { scope, limit, windowS })` in `writeLimit.ts`, on the same `write_limit` table under `<scope>:<salted IP hash>`, apart from the trip-write counter.
 - **About** shows places, rides planned and trips saved (`statsService.getStats`), refreshed hourly.
 
+## One-command data setup
+
+A fresh clone gets every place, photo credit, famous ride and service point with `pnpm db:setup`, instead of hours of throttled Overpass, Wikimedia and OSRM calls.
+
+- **Snapshot** (`data/snapshot/`, committed, about 10 MB): one gzipped JSON-lines file per table and `manifest.json` (format, when it was made, the newest migration, the licence, and per table its columns, rows, bytes and sha256). Tables, in load order: `category`, `carry_item`, `place`, `place_guide`, `place_carry`, `media`, `ride`, `service_point` (`src/lib/snapshot.ts`).
+- **Left out**: places not verified or closed; media that are not verified or are users' uploads; Google place ids and check times, and who created or verified a row (written as null). Never trips, reviews, profiles, rate limits, usage counters, caches or Google usage.
+- **Export** (owner): `pnpm db:export-snapshot [-- --out=dir]` reads the live tables in one read-only repeatable-read transaction with a cursor (2,000 rows a step; `row_to_json`, geography as hex EWKB text), gzips each table, and writes the manifest. Same data gives the same files (gzip without a time). Run it after an import and commit `data/snapshot`. COPY streams were tried first and hung now and then through the pooler, so the format is plain JSON lines.
+- **Setup** (`scripts/setup-db.ts`): runs the Drizzle migrations; reads `data/snapshot` (or `--url=`, or the copy on GitHub when the clone has none); checks the manifest (`manifestProblems`: every table once, a migration this clone has, columns this database has); refuses unless the snapshot tables are empty (`--replace --yes` empties them, refused while trips, trip stops, reviews or social posts exist); checks every file's size and sha256 before writing; loads in one transaction, 1,000 rows per `INSERT … SELECT … FROM json_populate_recordset(…)`, so Postgres turns the JSON into arrays, enums, jsonb and geography itself; moves the serial sequences past the loaded ids; `ANALYZE`; and checks the row counts. The whole snapshot loads in about 20 seconds (`src/server/services/snapshotLoad.ts`).
+- **From sources**: `pnpm db:setup -- --from-sources --regions=karnataka,kerala` runs the seed, the OSM places import, the photo import, the famous rides seed and the service points import instead.
+- **Licence**: OpenStreetMap-derived, so the snapshot is under the ODbL 1.0 with attribution (`data/snapshot/LICENCE.md`); photo files stay with their authors under each media row's licence.
+- **Tests**: unit tests for the SQL and manifest checks; an integration test exports 25 rows of each table from the live tables (read only), loads them into a throwaway schema of look-alike tables, compares arrays, JSON and geography, loads again with `replace`, and drops the schema.
+
 ## Deployment
 
 Vercel (Hobby, free, non-commercial) runs the app; the database stays on Supabase (free, `ap-south-1`). Every push to `main` deploys to production; pushes to other branches get preview URLs.
