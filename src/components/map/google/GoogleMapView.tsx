@@ -10,6 +10,7 @@ import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { GOOGLE_MAP_ID, GOOGLE_MAPS_BROWSER_KEY } from "@/lib/google";
 import { CursorDot } from "../CursorDot";
 import { MeDot } from "../MeDot";
+import { SAFETY_STYLE } from "@/lib/safety";
 import { INDIA_BOUNDS, type MapViewProps } from "../types";
 import { GooglePlaceMarkers } from "./GooglePlaceMarkers";
 import { GoogleRoutes } from "./GoogleRoutes";
@@ -103,6 +104,21 @@ function MapContents(props: MapViewProps) {
           <MeDot headingDeg={props.me.headingDeg} />
         </AdvancedMarker>
       )}
+      {props.servicePins?.map((p) => (
+        <AdvancedMarker
+          key={p.id}
+          position={{ lng: p.location[0], lat: p.location[1] }}
+          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          title={p.name ?? SAFETY_STYLE[p.kind].one}
+          zIndex={1500}
+        >
+          <span
+            aria-hidden
+            className="block h-3.5 w-3.5 rounded-full border-2 border-white shadow"
+            style={{ background: SAFETY_STYLE[p.kind].color }}
+          />
+        </AdvancedMarker>
+      ))}
       {props.cursor && (
         <AdvancedMarker
           position={{ lng: props.cursor[0], lat: props.cursor[1] }}

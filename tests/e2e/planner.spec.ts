@@ -51,6 +51,49 @@ const PROFILE: ElevationProfile = {
   climbs: [{ fromKm: 280, toKm: 298, gainM: 900, gradePct: 5, dir: "up", near: "Kottigehara" }],
 };
 
+/** Two hospitals and an ATM near the road; the longest stretch without a hospital is 200 km. */
+const SAFETY = {
+  totalKm: 330.8,
+  counts: { hospital: 2, police: 0, atm: 1, tyre: 0, repair: 0 },
+  perFiftyKm: { hospital: 0.3, police: 0, atm: 0.2, tyre: 0, repair: 0 },
+  longestGap: {
+    hospital: { fromKm: 120, toKm: 320, km: 200 },
+    police: { fromKm: 0, toKm: 330.8, km: 330.8 },
+    atm: { fromKm: 50, toKm: 330.8, km: 280.8 },
+    tyre: { fromKm: 0, toKm: 330.8, km: 330.8 },
+    repair: { fromKm: 0, toKm: 330.8, km: 330.8 },
+  },
+  points: [
+    {
+      id: "node/1",
+      kind: "atm",
+      name: "SBI ATM",
+      phone: null,
+      location: [77.3, 13.0],
+      kmFromStart: 50,
+      detourKm: 0.1,
+    },
+    {
+      id: "node/2",
+      kind: "hospital",
+      name: "Hassan Hospital",
+      phone: "+91 8172 268 000",
+      location: [76.1, 13.0],
+      kmFromStart: 120,
+      detourKm: 0.4,
+    },
+    {
+      id: "node/3",
+      kind: "hospital",
+      name: "Kalasa Clinic",
+      phone: null,
+      location: [75.36, 13.23],
+      kmFromStart: 320,
+      detourKm: 1.2,
+    },
+  ],
+};
+
 function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
   return routeFixture(fixture, "bike").map((r, i) => ({
     id: `${fixture}-${i}`,
@@ -81,6 +124,7 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
     return route.fulfill({ json: { routes } });
   });
   await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
+  await page.route("**/api/services/along", (route) => route.fulfill({ json: SAFETY }));
   // Never the terrain tiles: one made-up profile for every route.
   await page.route("**/api/route/profile", (route) =>
     route.fulfill({ json: { profile: PROFILE } }),
@@ -252,6 +296,30 @@ test("open the ride story poster and download it", async ({ page }) => {
   expect((await download).suggestedFilename()).toBe("story-bengaluru-kalasa-via-sakleshpur.png");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
+});
+
+test("safety stops along the road, with call links and the hospital gap", async ({ page }) => {
+  await mockApis(page, []);
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
+  );
+  const kinds = page.getByRole("group", { name: "Kinds of safety stop" });
+  await expect(kinds).toContainText("2 hospitals");
+  await expect(kinds).toContainText("1 ATM");
+  await kinds.getByRole("button", { name: /hospitals/ }).click();
+  const list = page.getByRole("list", { name: "hospitals" });
+  await expect(list).toContainText("Hassan Hospital");
+  await expect(list.getByRole("link", { name: "Call" })).toHaveAttribute(
+    "href",
+    "tel:+918172268000",
+  );
+  await expect(page.getByText("longest stretch without one 200 km (km 120–320)")).toBeVisible();
+
+  const check = page.getByRole("region", { name: /Ride check/ });
+  if (!(await check.getByText(/Hospitals: longest stretch/).isVisible())) {
+    await check.getByRole("button", { name: /Ride check/ }).click();
+  }
+  await expect(check.getByText("Hospitals: longest stretch without one is 200 km")).toBeVisible();
 });
 
 test("stops can be reordered from the keyboard", async ({ page }) => {

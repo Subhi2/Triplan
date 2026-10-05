@@ -22,6 +22,7 @@ import {
 import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
 import { CursorDot } from "./CursorDot";
 import { MeDot } from "./MeDot";
+import { ServicePins } from "./ServicePins";
 import { bounds, frameKey, framePoints, INDIA_BOUNDS, type MapViewProps } from "./types";
 
 export type { MapStop } from "./types";
@@ -144,6 +145,9 @@ export function MapView(props: MapViewProps) {
       {/* Touch screens pinch to zoom; the buttons would only cover the map. */}
       {!coarsePointer && <NavigationControl position="top-right" showCompass={false} />}
       <RouteLayer routes={routes} selectedId={props.selectedRouteId} />
+      {props.servicePins && props.servicePins.length > 0 && (
+        <ServicePins pins={props.servicePins} />
+      )}
       <PlaceMarkers places={places} highlightIds={highlightIds} />
       {stops.map((s, i) => (
         <Marker key={s.id} longitude={s.location[0]} latitude={s.location[1]} anchor="center">

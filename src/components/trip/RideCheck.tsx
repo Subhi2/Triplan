@@ -14,6 +14,7 @@ import {
   planDaylight,
   RANGE_LIMITS_KM,
 } from "@/lib/rideCheck";
+import type { Gap } from "@/lib/safety";
 import type { RouteOption, Vehicle } from "@/lib/trip";
 import { summarizeWeather, type WeatherPoint } from "@/lib/weather";
 import { useWeatherAlong } from "./useWeatherAlong";
@@ -26,7 +27,13 @@ interface Props {
   /** The chosen start time (datetime-local value), shared with the weather check. */
   departure: string;
   onDepartureChange: (value: string) => void;
+  /** The longest stretch without a hospital near the road, once safety stops have loaded. */
+  hospitalGap?: Gap | null;
 }
+
+/** A stretch without a hospital longer than these is worth knowing about (km). */
+const HOSPITAL_OK_KM = 60;
+const HOSPITAL_WARN_KM = 120;
 
 const FUEL_CATEGORIES = ["fuel"];
 const rangeKey = (v: Vehicle) => `ride-check-range-${v}`;
@@ -95,7 +102,15 @@ function pointWeather(p: WeatherPoint): string {
  * Before you ride: the longest stretch without a fuel station against the vehicle's range, the
  * arrival time against sunset (docs/07, G1.3) and the weather on the way (G1.5).
  */
-export function RideCheck({ route, vehicle, from, to, departure, onDepartureChange }: Props) {
+export function RideCheck({
+  route,
+  vehicle,
+  from,
+  to,
+  departure,
+  onDepartureChange,
+  hospitalGap = null,
+}: Props) {
   const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
   const [rangeText, setRangeText] = useState(String(DEFAULT_RANGE_KM[vehicle]));
   useEffect(() => {
@@ -266,6 +281,23 @@ export function RideCheck({ route, vehicle, from, to, departure, onDepartureChan
         </div>
 
         <ul className="space-y-3" aria-live="polite">
+          {hospitalGap && (
+            <Check
+              tone={
+                hospitalGap.km <= HOSPITAL_OK_KM
+                  ? "ok"
+                  : hospitalGap.km <= HOSPITAL_WARN_KM
+                    ? "warn"
+                    : "bad"
+              }
+              title={`Hospitals: longest stretch without one is ${Math.round(hospitalGap.km)} km`}
+            >
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                From km {Math.round(hospitalGap.fromKm)} to km {Math.round(hospitalGap.toKm)},
+                within 3 km of the road (OpenStreetMap). In an emergency call 112.
+              </p>
+            </Check>
+          )}
           {fuel.status === "loading" && (
             <Check tone="muted" title="Fuel">
               <p className="text-stone-600 dark:text-stone-400">Checking fuel stations…</p>

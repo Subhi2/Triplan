@@ -16,6 +16,8 @@ import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
 import { StoryShare } from "@/components/ride/StoryShare";
 import { RouteProfile } from "@/components/route/RouteProfile";
+import { SafetyStops } from "@/components/route/SafetyStops";
+import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
@@ -24,6 +26,7 @@ import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture } from "@/lib/rideCheck";
+import type { SafetyKind } from "@/lib/safety";
 import type { RideSummary } from "@/lib/rides";
 import { tripHeadline } from "@/lib/site";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
@@ -213,6 +216,14 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   // The elevation chart's scrubber, for the selected route only.
   const [scrub, setScrub] = useState<{ routeId: string; km: number } | null>(null);
   const scrubKm = scrub && scrub.routeId === selectedRouteId ? scrub.km : null;
+  // Safety stops along the selected route, and the kind picked to list and pin.
+  const safety = useSafetyAlong(selectedRoute);
+  const [safetyPick, setSafetyPick] = useState<{ routeId: string; kind: SafetyKind } | null>(null);
+  const safetyKind = safetyPick && safetyPick.routeId === selectedRouteId ? safetyPick.kind : null;
+  const servicePins =
+    safety.status === "ok" && safetyKind
+      ? safety.summary.points.filter((p) => p.kind === safetyKind)
+      : undefined;
   const [previewOpen, setPreviewOpen] = useState(false);
   const closePreview = useCallback(() => setPreviewOpen(false), []);
   const mapCursor =
@@ -528,6 +539,11 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           to={{ label: last.label, location: last.location }}
           departure={departure}
           onDepartureChange={setDeparture}
+          hospitalGap={
+            safety.status === "ok" && safety.summary.counts.hospital > 0
+              ? safety.summary.longestGap.hospital
+              : null
+          }
         />
       )}
     </div>
@@ -549,6 +565,13 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           places={places}
           activePlaceId={activePlaceId}
           hoverPlaceId={hoverPlaceId}
+        />
+        <SafetyStops
+          state={safety}
+          selected={safetyKind}
+          onSelect={(kind) =>
+            setSafetyPick(kind && selectedRoute ? { routeId: selectedRoute.id, kind } : null)
+          }
         />
         {placesState.status === "loading" && (
           <div className="flex flex-col gap-2">
@@ -724,6 +747,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           onHoverPlace={setHoverPlaceId}
           onViewChange={(center, zoom) => setMapBias({ center, zoom })}
           cursor={mapCursor}
+          servicePins={servicePins}
           bottomInset={sheetInset}
           topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
         />

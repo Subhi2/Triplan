@@ -70,7 +70,7 @@ export function PlannerHeader({
           href="/trips"
           className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
         >
-          {compact ? "Trips" : "Saved trips"}
+          Trips
         </Link>
         {formToggle && (
           <button

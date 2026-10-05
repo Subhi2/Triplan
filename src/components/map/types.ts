@@ -1,5 +1,6 @@
 import type { LngLat } from "@/lib/geo";
 import type { PlaceAlong } from "@/lib/places";
+import type { SafetyPoint } from "@/lib/safety";
 import type { RouteOption } from "@/lib/trip";
 
 // Props shared by the MapLibre map (MapView) and the Google map (google/GoogleMapView), so the
@@ -51,6 +52,8 @@ export interface MapViewProps {
   onMapClick?: (at: LngLat) => void;
   /** A point on the route picked on the elevation chart. */
   cursor?: LngLat | null;
+  /** Safety stops of the kind picked under "Safety on the way" (small coloured dots). */
+  servicePins?: Pick<SafetyPoint, "id" | "kind" | "name" | "location">[];
 }
 
 /** Before a trip is chosen, frame India (places are imported for every state). */
