@@ -11,8 +11,8 @@ import { allowRequest } from "@/server/services/writeLimit";
 export const maxDuration = 40;
 
 /** Requests per visitor per hour, and in all per UTC day (about US$0.002 each). */
-export const AI_PER_VISITOR_HOUR = 6;
-export const AI_PER_DAY = 200;
+const AI_PER_VISITOR_HOUR = 6;
+const AI_PER_DAY = 200;
 
 const bodySchema = z.object({
   text: z.string().trim().min(3).max(300),
