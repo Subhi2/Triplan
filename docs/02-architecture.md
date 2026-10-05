@@ -199,6 +199,17 @@ Put this in a Postgres function `places_along_route(geojson text, corridor_m int
 
 As built (migrations `0004`–`0006`): the route line is parsed and simplified once (materialized CTEs), km and detour are measured on the simplified line too (fast with tens of thousands of imported places; detour is approximate anyway), and when more than 1000 places fall in the corridor the function keeps the most worthwhile ones (curated first, then Wikidata-linked, by category weight, nearest the route) before ordering by km, so long trips are never cut off before the destination. Towns are excluded unless requested by category. The places API leaves fuel stations out of the list by default (`PLACE_LIST_CATEGORIES` in `src/lib/categories.ts`; they are still imported for the planned fuel-range planner). The app then shows the "best stops" by default (`bestAlongRoute` in `src/lib/places.ts`: up to 5 places per 10 km); picking a category shows all of it.
 
+### What the places import takes
+
+`pnpm db:import-osm` (`src/server/providers/osm/overpass.ts`, classified in `osmClassify.ts`), widened on 2026-10-05 after Mudumalai and Masinagudi turned out to be missing:
+
+- **Temples**: every named Hindu, Jain and Buddhist place of worship. Before, only those with a Wikidata or Wikipedia link (26 of 2,842 in Karnataka). Names that only say "Temple" or "Mandir", and Goa's "… Prasanna" subsidiary shrines, are left out. The temple category weight is 0.9, so a small temple does not push a fort or waterfall out of the best stops; notable ones still get +1. Other religions still need a Wikidata or Wikipedia link.
+- **Wildlife** (new category): national parks, wildlife and bird sanctuaries, tiger and elephant reserves and zoos (`isWildlife`). India maps thousands of reserved forests, biosphere reserves, eco-sensitive zones (ESZ) and buffer zones as protected areas too; those are left out. "WLS", "NP", "TR" and "Core Zone" are spelled out or dropped in names.
+- **Also new**: dams, botanical gardens, theme parks and aquariums (attractions), galleries (museums), tombs, palaces, city gates and monasteries (heritage). Viewpoints and attractions named "… Falls" are waterfalls (Kalhatty Falls).
+- **Villages**: well-known ones become town rows, so they label routes, can be overnight stops and come first in search: a Wikidata link, 5,000 people, or names in two or more languages (Masinagudi has Kannada, Malayalam and Tamil). About 1,000 of Karnataka's 21,000 villages. They count as 1,000 people when ranking "via" towns, so they never push out a real town.
+
+**Places with an outline.** Protected areas are fetched with `out geom`; the import joins a way, or a relation's outer ways, into a polygon in PostGIS (`ST_BuildArea`, made valid, simplified to about 100 m), stores it in `place.area` (migration 0016), and puts the place's point inside it. `places_along_route` finds these places by their outline: a road through Mudumalai lists it at the km where the road enters the park, 0 m off the road, pinned there; a road past it gets the distance to the edge. Places without an outline are found by their point as before.
+
 ## Nearby search (Near me)
 
 The `/nearby` screen lists well-known places the rider can reach from one point (their position, a typed place or a point tapped on the map) within 30 min, 1 h, 2 h or half a day, measured on the road. Straight-line radius is misleading in the ghats, where a place 20 km across a valley can be 60 km by road.

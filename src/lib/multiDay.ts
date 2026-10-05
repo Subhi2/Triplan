@@ -89,7 +89,7 @@ export interface OvernightTown {
   location: LngLat;
   kmFromStart: number;
   population: number | null;
-  kind: "city" | "town";
+  kind: "city" | "town" | "village";
   stays: number;
 }
 
@@ -106,7 +106,7 @@ export interface StayNear {
 export interface DayEnd {
   /** The town, or null for a stretch of road with no town (and for the destination). */
   name: string | null;
-  kind: "city" | "town" | "road" | "destination";
+  kind: "city" | "town" | "village" | "road" | "destination";
   location: LngLat;
   kmFromStart: number;
   /** Stays within STAY_RADIUS_M; the nearest few listed. Empty for the destination. */
@@ -137,7 +137,10 @@ export interface DayPlan {
 export function overnightScore(town: OvernightTown, offMin: number, windowMin: number): number {
   const near = 1 - Math.min(1, Math.abs(offMin) / windowMin) ** 2;
   const size =
-    Math.min(1, Math.log10((town.population ?? 2_000) + 1) / 6) + (town.kind === "city" ? 0.25 : 0);
+    Math.min(
+      1,
+      Math.log10((town.population ?? (town.kind === "village" ? 1_000 : 2_000)) + 1) / 6,
+    ) + (town.kind === "city" ? 0.25 : 0);
   const beds = town.stays > 0 ? Math.min(1, Math.log10(town.stays + 1) / 1.5) : -0.3;
   return 1.2 * near + 0.6 * size + beds;
 }

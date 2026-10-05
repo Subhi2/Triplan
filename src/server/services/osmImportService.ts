@@ -47,6 +47,8 @@ export async function upsertOsmPlaces(
     population: c.population,
     wikidata_id: c.wikidataId,
     osm_tags: c.osmTags,
+    // A park's outline as lines; PostGIS joins them into a polygon below.
+    outline: c.outline ? JSON.stringify({ type: "MultiLineString", coordinates: c.outline }) : null,
   }));
 
   await getDb().transaction(async (tx) => {
@@ -89,21 +91,34 @@ export async function upsertOsmPlaces(
 
     const rest = rows.filter((r) => !matched.has(r.osm_id));
     if (rest.length === 0) return;
+    // Outlines: the lines joined into polygons (ST_BuildArea), made valid, simplified to about
+    // 100 m; the place's point goes inside the outline. A broken outline is left out (null).
     const upserted = await tx.execute<{ inserted: boolean }>(sql`
-      INSERT INTO place (slug, name, alt_names, category_id, location, state, status, source,
+      INSERT INTO place (slug, name, alt_names, category_id, location, area, state, status, source,
                          osm_id, wikidata_id, population, osm_tags)
       SELECT c.slug, c.name, ARRAY(SELECT jsonb_array_elements_text(c.alt_names)), cat.id,
-             ST_SetSRID(ST_MakePoint(c.lng, c.lat), 4326)::geography, ${state}, 'verified', 'osm',
+             coalesce(ST_PointOnSurface(o.area::geometry)::geography,
+                      ST_SetSRID(ST_MakePoint(c.lng, c.lat), 4326)::geography),
+             o.area, ${state}, 'verified', 'osm',
              c.osm_id, c.wikidata_id, c.population, c.osm_tags
       FROM jsonb_to_recordset(${JSON.stringify(rest)}::jsonb)
         AS c(osm_id text, slug text, name text, alt_names jsonb, category text, lng float8,
-             lat float8, population int, wikidata_id text, osm_tags jsonb)
+             lat float8, population int, wikidata_id text, osm_tags jsonb, outline text)
       JOIN category cat ON cat.slug = c.category
+      LEFT JOIN LATERAL (
+        SELECT CASE WHEN ST_IsEmpty(a) THEN NULL ELSE a::geography END AS area
+        FROM (
+          SELECT ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_SimplifyPreserveTopology(
+                   ST_BuildArea(ST_SetSRID(ST_GeomFromGeoJSON(c.outline), 4326)), 0.001)), 3)) AS a
+        ) built
+        WHERE c.outline IS NOT NULL
+      ) o ON true
       ON CONFLICT (osm_id) DO UPDATE SET
         name = excluded.name,
         alt_names = excluded.alt_names,
         category_id = excluded.category_id,
         location = excluded.location,
+        area = excluded.area,
         state = excluded.state,
         wikidata_id = excluded.wikidata_id,
         population = excluded.population,

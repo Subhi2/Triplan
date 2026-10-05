@@ -8,6 +8,8 @@ export interface OsmElement {
   location: LngLat; // node position, or the centre of a way's / relation's bounding box
   extentM: number; // bounding box diagonal in metres; 0 for nodes
   tags: Record<string, string>;
+  /** Protected areas only: the way's line or the relation's outer ways, to build the outline. */
+  outline?: LngLat[][];
 }
 
 export interface OsmPlacesRequest {

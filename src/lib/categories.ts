@@ -4,7 +4,8 @@
  * Icons are lucide icon names.
  */
 export const CATEGORIES = {
-  temple: { name: "Temple", color: "#c2410c", icon: "landmark", weight: 1 },
+  // Below 1 because most temples are small local ones; notable temples still rank high (+1).
+  temple: { name: "Temple", color: "#c2410c", icon: "landmark", weight: 0.9 },
   worship: { name: "Place of worship", color: "#9a3412", icon: "church", weight: 0.9 },
   heritage: { name: "Heritage", color: "#a16207", icon: "castle", weight: 1.2 },
   fort: { name: "Fort", color: "#7c2d12", icon: "castle", weight: 1 },
@@ -16,6 +17,7 @@ export const CATEGORIES = {
   peak: { name: "Peak", color: "#4d7c0f", icon: "mountain", weight: 0.9 },
   cave: { name: "Cave", color: "#57534e", icon: "circle-dashed", weight: 1 },
   lake: { name: "Lake", color: "#0e7490", icon: "waves", weight: 0.9 }, // many are village tanks
+  wildlife: { name: "Wildlife", color: "#047857", icon: "paw-print", weight: 1.1 }, // parks, sanctuaries, zoos
   beach: { name: "Beach", color: "#ca8a04", icon: "umbrella", weight: 1 },
   food: { name: "Food", color: "#dc2626", icon: "utensils", weight: 0.8 },
   coffee: { name: "Coffee", color: "#78350f", icon: "coffee", weight: 0.8 },
