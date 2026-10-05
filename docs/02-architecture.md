@@ -358,6 +358,14 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - API route handlers validate input with Zod and rate-limit writes per user (e.g. 20 reviews/day).
 - Uploaded images: max 8 MB, resized to 1600 px and 400 px thumbnails, EXIF location stripped unless the user opts in to use it as the place pin.
 
+## Safety stops
+
+Hospitals, police, ATMs, puncture and tyre shops, repair shops and stays along the route.
+
+- **Data**: `service_point` (migration 0015), from OpenStreetMap: `amenity=hospital` or `healthcare=hospital`, `amenity=police`, `amenity=atm` or a bank with `atm=yes`, `shop=tyres|motorcycle_repair|car_repair|motorcycle` (a name with "puncture" or "tyre" makes it a tyre shop), `tourism=hotel|guest_house|hostel|motel`. Private, disused and campus-sized ones are left out; phones are kept for hospitals, police and stays (`classifyService`, pure and tested). Kept apart from places on purpose: these must not become indexable pages or crowd the place list. Goa has about 2,200 (two thirds of them stays); all of India is roughly 150–250 thousand rows, about 60 MB with indexes.
+- **Import**: `pnpm db:import-services -- --region=<key|all> [--kinds=…] [--dry-run]`, on the same tile loop as the places import (`src/server/services/osmTiles.ts`): one Overpass request at a time, upsert on `osm_id`, and after a full run of every kind a region's rows not seen again are deleted.
+- **Search**: `services_along_route(geojson, corridor_m, kinds)`, as `places_along_route`.
+
 ## Plan in plain words
 
 "2-day monsoon ride from Pune with waterfalls, under 250 km" becomes a planner trip (`POST /api/trip-from-words { text, near? }`).

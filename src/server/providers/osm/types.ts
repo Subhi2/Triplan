@@ -18,6 +18,8 @@ export interface OsmPlacesRequest {
 export interface OsmPlacesProvider {
   /** Places of interest, fuel stations and towns inside the area and tile. */
   fetchPlaces(request: OsmPlacesRequest): Promise<OsmElement[]>;
+  /** Hospitals, police, ATMs, tyre and repair shops and stays inside the area and tile. */
+  fetchServices(request: OsmPlacesRequest): Promise<OsmElement[]>;
 }
 
 /** The query timed out or ran out of memory: retry with a smaller tile. */

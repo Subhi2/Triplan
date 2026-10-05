@@ -241,6 +241,21 @@ CREATE TABLE ride (
   seeded_at   timestamptz NOT NULL DEFAULT now()
 );
 
+-- Service points (migration 0015) -----------------------------------------------
+-- Hospitals, police, ATMs, tyre and repair shops and stays from OpenStreetMap, for safety stops
+-- and overnight stays. Kept apart from place: no pages, no sitemap, not in the place list.
+CREATE TABLE service_point (
+  osm_id     text PRIMARY KEY,               -- "node/123", "way/456"
+  kind       text NOT NULL CHECK (kind IN ('hospital','police','atm','tyre','repair','stay')),
+  name       text,
+  phone      text,                           -- hospitals, police and stays only
+  region     text NOT NULL,                  -- the state it was imported with
+  location   geography(Point, 4326) NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX service_point_location_gix ON service_point USING gist (location);
+CREATE INDEX service_point_region_idx ON service_point (region);
+
 -- Usage counters (migration 0014) -----------------------------------------------
 -- Counts per UTC day: routes planned, AI requests and tokens. Server only (RLS on, no policies).
 CREATE TABLE usage_daily (
@@ -263,6 +278,7 @@ Also add:
 - A trigger that sets `updated_at`.
 - RLS policies as described in `02-architecture.md`.
 - The `places_along_route` function from `02-architecture.md`.
+- `services_along_route(geojson, corridor_m, kinds text[] = NULL)` (migration 0015): the service points within `corridor_m` of the route, with `km_from_start` and `detour_m` worked out as in `places_along_route`, in km order, at most 4000 (the nearest to the road kept).
 - `places_near_point(origin_lng, origin_lat, radius_m, categories text[] = NULL, lim = 400)` (migration 0012), for the Near me screen. Verified places within `radius_m` (straight line) of the point, with the same columns as `places_along_route` except `distance_m` and `priority` in place of `km_from_start` and `detour_m`. `priority` is the category weight, +1 when curated (not OSM only) and +0.5 with a Wikidata link. Results are ordered by priority, then rating, then distance, and capped at `lim` (at most 1000). `categories` NULL means every category except towns. Inputs are named `origin_*` because the returned `lng`/`lat` columns are OUT parameters.
 
 ## API response types (TypeScript)

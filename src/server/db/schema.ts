@@ -328,6 +328,32 @@ export const googleUsage = pgTable(
   (t) => [primaryKey({ columns: [t.day, t.sku] })],
 );
 
+// Service points ----------------------------------------------------------------
+// Hospitals, police, ATMs, tyre and repair shops and stays from OpenStreetMap, for safety stops and
+// overnight stays (docs/02, "Safety stops"). Kept apart from place: no pages, no sitemap, not in
+// the place list. Imported with `pnpm db:import-services`.
+
+export const servicePoint = pgTable(
+  "service_point",
+  {
+    osmId: text("osm_id").primaryKey(), // "node/123", "way/456"
+    kind: text("kind").notNull(), // hospital | police | atm | tyre | repair | stay
+    name: text("name"),
+    phone: text("phone"),
+    region: text("region").notNull(), // the state it was imported with
+    location: geographyPoint("location").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("service_point_location_gix").using("gist", t.location),
+    index("service_point_region_idx").on(t.region),
+    check(
+      "service_point_kind_check",
+      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay')`,
+    ),
+  ],
+);
+
 // Usage counters ----------------------------------------------------------------
 // Counts per UTC day: routes planned, AI requests and tokens (src/server/services/usage.ts).
 // Nothing about who: no visitor keys, no addresses.

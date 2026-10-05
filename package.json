@@ -18,6 +18,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
     "db:import-osm": "tsx --env-file=.env.local scripts/import-osm.ts",
+    "db:import-services": "tsx --env-file=.env.local scripts/import-services.ts",
     "db:import-photos": "tsx --env-file=.env.local scripts/import-photos.ts",
     "db:seed-rides": "tsx --env-file=.env.local scripts/seed-rides.ts",
     "rides:lookup": "tsx --env-file=.env.local scripts/ride-lookup.ts",

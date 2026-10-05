@@ -106,6 +106,13 @@
       "when": 1791178701864,
       "tag": "0014_usage_daily",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791179585547,
+      "tag": "0015_service_point",
+      "breakpoints": true
     }
   ]
 }
