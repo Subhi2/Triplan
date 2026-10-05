@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
@@ -674,7 +675,25 @@ export function Planner({ savedTrip = null, famousRides = [] }: Props) {
           </div>
         ) : null}
 
-        {!hasTrip && !typing && <FamousRidesStrip rides={famousRides} />}
+        {!hasTrip && !typing && (
+          <>
+            <FamousRidesStrip rides={famousRides} />
+            <p className="flex gap-3 text-xs text-stone-600 dark:text-stone-400">
+              <Link
+                href="/about"
+                className="inline-flex min-h-11 items-center underline md:min-h-0"
+              >
+                About Triplan
+              </Link>
+              <a
+                href="https://github.com/Subhi2/Triplan"
+                className="inline-flex min-h-11 items-center underline md:min-h-0"
+              >
+                Code on GitHub
+              </a>
+            </p>
+          </>
+        )}
 
         {isDesktop && sidePanel}
       </aside>

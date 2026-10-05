@@ -58,6 +58,14 @@ export function PlannerHeader({
           <CrosshairIcon size={18} />
           {!compact && "Near me"}
         </Link>
+        {!compact && (
+          <Link
+            href="/rides"
+            className="text-brand-dark hidden min-h-11 items-center px-2 text-sm font-bold hover:underline sm:inline-flex dark:text-teal-300"
+          >
+            Rides
+          </Link>
+        )}
         <Link
           href="/trips"
           className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"

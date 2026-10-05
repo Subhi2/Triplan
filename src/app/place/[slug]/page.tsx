@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PlaceDetailView } from "@/components/place/PlaceDetailView";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { SiteNav } from "@/components/site/SiteNav";
 import { categoryStyle } from "@/lib/categories";
 import { PLACE_SLUG_PATTERN, type PlaceDetail } from "@/lib/placeDetail";
 import { SITE_NAME, siteUrl } from "@/lib/site";
@@ -79,20 +81,7 @@ export default async function PlacePage({ params }: Props) {
           __html: JSON.stringify(placeJsonLd(place)).replace(/</g, "\\u003c"),
         }}
       />
-      <nav className="flex items-center justify-between gap-2 text-sm">
-        <Link
-          href="/"
-          className="font-display inline-flex min-h-11 items-center text-lg font-extrabold tracking-tight"
-        >
-          {SITE_NAME}
-        </Link>
-        <Link
-          href="/trips"
-          className="text-brand inline-flex min-h-11 items-center font-medium hover:underline"
-        >
-          Saved trips
-        </Link>
-      </nav>
+      <SiteNav />
       <PlaceDetailView
         place={place}
         month={new Date().getMonth() + 1}
@@ -106,6 +95,7 @@ export default async function PlacePage({ params }: Props) {
           </Link>
         }
       />
+      <SiteFooter />
     </main>
   );
 }
