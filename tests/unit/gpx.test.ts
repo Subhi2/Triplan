@@ -48,8 +48,20 @@ describe("tripGpx", () => {
       stops: [],
       places: [],
       days: [
-        { name: "Day 1: Pune → Hosapete", route: [[73.85, 18.52], [76.39, 15.27]] },
-        { name: "Day 2: Hosapete → Kochi", route: [[76.39, 15.27], [76.27, 9.93]] },
+        {
+          name: "Day 1: Pune → Hosapete",
+          route: [
+            [73.85, 18.52],
+            [76.39, 15.27],
+          ],
+        },
+        {
+          name: "Day 2: Hosapete → Kochi",
+          route: [
+            [76.39, 15.27],
+            [76.27, 9.93],
+          ],
+        },
       ],
       nights: [{ name: "Night 1: Hosapete", location: [76.39, 15.27], symbol: "Lodging" }],
     });
@@ -66,7 +78,8 @@ describe("sliceLine", () => {
     [76, 13],
     [76, 14],
   ];
-  const length = (l: LngLat[]) => l.slice(1).reduce((n, p, i) => n + haversineM(l[i]!, p), 0) / 1000;
+  const length = (l: LngLat[]) =>
+    l.slice(1).reduce((n, p, i) => n + haversineM(l[i]!, p), 0) / 1000;
 
   it("cuts a line exactly at both km, keeping the points between", () => {
     const part = sliceLine(line, 50, 150);

@@ -130,7 +130,14 @@ describe("planDays", () => {
     stayCounts: vi.fn(async (points: LngLat[]) => points.map(() => 12)),
     staysNear: vi.fn(async (points: LngLat[]) =>
       points.map(() => [
-        { id: "node/1", name: "Hotel Hill View", phone: null, location: [76, 15] as LngLat, distanceKm: 0.4, slug: null },
+        {
+          id: "node/1",
+          name: "Hotel Hill View",
+          phone: null,
+          location: [76, 15] as LngLat,
+          distanceKm: 0.4,
+          slug: null,
+        },
       ]),
     ),
   });

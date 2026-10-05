@@ -238,7 +238,11 @@ export const daysRequestSchema = z
     // When the route id has expired: the geometry and the route's totals (time runs evenly).
     geometry: lineStringSchema.optional(),
     distanceKm: z.number().positive().max(20_000).optional(),
-    durationMin: z.number().positive().max(60 * 24 * 30).optional(),
+    durationMin: z
+      .number()
+      .positive()
+      .max(60 * 24 * 30)
+      .optional(),
     hoursPerDay: z
       .number()
       .int()

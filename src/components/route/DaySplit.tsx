@@ -131,8 +131,8 @@ export function DaySplit({
               <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
                 <span className="font-bold">Day {leg.day}</span>
                 <span className="tabular font-mono text-xs text-stone-600 dark:text-stone-400">
-                  km {Math.round(leg.fromKm)}–{Math.round(leg.toKm)} ·{" "}
-                  {formatDuration(leg.rideMin)} riding
+                  km {Math.round(leg.fromKm)}–{Math.round(leg.toKm)} · {formatDuration(leg.rideMin)}{" "}
+                  riding
                 </span>
               </p>
               <p className="text-sm">
@@ -153,7 +153,10 @@ export function DaySplit({
                   {leg.end.stays.map((s) => {
                     const tel = s.phone ? telLink(s.phone) : null;
                     return (
-                      <li key={s.id} className="flex min-h-11 items-center gap-2 text-sm md:min-h-8">
+                      <li
+                        key={s.id}
+                        className="flex min-h-11 items-center gap-2 text-sm md:min-h-8"
+                      >
                         <span className="min-w-0 flex-1 truncate">
                           {s.slug ? (
                             <Link href={`/place/${s.slug}`} className="font-bold hover:underline">

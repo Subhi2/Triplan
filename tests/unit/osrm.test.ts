@@ -139,10 +139,23 @@ describe("road stretches", () => {
         code: "Ok",
         routes: [
           {
-            geometry: { type: "LineString", coordinates: [[77.59, 12.97], [75.33, 13.19]] },
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [77.59, 12.97],
+                [75.33, 13.19],
+              ],
+            },
             distance: 1_000,
             duration: 100,
-            legs: [{ distance: 1_000, duration: 100, summary: "", steps: [{ distance: 1_000, duration: 100 }] }],
+            legs: [
+              {
+                distance: 1_000,
+                duration: 100,
+                summary: "",
+                steps: [{ distance: 1_000, duration: 100 }],
+              },
+            ],
           },
         ],
       },
