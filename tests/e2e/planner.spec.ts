@@ -201,6 +201,8 @@ test.describe("3D ride preview", () => {
     await expect(dialog.getByText(/of 331/)).toBeVisible();
     // The camera moves on by itself.
     await expect(dialog.locator("[data-hud-km]")).not.toHaveText("0.0", { timeout: 20_000 });
+    // Chromium has the video encoder, so the ride can be saved as a video.
+    await expect(dialog.getByRole("button", { name: "Save video" })).toBeVisible();
     await dialog.getByRole("button", { name: "Pause" }).click();
     await dialog.getByRole("slider", { name: "Position along the route" }).fill("3000");
     await expect(dialog.locator("[data-hud-km]")).toHaveText("300.0");

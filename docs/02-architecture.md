@@ -136,6 +136,17 @@ The public OSRM server reports no road classes (tunnels, tolls), so tunnels cann
 - **Comfort and speed**: under reduced motion it opens on an overview and moves only when played or scrubbed. If frames average over 50 ms for 2 s it drops to pixel ratio 1, then turns the terrain off. Without WebGL it says so and points to the profile.
 - MapLibre gives its container `position: relative`, so the container sits inside an absolutely placed box (an absolute container collapses to 0 px).
 
+### Saving the preview as a video
+
+"Save video" in the preview renders the whole ride into a 30 s, 30 fps, 9:16 video (1080×1920, or 720×1280 on low-end phones), frame by frame:
+
+1. The map box turns portrait (as tall as the screen allows) and the live clock stops; the render loop drives the camera.
+2. For each of the 900 frames: the camera, rider dot and route progress are set for that moment (bearing smoothed in video time), then the code waits until the tiles for the view have loaded (`areTilesLoaded()` after a render, at most 1.5 s), not for the map's `idle` event, which also waits out fades and cost about 300 ms a frame. Label fades are off (`fadeDuration: 0`).
+3. The frame is drawn inside the map's `render` event (while its WebGL buffer still holds the picture, so no `preserveDrawingBuffer`) onto a 2D canvas by `drawFrame` (`src/components/ride/composite.ts`): the map cropped to fill, the trip and km card, the ghat and climb chips, the place being passed (text only, so nothing cross-origin taints the canvas), a progress strip over the profile, "Planned on Triplan · <host>", and the map attribution read from the map's own control plus the terrain credit. Credits are never cut: smaller type, then two lines.
+4. Mediabunny (MPL-2.0, loaded only now) encodes it with WebCodecs at an exact timestamp per frame: H.264 in MP4 where the browser can (plays in Instagram, WhatsApp and on iPhones), VP9 in WebM otherwise, 4 Mbps (about 15 MB). Without `VideoEncoder` the button is hidden.
+
+`MediaRecorder` on `canvas.captureStream()` was tried first and dropped: Chrome's MP4 recorder keeps wall-clock time across `pause()`, so waiting for tiles made a 40 s ride a 138 s video. Rendering takes one to a few minutes depending on the device and network; a progress bar and Cancel show meanwhile, and the finished video can be played back, shared as a file through the share sheet, or downloaded.
+
 ### Suggesting "via" towns
 
 To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the largest towns (OSM `place=town|city`) within 2 km of each route that are not within 2 km of the other routes. Show the top 1–2 as the card label. Store towns in `place` with category `town`, or a separate `settlement` table.

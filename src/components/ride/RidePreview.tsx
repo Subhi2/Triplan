@@ -22,6 +22,17 @@ import { formatMetres } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
 import { detourLabel, type PlaceAlong } from "@/lib/places";
 import { TERRAIN_CREDIT_SHORT, terrainTilesUrl } from "@/lib/terrain";
+import {
+  drawFrame,
+  VIDEO_BITRATE,
+  VIDEO_FPS,
+  VIDEO_SECONDS,
+  videoSize,
+  type FrameText,
+  type Fonts,
+} from "./composite";
+import { canEncodeVideoHere, createVideoWriter, type VideoWriter } from "./encodeVideo";
+import { storyFileName } from "./StoryShare";
 
 const MAP_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/liberty";
@@ -85,6 +96,46 @@ function lowEndDevice(): boolean {
   return (navigator.hardwareConcurrency ?? 8) <= 4 || memory <= 4;
 }
 
+/** The page's own fonts (from next/font) as canvas font families. */
+function canvasFonts(): Fonts {
+  const probe = (cls: string) => {
+    const el = document.createElement("span");
+    el.className = cls;
+    document.body.append(el);
+    const family = getComputedStyle(el).fontFamily;
+    el.remove();
+    return family;
+  };
+  return { display: probe("font-display"), body: probe("font-sans"), mono: probe("font-mono") };
+}
+
+/** One map render (which also asks for the tiles a new view needs). */
+function renderOnce(map: MapLibreMap): Promise<void> {
+  return new Promise((resolve) => {
+    map.once("render", () => resolve());
+    map.triggerRepaint();
+  });
+}
+
+/**
+ * Resolves once the tiles for the current view have loaded (at most `timeoutMs`). Not the map's
+ * "idle" event: that also waits out fades and costs about 300 ms a frame.
+ */
+async function settle(map: MapLibreMap, timeoutMs = 1500): Promise<void> {
+  await renderOnce(map);
+  const start = performance.now();
+  while (!map.areTilesLoaded() && performance.now() - start < timeoutMs) await renderOnce(map);
+}
+
+/** The next animation frame. */
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+type RecordState =
+  | { status: "idle" }
+  | { status: "recording"; progress: number }
+  | { status: "done"; url: string; file: File }
+  | { status: "error"; message: string };
+
 /**
  * The 3D ride preview: a full-screen MapLibre map with 3D terrain whose camera rides the route,
  * slower through ghats, past hairpins and places. MapLibre only (no Google content), loaded on
@@ -119,6 +170,15 @@ export default function RidePreview(props: RidePreviewProps) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [simplified, setSimplified] = useState(false);
+  const [record, setRecord] = useState<RecordState>({ status: "idle" });
+  // Set while a video is being rendered: the render loop drives the camera, not the clock.
+  const renderingRef = useRef<{ cancelled: boolean; credits: string } | null>(null);
+  const [canRecord] = useState(canEncodeVideoHere);
+  // While recording, the map is a portrait frame (the video is 9:16).
+  const [portrait, setPortrait] = useState<{ width: number; height: number } | null>(null);
+  const frameTextRef = useRef<(km: number) => FrameText>(() => {
+    throw new Error("not ready");
+  });
   playingRef.current = playing;
   speedRef.current = speed;
 
@@ -138,6 +198,8 @@ export default function RidePreview(props: RidePreviewProps) {
         bearing: lookBearing(path, 0),
         maxPitch: 75,
         interactive: false,
+        // Labels appear at once: a video frame would otherwise wait 300 ms for them to fade in.
+        fadeDuration: 0,
         attributionControl: false,
         pixelRatio: Math.min(window.devicePixelRatio || 1, lowEnd ? 1 : 1.5),
       });
@@ -264,7 +326,7 @@ export default function RidePreview(props: RidePreviewProps) {
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      if (map.isStyleLoaded() && map.getLayer("rider")) {
+      if (!renderingRef.current && map.isStyleLoaded() && map.getLayer("rider")) {
         if (playingRef.current) {
           following = true;
           tRef.current = Math.min(1, tRef.current + (dt * speedRef.current) / duration);
@@ -325,6 +387,7 @@ export default function RidePreview(props: RidePreviewProps) {
     return () => {
       cancelAnimationFrame(frame);
       container.removeEventListener("ride-scrub", onScrub);
+      if (renderingRef.current) renderingRef.current.cancelled = true; // closing drops the video
       map.remove();
       mapRef.current = null;
     };
@@ -362,6 +425,150 @@ export default function RidePreview(props: RidePreviewProps) {
     setPlaying(!playing);
   }
 
+  /** What a video frame shows at `km`: the same facts as the heads-up display. */
+  frameTextRef.current = (atKm: number): FrameText => {
+    const near = places
+      .filter((p) => Math.abs(p.kmFromStart - atKm) <= CARD_WITHIN_KM)
+      .sort((a, b) => Math.abs(a.kmFromStart - atKm) - Math.abs(b.kmFromStart - atKm))[0];
+    const atClimb = profile ? climbAt(profile, atKm) : null;
+    const ghat = ghats.some(([a, b]) => atKm >= a * path.totalKm && atKm <= b * path.totalKm);
+    const lo = profile?.lowest.m ?? 0;
+    const range = profile ? Math.max(200, profile.highest.m - lo) : 1;
+    return {
+      title: props.title,
+      km: atKm,
+      totalKm: path.totalKm,
+      height: profile ? formatMetres(elevationAt(profile, atKm)) : null,
+      chips: [
+        ...(ghat ? ["Ghat"] : []),
+        ...(atClimb
+          ? [`${atClimb.dir === "up" ? "Climbing" : "Descending"} ${atClimb.gradePct}%`]
+          : []),
+      ],
+      place: near
+        ? {
+            name: near.name,
+            line: `${categoryStyle(near.category).name} · km ${Math.round(near.kmFromStart)} · ${detourLabel(near.detourKm)}`,
+            color: categoryStyle(near.category).color,
+          }
+        : null,
+      share: atKm / path.totalKm,
+      profile: profile
+        ? profile.points.map(([k, m]): [number, number] => [k / path.totalKm, (m - lo) / range])
+        : null,
+      credits: renderingRef.current?.credits ?? "",
+      brand: `Planned on Triplan · ${window.location.host}`,
+    };
+  };
+
+  /**
+   * Renders the whole ride as a 9:16 video of VIDEO_SECONDS, frame by frame: each frame sets the
+   * camera, waits for the map to finish drawing (tiles included) and is encoded at its own
+   * timestamp, so the video is smooth and exactly that long on any device.
+   */
+  async function startRecording() {
+    const map = mapRef.current;
+    if (!map || renderingRef.current) return;
+    const size = videoSize(lowEndDevice());
+    const canvas = document.createElement("canvas");
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const job = {
+      cancelled: false,
+      credits:
+        box.current?.querySelector(".maplibregl-ctrl-attrib-inner")?.textContent?.trim() ||
+        `© OpenStreetMap contributors · ${TERRAIN_CREDIT_SHORT}`,
+    };
+    renderingRef.current = job;
+    setPlaying(false);
+    setRecord({ status: "recording", progress: 0 });
+    // The map becomes a portrait frame as large as the screen allows.
+    const width = Math.min(window.innerWidth, (window.innerHeight * 9) / 16);
+    setPortrait({ width, height: (width * 16) / 9 });
+    let writer: VideoWriter | null = null;
+    try {
+      writer = await createVideoWriter(canvas, VIDEO_FPS, VIDEO_BITRATE);
+      if (!writer) throw new Error("This browser cannot encode video");
+      await nextFrame();
+      await nextFrame();
+      map.resize();
+      const fonts = canvasFonts();
+      const frames = VIDEO_SECONDS * VIDEO_FPS;
+      let bearing = lookBearing(path, 0);
+      for (let i = 0; i < frames && !job.cancelled; i++) {
+        const t = i / (frames - 1);
+        const atKm = kmAtTime(path, t);
+        bearing = smoothAngle(bearing, lookBearing(path, atKm), 1 / VIDEO_FPS, TURN_TAU_S);
+        map.jumpTo({
+          center: targetAt(path, atKm),
+          bearing,
+          pitch: FLY_PITCH,
+          zoom: zoomAt(path, atKm),
+          padding: chasePadding(map),
+        });
+        (map.getSource("rider") as GeoJSONSource | undefined)?.setData(point(pointAt(path, atKm)));
+        map.setPaintProperty(
+          "route-line",
+          "line-gradient",
+          progressGradient(atKm / path.totalKm) as never,
+        );
+        await settle(map);
+        // Drawn in the render event, while the map's drawing buffer still holds the frame.
+        await new Promise<void>((resolve) => {
+          map.once("render", () => {
+            drawFrame(ctx, map.getCanvas(), frameTextRef.current(atKm), fonts);
+            resolve();
+          });
+          map.triggerRepaint();
+        });
+        await writer.addFrame(i);
+        if (i % 15 === 0) {
+          setRecord({ status: "recording", progress: i / frames });
+          setHud({ km: atKm, t });
+        }
+      }
+      if (job.cancelled) {
+        await writer.cancel();
+        setRecord({ status: "idle" });
+      } else {
+        const blob = await writer.finish();
+        const name = storyFileName(props.title)
+          .replace(/^story-/, "ride-")
+          .replace(/\.png$/, `.${writer.extension}`);
+        setRecord({
+          status: "done",
+          url: URL.createObjectURL(blob),
+          file: new File([blob], name, { type: blob.type }),
+        });
+      }
+    } catch (err) {
+      console.warn("The ride video failed", err);
+      await writer?.cancel().catch(() => undefined);
+      setRecord({ status: "error", message: "The video could not be made on this device." });
+    } finally {
+      if (renderingRef.current === job) renderingRef.current = null;
+      setPortrait(null);
+      dirty.current = true;
+    }
+  }
+
+  function cancelRecording() {
+    if (renderingRef.current) renderingRef.current.cancelled = true;
+  }
+
+  function closeVideo() {
+    if (record.status === "done") URL.revokeObjectURL(record.url);
+    setRecord({ status: "idle" });
+  }
+
+  // The map redraws at its new size when it turns portrait for a recording, and back.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => mapRef.current?.resize());
+    return () => cancelAnimationFrame(frame);
+  }, [portrait]);
+
   const km = hud.km;
   const height = profile ? elevationAt(profile, km) : null;
   const climb = profile ? climbAt(profile, km) : null;
@@ -378,7 +585,10 @@ export default function RidePreview(props: RidePreviewProps) {
       className="fixed inset-0 z-50 bg-stone-900 text-stone-900"
     >
       {/* MapLibre makes its container position: relative, so it fills an absolute box. */}
-      <div className="absolute inset-0">
+      <div
+        className={portrait ? "absolute top-1/2 left-1/2 -translate-1/2" : "absolute inset-0"}
+        style={portrait ?? undefined}
+      >
         <div ref={box} className="h-full w-full" />
       </div>
 
@@ -509,12 +719,129 @@ export default function RidePreview(props: RidePreviewProps) {
               ))}
             </div>
             {simplified && (
-              <span className="ml-auto hidden text-xs text-stone-600 sm:inline">
+              <span className="hidden text-xs text-stone-600 sm:inline">
                 Simplified for this device
               </span>
             )}
+            {canRecord && ready && record.status !== "recording" && (
+              <button
+                type="button"
+                onClick={startRecording}
+                className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-xl border border-stone-300 px-3 text-sm font-bold"
+              >
+                <span aria-hidden className="h-3 w-3 rounded-full bg-red-600" />
+                Save video
+              </button>
+            )}
           </div>
+          {record.status === "recording" && (
+            <div
+              role="status"
+              className="flex items-center gap-3 rounded-xl bg-stone-900 px-3 py-2 text-sm text-white"
+            >
+              <span aria-hidden className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
+              <span className="flex-1">
+                Making a {VIDEO_SECONDS} s video ·{" "}
+                <span className="tabular font-mono">
+                  {record.status === "recording" ? Math.round(record.progress * 100) : 0}%
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={cancelRecording}
+                className="min-h-9 rounded-lg px-3 font-bold underline"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {record.status === "error" && (
+            <p role="alert" className="text-sm text-red-700">
+              {record.message}
+            </p>
+          )}
         </div>
+      </div>
+
+      {record.status === "done" && (
+        <SavedVideo url={record.url} file={record.file} title={props.title} onClose={closeVideo} />
+      )}
+    </div>
+  );
+}
+
+/** The finished video: play it back, then share it (as a file) or download it. */
+function SavedVideo({
+  url,
+  file,
+  title,
+  onClose,
+}: {
+  url: string;
+  file: File;
+  title: string;
+  onClose: () => void;
+}) {
+  const canShare = typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [file] });
+  function download() {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+  }
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 p-4">
+      <div
+        role="group"
+        aria-label="Your ride video"
+        className="flex max-h-full w-full max-w-sm flex-col gap-3 rounded-2xl bg-white p-4 shadow-xl"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold">Your ride video</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close the video"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-xl hover:bg-stone-100"
+          >
+            ×
+          </button>
+        </div>
+        <video
+          src={url}
+          controls
+          playsInline
+          muted
+          className="aspect-[9/16] max-h-[60vh] w-full rounded-xl bg-stone-900 object-contain"
+        />
+        <div className="flex gap-2">
+          {canShare && (
+            <button
+              type="button"
+              onClick={() =>
+                void navigator
+                  .share({ files: [file], title, text: `${title}, planned on Triplan` })
+                  .catch(() => undefined)
+              }
+              className="bg-brand min-h-12 flex-1 rounded-xl px-4 font-bold text-white"
+            >
+              Share
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={download}
+            className="min-h-12 flex-1 rounded-xl border border-stone-300 px-4 font-bold"
+          >
+            Download
+          </button>
+        </div>
+        <p className="text-xs text-stone-600">
+          {file.type.includes("mp4") ? "MP4" : "WebM"} · {Math.round(file.size / 100_000) / 10} MB ·
+          map and terrain credits are in the video.
+        </p>
       </div>
     </div>
   );
