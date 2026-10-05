@@ -1,0 +1,175 @@
+{
+  "format": 1,
+  "createdAt": "2026-10-05T15:51:44.376Z",
+  "migration": "0015_service_point",
+  "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row.",
+  "tables": [
+    {
+      "name": "category",
+      "file": "category.ndjson.gz",
+      "columns": [
+        "id",
+        "slug",
+        "name",
+        "icon",
+        "parent_id",
+        "weight"
+      ],
+      "rows": 18,
+      "bytes": 454,
+      "sha256": "9ebc9626f303159fe9c5d196e68726b6714f680f9d4b92a3539d595ae45ca155"
+    },
+    {
+      "name": "carry_item",
+      "file": "carry_item.ndjson.gz",
+      "columns": [
+        "id",
+        "slug",
+        "name",
+        "icon"
+      ],
+      "rows": 19,
+      "bytes": 485,
+      "sha256": "86416b44da23f532a1ef3136fb140edb3a33d91a2e5cd7bef7ce39610d377ad1"
+    },
+    {
+      "name": "place",
+      "file": "place.ndjson.gz",
+      "columns": [
+        "id",
+        "slug",
+        "name",
+        "alt_names",
+        "category_id",
+        "location",
+        "address",
+        "district",
+        "state",
+        "description",
+        "status",
+        "source",
+        "osm_id",
+        "google_place_id",
+        "wikidata_id",
+        "rating_avg",
+        "rating_count",
+        "trending_score",
+        "created_by",
+        "created_at",
+        "updated_at",
+        "population",
+        "osm_tags",
+        "photos_checked_at",
+        "google_place_checked_at"
+      ],
+      "rows": 40134,
+      "bytes": 4214853,
+      "sha256": "7ce3a1c3d081b59c486810fb8611da294bfb4ce73e6ad7829a02321ed922d9a3"
+    },
+    {
+      "name": "place_guide",
+      "file": "place_guide.ndjson.gz",
+      "columns": [
+        "place_id",
+        "best_vehicles",
+        "last_mile_note",
+        "road_condition",
+        "best_months",
+        "ok_months",
+        "avoid_months",
+        "best_time_of_day",
+        "visit_duration_min",
+        "timings",
+        "entry_fee",
+        "dress_code",
+        "permit_needed",
+        "notes",
+        "verified_at",
+        "verified_by"
+      ],
+      "rows": 13,
+      "bytes": 1201,
+      "sha256": "fa6ba7e446c3279b1e0b82b7556f2fd184db91443f8cdd931822097b2a9aeb45"
+    },
+    {
+      "name": "place_carry",
+      "file": "place_carry.ndjson.gz",
+      "columns": [
+        "place_id",
+        "item_id",
+        "months",
+        "reason"
+      ],
+      "rows": 28,
+      "bytes": 478,
+      "sha256": "720a6af6f00dbb2ca0385439d464da84f19d3b29226c9401f14c7f0506da2b29"
+    },
+    {
+      "name": "media",
+      "file": "media.ndjson.gz",
+      "columns": [
+        "id",
+        "place_id",
+        "kind",
+        "url",
+        "thumb_url",
+        "source",
+        "license",
+        "author",
+        "author_url",
+        "width",
+        "height",
+        "status",
+        "uploaded_by",
+        "created_at"
+      ],
+      "rows": 1654,
+      "bytes": 185690,
+      "sha256": "4da853d164b8d4f9e6952fd70624ef91786fa04f19ff92d64a2d51abb7877278"
+    },
+    {
+      "name": "ride",
+      "file": "ride.ndjson.gz",
+      "columns": [
+        "slug",
+        "title",
+        "blurb",
+        "region",
+        "vehicle",
+        "tags",
+        "best_months",
+        "notes",
+        "stops",
+        "route_geom",
+        "distance_m",
+        "duration_s",
+        "road_mix",
+        "curvature",
+        "profile",
+        "ascent_m",
+        "hairpins",
+        "position",
+        "seeded_at"
+      ],
+      "rows": 21,
+      "bytes": 1490306,
+      "sha256": "6c74e8bdaa50bf54863598dfdbbb99318a7e7fdefd724d1715ffbe8bef7d1812"
+    },
+    {
+      "name": "service_point",
+      "file": "service_point.ndjson.gz",
+      "columns": [
+        "osm_id",
+        "kind",
+        "name",
+        "phone",
+        "region",
+        "location",
+        "updated_at"
+      ],
+      "rows": 113989,
+      "bytes": 4028498,
+      "sha256": "32a3a0efde42beee2d19fe73de46fc5f3e92fe3a1cff3610ae0a2a9acffb79b6"
+    }
+  ]
+}

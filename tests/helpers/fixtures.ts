@@ -9,7 +9,8 @@ export type RouteFixture =
   | "bengaluru-samse"
   | "bengaluru-belur-samse"
   | "bengaluru-ooty"
-  | "pune-goa";
+  | "pune-goa"
+  | "pollachi-valparai";
 
 /** Raw OSRM response recorded by scripts/record-route-fixtures.ts. */
 export function rawRouteFixture(name: RouteFixture): unknown {

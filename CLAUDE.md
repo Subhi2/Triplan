@@ -41,8 +41,16 @@ pnpm lint             # ESLint
 pnpm typecheck        # tsc --noEmit
 pnpm test             # Vitest
 pnpm test:e2e         # Playwright
+pnpm db:setup         # migrations + load data/snapshot into empty tables (--replace --yes, --from-sources)
 pnpm db:migrate       # apply Drizzle migrations
 pnpm db:seed          # load docs/06 seed data
+pnpm db:import-osm -- --region=<key|all>       # places from OpenStreetMap
+pnpm db:import-photos                          # Wikimedia Commons photos
+pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
+pnpm db:seed-rides    # route and store the famous rides in data/rides.json
+pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)
+pnpm db:export-snapshot         # rewrite data/snapshot from the live database (read only)
+pnpm screenshots -- --base=<url>  # README screenshots into docs/media
 pnpm job:discover     # run hidden-places discovery once (phase 6)
 ```
 
@@ -66,10 +74,13 @@ Add these scripts to `package.json` as the phases introduce them.
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
 DATABASE_URL=
 NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
+NEXT_PUBLIC_TERRAIN_TILES_URL=    # Terrarium tiles for the profile and 3D terrain; empty = AWS Terrain Tiles
+NEXT_PUBLIC_SITE_URL=             # public address for share cards and the sitemap
+WRITE_LIMIT_SALT=                 # salt for hashed visitor IPs (rate limits)
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=  # one Google key: Maps JavaScript API + Places API (New), used by the map and the server; empty = MapLibre, no Google content
 NEXT_PUBLIC_GOOGLE_MAP_ID=        # Map ID for Advanced Markers
 GOOGLE_MAPS_API_KEY=              # optional separate server key; empty = the key above
@@ -77,11 +88,12 @@ OSRM_BASE_URL=https://router.project-osrm.org
 NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
 NOMINATIM_USER_AGENT=bike-travelling-guide/0.1 (contact email)   # also sent to Photon and Overpass
 PHOTON_BASE_URL=https://photon.komoot.io/api   # suggestions while typing
-OVERPASS_BASE_URL=https://overpass-api.de/api/interpreter   # OSM places import
+OVERPASS_URLS=https://overpass-api.de/api/interpreter,...   # OSM imports; servers tried in order
 YOUTUBE_API_KEY=                  # phase 6
 INSTAGRAM_ACCESS_TOKEN=           # phase 7, needs Meta app review
 INSTAGRAM_BUSINESS_ACCOUNT_ID=    # phase 7
-ANTHROPIC_API_KEY=                # phase 6, place-name extraction
+ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction
+ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
 ```
 
 ## Things to avoid
@@ -91,4 +103,8 @@ ANTHROPIC_API_KEY=                # phase 6, place-name extraction
 - Never show Google content on or near a MapLibre map (Maps ToS 3.2.3(e)). Google content appears only when the Google map is on, or on a screen with no map, with Google's attribution.
 - Call Google only to fill a gap (a place with no photos or reviews of our own, an exact link), never for list rows, in a loop or from imports, and always through the daily budget in `src/server/providers/google/budget.ts`.
 - Public OSRM and Nominatim servers have strict usage limits (Nominatim: max 1 request/second, custom User-Agent required). Cache responses and never call them in a loop without throttling.
+- Terrain tiles are read only through `src/lib/terrain.ts` (`NEXT_PUBLIC_TERRAIN_TILES_URL`), never a hard-coded URL elsewhere.
+- The 3D ride preview, its video and the ride story are MapLibre / our data only: no Google content.
+- The rider's "plan in plain words" text is sent to Anthropic and never stored or logged; the feature stays hidden without `ANTHROPIC_API_KEY`.
+- The data snapshot (`data/snapshot`) never includes trips, reviews, accounts, usage, caches, users' photos or Google ids (`src/lib/snapshot.ts`). Refresh it with `pnpm db:export-snapshot` after imports.
 - Never use Nominatim for search-as-you-type (its usage policy forbids it); suggestions come from our own places and Photon. Photon's public server asks for fair use: keep suggestions debounced (300 ms), cached, and for 2+ characters only.

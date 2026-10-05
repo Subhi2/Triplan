@@ -48,7 +48,21 @@ Our edge: the corridor search (places on *this* road, in km order), India-wide o
 | G2.7 | Languages: Kannada, Hindi, Tamil, Malayalam, Marathi | `next-intl` (MIT) |
 | G2.8 | Measure it: which features get used, where visitors come from | Umami (MIT, self-host or free cloud tier) or Vercel Web Analytics (free tier); GlitchTip (open source) or Sentry free plan for errors |
 
-**G3 · Later: needs decisions, accounts or money.**
+Status (2026-10-02): G2.1, G2.2, G2.4, G2.5 and G2.8 are built in "Growth G3 · Showcase" (`04-build-plan.md`). Changes from the table: G2.2 reads AWS Terrain Tiles (Terrarium PNGs; SRTM, GMTED2010 and ETOPO1 credited to USGS and NOAA), because Mapterhorn does not cover India; G2.4 starts from a hand-picked list of famous rides, not from saved trips (too few yet); safety stops and stays live in their own `service_point` table, not as places with pages.
+
+**G3 · Showcase (decided 2026-10-02).** Features that give the app an identity on LinkedIn and in shared links, built in `04-build-plan.md` "Growth G3 · Showcase":
+
+| Feature | Why it sells | Tools and data (licence) |
+|---|---|---|
+| Hairpins and twistiness per route | Riders choose roads by their bends; no map app counts them | Our route geometry; the method described on roadcurvature.com, written as our own code |
+| Elevation profile and climbs | "Climbs 900 m in 18 km" is how riders describe a ghat | AWS Terrain Tiles (open data, attribution), `fast-png` (MIT) |
+| 3D ride preview, saved as a video | The demo-video feature; every saved video advertises the app | MapLibre terrain (BSD-3), the same tiles, browser `MediaRecorder` |
+| Ride story poster | Instagram stories and WhatsApp status are where Indian riders share plans | `next/og` |
+| Famous rides pages | One tap shows a stranger what the app does; pages rank for "Kalhatti ghat hairpins" | Our own data, ISR |
+| Plan in plain words | Typing a wish is easier than filling a form | Claude Haiku 4.5 through structured outputs (about US$0.002 a request, capped per day) |
+| One-command data setup | Anyone who clones the repo gets the whole dataset | GitHub Releases; snapshot under ODbL because it is derived from OpenStreetMap |
+
+**Later: needs decisions, accounts or money.**
 
 - Reviews, rider photos, "Add a place" (Phase 5). Decide how to stop spam without sign-in.
 - Group ride: a live link where the group sees each other's position (Supabase Realtime).

@@ -69,6 +69,11 @@
   --background: var(--color-stone-100);
   --surface: #ffffff;
   --foreground: var(--color-stone-900);
+  /* Chart marks (elevation profile). Validated for chroma, lightness and colour-blind separation
+     against each surface; the brand teal reads too grey as a thin line. */
+  --chart-road: #0d9488;
+  --chart-ghat: #c2410c;
+  --chart-grid: var(--color-stone-200);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,6 +81,9 @@
     --background: var(--color-stone-950);
     --surface: var(--color-stone-900);
     --foreground: #f4f1ea;
+    --chart-road: #13a494;
+    --chart-ghat: #e8651b;
+    --chart-grid: var(--color-stone-800);
   }
 }
 

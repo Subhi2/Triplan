@@ -5,15 +5,11 @@
 //   pnpm db:import-osm -- --region=goa --dry-run               (fetch and classify, no database writes)
 // One Overpass request at a time, over the endpoints in OVERPASS_URLS (the next is tried when one
 // is down); each region is split into tiles (1° by default), and a tile that is too big is split
-// again. The run stops if tiles keep failing. Re-running is safe: places are upserted on osm_id.
+// again (src/server/services/osmTiles.ts). The run stops if tiles keep failing. Re-running is
+// safe: places are upserted on osm_id.
 import { parseArgs } from "node:util";
 import { closeDb } from "../src/server/db";
-import {
-  getOsmPlacesProvider,
-  OsmServerBusyError,
-  OsmTileTooBigError,
-  type BBox,
-} from "../src/server/providers/osm";
+import { getOsmPlacesProvider } from "../src/server/providers/osm";
 import { classifyOsmElement, dedupeCandidates } from "../src/server/services/osmClassify";
 import {
   closeStaleOsmPlaces,
@@ -23,123 +19,65 @@ import {
 } from "../src/server/services/osmImportService";
 import {
   OSM_REGIONS,
-  padBBox,
   resolveRegionKeys,
-  splitTile,
-  tileSizeDeg,
-  tilesFor,
-  type OsmRegion,
   type OsmRegionKey,
 } from "../src/server/services/osmRegions";
+import {
+  formatBBox as fmt,
+  ImportStopped,
+  regionTiles,
+  runRegionTiles,
+  type TileRunState,
+} from "../src/server/services/osmTiles";
 
-const TILE_DEG = 1;
-const BBOX_PAD_DEG = 0.02;
-const MIN_TILE_DEG = 0.125;
-const PAUSE_MS = 2_000; // between requests, to stay a light user of the public server
-const BUSY_WAITS_S = [15, 30, 60, 120, 240];
-/** After this many failed tiles in a row, Overpass is down for us: stop instead of grinding on. */
-const MAX_FAILED_IN_A_ROW = 3;
-
-class ImportStopped extends Error {}
-let failedInARow = 0;
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const fmt = (b: BBox) => `[${b.map((n) => n.toFixed(3)).join(", ")}]`;
 const time = () => new Date().toTimeString().slice(0, 8);
-
-function regionTiles(region: OsmRegion): BBox[] {
-  return tilesFor(padBBox(region.bbox, BBOX_PAD_DEG), region.tileDeg ?? TILE_DEG);
-}
+const state: TileRunState = { failedInARow: 0 };
 
 /** Imports one region; returns false if any tile failed (the region should be re-run). */
 async function importRegion(key: OsmRegionKey, dryRun: boolean): Promise<boolean> {
-  const region: OsmRegion = OSM_REGIONS[key];
+  const region = OSM_REGIONS[key];
   const provider = getOsmPlacesProvider();
   const startedAt = dryRun ? "" : await databaseNow();
-  const queue: BBox[] = regionTiles(region);
-  const failed: BBox[] = [];
-  const totals = { elements: 0, places: 0, inserted: 0, updated: 0, linked: 0, duplicates: 0 };
+  const totals = { places: 0, inserted: 0, updated: 0, linked: 0, duplicates: 0 };
   const byCategory = new Map<string, number>();
-  let done = 0;
 
-  console.log(`\n${time()} ${region.name} (${region.iso}): ${queue.length} tiles`);
-  while (queue.length > 0) {
-    const tile = queue.shift()!;
-    let elements;
-    for (let attempt = 0; ; attempt++) {
-      try {
-        elements = await provider.fetchPlaces({ areaIso: region.iso, bbox: tile });
-        break;
-      } catch (err) {
-        const canSplit = tileSizeDeg(tile) / 2 >= MIN_TILE_DEG;
-        // Under load Overpass refuses big queries with 504; a smaller tile may get in. An
-        // unreachable server (status 0) is not helped by splitting.
-        const refusedTooLong =
-          err instanceof OsmServerBusyError && err.status === 504 && attempt >= BUSY_WAITS_S.length;
-        if ((err instanceof OsmTileTooBigError || refusedTooLong) && canSplit) {
-          console.log(
-            `  ${time()} ${fmt(tile)} too big or refused (${(err as Error).message}); splitting`,
-          );
-          queue.unshift(...splitTile(tile));
-          break;
-        }
-        if (err instanceof OsmServerBusyError && attempt < BUSY_WAITS_S.length) {
-          console.log(
-            `  ${time()} ${fmt(tile)} server busy (${err.message}); waiting ${BUSY_WAITS_S[attempt]} s`,
-          );
-          await sleep(BUSY_WAITS_S[attempt]! * 1000);
-          continue;
-        }
-        console.error(`  ${time()} ${fmt(tile)} FAILED: ${(err as Error).message}`);
-        failed.push(tile);
-        break;
+  console.log(`\n${time()} ${region.name} (${region.iso}): ${regionTiles(region).length} tiles`);
+  const { failed, elements } = await runRegionTiles({
+    region,
+    state,
+    fetchTile: (bbox) => provider.fetchPlaces({ areaIso: region.iso, bbox }),
+    log: (line) => console.log(`  ${time()}${line}`),
+    async onTile(tileElements, tile, { done, left }) {
+      const candidates = dedupeCandidates(
+        tileElements.map(classifyOsmElement).filter((c) => c !== null),
+      );
+      for (const c of candidates) byCategory.set(c.category, (byCategory.get(c.category) ?? 0) + 1);
+      totals.places += candidates.length;
+      if (dryRun) {
+        console.log(
+          `  ${fmt(tile)} ${tileElements.length} elements -> ${candidates.length} places`,
+        );
+        return;
       }
-    }
-    await sleep(PAUSE_MS);
-    if (!elements) {
-      if (failed.at(-1) === tile && ++failedInARow >= MAX_FAILED_IN_A_ROW) {
-        throw new ImportStopped(`${failedInARow} tiles failed in a row; Overpass looks down`);
-      }
-      continue;
-    }
-    failedInARow = 0;
-
-    const candidates = dedupeCandidates(elements.map(classifyOsmElement).filter((c) => c !== null));
-    for (const c of candidates) byCategory.set(c.category, (byCategory.get(c.category) ?? 0) + 1);
-    totals.elements += elements.length;
-    totals.places += candidates.length;
-    done++;
-
-    if (dryRun) {
-      console.log(`  ${fmt(tile)} ${elements.length} elements -> ${candidates.length} places`);
-      continue;
-    }
-    let r;
-    try {
-      r = await upsertOsmPlaces(candidates, region.name);
-    } catch (err) {
-      // One bad tile must not stop the region; it is retried on the next run.
-      console.error(`  ${time()} ${fmt(tile)} FAILED to save: ${(err as Error).message}`);
-      failed.push(tile);
-      continue;
-    }
-    totals.inserted += r.inserted;
-    totals.updated += r.updated;
-    totals.linked += r.linked;
-    totals.duplicates += r.duplicates;
-    console.log(
-      `  ${time()} ${fmt(tile)} ${elements.length} elements -> ${candidates.length} places ` +
-        `(+${r.inserted} new, ${r.updated} updated, ${r.linked} linked, ${r.duplicates} dup) ` +
-        `[${done} tiles done, ${queue.length} left]`,
-    );
-  }
+      const r = await upsertOsmPlaces(candidates, region.name);
+      totals.inserted += r.inserted;
+      totals.updated += r.updated;
+      totals.linked += r.linked;
+      totals.duplicates += r.duplicates;
+      console.log(
+        `  ${time()} ${fmt(tile)} ${tileElements.length} elements -> ${candidates.length} places ` +
+          `(+${r.inserted} new, ${r.updated} updated, ${r.linked} linked, ${r.duplicates} dup) ` +
+          `[${done} tiles done, ${left} left]`,
+      );
+    },
+  });
 
   const categories = [...byCategory].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`);
-  console.log(`${time()} ${region.name}: ${totals.elements} elements -> ${totals.places} places`);
+  console.log(`${time()} ${region.name}: ${elements} elements -> ${totals.places} places`);
   console.log(`  by category: ${categories.join(", ")}`);
   // A state with nothing at all means the area lookup failed (e.g. a changed ISO code), not an
   // empty state. Treat it as failed so its existing places are not all marked closed.
-  const empty = totals.elements === 0;
+  const empty = elements === 0;
   if (empty) console.log(`  No places found: check the ISO3166-2 code ${region.iso} in OSM.`);
   if (!dryRun) {
     console.log(

@@ -50,3 +50,26 @@ export async function fetchJson<T>(
   }
   return { status: res.status, data: parsed.data };
 }
+
+/** GETs a binary body (an image tile). Throws on non-2xx answers and bodies over `maxBytes`. */
+export async function fetchBytes(
+  provider: string,
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 15_000,
+  maxBytes = 5_000_000,
+): Promise<Uint8Array> {
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  } catch (err) {
+    throw new ProviderError(`${provider} request failed: ${String(err)}`, provider);
+  }
+  if (!res.ok)
+    throw new ProviderError(`${provider} returned HTTP ${res.status}`, provider, res.status);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.byteLength > maxBytes) {
+    throw new ProviderError(`${provider} response too large (${bytes.byteLength} bytes)`, provider);
+  }
+  return bytes;
+}

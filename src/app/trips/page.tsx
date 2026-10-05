@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteNav } from "@/components/site/SiteNav";
 import { formatDuration, formatKm } from "@/lib/format";
 import { SITE_NAME } from "@/lib/site";
 import { listTrips } from "@/server/services/tripService";
@@ -20,14 +21,7 @@ export default async function TripsPage() {
   const trips = await listTrips();
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
-      <nav className="text-sm">
-        <Link
-          href="/"
-          className="font-display inline-flex min-h-11 items-center text-lg font-extrabold tracking-tight"
-        >
-          {SITE_NAME}
-        </Link>
-      </nav>
+      <SiteNav current="/trips" />
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold">Saved trips</h1>

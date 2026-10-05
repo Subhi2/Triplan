@@ -33,6 +33,8 @@ export default defineConfig({
       PHOTON_BASE_URL: "http://127.0.0.1:9/api",
       NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "",
       GOOGLE_MAPS_API_KEY: "",
+      // No AI key: "plan in plain words" stays hidden and nothing calls the model.
+      ANTHROPIC_API_KEY: "",
     },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,

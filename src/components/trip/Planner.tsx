@@ -2,24 +2,36 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapStop } from "@/components/map/types";
-import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
 import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
+import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
+import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
+import { PreviewButton } from "@/components/ride/PreviewButton";
+import { StoryShare } from "@/components/ride/StoryShare";
+import { DaySplit } from "@/components/route/DaySplit";
+import { RouteProfile } from "@/components/route/RouteProfile";
+import { SafetyStops } from "@/components/route/SafetyStops";
+import { useDayPlan } from "@/components/route/useDayPlan";
+import { useSafetyAlong } from "@/components/route/useSafetyAlong";
+import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
-import type { LngLat } from "@/lib/geo";
+import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
-import { gpxFileName, tripGpx } from "@/lib/gpx";
+import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
+import { DEFAULT_RIDE_HOURS, suggestDays, type RideHours } from "@/lib/multiDay";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture } from "@/lib/rideCheck";
-import { SITE_NAME, SITE_TAGLINE, tripHeadline } from "@/lib/site";
+import type { SafetyKind } from "@/lib/safety";
+import type { RideSummary } from "@/lib/rides";
+import { tripHeadline } from "@/lib/site";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
@@ -32,6 +44,8 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
+import { PlainWordsBox } from "./PlainWordsBox";
+import { PlannerHeader } from "./PlannerHeader";
 import { RideCheck } from "./RideCheck";
 import { RoadStrip } from "./RoadStrip";
 import { RouteCards } from "./RouteCards";
@@ -61,9 +75,13 @@ type RouteState =
 interface Props {
   /** A saved trip to open (/trips/[id]). */
   savedTrip?: SavedTrip | null;
+  /** Rides offered as "Try a famous ride" while there is no trip. */
+  famousRides?: RideSummary[];
+  /** Whether "plan in plain words" is switched on (the AI key is set). */
+  aiEnabled?: boolean;
 }
 
-export function Planner({ savedTrip = null }: Props) {
+export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false }: Props) {
   const searchParams = useSearchParams();
   const [initial] = useState(() => {
     const fromUrl = parseTripUrl(new URLSearchParams(searchParams.toString()));
@@ -95,6 +113,10 @@ export function Planner({ savedTrip = null }: Props) {
   const [corridorKm, setCorridorKm] = useState<CorridorKm>(initial.corridorKm);
   const [categories, setCategories] = useState<string[]>(initial.categories);
   const [maxDetourKm, setMaxDetourKm] = useState<DetourLimitKm | null>(initial.maxDetourKm);
+  // The multi-day split: riding hours a day (null = the vehicle's default) and days (null = as
+  // many as the route needs).
+  const [rideHours, setRideHours] = useState<RideHours | null>(initial.rideHours);
+  const [dayCount, setDayCount] = useState<number | null>(initial.days);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [routeState, setRouteState] = useState<RouteState>({ status: "idle" });
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
@@ -130,6 +152,8 @@ export function Planner({ savedTrip = null }: Props) {
     corridorKm,
     categories,
     maxDetourKm,
+    rideHours,
+    days: dayCount,
   });
   useEffect(() => {
     if (window.location.search !== `?${query}`) {
@@ -188,6 +212,42 @@ export function Planner({ savedTrip = null }: Props) {
   const routes = routeState.status === "ok" ? routeState.routes : [];
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
   const placesState = usePlacesAlong(selectedRoute, corridorKm);
+  const profiles = useRouteProfiles(routes, selectedRouteId);
+  const climbM = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(profiles).flatMap(([id, p]) =>
+          p.status === "ok" ? [[id, p.profile.ascentM]] : [],
+        ),
+      ),
+    [profiles],
+  );
+  // The elevation chart's scrubber, for the selected route only.
+  const [scrub, setScrub] = useState<{ routeId: string; km: number } | null>(null);
+  const scrubKm = scrub && scrub.routeId === selectedRouteId ? scrub.km : null;
+  // Safety stops along the selected route, and the kind picked to list and pin.
+  const safety = useSafetyAlong(selectedRoute);
+  const [safetyPick, setSafetyPick] = useState<{ routeId: string; kind: SafetyKind } | null>(null);
+  const safetyKind = safetyPick && safetyPick.routeId === selectedRouteId ? safetyPick.kind : null;
+  const servicePins =
+    safety.status === "ok" && safetyKind
+      ? safety.summary.points.filter((p) => p.kind === safetyKind)
+      : undefined;
+  const hoursPerDay = rideHours ?? DEFAULT_RIDE_HOURS[vehicle];
+  const suggestedDays = selectedRoute ? suggestDays(selectedRoute.durationMin, hoursPerDay) : 1;
+  const days = dayCount ?? suggestedDays;
+  const dayState = useDayPlan(selectedRoute, hoursPerDay, dayCount, days > 1);
+  const dayPlan =
+    days > 1 && dayState.status === "ok" && dayState.routeId === selectedRouteId
+      ? dayState.plan
+      : null;
+  const nights = dayPlan ? dayPlan.legs.slice(0, -1).map((l) => l.end) : [];
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const closePreview = useCallback(() => setPreviewOpen(false), []);
+  const mapCursor =
+    scrubKm !== null && selectedRoute
+      ? pointAtKm(selectedRoute.geometry.coordinates as LngLat[], scrubKm)
+      : null;
 
   // Category and detour filters apply in the browser; the list is already ordered by km.
   const allPlaces = useMemo(
@@ -316,10 +376,34 @@ export function Planner({ savedTrip = null }: Props) {
     if (!selectedRoute) return;
     const resolved = stops.flatMap((s) => (s.location ? [{ ...s, location: s.location }] : []));
     const title = saved?.title ?? tripHeadline(resolved.map((s) => s.label));
+    const line = selectedRoute.geometry.coordinates as LngLat[];
+    const short = (label: string) => label.split(",")[0]!.trim();
+    const nightName = (i: number) =>
+      nights[i]?.name ?? `km ${Math.round(nights[i]?.kmFromStart ?? 0)}`;
     const gpx = tripGpx({
       name: title,
       link: saved ? `${window.location.origin}/trips/${saved.id}` : window.location.href,
-      route: selectedRoute.geometry.coordinates as LngLat[],
+      route: line,
+      days: dayPlan?.legs.map((l, i) => ({
+        name: `Day ${l.day}: ${i === 0 ? short(resolved[0]!.label) : nightName(i - 1)} → ${
+          l.end.kind === "destination" ? short(resolved.at(-1)!.label) : nightName(i)
+        }`,
+        route: sliceLine(line, l.fromKm, l.toKm),
+      })),
+      nights: nights.flatMap((n, i) => [
+        {
+          name: `Night ${i + 1}: ${nightName(i)}`,
+          location: n.location,
+          description: `${n.stayCount} stays within 5 km · km ${Math.round(n.kmFromStart)}`,
+          symbol: "Lodging",
+        },
+        ...n.stays.map((st) => ({
+          name: st.name,
+          location: st.location,
+          description: `Stay · night ${i + 1} · ${st.distanceKm.toFixed(1)} km${st.phone ? ` · ${st.phone}` : ""}`,
+          symbol: "Lodging",
+        })),
+      ]),
       stops: resolved.map((s, i) => {
         const role = i === 0 ? "Start" : i === resolved.length - 1 ? "Destination" : `Stop ${i}`;
         return {
@@ -461,10 +545,45 @@ export function Planner({ savedTrip = null }: Props) {
               routes={routes}
               selectedId={selectedRouteId}
               onSelect={setSelectedRouteId}
+              climbM={climbM}
             />
           </>
         )}
       </section>
+      {selectedRoute && (
+        <RouteProfile
+          key={selectedRoute.id}
+          state={profiles[selectedRoute.id]}
+          ghats={selectedRoute.roadMix?.ghats ?? []}
+          cursorKm={scrubKm}
+          onCursorChange={(km) => setScrub(km === null ? null : { routeId: selectedRoute.id, km })}
+          markKm={allPlaces.find((p) => p.id === (hoverPlaceId ?? activePlaceId))?.kmFromStart}
+        />
+      )}
+      {selectedRoute && (
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <PreviewButton onClick={() => setPreviewOpen(true)} />
+          <StoryShare
+            storyUrl={`/og/story?route=${selectedRoute.id}&${query}`}
+            title={tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])))}
+            link={typeof window === "undefined" ? "" : window.location.href}
+          />
+        </div>
+      )}
+      {selectedRoute && (
+        <DaySplit
+          state={dayState}
+          days={days}
+          suggestedDays={suggestedDays}
+          hoursPerDay={hoursPerDay}
+          destination={destination}
+          onHoursChange={(h) => {
+            setRideHours(h === DEFAULT_RIDE_HOURS[vehicle] ? null : h);
+            setDayCount(null);
+          }}
+          onDaysChange={setDayCount}
+        />
+      )}
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
       )}
@@ -476,6 +595,11 @@ export function Planner({ savedTrip = null }: Props) {
           to={{ label: last.label, location: last.location }}
           departure={departure}
           onDepartureChange={setDeparture}
+          hospitalGap={
+            safety.status === "ok" && safety.summary.counts.hospital > 0
+              ? safety.summary.longestGap.hospital
+              : null
+          }
         />
       )}
     </div>
@@ -497,6 +621,14 @@ export function Planner({ savedTrip = null }: Props) {
           places={places}
           activePlaceId={activePlaceId}
           hoverPlaceId={hoverPlaceId}
+          nights={nights.map((n) => ({ km: n.kmFromStart, name: n.name }))}
+        />
+        <SafetyStops
+          state={safety}
+          selected={safetyKind}
+          onSelect={(kind) =>
+            setSafetyPick(kind && selectedRoute ? { routeId: selectedRoute.id, kind } : null)
+          }
         />
         {placesState.status === "loading" && (
           <div className="flex flex-col gap-2">
@@ -543,6 +675,10 @@ export function Planner({ savedTrip = null }: Props) {
                   onHover={setHoverPlaceId}
                   pickedIds={pickedIds}
                   onPickedChange={setPlacePicked}
+                  nights={nights.map((n, i) => ({
+                    km: n.kmFromStart,
+                    label: `Night in ${n.name ?? `km ${Math.round(n.kmFromStart)}`} · day ${i + 2}`,
+                  }))}
                 />
                 {hiddenCount > 0 && (
                   <p className="text-sm text-stone-600 dark:text-stone-400">
@@ -595,56 +731,15 @@ export function Planner({ savedTrip = null }: Props) {
             : "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none lg:w-[24rem] dark:md:border-stone-800"
         } ${typing ? "z-30" : "z-10"}`}
       >
-        <header className="flex items-center justify-between gap-2">
-          {/* Phones with a trip: one row, the trip itself in place of the app's name. */}
-          {compactHeader ? (
-            <div className="min-w-0">
-              <h1 className="sr-only">{SITE_NAME}</h1>
-              <p className="font-display truncate text-[17px] font-bold">
-                {first?.label} → {last?.label}
-              </p>
-              <p className="text-xs text-stone-600 dark:text-stone-400">
-                {vehicle === "bike" ? "Bike" : "Car"} · within {corridorKm} km
-                {stops.length > 2 &&
-                  ` · ${stops.length - 2} stop${stops.length > 3 ? "s" : ""} on the way`}
-              </p>
-            </div>
-          ) : (
-            <div className="min-w-0">
-              <h1 className="font-display text-2xl leading-none font-extrabold tracking-tight md:text-3xl">
-                {SITE_NAME}
-              </h1>
-              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{SITE_TAGLINE}</p>
-            </div>
-          )}
-          <div className="flex shrink-0 items-center gap-1">
-            <Link
-              href={`/nearby?v=${vehicle}`}
-              aria-label={compactHeader ? "Near me" : undefined}
-              title="Well-known places near you"
-              className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-sm font-bold hover:underline dark:text-teal-300"
-            >
-              <CrosshairIcon size={18} />
-              {!compactHeader && "Near me"}
-            </Link>
-            <Link
-              href="/trips"
-              className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
-            >
-              {compactHeader ? "Trips" : "Saved trips"}
-            </Link>
-            {!isDesktop && hasTrip && (
-              <button
-                type="button"
-                aria-expanded={showForm}
-                onClick={toggleForm}
-                className="min-h-11 rounded-xl bg-stone-100 px-4 text-sm font-bold dark:bg-stone-800"
-              >
-                {showForm ? "Done" : "Edit trip"}
-              </button>
-            )}
-          </div>
-        </header>
+        <PlannerHeader
+          compact={compactHeader}
+          fromLabel={first?.label ?? ""}
+          toLabel={last?.label ?? ""}
+          vehicle={vehicle}
+          corridorKm={corridorKm}
+          viaCount={stops.length - 2}
+          formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
+        />
 
         {showForm ? (
           <div
@@ -666,6 +761,27 @@ export function Planner({ savedTrip = null }: Props) {
             />
           </div>
         ) : null}
+
+        {!hasTrip && !typing && (
+          <>
+            {aiEnabled && <PlainWordsBox near={mapBias.center} />}
+            <FamousRidesStrip rides={famousRides} />
+            <p className="flex gap-3 text-xs text-stone-600 dark:text-stone-400">
+              <Link
+                href="/about"
+                className="inline-flex min-h-11 items-center underline md:min-h-0"
+              >
+                About Triplan
+              </Link>
+              <a
+                href="https://github.com/Subhi2/Triplan"
+                className="inline-flex min-h-11 items-center underline md:min-h-0"
+              >
+                Code on GitHub
+              </a>
+            </p>
+          </>
+        )}
 
         {isDesktop && sidePanel}
       </aside>
@@ -691,10 +807,27 @@ export function Planner({ savedTrip = null }: Props) {
           onSelectPlace={selectPlaceFromMap}
           onHoverPlace={setHoverPlaceId}
           onViewChange={(center, zoom) => setMapBias({ center, zoom })}
+          cursor={mapCursor}
+          servicePins={servicePins}
           bottomInset={sheetInset}
           topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
         />
       </div>
+
+      {previewOpen && selectedRoute && (
+        <DynamicRidePreview
+          title={tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])))}
+          geometry={selectedRoute.geometry}
+          ghats={selectedRoute.roadMix?.ghats ?? []}
+          hairpinKm={selectedRoute.curvature?.hairpinKm ?? []}
+          profile={(() => {
+            const p = profiles[selectedRoute.id];
+            return p?.status === "ok" ? p.profile : null;
+          })()}
+          places={places}
+          onClose={closePreview}
+        />
+      )}
 
       {!isDesktop && (
         <BottomSheet

@@ -1,5 +1,6 @@
 import type { LineString } from "geojson";
 import { z } from "zod";
+import type { RouteCurvature } from "./curvature";
 import { haversineM, metresAlong, type LngLat } from "./geo";
 
 export const MAX_VIA_STOPS = 5;
@@ -50,6 +51,7 @@ export interface RouteOption {
   viaLabel: string; // "via Sakleshpur"
   towns: string[];
   roadMix: RoadMix | null; // null when the routing engine does not report road numbers
+  curvature: RouteCurvature | null; // hairpins and twistiness, from the road's shape
 }
 
 export interface GeocodeResult {

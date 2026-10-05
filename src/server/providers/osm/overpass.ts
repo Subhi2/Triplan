@@ -50,6 +50,33 @@ export function buildPlacesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
   ].join("\n");
 }
 
+/**
+ * Tag filters for service points (docs/02, "Safety stops"): hospitals, police, ATMs, tyre and
+ * repair shops and stays, kept apart from places (no pages) in service_point.
+ */
+const SERVICE_FILTERS = [
+  '["amenity"="hospital"]',
+  '["healthcare"="hospital"]',
+  '["amenity"="police"]',
+  '["amenity"="atm"]',
+  '["amenity"="bank"]["atm"="yes"]',
+  '["shop"~"^(tyres|motorcycle_repair|car_repair|motorcycle)$"]',
+  '["tourism"~"^(hotel|guest_house|hostel|motel)$"]',
+];
+
+export function buildServicesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
+  const [west, south, east, north] = bbox;
+  const box = `(${south},${west},${north},${east})`;
+  return [
+    `[out:json][timeout:${QUERY_TIMEOUT_S}][maxsize:${QUERY_MAXSIZE_BYTES}];`,
+    `area["ISO3166-2"="${areaIso}"]["admin_level"="4"]->.region;`,
+    `(${SERVICE_FILTERS.map((f) => `nwr${f}(area.region)${box};`).join("")})->.all;`,
+    "node.all;out body qt;",
+    "way.all;out tags bb qt;",
+    "rel.all;out tags bb qt;",
+  ].join("\n");
+}
+
 const boundsSchema = z.object({
   minlat: z.number(),
   minlon: z.number(),
@@ -141,23 +168,24 @@ async function fetchFrom(url: string, userAgent: string, query: string): Promise
 export function createOverpassProvider(urls: string[], userAgent: string): OsmPlacesProvider {
   if (urls.length === 0) throw new Error("No Overpass endpoints configured");
   let preferred = 0;
-  return {
-    async fetchPlaces(request) {
-      const query = buildPlacesQuery(request);
-      let lastBusy: OsmServerBusyError | undefined;
-      for (let i = 0; i < urls.length; i++) {
-        const index = (preferred + i) % urls.length;
-        try {
-          const elements = await fetchFrom(urls[index]!, userAgent, query);
-          preferred = index;
-          return elements;
-        } catch (err) {
-          if (!(err instanceof OsmServerBusyError)) throw err;
-          lastBusy = err;
-        }
+  async function run(query: string): Promise<OsmElement[]> {
+    let lastBusy: OsmServerBusyError | undefined;
+    for (let i = 0; i < urls.length; i++) {
+      const index = (preferred + i) % urls.length;
+      try {
+        const elements = await fetchFrom(urls[index]!, userAgent, query);
+        preferred = index;
+        return elements;
+      } catch (err) {
+        if (!(err instanceof OsmServerBusyError)) throw err;
+        lastBusy = err;
       }
-      throw lastBusy!;
-    },
+    }
+    throw lastBusy!;
+  }
+  return {
+    fetchPlaces: (request) => run(buildPlacesQuery(request)),
+    fetchServices: (request) => run(buildServicesQuery(request)),
   };
 }
 

@@ -255,5 +255,7 @@ export function rideThereHref(
     corridorKm: DEFAULT_CORRIDOR_KM,
     categories: [],
     maxDetourKm: null,
+    rideHours: null,
+    days: null,
   })}`;
 }

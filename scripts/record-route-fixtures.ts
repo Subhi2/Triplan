@@ -21,6 +21,10 @@ const SAMSE: LngLat = [75.33432, 13.18798];
 const OOTY: LngLat = [76.7031, 11.4127]; // Udhagamandalam
 const PUNE: LngLat = [73.8545, 18.5214];
 const PANAJI: LngLat = [73.8282, 15.499]; // "Goa" geocodes to the middle of the state
+// A ghat with numbered hairpins, to calibrate hairpin detection (src/lib/curvature.ts). The
+// public OSRM server does not route the Kalhatti ghat (36 hairpins), so it cannot be used.
+const POLLACHI: LngLat = [77.00873, 10.65882];
+const VALPARAI: LngLat = [76.95573, 10.32799];
 
 export const ROUTE_FIXTURES = {
   // Direct search: OSRM returns the Chikkamagaluru-town route and the NH75/Sakleshpur alternative.
@@ -41,6 +45,8 @@ export const ROUTE_FIXTURES = {
   "bengaluru-belur-samse": [BENGALURU, BELUR, SAMSE],
   "bengaluru-ooty": [BENGALURU, OOTY],
   "pune-goa": [PUNE, PANAJI],
+  // Aliyar–Valparai: 40 numbered hairpins.
+  "pollachi-valparai": [POLLACHI, VALPARAI],
 } satisfies Record<string, LngLat[]>;
 
 // Road times from Sakleshpur for the Near me screen (one /table request).
@@ -57,12 +63,17 @@ export const TABLE_FIXTURES = {
 const baseUrl = process.env.OSRM_BASE_URL ?? "https://router.project-osrm.org";
 const dir = "tests/fixtures/osrm";
 
-/** Keeps only the step fields the app reads (distance, ref, name), so fixtures stay small. */
+/** Keeps only the step fields the app reads (distance, duration, ref, name): small fixtures. */
 function slimSteps(body: unknown): unknown {
   const b = body as { routes?: { legs: { steps?: Record<string, unknown>[] }[] }[] };
   for (const route of b.routes ?? []) {
     for (const leg of route.legs) {
-      leg.steps = leg.steps?.map(({ distance, ref, name }) => ({ distance, ref, name }));
+      leg.steps = leg.steps?.map(({ distance, duration, ref, name }) => ({
+        distance,
+        duration,
+        ref,
+        name,
+      }));
     }
   }
   return b;

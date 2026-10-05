@@ -106,6 +106,47 @@ export interface RouteResult {
 
 `src/server/services/roadMix.ts` splits each route's distance into national highway (NH/NE refs), state highway (SH refs), ghat and other roads; the parts do not overlap and add up to the route distance, with ghat sections counted as ghat whatever road they are on. OSM has no "ghat" tag, so ghats are found from the geometry: resampled every 25 m, a stretch that turns at least 300° per km (averaged over 2 km) for 2 km or more. This was calibrated on real routes (the Gudalur–Nilgiris climb to Ooty, Kottigehara–Samse, Khambatki and Amboli ghats) and is labelled approximate in the UI.
 
+### Hairpins and twistiness
+
+`src/lib/curvature.ts` (`RouteOption.curvature`, computed in `getRoutes`) follows the method roadcurvature.com describes, written as our own code. The route is resampled every 25 m; at each sample the circle through it and its neighbours gives the bend radius, R = s / (2·sin(θ/2)). Each 25 m is weighted by radius: over 175 m 0, 100–175 m 1, 60–100 m 1.3, 30–60 m 1.6, 30 m or less 2. The sum is the route's `curvatureM`; `twistyKm` is the road whose surrounding km reaches 450 weighted metres, labelled Straight (under 5 km), Some bends, Twisty (25 km or more) or Very twisty (60 km or more).
+
+A hairpin is a stretch of at most 125 m that turns 150° or more, leaves heading the other way (the headings 50 m before and after differ by 150° or more) and turns no more than 240° in all: roundabouts leave in the direction they came and loop ramps turn too far. Hairpins within 100 m are one; the first and last 300 m and 300 m around each stop are skipped, because the router may turn round there. Calibrated on Pollachi → Valparai (40 numbered hairpins above Aliyar; we find 40) and the Kottigehara–Kalasa and Gudalur–Ooty ghats. The public OSRM server does not route the Kalhatti ghat (Masinagudi–Ooty) in either direction, so it is neither a fixture nor a famous ride.
+
+### Elevation profile
+
+`POST /api/route/profile { routeId | geometry }` → `{ profile }` (`src/server/services/elevationService.ts`, pure parts in `src/lib/elevation.ts`). Loaded after the route cards show, like places, so routing never waits for it.
+
+- **Heights**: `ElevationProvider` (`src/server/providers/elevation/`) reads AWS Terrain Tiles: global Terrarium PNGs (height = R·256 + G + B/256 − 32768), SRTM for India, open data, no key, CORS open for the browser. Credit: "AWS Terrain Tiles (Mapzen) · SRTM, GMTED2010 courtesy of USGS · ETOPO1 NOAA" (`TERRAIN_ATTRIBUTION`). Mapterhorn was considered and does not cover India. The URL template is `NEXT_PUBLIC_TERRAIN_TILES_URL`, shared with the 3D preview; every use goes through `src/lib/terrain.ts`.
+- **Sampling**: a point every 100 m; zoom 12 (about 37 m a pixel, close to SRTM's own resolution), coarser when a route would need more than 160 tiles (a 1,000 km route needs about 130). Tiles are decoded with `fast-png` (pure JS, no native code on Vercel), six fetched at a time, 64 decoded tiles kept per server instance; heights are bilinear between pixel centres.
+- **Cleaning**: gaps filled by straight lines (more than 10% missing and there is no profile), a median of 5 for bridge and valley spikes, then heights are kept under a 12% slope from either side, because the tiles show the hill above a tunnel (Katraj on NH48 is only partly flattened: the profile can still show a bump over a long tunnel), then a mean of 3. Ascent and descent ignore wiggles under 10 m.
+- **Climbs**: runs of road whose gradient over the surrounding km is 2% or more, carried over flat gaps up to 1 km that lose at most 40 m, measured from their lowest to highest point; kept at 200 m or more at an average of 3% or more. Descents are climbs read backwards. Each is named after the town (from `townsAlong`) nearest its top within 15 km. Checked on real routes: Aliyar–Valparai 853 m at 5.3%, Gudalur–Naduvattam 1,096 m at 5.3%, Khambatki 237 m, the Amboli descent 659 m.
+- **Output**: about 300 points (`[km, m]`, downsampled with Largest-Triangle-Three-Buckets so peaks survive), ascent, descent, highest and lowest points, climbs; about 5 KB. Cached in `route_cache` under `elev:v1:<route id>` (or a hash of the geometry) for 7 days.
+
+The public OSRM server reports no road classes (tunnels, tolls), so tunnels cannot be taken from the route.
+
+### 3D ride preview
+
+`src/components/ride/RidePreview.tsx`, loaded with `next/dynamic` only when "Preview the ride in 3D" is tapped, so MapLibre and the terrain stay out of the planner's bundle. It drives `maplibre-gl` directly (not `react-map-gl`), because the camera, the rider dot and the route's progress change every frame.
+
+- **Always MapLibre**, full screen over whichever map the planner shows, with no Google content in it (Maps ToS 3.2.3(e)). Place cards use our own data only.
+- **Terrain**: a `raster-dem` source of the same Terrarium tiles (`encoding: terrarium`, maxzoom 13, exaggeration 1.4) and a second source for hillshade (skipped on low-end devices: 4 cores or fewer, or 4 GB of memory or less). The tiles are served with `Access-Control-Allow-Origin: *`. The attribution stays expanded and adds the terrain credit.
+- **Camera** (`src/lib/flyover.ts`, pure and unit tested): the route resampled every 50 m; the target averaged over ±150 m; the camera faces the road 1.2 km ahead (0.6 km in ghats); pitch 62°, zoom 11.6 on open road easing to 13.4 in ghats; bearing turns along the shorter arc with a 0.8 s time constant; padding keeps the rider low on the screen. Screen time is weighted: ghats ×4, the km around a hairpin or listed place ×3, so a 300 km route takes about 90 s at 1× (45–150 s by length).
+- **Layers**: the route with a `line-gradient` on `line-progress` (done in teal, ahead in white), the listed places, and the rider as a circle layer updated with `setData` (no React render per frame). The HUD (km, height from the profile, ghat, climb grade) updates at 10 Hz.
+- **Controls**: play / pause, 0.5×–4×, and a scrubber drawn over a small profile. Escape closes and focus returns to the opener.
+- **Comfort and speed**: under reduced motion it opens on an overview and moves only when played or scrubbed. If frames average over 50 ms for 2 s it drops to pixel ratio 1, then turns the terrain off. Without WebGL it says so and points to the profile.
+- MapLibre gives its container `position: relative`, so the container sits inside an absolutely placed box (an absolute container collapses to 0 px).
+
+### Saving the preview as a video
+
+"Save video" in the preview renders the whole ride into a 30 s, 30 fps, 9:16 video (1080×1920, or 720×1280 on low-end phones), frame by frame:
+
+1. The map box turns portrait (as tall as the screen allows) and the live clock stops; the render loop drives the camera.
+2. For each of the 900 frames: the camera, rider dot and route progress are set for that moment (bearing smoothed in video time), then the code waits until the tiles for the view have loaded (`areTilesLoaded()` after a render, at most 1.5 s), not for the map's `idle` event, which also waits out fades and cost about 300 ms a frame. Label fades are off (`fadeDuration: 0`).
+3. The frame is drawn inside the map's `render` event (while its WebGL buffer still holds the picture, so no `preserveDrawingBuffer`) onto a 2D canvas by `drawFrame` (`src/components/ride/composite.ts`): the map cropped to fill, the trip and km card, the ghat and climb chips, the place being passed (text only, so nothing cross-origin taints the canvas), a progress strip over the profile, "Planned on Triplan · <host>", and the map attribution read from the map's own control plus the terrain credit. Credits are never cut: smaller type, then two lines.
+4. Mediabunny (MPL-2.0, loaded only now) encodes it with WebCodecs at an exact timestamp per frame: H.264 in MP4 where the browser can (plays in Instagram, WhatsApp and on iPhones), VP9 in WebM otherwise, 4 Mbps (about 15 MB). Without `VideoEncoder` the button is hidden.
+
+`MediaRecorder` on `canvas.captureStream()` was tried first and dropped: Chrome's MP4 recorder keeps wall-clock time across `pause()`, so waiting for tiles made a 40 s ride a 138 s video. Rendering takes one to a few minutes depending on the device and network; a progress bar and Cancel show meanwhile, and the finished video can be played back, shared as a file through the share sheet, or downloaded.
+
 ### Suggesting "via" towns
 
 To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the largest towns (OSM `place=town|city`) within 2 km of each route that are not within 2 km of the other routes. Show the top 1–2 as the card label. Store towns in `place` with category `town`, or a separate `settlement` table.
@@ -256,6 +297,22 @@ Rides are planned in groups, and in India the plan goes to a WhatsApp group, so 
 - **Search engines**: `sitemap.xml` lists the verified places of every place-list category (not fuel stations or towns), richest first (a guide, a photo or a Wikidata id), up to 45,000 URLs, rebuilt daily. `robots.txt` allows everything but `/api/`. Place pages have a canonical URL and schema.org `TouristAttraction` JSON-LD (location, area, photo, rating, Wikipedia link). Saved trips are `noindex` because anyone can write them; their links still unfurl.
 - Absolute URLs come from `siteUrl()`: `NEXT_PUBLIC_SITE_URL` when set (a custom domain), else Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`), else localhost.
 
+## Famous rides
+
+A hand-picked list of about 20 well-known Indian rides, kept as data (`data/rides.json`, validated by `rideSourceSchema` in `src/lib/rides.ts`), never in app logic: the pages and the planner show whatever the `ride` table holds.
+
+- **Coordinates** come from `pnpm rides:lookup -- "<name>" --state="<state>"`: our own places first (towns, peaks, viewpoints), then Nominatim at one request a second. Never typed from memory. Each ride lists its stops (vias force the road riders mean) and checkpoints the route must pass.
+- **`pnpm db:seed-rides`** (`--only=`, `--dry-run`) routes each ride once through the normal routing provider (cached and throttled; alternatives are asked for with two stops, as the planner does, which also warms its cache), keeps the first option that passes every checkpoint within 3 km (bypasses miss town centres by 1–2 km), lands within 15% of the expected distance and has at least the expected hairpins, computes its road mix, curvature and elevation profile, and upserts it (`src/server/services/rideService.ts`). A ride that fails is reported and not stored, so a wrong road is never shown. The public OSRM server does not route the Kalhatti ghat, so it is not in the list.
+- **Pages** (`/rides`, `/rides/[slug]`, revalidated daily) read the table; their places come from the corridor search when the page is made, so they follow the OpenStreetMap import.
+
+## Ride story
+
+`GET /og/story` (`src/app/og/story/route.tsx`, `StoryCard` in `src/server/og/shareCards.tsx`, data from `src/server/services/storyService.ts`) draws a 1080×1920 PNG with next/og: the route with its ghats in orange (`splitByGhats`), the stops, distance, ride time, climb and hairpins (or the highest point), the elevation profile, up to four places spread along the road (`storyStops`: the best in each stretch, by `placeRank`), the app's address and the data credits. No photos, so there is nothing to credit but OpenStreetMap, the terrain and OSRM.
+
+- `?route=<route id>&from=…&via=…&to=…&v=` for a planner route: geometry, distance and time from `route_cache` (`getRouteResult`), the profile from its own cache. The id is a hash of the routing request, so the CDN caches the image for a week. Once the route has left the cache the poster has the app's name and no numbers, cached for a minute.
+- `?trip=<id>` for a saved trip: its cached route when still there, otherwise its stored line (without ghats).
+- In the planner, "Ride story" (`StoryShare`) fetches the poster, shows it, then shares it as a file through `navigator.share({ files })` (Instagram stories, WhatsApp status) or downloads it. Two taps on purpose: iOS opens the share sheet only straight from a tap.
+
 ## Ride check and GPX
 
 **Ride check** (`RideCheck.tsx`, logic in `src/lib/rideCheck.ts`), under the save bar for the selected route. Open on wide screens; on phones one line ("Ride check · Fuel gap 38 km · Arrive 11:29") that opens on tap, so the place list stays in view.
@@ -266,7 +323,7 @@ Rides are planned in groups, and in India the plan goes to a WhatsApp group, so 
 - Forecast requests snap to a 0.05° grid (about 5 km) with at most 2 decimals, identify themselves with `NOMINATIM_USER_AGENT`, run 4 at a time, and are cached for an hour in `geocode_cache` under `metno:` keys (the daily health check deletes them after a day). One point failing leaves it without a forecast; all failing is a 502. The browser waits 0.5 s after the start time changes before asking.
 - The start time is kept in the planner (not in the URL) and shared by the daylight and weather checks.
 
-**GPX export**: the "GPX" button in the bar at the bottom of the panel downloads `src/lib/gpx.ts`'s GPX 1.1 file: the selected route as a track, the stops as waypoints (flags: green start, blue stops, red destination) and the ticked places, or with none ticked the places in the list (at most 300), each described with its category and km. OsmAnd, Organic Maps, Komoot and GPS units navigate it offline. Built in the browser; nothing is sent to the server.
+**GPX export**: the "GPX" button in the bar at the bottom of the panel downloads `src/lib/gpx.ts`'s GPX 1.1 file: the selected route as a track (one per day with a multi-day split), the stops as waypoints (flags: green start, blue stops, red destination) and the ticked places, or with none ticked the places in the list (at most 300), each described with its category and km. OsmAnd, Organic Maps, Komoot and GPS units navigate it offline. Built in the browser; nothing is sent to the server.
 
 ## Phone layout
 
@@ -300,6 +357,57 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - Row Level Security on every user-writable table (`review`, `trip`, `place_submission`, `media` uploads): users can read public rows and write their own; admins (role in `profile.role`) can moderate.
 - API route handlers validate input with Zod and rate-limit writes per user (e.g. 20 reviews/day).
 - Uploaded images: max 8 MB, resized to 1600 px and 400 px thumbnails, EXIF location stripped unless the user opts in to use it as the place pin.
+
+## Safety stops
+
+Hospitals, police, ATMs, puncture and tyre shops, repair shops and stays along the route.
+
+- **Data**: `service_point` (migration 0015), from OpenStreetMap: `amenity=hospital` or `healthcare=hospital`, `amenity=police`, `amenity=atm` or a bank with `atm=yes`, `shop=tyres|motorcycle_repair|car_repair|motorcycle` (a name with "puncture" or "tyre" makes it a tyre shop), `tourism=hotel|guest_house|hostel|motel`. Private, disused and campus-sized ones are left out; phones are kept for hospitals, police and stays (`classifyService`, pure and tested). Kept apart from places on purpose: these must not become indexable pages or crowd the place list. Goa has about 2,200 (two thirds of them stays); all of India is roughly 150–250 thousand rows, about 60 MB with indexes.
+- **Import**: `pnpm db:import-services -- --region=<key|all> [--kinds=…] [--dry-run]`, on the same tile loop as the places import (`src/server/services/osmTiles.ts`): one Overpass request at a time, upsert on `osm_id`, and after a full run of every kind a region's rows not seen again are deleted.
+- **Search**: `services_along_route(geojson, corridor_m, kinds)`, as `places_along_route`.
+- **API**: `POST /api/services/along { routeId | geometry }` → for hospitals, police, ATMs, puncture and repair shops within 3 km of the road: counts, how many per 50 km, the longest stretch without each (start and destination included, as the fuel gap), and the nearest three of each kind per 10 km to list and pin (`src/lib/safety.ts`).
+- **Planner**: "Safety on the way" under the road strip: a chip per kind with its count; a tap lists them in km order (name, how far off the road, Call for hospitals, police and stays with a phone) and pins them on the map (`servicePins`, both maps). The ride check adds the longest stretch without a hospital (ok up to 60 km, a warning up to 120 km).
+
+## Multi-day split
+
+A route longer than a day's riding is cut into days, each night in a town on the road with places to stay (`src/lib/multiDay.ts`, pure and tested; `dayPlanService.ts`).
+
+- **Riding time along the road**: OSRM reports each step's time; `mergeRoads` keeps it on every road stretch (`RoadStretch.durationS`, bike times × 1.1), so `routeTimeline` maps km to riding minutes: a day ends further along on an expressway than in a ghat. Routes cached before step times were kept (and the recorded fixtures) have none, and time runs in proportion to distance.
+- **How many days**: riding hours a day default to 6 by bike and 8 by car (4–10 to pick). A day may run a fifth over before another day is suggested: 5 h of riding at 4 h a day is 2 days, 7.2 h at 6 h a day is 1. The rider can add or take away days (up to 10).
+- **Where each night falls**: day by day, the target is an even share of the riding time left, so a night a little early or late evens out over the days after it. Towns and cities within 5 km of the road (`townsAlong`) whose riding time is within a quarter of a day of the target are scored on closeness to it, size (population, cities a little more) and the stays within 5 km (`service_point` stays plus our stay places; none counts against a town). At most the 150 biggest towns are weighed, in one query. With no town in the window the day ends on the road at the target ("Night near km 412").
+- **Stays**: the nearest four named stays to each night's town, our stay places (with pages) first, then OpenStreetMap hotels, guest houses, hostels and motels, with tap to call. Student and working people's hostels mapped as tourist ones ("Ladies PG", "Boys Hostel") are left out, at import and in the query (`isResidentHostel`).
+- **API**: `POST /api/route/days { routeId | geometry, distanceKm, durationMin; hoursPerDay; days? }` → `{ suggestedDays, days, hoursPerDay, legs }`, each leg with its km, riding minutes and end (town, road or destination, with stays). One day needs no database. An expired route id is 404 `ROUTE_NOT_FOUND` and the browser resends the geometry and totals.
+- **Planner**: `DaySplit` under the Preview and Story buttons: a route that fits in a day shows one line with the hours a day and "Split over 2 days"; longer ones show "Over N days" with − and +, the hours a day, and a timeline of the days (km, riding time, "Night in Hosapete · 24 stays within 5 km", the stays). The road strip marks each night with a tick; the place list has a "Night in Hosapete · day 2" divider where each day starts. The URL keeps `rh` (hours a day, when not the default) and `d` (days, when not the suggested number).
+- **GPX**: with a split, one track per day ("Day 1: Pune → Hosapete", cut exactly at each night with `sliceLine`) instead of one for the route, and each night and its stays as Lodging waypoints.
+
+## Plan in plain words
+
+"2-day monsoon ride from Pune with waterfalls, under 250 km" becomes a planner trip (`POST /api/trip-from-words { text, near? }`).
+
+- **Off without `ANTHROPIC_API_KEY`**: the box is not shown and the endpoint answers 404, so there is no AI call and no cost.
+- **Reading** (`src/server/providers/llm/`, behind `TripIntentProvider`): one `messages.parse` call to Claude (`ANTHROPIC_TRIP_MODEL`, default `claude-haiku-4-5`: a short sentence needs no bigger model; about US$0.002 a request) with structured outputs (`zodOutputFormat(tripIntentSchema)`): from, to, via, vehicle, categories (our slugs only), days, one-way distance, month. The schema carries no number bounds (the output format does not support them); `cleanIntent` trims and clamps. The rider's text is wrapped in `<request>` and the system prompt says it is data. A refusal or unparseable answer gives "Couldn't read a trip". Timeout 15 s, one retry.
+- **Turning it into a trip** (`tripFromWordsService.ts`): names resolve through our place search (our places first, then Photon), near the map's centre or the start. With no destination named, one is picked from our places (`places_near_point`): of the kinds asked for, within the distance (straight line = road / 1.3; 150 km one way by default, 100 km more per extra day), at least 40% of it away so it is a real ride, in season when a month was named, the most worthwhile first. The answer is the planner's query string; the box loads it.
+- **Limits**: 6 requests per visitor per hour (`allowRequest`, scope `ai`) and 200 a day in all (`takeDailyBudget('ai_trip')`); tokens are counted in `usage_daily`. Set a monthly spend limit in the Anthropic Console as well.
+- **Privacy**: the text is sent to Anthropic to be read; it is never stored or logged (errors log only the provider's message).
+
+## Usage numbers
+
+- **Page views**: Vercel Web Analytics (`<Analytics />` in the root layout): no cookies, reported only on Vercel; on the free plan it counts page views (custom events need Pro). Turn it on in the project's Analytics tab.
+- **Counters**: `usage_daily (day, key, count)` (migration 0014, server only), written by `src/server/services/usage.ts` with one atomic upsert: `countUsage`, `takeDailyBudget` (counts and says no over a day's limit, used by the AI endpoint) and `usageTotal`. `POST /api/route` counts `route_planned` with `countLater`, inside Next's `after()`, so counting never slows or fails a request. Nothing about who asked is stored.
+- **Per-visitor limits** for new endpoints: `allowRequest(request, { scope, limit, windowS })` in `writeLimit.ts`, on the same `write_limit` table under `<scope>:<salted IP hash>`, apart from the trip-write counter.
+- **About** shows places, rides planned and trips saved (`statsService.getStats`), refreshed hourly.
+
+## One-command data setup
+
+A fresh clone gets every place, photo credit, famous ride and service point with `pnpm db:setup`, instead of hours of throttled Overpass, Wikimedia and OSRM calls.
+
+- **Snapshot** (`data/snapshot/`, committed, about 10 MB): one gzipped JSON-lines file per table and `manifest.json` (format, when it was made, the newest migration, the licence, and per table its columns, rows, bytes and sha256). Tables, in load order: `category`, `carry_item`, `place`, `place_guide`, `place_carry`, `media`, `ride`, `service_point` (`src/lib/snapshot.ts`).
+- **Left out**: places not verified or closed; media that are not verified or are users' uploads; Google place ids and check times, and who created or verified a row (written as null). Never trips, reviews, profiles, rate limits, usage counters, caches or Google usage.
+- **Export** (owner): `pnpm db:export-snapshot [-- --out=dir]` reads the live tables in one read-only repeatable-read transaction with a cursor (2,000 rows a step; `row_to_json`, geography as hex EWKB text), gzips each table, and writes the manifest. Same data gives the same files (gzip without a time). Run it after an import and commit `data/snapshot`. COPY streams were tried first and hung now and then through the pooler, so the format is plain JSON lines.
+- **Setup** (`scripts/setup-db.ts`): runs the Drizzle migrations; reads `data/snapshot` (or `--url=`, or the copy on GitHub when the clone has none); checks the manifest (`manifestProblems`: every table once, a migration this clone has, columns this database has); refuses unless the snapshot tables are empty (`--replace --yes` empties them, refused while trips, trip stops, reviews or social posts exist); checks every file's size and sha256 before writing; loads in one transaction, 1,000 rows per `INSERT … SELECT … FROM json_populate_recordset(…)`, so Postgres turns the JSON into arrays, enums, jsonb and geography itself; moves the serial sequences past the loaded ids; `ANALYZE`; and checks the row counts. The whole snapshot loads in about 20 seconds (`src/server/services/snapshotLoad.ts`).
+- **From sources**: `pnpm db:setup -- --from-sources --regions=karnataka,kerala` runs the seed, the OSM places import, the photo import, the famous rides seed and the service points import instead.
+- **Licence**: OpenStreetMap-derived, so the snapshot is under the ODbL 1.0 with attribution (`data/snapshot/LICENCE.md`); photo files stay with their authors under each media row's licence.
+- **Tests**: unit tests for the SQL and manifest checks; an integration test exports 25 rows of each table from the live tables (read only), loads them into a throwaway schema of look-alike tables, compares arrays, JSON and geography, loads again with `replace`, and drops the schema.
 
 ## Deployment
 

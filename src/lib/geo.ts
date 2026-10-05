@@ -94,3 +94,21 @@ export function metresAlong(coords: LngLat[], point: LngLat): number {
   }
   return along;
 }
+
+/** The point `km` along a line (by great-circle distance), clamped to its ends. */
+export function pointAtKm(coords: LngLat[], km: number): LngLat | null {
+  if (coords.length === 0) return null;
+  let left = km * 1000;
+  if (left <= 0) return coords[0]!;
+  for (let i = 1; i < coords.length; i++) {
+    const a = coords[i - 1]!;
+    const b = coords[i]!;
+    const d = haversineM(a, b);
+    if (d >= left && d > 0) {
+      const f = left / d;
+      return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+    }
+    left -= d;
+  }
+  return coords.at(-1)!;
+}

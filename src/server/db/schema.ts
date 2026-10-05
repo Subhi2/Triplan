@@ -23,6 +23,9 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
+import type { RouteCurvature } from "@/lib/curvature";
+import type { ElevationProfile } from "@/lib/elevation";
+import type { RoadMix } from "@/lib/trip";
 import { geographyLine, geographyPoint } from "./postgis";
 
 const emptyArray = sql`'{}'`;
@@ -275,6 +278,32 @@ export const tripStop = pgTable(
   (t) => [primaryKey({ columns: [t.tripId, t.position] })],
 );
 
+// Famous rides ------------------------------------------------------------------
+// Hand-picked rides from data/rides.json, routed once by `pnpm db:seed-rides` (docs/02, "Famous
+// rides"). Public and read-only.
+
+export const ride = pgTable("ride", {
+  slug: text("slug").primaryKey(),
+  title: text("title").notNull(),
+  blurb: text("blurb").notNull(),
+  region: text("region").notNull(),
+  vehicle: vehicle("vehicle").notNull().default("bike"),
+  tags: text("tags").array().notNull().default(emptyArray),
+  bestMonths: smallint("best_months").array().notNull().default(emptyArray), // 1-12
+  notes: text("notes"), // permits, closures, seasons
+  stops: jsonb("stops").$type<{ label: string; location: [number, number] }[]>().notNull(),
+  routeGeom: geographyLine("route_geom").notNull(),
+  distanceM: integer("distance_m").notNull(),
+  durationS: integer("duration_s").notNull(),
+  roadMix: jsonb("road_mix").$type<RoadMix | null>(),
+  curvature: jsonb("curvature").$type<RouteCurvature | null>(),
+  profile: jsonb("profile").$type<ElevationProfile | null>(),
+  ascentM: integer("ascent_m"),
+  hairpins: smallint("hairpins").notNull().default(0),
+  position: smallint("position").notNull().default(0), // gallery order
+  seededAt: timestamp("seeded_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Write limits ------------------------------------------------------------------
 // With no sign-in, saving and renaming trips is limited per visitor: a salted hash of the IP
 // address (never the address itself), counted per one-hour window.
@@ -297,6 +326,46 @@ export const googleUsage = pgTable(
     count: integer("count").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.day, t.sku] })],
+);
+
+// Service points ----------------------------------------------------------------
+// Hospitals, police, ATMs, tyre and repair shops and stays from OpenStreetMap, for safety stops and
+// overnight stays (docs/02, "Safety stops"). Kept apart from place: no pages, no sitemap, not in
+// the place list. Imported with `pnpm db:import-services`.
+
+export const servicePoint = pgTable(
+  "service_point",
+  {
+    osmId: text("osm_id").primaryKey(), // "node/123", "way/456"
+    kind: text("kind").notNull(), // hospital | police | atm | tyre | repair | stay
+    name: text("name"),
+    phone: text("phone"),
+    region: text("region").notNull(), // the state it was imported with
+    location: geographyPoint("location").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("service_point_location_gix").using("gist", t.location),
+    index("service_point_region_idx").on(t.region),
+    check(
+      "service_point_kind_check",
+      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay')`,
+    ),
+  ],
+);
+
+// Usage counters ----------------------------------------------------------------
+// Counts per UTC day: routes planned, AI requests and tokens (src/server/services/usage.ts).
+// Nothing about who: no visitor keys, no addresses.
+
+export const usageDaily = pgTable(
+  "usage_daily",
+  {
+    day: date("day").notNull(),
+    key: text("key").notNull(), // 'route_planned' | 'ai_trip' | 'ai_tokens_in' | ...
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.key] })],
 );
 
 // Caches ----------------------------------------------------------------------

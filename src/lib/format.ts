@@ -12,3 +12,8 @@ export function formatDuration(minutes: number): string {
   if (h === 0) return `${m} min`;
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
+
+/** Heights and climbs: "1,124 m" (whole metres, thousands separated). */
+export function formatMetres(metres: number): string {
+  return `${Math.round(metres).toLocaleString("en-IN")} m`;
+}

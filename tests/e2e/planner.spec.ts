@@ -1,5 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
+import { routeCurvature } from "@/lib/curvature";
+import type { ElevationProfile } from "@/lib/elevation";
+import type { DayPlan } from "@/lib/multiDay";
 import type { PlaceDetail } from "@/lib/placeDetail";
 import type { PlaceAlong } from "@/lib/places";
 import type { SavedTrip } from "@/lib/savedTrip";
@@ -34,6 +37,110 @@ const PLACES: GeocodeResult[] = [
   },
 ];
 
+/** A made-up profile: flat, a 900 m climb from km 280 to 298, then down into Kalasa. */
+const PROFILE: ElevationProfile = {
+  v: 1,
+  zoom: 12,
+  points: Array.from({ length: 34 }, (_, i): [number, number] => {
+    const km = i * 10;
+    return [km, km < 280 ? 900 : km < 300 ? 900 + (km - 280) * 45 : 1800 - (km - 300) * 30];
+  }),
+  ascentM: 1662,
+  descentM: 1761,
+  highest: { km: 300, m: 1800 },
+  lowest: { km: 0, m: 900 },
+  climbs: [{ fromKm: 280, toKm: 298, gainM: 900, gradePct: 5, dir: "up", near: "Kottigehara" }],
+};
+
+/** Two hospitals and an ATM near the road; the longest stretch without a hospital is 200 km. */
+const SAFETY = {
+  totalKm: 330.8,
+  counts: { hospital: 2, police: 0, atm: 1, tyre: 0, repair: 0 },
+  perFiftyKm: { hospital: 0.3, police: 0, atm: 0.2, tyre: 0, repair: 0 },
+  longestGap: {
+    hospital: { fromKm: 120, toKm: 320, km: 200 },
+    police: { fromKm: 0, toKm: 330.8, km: 330.8 },
+    atm: { fromKm: 50, toKm: 330.8, km: 280.8 },
+    tyre: { fromKm: 0, toKm: 330.8, km: 330.8 },
+    repair: { fromKm: 0, toKm: 330.8, km: 330.8 },
+  },
+  points: [
+    {
+      id: "node/1",
+      kind: "atm",
+      name: "SBI ATM",
+      phone: null,
+      location: [77.3, 13.0],
+      kmFromStart: 50,
+      detourKm: 0.1,
+    },
+    {
+      id: "node/2",
+      kind: "hospital",
+      name: "Hassan Hospital",
+      phone: "+91 8172 268 000",
+      location: [76.1, 13.0],
+      kmFromStart: 120,
+      detourKm: 0.4,
+    },
+    {
+      id: "node/3",
+      kind: "hospital",
+      name: "Kalasa Clinic",
+      phone: null,
+      location: [75.36, 13.23],
+      kmFromStart: 320,
+      detourKm: 1.2,
+    },
+  ],
+};
+
+/** Bengaluru → Kalasa via Sakleshpur over two days, a night in Hassan. */
+const DAYS: DayPlan = {
+  suggestedDays: 2,
+  days: 2,
+  hoursPerDay: 4,
+  legs: [
+    {
+      day: 1,
+      fromKm: 0,
+      toKm: 180,
+      rideMin: 170,
+      end: {
+        name: "Hassan",
+        kind: "city",
+        location: [76.1, 13.0],
+        kmFromStart: 180,
+        stayCount: 42,
+        stays: [
+          {
+            id: "node/9",
+            name: "Hotel Hoysala Village",
+            phone: "+91 8172 256 764",
+            location: [76.1, 13.01],
+            distanceKm: 0.8,
+            slug: null,
+          },
+        ],
+      },
+    },
+    {
+      day: 2,
+      fromKm: 180,
+      toKm: 330.8,
+      rideMin: 130,
+      end: {
+        name: null,
+        kind: "destination",
+        location: [75.356, 13.234],
+        kmFromStart: 330.8,
+        stayCount: 0,
+        stays: [],
+      },
+    },
+  ],
+};
+
 function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
   return routeFixture(fixture, "bike").map((r, i) => ({
     id: `${fixture}-${i}`,
@@ -43,6 +150,7 @@ function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
     viaLabel: labels[i]!,
     towns: [],
     roadMix: roadMix(r),
+    curvature: routeCurvature(r.geometry),
   }));
 }
 
@@ -63,8 +171,18 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
     return route.fulfill({ json: { routes } });
   });
   await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
+  await page.route("**/api/services/along", (route) => route.fulfill({ json: SAFETY }));
+  await page.route("**/api/route/days", (route) => route.fulfill({ json: DAYS }));
+  // Never the terrain tiles: one made-up profile for every route.
+  await page.route("**/api/route/profile", (route) =>
+    route.fulfill({ json: { profile: PROFILE } }),
+  );
   // No forecast (as if the trip were too far ahead), so tests never reach MET Norway.
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
+  // No terrain tiles for the 3D preview: it carries on with a flat map.
+  await page.route("https://s3.amazonaws.com/elevation-tiles-prod/**", (route) =>
+    route.fulfill({ status: 404, body: "" }),
+  );
   // A blank local map style instead of the network tile server.
   await page.route("https://tiles.openfreemap.org/**", (route) =>
     route.fulfill({
@@ -113,6 +231,8 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
 
   await expect(cards).toHaveCount(1);
   await expect(cards.nth(0)).toContainText("via Sakleshpur");
+  // The ghats to Kalasa: hairpins worked out from the road's shape.
+  await expect(cards.nth(0).locator("[data-hairpins]")).toContainText(/\d+ hairpins/);
   await expect(cards.nth(0)).toContainText("330.8 km");
   expect(routeRequests.at(-1)).toEqual({
     stops: [
@@ -132,6 +252,164 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
   await openTripForm(page);
   await expect(page.getByRole("combobox", { name: "Stop 1" })).toHaveValue("Sakleshpur");
   await expect(cards).toHaveCount(1);
+});
+
+test("the route's ups and downs, scrubbed from the keyboard", async ({ page }) => {
+  await mockApis(page, []);
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
+  );
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.nth(0).locator("[data-climb]")).toContainText("↑ 1,662 m");
+  await expect(page.getByRole("heading", { name: "Ups and downs" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Big climbs and descents" })).toContainText(
+    "900 m up in 18.0 km · 5% · to Kottigehara",
+  );
+
+  const chart = page.getByRole("slider", { name: "Height along the route" });
+  await chart.focus();
+  await expect(chart).toHaveAttribute("aria-valuetext", "km 0.0, 900 m");
+  await page.keyboard.press("End");
+  await expect(chart).toHaveAttribute("aria-valuetext", "km 330.0, 900 m");
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Shift+ArrowRight"); // a tenth of the way
+  await expect(chart).toHaveAttribute("aria-valuetext", "km 33.0, 900 m");
+});
+
+test.describe("3D ride preview", () => {
+  const TRIP =
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234";
+
+  test("rides the route from the start and closes with Escape", async ({ page }) => {
+    await mockApis(page, []);
+    await page.goto(TRIP);
+    await page.getByRole("button", { name: "Preview the ride in 3D" }).click();
+    const dialog = page.getByRole("dialog", {
+      name: /3D ride preview: Bengaluru → Kalasa via Sakleshpur/,
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Close the preview" })).toBeFocused();
+    await expect(dialog.getByText(/of 331/)).toBeVisible();
+    // The camera moves on by itself.
+    await expect(dialog.locator("[data-hud-km]")).not.toHaveText("0.0", { timeout: 20_000 });
+    // Chromium has the video encoder, so the ride can be saved as a video.
+    await expect(dialog.getByRole("button", { name: "Save video" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Pause" }).click();
+    await dialog.getByRole("slider", { name: "Position along the route" }).fill("3000");
+    await expect(dialog.locator("[data-hud-km]")).toHaveText("300.0");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
+  test("waits to be played when the rider asked for reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await mockApis(page, []);
+    await page.goto(TRIP);
+    await page.getByRole("button", { name: "Preview the ride in 3D" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("button", { name: "Play", exact: true })).toBeVisible();
+    await page.waitForTimeout(1500);
+    await expect(dialog.locator("[data-hud-km]")).toHaveText("0.0");
+  });
+});
+
+test("open the ride story poster and download it", async ({ page }) => {
+  await mockApis(page, []);
+  const storyRequests: string[] = [];
+  await page.route("**/og/story?**", (route) => {
+    storyRequests.push(route.request().url());
+    // A 1×1 PNG stands in for the poster.
+    return route.fulfill({
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  });
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
+  );
+  await page.getByRole("button", { name: "Ride story" }).click();
+  const dialog = page.getByRole("dialog", { name: "Ride story" });
+  await expect(
+    dialog.getByRole("img", { name: /Ride story poster: Bengaluru → Kalasa/ }),
+  ).toBeVisible();
+  expect(decodeURIComponent(storyRequests[0]!)).toMatch(
+    /\/og\/story\?route=bengaluru-sakleshpur-kalasa-0&from=Bengaluru@77\.5946,12\.9716&via=Sakleshpur/,
+  );
+  const download = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Download" }).click();
+  expect((await download).suggestedFilename()).toBe("story-bengaluru-kalasa-via-sakleshpur.png");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+});
+
+test("safety stops along the road, with call links and the hospital gap", async ({ page }) => {
+  await mockApis(page, []);
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
+  );
+  const kinds = page.getByRole("group", { name: "Kinds of safety stop" });
+  await expect(kinds).toContainText("2 hospitals");
+  await expect(kinds).toContainText("1 ATM");
+  await kinds.getByRole("button", { name: /hospitals/ }).click();
+  const list = page.getByRole("list", { name: "hospitals" });
+  await expect(list).toContainText("Hassan Hospital");
+  await expect(list.getByRole("link", { name: "Call" })).toHaveAttribute(
+    "href",
+    "tel:+918172268000",
+  );
+  await expect(page.getByText("longest stretch without one 200 km (km 120–320)")).toBeVisible();
+
+  const check = page.getByRole("region", { name: /Ride check/ });
+  if (!(await check.getByText(/Hospitals: longest stretch/).isVisible())) {
+    await check.getByRole("button", { name: /Ride check/ }).click();
+  }
+  await expect(check.getByText("Hospitals: longest stretch without one is 200 km")).toBeVisible();
+});
+
+test("split a long ride into days, each night in a town with stays", async ({ page }) => {
+  const dayRequests: unknown[] = [];
+  await mockApis(page, []);
+  await mockPlace(page);
+  await page.route("**/api/route/days", (route) => {
+    dayRequests.push(route.request().postDataJSON());
+    return route.fulfill({ json: DAYS });
+  });
+  // Five hours of riding at four a day: two days.
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234&rh=4",
+  );
+  await expect(page.getByRole("heading", { name: "Over 2 days" })).toBeVisible();
+  const days = page.getByRole("list", { name: "Days of riding" });
+  await expect(days).toContainText("Night in Hassan · 42 stays within 5 km");
+  await expect(days).toContainText("Arrive in Kalasa");
+  await expect(days.getByRole("link", { name: "Call" })).toHaveAttribute(
+    "href",
+    "tel:+918172256764",
+  );
+  expect(dayRequests[0]).toMatchObject({ hoursPerDay: 4 });
+  expect(dayRequests[0]).not.toHaveProperty("days");
+  await expect(page.getByRole("list", { name: "Places along the route" })).toContainText(
+    "Night in Hassan · day 2",
+  );
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download GPX file" }).click(),
+  ]);
+  const gpx = await readFile((await download.path())!, "utf8");
+  expect(gpx.match(/<trk>/g)).toHaveLength(2);
+  expect(gpx).toContain("<name>Day 1: Bengaluru → Hassan</name>");
+  expect(gpx).toContain("<name>Hotel Hoysala Village</name>");
+
+  await page.getByRole("button", { name: "One day more" }).click();
+  await expect(page).toHaveURL(/[?&]d=3/);
+  await expect.poll(() => dayRequests.at(-1)).toMatchObject({ days: 3 });
+  await page.getByRole("button", { name: "One day fewer" }).click();
+  await expect(page).not.toHaveURL(/[?&]d=/);
 });
 
 test("stops can be reordered from the keyboard", async ({ page }) => {

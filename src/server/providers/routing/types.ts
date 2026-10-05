@@ -12,6 +12,8 @@ export interface RouteInput {
 /** A stretch of road along a route; `ref` is its road number ("NH75", "SH 57") or null. */
 export interface RoadStretch {
   distanceM: number;
+  /** Riding time on the stretch; missing on routes cached before it was recorded. */
+  durationS?: number;
   ref: string | null;
 }
 

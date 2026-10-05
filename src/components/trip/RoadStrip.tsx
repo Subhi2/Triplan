@@ -9,6 +9,8 @@ interface Props {
   places: PlaceAlong[];
   activePlaceId: string | null;
   hoverPlaceId: string | null;
+  /** Where each night of a multi-day split falls, with the town's name if there is one. */
+  nights?: { km: number; name: string | null }[];
 }
 
 /** Round km marks for the strip's scale: start, one or two in between, end. */
@@ -28,7 +30,7 @@ const pct = (x: number) => `${Math.min(100, Math.max(0, x * 100))}%`;
  * The road as one ribbon from start to destination: ghat stretches in their colour and each place
  * as a dot at its km, so the list below reads like the road itself (docs/08-design.md).
  */
-export function RoadStrip({ route, places, activePlaceId, hoverPlaceId }: Props) {
+export function RoadStrip({ route, places, activePlaceId, hoverPlaceId, nights = [] }: Props) {
   const totalKm = route.distanceKm;
   if (totalKm <= 0) return null;
   const ghats = route.roadMix?.ghats ?? [];
@@ -38,6 +40,9 @@ export function RoadStrip({ route, places, activePlaceId, hoverPlaceId }: Props)
   const label =
     `${Math.round(totalKm)} km` +
     (ghatKm.length > 0 ? `; ghat roads ${ghatKm.join(", ")}` : "") +
+    (nights.length > 0
+      ? `; nights at ${nights.map((n) => `km ${Math.round(n.km)}${n.name ? ` (${n.name})` : ""}`).join(", ")}`
+      : "") +
     `; ${places.length} places shown`;
 
   return (
@@ -59,6 +64,14 @@ export function RoadStrip({ route, places, activePlaceId, hoverPlaceId }: Props)
             GHAT
           </span>
         )}
+        {nights.map((n, i) => (
+          <span
+            key={i}
+            data-night={i + 1}
+            className="absolute top-0 h-7 w-0.5 -translate-x-px rounded-full bg-stone-900 dark:bg-stone-100"
+            style={{ left: pct(n.km / totalKm) }}
+          />
+        ))}
         {places.map((p) => {
           const on = p.id === activePlaceId || p.id === hoverPlaceId;
           return (

@@ -1,0 +1,693 @@
+[
+  {
+    "slug": "bengaluru-to-kalasa-via-sakleshpur",
+    "title": "Bengaluru to Kalasa via Sakleshpur",
+    "blurb": "Out of the city on NH75, past Hassan's temples, then into the Western Ghats: coffee estates around Sakleshpur and Mudigere and a long run of bends down into the Bhadra valley at Kalasa.",
+    "region": "Karnataka",
+    "vehicle": "bike",
+    "tags": ["Western Ghats", "coffee country", "hairpins"],
+    "bestMonths": [9, 10, 11, 12, 1, 2],
+    "notes": "Malnad roads are narrow and slippery in the monsoon (June to September), and forest stops have leeches.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Sakleshpur",
+        "location": [75.785, 12.943]
+      },
+      {
+        "label": "Kalasa",
+        "location": [75.356, 13.234]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Hassan",
+        "location": [76.0996, 13.0068]
+      },
+      {
+        "label": "Mudigere",
+        "location": [75.64, 13.136]
+      }
+    ],
+    "expect": {
+      "km": 331,
+      "hairpinsMin": 12
+    }
+  },
+  {
+    "slug": "pollachi-to-valparai",
+    "title": "Pollachi to Valparai",
+    "blurb": "Flat coconut country to Aliyar dam, then forty numbered hairpins up the Anamalai hills, with Monkey Falls and Loam's View on the way and tea estates rolling over the top to Valparai.",
+    "region": "Tamil Nadu",
+    "vehicle": "bike",
+    "tags": ["40 hairpins", "tea estates", "wildlife"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3],
+    "notes": "Elephants and lion-tailed macaques cross the ghat road; the Aliyar check post logs every vehicle.",
+    "stops": [
+      {
+        "label": "Pollachi",
+        "location": [77.00873, 10.65882]
+      },
+      {
+        "label": "Valparai",
+        "location": [76.95573, 10.32799]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Aliyar Reservoir",
+        "location": [76.97724, 10.47232]
+      }
+    ],
+    "expect": {
+      "km": 64,
+      "hairpinsMin": 30
+    }
+  },
+  {
+    "slug": "mysuru-to-ooty-via-gudalur",
+    "title": "Mysuru to Ooty via Gudalur",
+    "blurb": "Through the Bandipur and Mudumalai forests, where elephants often stand by the road, then the long Naduvattam ghat from Gudalur up into the Nilgiris.",
+    "region": "Tamil Nadu",
+    "vehicle": "bike",
+    "tags": ["Bandipur", "Nilgiris", "hairpins"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 4, 5],
+    "notes": "The Bandipur and Mudumalai stretch is closed to traffic from 9 pm to 6 am.",
+    "stops": [
+      {
+        "label": "Mysuru",
+        "location": [76.65536, 12.30518]
+      },
+      {
+        "label": "Ooty",
+        "location": [76.70305, 11.41268]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Gundlupet",
+        "location": [76.69161, 11.8085]
+      },
+      {
+        "label": "Gudalur",
+        "location": [76.49239, 11.49924]
+      }
+    ],
+    "expect": {
+      "km": 155,
+      "hairpinsMin": 8
+    }
+  },
+  {
+    "slug": "mangaluru-to-chikkamagaluru-via-charmadi",
+    "title": "Mangaluru to Chikkamagaluru via Charmadi Ghat",
+    "blurb": "From the coast across the plains to Ujire, then the Charmadi ghat: a steep, forested climb of tight bends and waterfalls up to the coffee hills.",
+    "region": "Karnataka",
+    "vehicle": "bike",
+    "tags": ["Charmadi Ghat", "waterfalls", "coffee"],
+    "bestMonths": [9, 10, 11, 12, 1, 2],
+    "notes": "Charmadi closes to heavy vehicles, and sometimes to all traffic, after monsoon landslides.",
+    "stops": [
+      {
+        "label": "Mangaluru",
+        "location": [74.84301, 12.86981]
+      },
+      {
+        "label": "Ujire",
+        "location": [75.33011, 12.99546]
+      },
+      {
+        "label": "Chikkamagaluru",
+        "location": [75.772, 13.3161]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Charmadi Ghati",
+        "location": [75.48209, 13.10096]
+      },
+      {
+        "label": "Kottigehara",
+        "location": [75.524, 13.118]
+      }
+    ],
+    "expect": {
+      "km": 150,
+      "hairpinsMin": 4
+    }
+  },
+  {
+    "slug": "udupi-to-shivamogga-via-agumbe",
+    "title": "Udupi to Shivamogga via Agumbe",
+    "blurb": "Temple town to the Agumbe ghat, a short climb of hairpins through rainforest to one of India's wettest villages and its sunset point, then down through the Malnad to Shivamogga.",
+    "region": "Karnataka",
+    "vehicle": "bike",
+    "tags": ["Agumbe Ghat", "rainforest", "sunset"],
+    "bestMonths": [9, 10, 11, 12, 1, 2],
+    "notes": "The ghat is narrow and closed to heavy vehicles in the monsoon.",
+    "stops": [
+      {
+        "label": "Udupi",
+        "location": [74.74732, 13.34192]
+      },
+      {
+        "label": "Agumbe",
+        "location": [75.08059, 13.4965]
+      },
+      {
+        "label": "Shivamogga",
+        "location": [75.57498, 13.93261]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Hebri",
+        "location": [74.99155, 13.45943]
+      }
+    ],
+    "expect": {
+      "km": 140,
+      "hairpinsMin": 6
+    }
+  },
+  {
+    "slug": "mumbai-to-goa-konkan-coast",
+    "title": "Mumbai to Goa along the Konkan coast",
+    "blurb": "The long way south: Konkan villages, sea forts, beaches and river crossings by Ratnagiri and Malvan before the road reaches Goa.",
+    "region": "Maharashtra",
+    "vehicle": "bike",
+    "tags": ["Konkan coast", "beaches", "sea forts"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Highway widening is still going on in places; the coastal stretches near Ratnagiri and Malvan are slower but quieter.",
+    "stops": [
+      {
+        "label": "Mumbai",
+        "location": [72.8692, 19.055]
+      },
+      {
+        "label": "Ratnagiri",
+        "location": [73.29544, 16.99335]
+      },
+      {
+        "label": "Malvan",
+        "location": [73.46695, 16.06064]
+      },
+      {
+        "label": "Panaji",
+        "location": [73.82821, 15.49899]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 610
+    }
+  },
+  {
+    "slug": "pune-to-kolad-via-tamhini",
+    "title": "Pune to Kolad via Tamhini Ghat",
+    "blurb": "A short monsoon favourite: past Mulshi lake and over Tamhini ghat, where the road runs under waterfalls, down to the Kundalika river at Kolad.",
+    "region": "Maharashtra",
+    "vehicle": "bike",
+    "tags": ["monsoon waterfalls", "Mulshi", "Sahyadri"],
+    "bestMonths": [7, 8, 9, 10],
+    "notes": "At its best in the rains; go on a weekday to miss the crowds.",
+    "stops": [
+      {
+        "label": "Pune",
+        "location": [73.85451, 18.52137]
+      },
+      {
+        "label": "Tamhini",
+        "location": [73.4281, 18.44523]
+      },
+      {
+        "label": "Kolad",
+        "location": [73.22342, 18.39202]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 113
+    }
+  },
+  {
+    "slug": "mumbai-to-malshej-ghat",
+    "title": "Mumbai to Malshej Ghat",
+    "blurb": "Out past Kalyan and Murbad to the cliffs of Malshej, where the road climbs the Sahyadri wall between waterfalls and cloud.",
+    "region": "Maharashtra",
+    "vehicle": "bike",
+    "tags": ["monsoon waterfalls", "Sahyadri", "cliffs"],
+    "bestMonths": [7, 8, 9, 10, 11],
+    "notes": "Landslides can close the ghat for days in heavy rain; check before you ride.",
+    "stops": [
+      {
+        "label": "Mumbai",
+        "location": [72.8692, 19.055]
+      },
+      {
+        "label": "Murbad",
+        "location": [73.39075, 19.25712]
+      },
+      {
+        "label": "Malshej Ghat",
+        "location": [73.79089, 19.34171]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Kalyan",
+        "location": [73.12932, 19.23916]
+      }
+    ],
+    "expect": {
+      "km": 135
+    }
+  },
+  {
+    "slug": "chennai-to-puducherry-ecr",
+    "title": "Chennai to Puducherry by the East Coast Road",
+    "blurb": "The East Coast Road runs between the Bay of Bengal and backwaters, past the shore temples of Mamallapuram, to the French quarter of Puducherry.",
+    "region": "Tamil Nadu",
+    "vehicle": "bike",
+    "tags": ["East Coast Road", "beaches", "temples"],
+    "bestMonths": [11, 12, 1, 2],
+    "notes": "Ride early: the road fills with traffic by mid-morning at weekends.",
+    "stops": [
+      {
+        "label": "Chennai",
+        "location": [80.27019, 13.08369]
+      },
+      {
+        "label": "Mamallapuram",
+        "location": [80.19923, 12.61648]
+      },
+      {
+        "label": "Puducherry",
+        "location": [79.83064, 11.93406]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 160
+    }
+  },
+  {
+    "slug": "kochi-to-munnar",
+    "title": "Kochi to Munnar",
+    "blurb": "From the backwaters through rubber and spice country to Adimali, then up into the tea gardens and waterfalls of the Kannan Devan hills.",
+    "region": "Kerala",
+    "vehicle": "bike",
+    "tags": ["tea gardens", "waterfalls", "Western Ghats"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3, 4, 5],
+    "notes": "Mist cuts visibility on the ghat in the evenings, especially in the monsoon.",
+    "stops": [
+      {
+        "label": "Kochi",
+        "location": [76.24444, 9.9679]
+      },
+      {
+        "label": "Kothamangalam",
+        "location": [76.62182, 10.06403]
+      },
+      {
+        "label": "Munnar",
+        "location": [77.06009, 10.087]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 131
+    }
+  },
+  {
+    "slug": "madurai-to-kodaikanal",
+    "title": "Madurai to Kodaikanal",
+    "blurb": "Temple city to hill station: across the plains to Batlagundu, then the ghat climbs nearly two kilometres up the Palani hills through bends, viewpoints and pine forest.",
+    "region": "Tamil Nadu",
+    "vehicle": "bike",
+    "tags": ["Palani hills", "hairpins", "viewpoints"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 4, 5, 6],
+    "notes": "Use engine braking on the long way down.",
+    "stops": [
+      {
+        "label": "Madurai",
+        "location": [78.1141, 9.92612]
+      },
+      {
+        "label": "Batlagundu",
+        "location": [77.7591, 10.16361]
+      },
+      {
+        "label": "Kodaikanal",
+        "location": [77.49197, 10.23371]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 120,
+      "hairpinsMin": 4
+    }
+  },
+  {
+    "slug": "bengaluru-to-madikeri",
+    "title": "Bengaluru to Madikeri",
+    "blurb": "Past Mysuru to Kushalnagar's Tibetan settlement, then up into Kodagu: coffee, pepper and misty bends to Madikeri.",
+    "region": "Karnataka",
+    "vehicle": "bike",
+    "tags": ["Coorg", "coffee", "Western Ghats"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The last climb to Madikeri is narrow; watch for buses on the bends.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Mysuru",
+        "location": [76.65536, 12.30518]
+      },
+      {
+        "label": "Kushalnagar",
+        "location": [75.96144, 12.45855]
+      },
+      {
+        "label": "Madikeri",
+        "location": [75.73875, 12.42149]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 265
+    }
+  },
+  {
+    "slug": "kolhapur-to-goa-via-amboli",
+    "title": "Kolhapur to Goa via Amboli Ghat",
+    "blurb": "Sugarcane country to the edge of the Sahyadris at Amboli, where the road drops past waterfalls in the fog to Sawantwadi and on to Goa.",
+    "region": "Maharashtra",
+    "vehicle": "bike",
+    "tags": ["Amboli Ghat", "monsoon", "waterfalls"],
+    "bestMonths": [7, 8, 9, 10, 11, 12, 1],
+    "notes": "Amboli is at its best in the monsoon, with fog and waterfalls by the road.",
+    "stops": [
+      {
+        "label": "Kolhapur",
+        "location": [74.24053, 16.70284]
+      },
+      {
+        "label": "Amboli",
+        "location": [73.99466, 15.93993]
+      },
+      {
+        "label": "Sawantwadi",
+        "location": [73.82053, 15.90796]
+      },
+      {
+        "label": "Panaji",
+        "location": [73.82821, 15.49899]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 220,
+      "hairpinsMin": 1
+    }
+  },
+  {
+    "slug": "hyderabad-to-srisailam",
+    "title": "Hyderabad to Srisailam",
+    "blurb": "South through the Deccan to the Nallamala hills, then forest road through the Amrabad tiger reserve to the Krishna gorge and the temple town of Srisailam.",
+    "region": "Telangana",
+    "vehicle": "bike",
+    "tags": ["Nallamala forest", "tiger reserve", "Krishna river"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "The road through the tiger reserve is closed from 9 pm to 6 am.",
+    "stops": [
+      {
+        "label": "Hyderabad",
+        "location": [78.47406, 17.36059]
+      },
+      {
+        "label": "Achampet",
+        "location": [78.63799, 16.39998]
+      },
+      {
+        "label": "Srisailam",
+        "location": [78.87257, 16.07505]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 215
+    }
+  },
+  {
+    "slug": "manali-to-leh",
+    "title": "Manali to Leh",
+    "blurb": "The classic high-altitude ride: through the Atal Tunnel into Lahaul, past Keylong and Sarchu, and over the high passes of the Zanskar range down to Leh.",
+    "region": "Himachal Pradesh and Ladakh",
+    "vehicle": "bike",
+    "tags": ["high passes", "Atal Tunnel", "Ladakh"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Open roughly June to October. The passes are above 5,000 m: acclimatise a day at Keylong or Jispa, and carry fuel for the long stretch without pumps after Tandi. The elevation profile reads the hill above the Atal Tunnel, so it shows a bump there.",
+    "stops": [
+      {
+        "label": "Manali",
+        "location": [77.18729, 32.24546]
+      },
+      {
+        "label": "Keylong",
+        "location": [77.02815, 32.57179]
+      },
+      {
+        "label": "Sarchu",
+        "location": [77.53255, 32.81551]
+      },
+      {
+        "label": "Leh",
+        "location": [77.58481, 34.1642]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Atal Tunnel",
+        "location": [77.14847, 32.40186]
+      }
+    ],
+    "expect": {
+      "km": 425,
+      "hairpinsMin": 10
+    }
+  },
+  {
+    "slug": "shimla-to-kaza",
+    "title": "Shimla to Kaza through Kinnaur",
+    "blurb": "Apple orchards at Narkanda, then the Sutlej gorge through Kinnaur on roads cut into cliffs, past Nako's lake into the cold desert of Spiti.",
+    "region": "Himachal Pradesh",
+    "vehicle": "bike",
+    "tags": ["Kinnaur", "Spiti", "cliff roads"],
+    "bestMonths": [5, 6, 7, 8, 9, 10],
+    "notes": "Landslides are common around Malling and Nako, and the road beyond Reckong Peo is partly unpaved.",
+    "stops": [
+      {
+        "label": "Shimla",
+        "location": [77.17079, 31.10404]
+      },
+      {
+        "label": "Narkanda",
+        "location": [77.46127, 31.25475]
+      },
+      {
+        "label": "Reckong Peo",
+        "location": [78.27082, 31.54214]
+      },
+      {
+        "label": "Nako",
+        "location": [78.6279, 31.87974]
+      },
+      {
+        "label": "Kaza",
+        "location": [78.07226, 32.22438]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Rampur Bushahr",
+        "location": [77.63021, 31.44866]
+      }
+    ],
+    "expect": {
+      "km": 420,
+      "hairpinsMin": 5
+    }
+  },
+  {
+    "slug": "jaipur-to-jaisalmer",
+    "title": "Jaipur to Jaisalmer",
+    "blurb": "Across Rajasthan from the Pink City by Ajmer and the blue city of Jodhpur, the land drying into dunes before Jaisalmer's golden fort.",
+    "region": "Rajasthan",
+    "vehicle": "car",
+    "tags": ["Thar desert", "forts", "long ride"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Very hot from April to June; carry water, and fill up in Jodhpur and Pokaran.",
+    "stops": [
+      {
+        "label": "Jaipur",
+        "location": [75.81898, 26.91546]
+      },
+      {
+        "label": "Ajmer",
+        "location": [74.639, 26.4691]
+      },
+      {
+        "label": "Jodhpur",
+        "location": [73.03514, 26.29677]
+      },
+      {
+        "label": "Jaisalmer",
+        "location": [70.91249, 26.91166]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 560
+    }
+  },
+  {
+    "slug": "guwahati-to-tawang-via-sela",
+    "title": "Guwahati to Tawang via Sela Pass",
+    "blurb": "Over the Brahmaputra plains to Tezpur, then up into Arunachal by Bomdila and Dirang and over Sela Pass at 4,170 m to the monastery town of Tawang.",
+    "region": "Assam and Arunachal Pradesh",
+    "vehicle": "bike",
+    "tags": ["Sela Pass", "Arunachal", "monasteries"],
+    "bestMonths": [3, 4, 5, 10, 11],
+    "notes": "Indian visitors need an Inner Line Permit for Arunachal Pradesh; Sela Pass can close with snow in winter.",
+    "stops": [
+      {
+        "label": "Guwahati",
+        "location": [91.75394, 26.1806]
+      },
+      {
+        "label": "Tezpur",
+        "location": [92.79761, 26.62299]
+      },
+      {
+        "label": "Bomdila",
+        "location": [92.42065, 27.26445]
+      },
+      {
+        "label": "Tawang",
+        "location": [91.86373, 27.58792]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Dirang",
+        "location": [92.24121, 27.36008]
+      },
+      {
+        "label": "Sela Pass",
+        "location": [92.10443, 27.50356]
+      }
+    ],
+    "expect": {
+      "km": 480,
+      "hairpinsMin": 10
+    }
+  },
+  {
+    "slug": "siliguri-to-darjeeling",
+    "title": "Siliguri to Darjeeling",
+    "blurb": "From the plains straight up the Himalayan foothills by Kurseong, sharing the bends with the toy train, to tea gardens and a view of Kanchenjunga.",
+    "region": "West Bengal",
+    "vehicle": "bike",
+    "tags": ["Himalayan foothills", "toy train", "tea"],
+    "bestMonths": [3, 4, 5, 10, 11, 12],
+    "notes": "Hill Cart Road shares its bends with the toy train; Rohini Road is the quicker climb.",
+    "stops": [
+      {
+        "label": "Siliguri",
+        "location": [88.43099, 26.71641]
+      },
+      {
+        "label": "Kurseong",
+        "location": [88.27836, 26.88183]
+      },
+      {
+        "label": "Darjeeling",
+        "location": [88.26318, 27.03776]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 65,
+      "hairpinsMin": 2
+    }
+  },
+  {
+    "slug": "rishikesh-to-chopta",
+    "title": "Rishikesh to Chopta",
+    "blurb": "Up the Ganga by Devprayag and Rudraprayag, then the Mandakini valley to Ukhimath and the meadows of Chopta below Tungnath, the highest Shiva temple.",
+    "region": "Uttarakhand",
+    "vehicle": "bike",
+    "tags": ["Garhwal Himalaya", "Tungnath", "river valleys"],
+    "bestMonths": [4, 5, 6, 9, 10, 11],
+    "notes": "Monsoon landslides often close the Badrinath highway; snow can block Chopta in winter. The road ends at Chopta, below the temple.",
+    "stops": [
+      {
+        "label": "Rishikesh",
+        "location": [78.29162, 30.10865]
+      },
+      {
+        "label": "Rudraprayag",
+        "location": [78.98072, 30.28656]
+      },
+      {
+        "label": "Chopta",
+        "location": [79.21673, 30.48831]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Ukhimath",
+        "location": [79.09476, 30.51395]
+      }
+    ],
+    "expect": {
+      "km": 210,
+      "hairpinsMin": 4
+    }
+  },
+  {
+    "slug": "bengaluru-to-mullayanagiri",
+    "title": "Bengaluru to Mullayanagiri",
+    "blurb": "To Chikkamagaluru's coffee estates, then the narrow road up the Baba Budan range to Mullayanagiri, Karnataka's highest peak.",
+    "region": "Karnataka",
+    "vehicle": "bike",
+    "tags": ["highest peak", "coffee", "hairpins"],
+    "bestMonths": [9, 10, 11, 12, 1, 2],
+    "notes": "The last stretch is single-lane; private vehicles may be stopped at weekends and on holidays.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Chikkamagaluru",
+        "location": [75.772, 13.3161]
+      },
+      {
+        "label": "Mullayanagiri",
+        "location": [75.721, 13.391]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 265,
+      "hairpinsMin": 3
+    }
+  }
+]

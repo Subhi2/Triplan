@@ -111,6 +111,41 @@ Decided 2026-09-30: well-known places around the rider, by road time. Design in 
 
 Next ideas (not built): label "My location" by the nearest town from our own data ("Near Hassan") for shared trips; an offline copy of the last Near me list for ride mode in areas without signal.
 
+## Growth G3 · Showcase
+
+Decided 2026-10-02: give the app an identity people can see and share ("see every hairpin, climb and stop on your road before you ride it"), and make the repo easy to run from a clone. The product is in `01-product-spec.md` (features 16–24), the design in `02-architecture.md`, the look in `08-design.md`. Steps in order, most visible first; one commit each. Migrations are additive only (the dev database is production).
+
+1. **README, LICENSE, screenshots**: `README.md` (pitch, features, how it works, stack, data and licences), MIT `LICENSE`, `pnpm screenshots -- --base=<url>` (Playwright, phone 390×844 and desktop 1440×900, into `docs/media/`).
+2. **Hairpins and twistiness** on each route card, from the route's shape (`src/lib/curvature.ts`): bend radius from each three points 25 m apart, weighted as on roadcurvature.com; a hairpin is a turn of 150° or more within 125 m that reverses the heading.
+3. **Terrain tiles provider** (`src/server/providers/elevation/`): heights from AWS Terrain Tiles (Terrarium PNGs, SRTM for India, no key), decoded with `fast-png`.
+4. **Elevation profile API** `POST /api/route/profile`: heights every 100 m, smoothed, ascent and descent, climbs of 200 m or more at 3% or steeper named after the nearest town, about 300 points for the chart; cached in `route_cache`.
+5. **Planner header** moved out of `Planner.tsx` (no change in behaviour).
+6. **Elevation profile in the planner**: an area chart under the route cards with ghats tinted, places as dots, and a scrubber that moves a marker on the map; a climb chip on each card.
+7. **3D ride preview**: a full-screen MapLibre view that flies along the route over 3D terrain, slower in ghats, with a heads-up display (km, height, climb) and place cards as it passes them. Play, pause, scrub, speed. No autoplay under reduced motion.
+8. **Ride story poster** `GET /og/story`: a 1080×1920 image (route shape, km, time, climb, hairpins, top stops) to share to Instagram stories or WhatsApp status from the phone's share sheet.
+9. **Save the preview as a video**: the 3D preview recorded in the browser (MP4 where the browser can, WebM otherwise) with its credits drawn in.
+10. **Famous rides data**: table `ride` (migration 0013), `data/rides.json` with about 20 well-known rides, `pnpm rides:lookup` for coordinates, `pnpm db:seed-rides` that routes each ride once, checks it passes its checkpoints, and stores the route with its profile and hairpins.
+11. **Famous ride pages** `/rides` and `/rides/[slug]` (stats, profile, places, best months, Plan this ride, Preview in 3D, JSON-LD, share card, sitemap), and "Try a famous ride" on the empty planner.
+12. **Site navigation, About, 404 and error pages**: About tells the story, how it works, the stack, and every data source with its licence.
+13. **Usage numbers**: table `usage_daily` (migration 0014) counting routes planned per day; Vercel Web Analytics; "N rides planned · M places · K trips saved" on About.
+14. **AI trip provider** (`src/server/providers/llm/`): Claude (`ANTHROPIC_TRIP_MODEL`, default `claude-haiku-4-5`) turns a sentence into a trip intent through structured outputs.
+15. **Plan in plain words**: `POST /api/trip-from-words` (6 per visitor per hour, 200 per day) resolves the intent's places through our place search and opens the planner. Hidden without `ANTHROPIC_API_KEY`; the text is never stored or logged.
+16. **OSM tile loop** moved out of the place import so a second import can share it (no change in behaviour).
+17. **Service points**: table `service_point` (migration 0015) for hospitals, police, ATMs, tyre and repair shops and stays, kept apart from places (no pages); `pnpm db:import-services -- --region=<name>`; SQL function `services_along_route`.
+18. **Safety stops** on the route: chips with counts per 50 km, pins on the map, tap to call, and the longest stretch without a hospital in the ride check.
+19. **Multi-day split**: riding hours per day (6 by bike, 8 by car), overnight towns near each split with stays nearby, day sections in the list and on the road strip, one GPX track per day.
+20. **One-command data setup**: `pnpm db:export-snapshot` writes our public tables to gzipped CSV with a manifest (licence ODbL, OpenStreetMap-derived), uploaded to a GitHub Release; `pnpm db:setup` runs the migrations and loads the latest snapshot into an empty database; `--from-sources` rebuilds from OpenStreetMap instead.
+21. **README from clone to deployment, docs refresh**: every step and setting from `git clone` to a Vercel deploy; docs 02, 03, 08, CLAUDE.md and `.env.example` brought up to date; fresh screenshots.
+
+**Done when:** Bengaluru → Kalasa via Sakleshpur shows about 20 hairpins on the way to Kalasa and the descents into Kalasa on the profile; Pollachi → Valparai shows its 40 hairpins and the climb above Aliyar; a 3D preview that flies the route and saves as a video; its story poster shares to WhatsApp; `/rides` lists the famous rides and each opens in the planner; "2-day monsoon ride from Pune with waterfalls" fills the planner (with a key); safety chips count hospitals along the road; a 2-day split names an overnight town; on an empty Supabase project, the README alone gets from `git clone` through `pnpm db:setup` to a Vercel deploy.
+
+**Built 2026-10-05.** Changes from the steps above:
+
+- The video (step 9) is encoded frame by frame with Mediabunny through WebCodecs (H.264 MP4, else VP9 WebM). MediaRecorder kept wall-clock time across pauses and made a 30 s flyover 2 minutes long.
+- Famous rides (step 10) check their checkpoints within 3 km. Kalhatti was dropped, because the public OSRM server will not route it.
+- The data snapshot (step 20) is committed in `data/snapshot` as gzipped JSON lines (about 10 MB), not CSV on a GitHub Release, so `git clone` alone has the data. COPY streams hung now and then through the pooler; batched `json_populate_recordset` inserts load it in about 20 seconds.
+- Service points cover all 35 states and union territories (110,000+ rows).
+
 ## Phase 5 · Community content
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.
