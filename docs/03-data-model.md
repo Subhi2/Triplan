@@ -217,6 +217,30 @@ CREATE TABLE geocode_cache (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Famous rides (migration 0013) ------------------------------------------------
+-- Hand-picked rides from data/rides.json, routed once by `pnpm db:seed-rides`. Public, read-only.
+CREATE TABLE ride (
+  slug        text PRIMARY KEY,
+  title       text NOT NULL,
+  blurb       text NOT NULL,
+  region      text NOT NULL,
+  vehicle     vehicle NOT NULL DEFAULT 'bike',
+  tags        text[] NOT NULL DEFAULT '{}',
+  best_months smallint[] NOT NULL DEFAULT '{}',
+  notes       text,                          -- permits, closures, seasons
+  stops       jsonb NOT NULL,                -- [{label, location: [lng, lat]}], start to end
+  route_geom  geography(LineString, 4326) NOT NULL,
+  distance_m  integer NOT NULL,
+  duration_s  integer NOT NULL,
+  road_mix    jsonb,                         -- RoadMix
+  curvature   jsonb,                         -- RouteCurvature
+  profile     jsonb,                         -- ElevationProfile
+  ascent_m    integer,
+  hairpins    smallint NOT NULL DEFAULT 0,
+  position    smallint NOT NULL DEFAULT 0,   -- gallery order
+  seeded_at   timestamptz NOT NULL DEFAULT now()
+);
+
 -- Users -------------------------------------------------------------------------
 CREATE TABLE profile (
   user_id      uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

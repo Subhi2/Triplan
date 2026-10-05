@@ -19,6 +19,8 @@
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
     "db:import-osm": "tsx --env-file=.env.local scripts/import-osm.ts",
     "db:import-photos": "tsx --env-file=.env.local scripts/import-photos.ts",
+    "db:seed-rides": "tsx --env-file=.env.local scripts/seed-rides.ts",
+    "rides:lookup": "tsx --env-file=.env.local scripts/ride-lookup.ts",
     "icons": "tsx scripts/generate-icons.ts",
     "screenshots": "tsx scripts/screenshots.ts",
     "check:pins": "tsx --env-file=.env.local scripts/check-pins.ts",

@@ -23,6 +23,9 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
+import type { RouteCurvature } from "@/lib/curvature";
+import type { ElevationProfile } from "@/lib/elevation";
+import type { RoadMix } from "@/lib/trip";
 import { geographyLine, geographyPoint } from "./postgis";
 
 const emptyArray = sql`'{}'`;
@@ -274,6 +277,32 @@ export const tripStop = pgTable(
   },
   (t) => [primaryKey({ columns: [t.tripId, t.position] })],
 );
+
+// Famous rides ------------------------------------------------------------------
+// Hand-picked rides from data/rides.json, routed once by `pnpm db:seed-rides` (docs/02, "Famous
+// rides"). Public and read-only.
+
+export const ride = pgTable("ride", {
+  slug: text("slug").primaryKey(),
+  title: text("title").notNull(),
+  blurb: text("blurb").notNull(),
+  region: text("region").notNull(),
+  vehicle: vehicle("vehicle").notNull().default("bike"),
+  tags: text("tags").array().notNull().default(emptyArray),
+  bestMonths: smallint("best_months").array().notNull().default(emptyArray), // 1-12
+  notes: text("notes"), // permits, closures, seasons
+  stops: jsonb("stops").$type<{ label: string; location: [number, number] }[]>().notNull(),
+  routeGeom: geographyLine("route_geom").notNull(),
+  distanceM: integer("distance_m").notNull(),
+  durationS: integer("duration_s").notNull(),
+  roadMix: jsonb("road_mix").$type<RoadMix | null>(),
+  curvature: jsonb("curvature").$type<RouteCurvature | null>(),
+  profile: jsonb("profile").$type<ElevationProfile | null>(),
+  ascentM: integer("ascent_m"),
+  hairpins: smallint("hairpins").notNull().default(0),
+  position: smallint("position").notNull().default(0), // gallery order
+  seededAt: timestamp("seeded_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 // Write limits ------------------------------------------------------------------
 // With no sign-in, saving and renaming trips is limited per visitor: a salted hash of the IP

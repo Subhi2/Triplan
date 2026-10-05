@@ -297,6 +297,14 @@ Rides are planned in groups, and in India the plan goes to a WhatsApp group, so 
 - **Search engines**: `sitemap.xml` lists the verified places of every place-list category (not fuel stations or towns), richest first (a guide, a photo or a Wikidata id), up to 45,000 URLs, rebuilt daily. `robots.txt` allows everything but `/api/`. Place pages have a canonical URL and schema.org `TouristAttraction` JSON-LD (location, area, photo, rating, Wikipedia link). Saved trips are `noindex` because anyone can write them; their links still unfurl.
 - Absolute URLs come from `siteUrl()`: `NEXT_PUBLIC_SITE_URL` when set (a custom domain), else Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`), else localhost.
 
+## Famous rides
+
+A hand-picked list of about 20 well-known Indian rides, kept as data (`data/rides.json`, validated by `rideSourceSchema` in `src/lib/rides.ts`), never in app logic: the pages and the planner show whatever the `ride` table holds.
+
+- **Coordinates** come from `pnpm rides:lookup -- "<name>" --state="<state>"`: our own places first (towns, peaks, viewpoints), then Nominatim at one request a second. Never typed from memory. Each ride lists its stops (vias force the road riders mean) and checkpoints the route must pass.
+- **`pnpm db:seed-rides`** (`--only=`, `--dry-run`) routes each ride once through the normal routing provider (cached and throttled; alternatives are asked for with two stops, as the planner does, which also warms its cache), keeps the first option that passes every checkpoint within 3 km (bypasses miss town centres by 1–2 km), lands within 15% of the expected distance and has at least the expected hairpins, computes its road mix, curvature and elevation profile, and upserts it (`src/server/services/rideService.ts`). A ride that fails is reported and not stored, so a wrong road is never shown. The public OSRM server does not route the Kalhatti ghat, so it is not in the list.
+- **Pages** (`/rides`, `/rides/[slug]`, revalidated daily) read the table; their places come from the corridor search when the page is made, so they follow the OpenStreetMap import.
+
 ## Ride story
 
 `GET /og/story` (`src/app/og/story/route.tsx`, `StoryCard` in `src/server/og/shareCards.tsx`, data from `src/server/services/storyService.ts`) draws a 1080×1920 PNG with next/og: the route with its ghats in orange (`splitByGhats`), the stops, distance, ride time, climb and hairpins (or the highest point), the elevation profile, up to four places spread along the road (`storyStops`: the best in each stretch, by `placeRank`), the app's address and the data credits. No photos, so there is nothing to credit but OpenStreetMap, the terrain and OSRM.
