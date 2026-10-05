@@ -113,6 +113,13 @@
       "when": 1791179585547,
       "tag": "0015_service_point",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791218605286,
+      "tag": "0016_place_area",
+      "breakpoints": true
     }
   ]
 }
