@@ -95,12 +95,17 @@ interface TownRawRow extends Record<string, unknown> {
   kind: string;
 }
 
+/** The OSM place type of a town row: city, town, or a well-known village (osmClassify). */
+function townKind(place: string): "city" | "town" | "village" {
+  return place === "city" || place === "village" ? place : "town";
+}
+
 export interface TownAlongRow {
   name: string;
   location: LngLat;
   kmFromStart: number;
   population: number | null;
-  kind: "city" | "town";
+  kind: "city" | "town" | "village";
 }
 
 /** Towns and cities within `withinM` of the route, ordered by km, with population for ranking. */
@@ -127,7 +132,7 @@ export async function townsAlong(geometry: LineString, withinM: number): Promise
     location: [r.lng, r.lat],
     kmFromStart: Number(r.km_from_start),
     population: r.population,
-    kind: r.kind === "city" ? "city" : "town",
+    kind: townKind(r.kind),
   }));
 }
 
@@ -152,6 +157,6 @@ export async function townsInBox([west, south, east, north]: [number, number, nu
     name: r.name,
     location: [r.lng, r.lat] as LngLat,
     population: r.population,
-    kind: r.kind === "city" ? ("city" as const) : ("town" as const),
+    kind: townKind(r.kind),
   }));
 }

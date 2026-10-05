@@ -26,7 +26,7 @@ import { authUsers } from "drizzle-orm/supabase";
 import type { RouteCurvature } from "@/lib/curvature";
 import type { ElevationProfile } from "@/lib/elevation";
 import type { RoadMix } from "@/lib/trip";
-import { geographyLine, geographyPoint } from "./postgis";
+import { geographyArea, geographyLine, geographyPoint } from "./postgis";
 
 const emptyArray = sql`'{}'`;
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -63,6 +63,9 @@ export const place = pgTable(
       .notNull()
       .references(() => category.id),
     location: geographyPoint("location").notNull(),
+    // Outline of a big place (a national park): the corridor search measures to it, so a road
+    // through the park lists it. Null for everything else, which is measured to its location.
+    area: geographyArea("area"),
     address: text("address"),
     district: text("district"),
     state: text("state"),
@@ -87,6 +90,7 @@ export const place = pgTable(
   },
   (t) => [
     index("place_location_gix").using("gist", t.location),
+    index("place_area_gix").using("gist", t.area).where(sql`${t.area} IS NOT NULL`),
     index("place_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
     index("place_status_idx").on(t.status),
     index("place_category_idx").on(t.categoryId),

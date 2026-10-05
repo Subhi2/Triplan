@@ -29,8 +29,71 @@ describe("Overpass query and response", () => {
     expect(q).toContain('area["ISO3166-2"="IN-GA"]["admin_level"="4"]->.region;');
     expect(q).toContain('nwr["amenity"="fuel"](area.region)(14.8,73.6,15.8,74.4);');
     expect(q).toContain('nwr["waterway"="waterfall"](area.region)');
-    expect(q).toContain('node["place"~"^(town|city)$"](area.region)');
+    expect(q).toContain('node["place"~"^(town|city|village)$"](area.region)');
+    expect(q).toContain(
+      'nwr["amenity"="place_of_worship"]["religion"~"^(hindu|jain|buddhist)$"]["name"]',
+    );
+    expect(q).toContain('wr["boundary"="national_park"]["name"](area.region)');
+    expect(q).toContain("(.found; - .areas;)->.all;");
     expect(q).toContain("way.all;out tags bb qt;");
+    expect(q).toContain("rel.areas;out geom qt;");
+  });
+
+  it("reads a park's outline from its way, or from a relation's outer ways", () => {
+    const [way, rel] = parseOverpassResponse({
+      elements: [
+        {
+          type: "way",
+          id: 159049306,
+          bounds: { minlat: 11.5, minlon: 76.4, maxlat: 11.7, maxlon: 76.7 },
+          tags: { boundary: "national_park", name: "Mudumalai National Park" },
+          geometry: [
+            { lat: 11.5, lon: 76.4 },
+            { lat: 11.7, lon: 76.4 },
+            null,
+            { lat: 11.5, lon: 76.4 },
+          ],
+        },
+        {
+          type: "relation",
+          id: 1,
+          bounds: { minlat: 11.5, minlon: 76.4, maxlat: 11.7, maxlon: 76.7 },
+          tags: { boundary: "protected_area", name: "Bandipur Tiger Reserve" },
+          members: [
+            {
+              type: "way",
+              role: "outer",
+              geometry: [
+                { lat: 1, lon: 2 },
+                { lat: 3, lon: 4 },
+              ],
+            },
+            {
+              type: "way",
+              role: "inner",
+              geometry: [
+                { lat: 5, lon: 6 },
+                { lat: 7, lon: 8 },
+              ],
+            },
+            { type: "node", role: "", geometry: [{ lat: 9, lon: 9 }] },
+          ],
+        },
+      ],
+    });
+    expect(way!.outline).toEqual([
+      [
+        [76.4, 11.5],
+        [76.4, 11.7],
+        [76.4, 11.5],
+      ],
+    ]);
+    expect(rel!.outline).toEqual([
+      [
+        [2, 1],
+        [4, 3],
+      ],
+    ]);
   });
 
   it("parses nodes and uses the bounding-box centre for ways, in [lng, lat] order", () => {
@@ -244,5 +307,99 @@ describe("castles and junk names", () => {
     expect(
       classifyOsmElement({ ...el, tags: { tourism: "attraction", name: "ಜೋಗ ಜಲಪಾತ" } })?.name,
     ).toBe("ಜೋಗ ಜಲಪಾತ");
+  });
+});
+
+describe("coverage import rules (2026-10-05)", () => {
+  const at = (tags: Record<string, string>, extra: Partial<OsmElement> = {}) =>
+    classifyOsmElement({
+      id: "way/9",
+      location: [76.6, 11.6],
+      extentM: 30_000,
+      tags,
+      ...extra,
+    });
+  const outline = [
+    [
+      [76.4, 11.5],
+      [76.7, 11.5],
+      [76.7, 11.7],
+      [76.4, 11.5],
+    ],
+  ] as [number, number][][];
+
+  it("keeps national parks, sanctuaries and zoos as wildlife, with their outline", () => {
+    const park = at({ boundary: "national_park", name: "Mudumalai National Park" }, { outline });
+    expect(park).toMatchObject({ category: "wildlife", outline });
+    expect(at({ boundary: "protected_area", name: "Ranganathittu Bird Sanctuary" })?.category).toBe(
+      "wildlife",
+    );
+    expect(
+      at({ boundary: "protected_area", name: "Bandipur", protection_title: "Tiger Reserve" })
+        ?.category,
+    ).toBe("wildlife");
+    expect(at({ tourism: "zoo", name: "Mysuru Zoo" })?.category).toBe("wildlife");
+    expect(at({ tourism: "zoo", name: "Mysuru Zoo" }, { outline, extentM: 400 })?.outline).toBe(
+      undefined,
+    );
+  });
+
+  it("names park zones as the park and leaves out buffer zones", () => {
+    expect(at({ boundary: "protected_area", name: "Mhadei WLS Core Zone" })?.name).toBe(
+      "Mhadei Wildlife Sanctuary",
+    );
+    expect(
+      at({ boundary: "protected_area", name: "Bhagwan Mahaveer WLS and Mollem NP Core Zone" })
+        ?.name,
+    ).toBe("Bhagwan Mahaveer Wildlife Sanctuary and Mollem National Park");
+    expect(at({ boundary: "protected_area", name: "Bandipur TR Buffer Zone" })).toBeNull();
+  });
+
+  it("leaves out reserved forests and biosphere reserves", () => {
+    expect(at({ boundary: "protected_area", name: "Kollegal Reserved Forest" })).toBeNull();
+    expect(at({ boundary: "protected_area", name: "Nilgiri Biosphere Reserve" })).toBeNull();
+    expect(at({ boundary: "protected_area", name: "Mhadei Wildlife Sanctuary ESZ" })).toBeNull();
+    expect(at({ boundary: "protected_area", name: "Hosur R.F.", protect_class: "2" })).toBeNull();
+    expect(
+      at({ boundary: "protected_area", name: "Agumbe Forest", tourism: "attraction" })?.category,
+    ).toBe("attraction");
+  });
+
+  it("keeps well-known villages as towns, so routes and search know them", () => {
+    const village = (tags: Record<string, string>) =>
+      classifyOsmElement({ id: "node/902588435", location: [76.64, 11.57], extentM: 0, tags });
+    expect(
+      village({
+        place: "village",
+        name: "Masinagudi",
+        "name:kn": "ಮಸಿನಗುಡಿ",
+        "name:ta": "மசினகுடி",
+      })?.category,
+    ).toBe("town");
+    expect(village({ place: "village", name: "Hampi", wikidata: "Q30636" })?.category).toBe("town");
+    expect(village({ place: "village", name: "Big", population: "8,000" })?.category).toBe("town");
+    expect(village({ place: "village", name: "Kaniyapura" })).toBeNull();
+  });
+
+  it("keeps every named temple except the ones only called 'Temple'", () => {
+    const temple = (name: string, extra: Record<string, string> = {}) =>
+      at({ amenity: "place_of_worship", religion: "hindu", name, ...extra }, { extentM: 0 });
+    expect(temple("Arali Mara temple")?.category).toBe("temple");
+    expect(temple("Temple")).toBeNull();
+    expect(temple("Sri Mandir")).toBeNull();
+    expect(temple("Sri Krishna Prasanna")).toBeNull();
+    expect(temple("Temple", { wikidata: "Q1" })?.category).toBe("temple");
+  });
+
+  it("files dams, gardens, galleries, tombs and waterfalls tagged as viewpoints", () => {
+    expect(at({ waterway: "dam", name: "Pykara Dam" })?.category).toBe("attraction");
+    expect(
+      at({ leisure: "garden", "garden:type": "botanical", name: "Government Botanical Garden" })
+        ?.category,
+    ).toBe("attraction");
+    expect(at({ tourism: "gallery", name: "Venkatappa Art Gallery" })?.category).toBe("museum");
+    expect(at({ historic: "tomb", name: "Gol Gumbaz" })?.category).toBe("heritage");
+    expect(at({ tourism: "viewpoint", name: "Kalhatty Falls" })?.category).toBe("waterfall");
+    expect(at({ tourism: "viewpoint", name: "Doddabetta Peak" })?.category).toBe("viewpoint");
   });
 });

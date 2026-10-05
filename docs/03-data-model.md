@@ -28,6 +28,7 @@ CREATE TABLE place (
   alt_names     text[] NOT NULL DEFAULT '{}',
   category_id   int NOT NULL REFERENCES category(id),
   location      geography(Point, 4326) NOT NULL,
+  area          geography(MultiPolygon, 4326),  -- outline of a national park or sanctuary (0016); null otherwise
   address       text,
   district      text,
   state         text,

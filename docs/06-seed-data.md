@@ -8,9 +8,9 @@ Place pins were checked against OpenStreetMap on 2026-09-28 with `scripts/check-
 
 ## Categories
 
-`temple, worship, heritage, fort, museum, attraction, viewpoint, waterfall, trek, peak, cave, lake, beach, food, coffee, fuel, stay, town`
+`temple, worship, heritage, fort, museum, attraction, viewpoint, waterfall, trek, peak, cave, lake, wildlife, beach, food, coffee, fuel, stay, town`
 
-`worship`, `museum`, `attraction`, `peak` and `cave` were added for the OpenStreetMap import (`scripts/import-osm.ts`). `worship` is for places of worship that are not Hindu, Jain or Buddhist temples.
+`worship`, `museum`, `attraction`, `peak` and `cave` were added for the OpenStreetMap import (`scripts/import-osm.ts`). `worship` is for places of worship that are not Hindu, Jain or Buddhist temples. `wildlife` (national parks, wildlife sanctuaries, tiger reserves and zoos) was added with the coverage import of 2026-10-05.
 
 ## Carry items
 

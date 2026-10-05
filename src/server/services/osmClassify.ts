@@ -13,6 +13,8 @@ export interface OsmPlaceCandidate {
   population: number | null;
   wikidataId: string | null;
   osmTags: Record<string, string>;
+  /** Wildlife areas: the lines of the outline (the import builds the polygon in PostGIS). */
+  outline?: LngLat[][];
 }
 
 /** Tags worth keeping on the place row (provenance, later guide fields). */
@@ -32,6 +34,11 @@ const KEPT_TAGS = [
   "heritage",
   "wikidata",
   "wikipedia",
+  "boundary",
+  "protect_class",
+  "protection_title",
+  "leisure",
+  "garden:type",
   "brand",
   "operator",
   "opening_hours",
@@ -81,11 +88,51 @@ const PALACE_WORDS =
 // Private homes and venues that mappers tagged as castles.
 const HOUSE_WORDS =
   /\b(house|villa|bungalow|bunglow|residence|regency|manzil|niwas|nivas|home|cottage|apartments?|flats?|hall|auditorium)\b/i;
+/**
+ * Protected areas that are worth a stop: national parks, wildlife and bird sanctuaries, tiger and
+ * elephant reserves. India also maps thousands of reserved forests and biosphere reserves as
+ * protected areas; those are not places to visit.
+ */
+const WILD_WORDS =
+  /\b(national park|wildlife|sanctuary|wls|w\.l\.s|tiger reserve|elephant reserve|bird|conservation reserve|zoo|zoological|safari|deer park|biological park)\b/i;
+const NOT_WILD_WORDS =
+  /\b(reserved? forests?|r\.? ?f\.?|forest block|biosphere|eco[- ]?sensitive|esz|community reserve|forest reserve)\b/i;
+/** IUCN classes for strict reserves and national parks. */
+const WILD_PROTECT_CLASSES = new Set(["1", "1a", "1b", "2"]);
+/** An outline is kept for areas wider than this; smaller ones are found by their point. */
+const MIN_OUTLINE_EXTENT_M = 1_000;
+/** Names that only say what the place is ("Temple", "Mandir"): too vague for a list. */
+const GENERIC_TEMPLE_NAMES =
+  /^(sri |shri |shree )?(temple|mandir|mandira|gudi|kovil|koil|devasthana|devasthanam|devalaya|devalayam|math|matha|mutt|shrine|mandap|mandapam|ashram|gompa|jinalaya|basadi|vihar|vihara|stupa)$/i;
+/** Goa maps each subsidiary shrine of a temple complex as "Sri Krishna Prasanna". */
+const SHRINE_IN_COMPLEX = /\bprasanna$/i;
+/** Park zones mapped apart from the park: buffer zones are left out, core zones named as the park. */
+const BUFFER_ZONE = /\bbuffer\b/i;
+
+/** "Mhadei WLS Core Zone" -> "Mhadei Wildlife Sanctuary". */
+export function wildlifeName(name: string): string {
+  return name
+    .replace(/\bWLS\b/g, "Wildlife Sanctuary")
+    .replace(/\bW\.?L\.?S\.?(?=\s|$)/g, "Wildlife Sanctuary")
+    .replace(/\bNP\b/g, "National Park")
+    .replace(/\bTR\b/g, "Tiger Reserve")
+    .replace(/\s*\b(core)\s+(zone|area)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Viewpoints and attractions named for a waterfall are waterfalls (Kalhatty Falls). */
+const WATERFALL_WORDS = /\b(falls?|waterfalls?|jalapatha|jalapata|jharna|abbi)\b/i;
+/** A village is a town row when it is well known: so it labels routes and is found by search. */
+const VILLAGE_MIN_POPULATION = 5_000;
+const VILLAGE_MIN_NAME_LANGUAGES = 2;
+
 /** Lake outlines smaller than this across are ponds or wells. */
 export const MIN_LAKE_EXTENT_M = 150;
 /** Same name and category within this distance counts as one place. */
 const DEDUPE_RADIUS_M: Partial<Record<CategorySlug, number>> = {
   town: 3_000,
+  wildlife: 10_000,
   beach: 2_000,
   lake: 1_000,
 };
@@ -105,16 +152,53 @@ function pickName(tags: Record<string, string>): string | undefined {
   return clean(tags.int_name) ?? name;
 }
 
+/** Names in this many languages (name:kn, name:ta...), a sign that a village is well known. */
+function nameLanguages(tags: Record<string, string>): number {
+  return Object.keys(tags).filter((k) => /^name:[a-z]{2,3}$/.test(k)).length;
+}
+
+/** A national park, wildlife sanctuary, tiger reserve or zoo, not a reserved forest. */
+export function isWildlife(tags: Record<string, string>): boolean {
+  if (tags.tourism === "zoo") return true;
+  const text = `${tags.name ?? ""} ${tags["name:en"] ?? ""} ${tags.protection_title ?? ""}`;
+  if (NOT_WILD_WORDS.test(text)) return false;
+  if (tags.boundary === "national_park") return true;
+  if (tags.boundary !== "protected_area" && tags.leisure !== "nature_reserve") return false;
+  return WILD_WORDS.test(text) || WILD_PROTECT_CLASSES.has(tags.protect_class ?? "");
+}
+
 function categoryFor(tags: Record<string, string>): CategorySlug | null {
   const t = (k: string) => tags[k];
   if (t("place") === "city" || t("place") === "town") return "town";
+  if (t("place") === "village") {
+    const wellKnown =
+      Boolean(t("wikidata")) ||
+      (parsePopulation(t("population")) ?? 0) >= VILLAGE_MIN_POPULATION ||
+      nameLanguages(tags) >= VILLAGE_MIN_NAME_LANGUAGES;
+    return wellKnown ? "town" : null;
+  }
+  // A protected area that is not wildlife (a reserved forest) goes on to the other checks, so
+  // one also tagged as an attraction is still kept.
+  if (isWildlife(tags)) return "wildlife";
   if (t("waterway") === "waterfall" || t("natural") === "waterfall") return "waterfall";
   if (t("historic") === "fort" || t("historic") === "castle") return "fort";
   if (t("amenity") === "place_of_worship") {
     return TEMPLE_RELIGIONS.has(t("religion") ?? "") ? "temple" : "worship";
   }
-  if (t("tourism") === "museum") return "museum";
-  if (["monument", "ruins", "archaeological_site", "memorial"].includes(t("historic") ?? "")) {
+  if (t("tourism") === "museum" || t("tourism") === "gallery") return "museum";
+  const historic = t("historic") ?? "";
+  if (
+    [
+      "monument",
+      "ruins",
+      "archaeological_site",
+      "memorial",
+      "tomb",
+      "palace",
+      "city_gate",
+      "monastery",
+    ].includes(historic)
+  ) {
     return "heritage";
   }
   if (t("natural") === "beach") return "beach";
@@ -125,7 +209,15 @@ function categoryFor(tags: Record<string, string>): CategorySlug | null {
   }
   if (t("tourism") === "viewpoint") return "viewpoint";
   if (t("tourism") === "camp_site") return "stay";
-  if (t("tourism") === "attraction") return "attraction";
+  if (
+    t("tourism") === "attraction" ||
+    t("tourism") === "theme_park" ||
+    t("tourism") === "aquarium"
+  ) {
+    return "attraction";
+  }
+  if (t("waterway") === "dam") return "attraction";
+  if (t("leisure") === "garden" && t("garden:type") === "botanical") return "attraction";
   if (t("amenity") === "fuel") return "fuel";
   return null;
 }
@@ -183,6 +275,21 @@ export function classifyOsmElement(el: OsmElement): OsmPlaceCandidate | null {
   }
   // An unnamed viewpoint or peak is not useful in a list, nor is a name with no letters ("15 | 36").
   if (!name || !LETTER.test(name)) return null;
+  // Temples come in by name now (not only with a Wikidata link): drop the ones named "Temple".
+  if (
+    category === "temple" &&
+    !notable &&
+    (GENERIC_TEMPLE_NAMES.test(name) || SHRINE_IN_COMPLEX.test(name))
+  ) {
+    return null;
+  }
+  if (category === "wildlife") {
+    if (BUFFER_ZONE.test(name)) return null;
+    name = wildlifeName(name);
+  }
+  if ((category === "viewpoint" || category === "attraction") && WATERFALL_WORDS.test(name)) {
+    category = "waterfall";
+  }
 
   if (tags.historic === "castle") {
     const kind = castleCategory(clean(tags.castle_type), name, notable || !!tags.heritage);
@@ -214,6 +321,9 @@ export function classifyOsmElement(el: OsmElement): OsmPlaceCandidate | null {
     population: category === "town" ? parsePopulation(tags.population) : null,
     wikidataId: clean(tags.wikidata) ?? null,
     osmTags,
+    ...(category === "wildlife" && el.outline && el.extentM >= MIN_OUTLINE_EXTENT_M
+      ? { outline: el.outline }
+      : {}),
   };
 }
 

@@ -6,7 +6,7 @@ export interface CandidateTown {
   name: string;
   location: LngLat;
   population: number | null;
-  kind: "city" | "town";
+  kind: "city" | "town" | "village";
 }
 
 // Extra route options through a town, when the routing engine returns fewer than three routes

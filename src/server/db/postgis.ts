@@ -79,3 +79,12 @@ export const geographyLine = customType<{ data: LineString; driverData: string }
   toDriver: lineToEwkt,
   fromDriver: ewkbToLine,
 });
+
+/**
+ * A big place's outline (national parks, sanctuaries), simplified to about 100 m. Written and
+ * read only in SQL (the import builds it from OSM ways, the corridor search measures to it), so
+ * it stays as EWKB text in TypeScript.
+ */
+export const geographyArea = customType<{ data: string; driverData: string }>({
+  dataType: () => "geography(MultiPolygon, 4326)",
+});

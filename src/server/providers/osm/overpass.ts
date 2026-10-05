@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { haversineM } from "@/lib/geo";
+import { haversineM, type LngLat } from "@/lib/geo";
 import { ProviderError } from "../http";
 import {
   OsmServerBusyError,
@@ -16,20 +16,35 @@ const QUERY_TIMEOUT_S = 90;
 const QUERY_MAXSIZE_BYTES = 128 * 1024 * 1024;
 
 /**
- * Tag filters for the places import (docs/04-build-plan.md, Phase 3 step 0). Two additions to the
- * plan's list: waterway=waterfall and landuse=reservoir, the older tags most Indian waterfalls and
- * many reservoirs still use.
+ * Tag filters for the places import (docs/04-build-plan.md, Phase 3 step 0). Additions to the
+ * plan's list: waterway=waterfall and landuse=reservoir (the older tags most Indian waterfalls and
+ * many reservoirs still use); and, from the coverage import of 2026-10-05, every named Hindu,
+ * Jain and Buddhist temple (before, only those with a Wikidata link: 26 of 2,842 in Karnataka),
+ * zoos, galleries, theme parks, botanical gardens, dams, tombs, palaces and city gates.
  */
 const PLACE_FILTERS = [
-  '["tourism"~"^(viewpoint|attraction|museum|camp_site)$"]',
-  '["historic"~"^(fort|castle|monument|ruins|archaeological_site|memorial)$"]',
+  '["tourism"~"^(viewpoint|attraction|museum|camp_site|zoo|theme_park|aquarium|gallery)$"]',
+  '["historic"~"^(fort|castle|monument|ruins|archaeological_site|memorial|tomb|palace|city_gate|monastery)$"]',
   '["natural"~"^(waterfall|peak|beach|cave_entrance)$"]',
   '["waterway"="waterfall"]',
+  '["waterway"="dam"]["name"]',
   '["water"~"^(lake|reservoir)$"]["name"]',
   '["landuse"="reservoir"]["name"]',
+  '["leisure"="garden"]["garden:type"="botanical"]["name"]',
+  '["amenity"="place_of_worship"]["religion"~"^(hindu|jain|buddhist)$"]["name"]',
   '["amenity"="place_of_worship"]["wikidata"]',
   '["amenity"="place_of_worship"]["wikipedia"]',
   '["amenity"="fuel"]',
+];
+
+/**
+ * National parks, wildlife sanctuaries and other protected areas: fetched with their outline
+ * (out geom), so a road through the park finds it. The classifier keeps the wildlife ones.
+ */
+const AREA_FILTERS = [
+  '["boundary"="national_park"]["name"]',
+  '["boundary"="protected_area"]["name"]',
+  '["leisure"="nature_reserve"]["name"]',
 ];
 
 export function buildPlacesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
@@ -37,16 +52,24 @@ export function buildPlacesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
   const box = `(${south},${west},${north},${east})`; // Overpass order: S, W, N, E
   const statements = [
     ...PLACE_FILTERS.map((f) => `nwr${f}(area.region)${box};`),
-    `node["place"~"^(town|city)$"](area.region)${box};`,
+    // Every village: the classifier keeps the well-known ones (names in two or more languages,
+    // a Wikidata link or 5,000 people), such as Masinagudi.
+    `node["place"~"^(town|city|village)$"](area.region)${box};`,
   ];
-  // Nodes need "body" for their coordinates; ways and relations only need tags and bounds.
+  const areas = AREA_FILTERS.map((f) => `wr${f}(area.region)${box};`);
+  // Nodes need "body" for their coordinates; ways and relations only need tags and bounds,
+  // except protected areas, which come with their outline.
   return [
     `[out:json][timeout:${QUERY_TIMEOUT_S}][maxsize:${QUERY_MAXSIZE_BYTES}];`,
     `area["ISO3166-2"="${areaIso}"]["admin_level"="4"]->.region;`,
-    `(${statements.join("")})->.all;`,
+    `(${areas.join("")})->.areas;`,
+    `(${statements.join("")})->.found;`,
+    "(.found; - .areas;)->.all;",
     "node.all;out body qt;",
     "way.all;out tags bb qt;",
     "rel.all;out tags bb qt;",
+    "way.areas;out geom qt;",
+    "rel.areas;out geom qt;",
   ].join("\n");
 }
 
@@ -84,6 +107,8 @@ const boundsSchema = z.object({
   maxlon: z.number(),
 });
 
+const geometrySchema = z.array(z.object({ lat: z.number(), lon: z.number() }).nullable());
+
 export const overpassResponseSchema = z.object({
   elements: z.array(
     z.object({
@@ -93,6 +118,17 @@ export const overpassResponseSchema = z.object({
       lon: z.number().optional(),
       bounds: boundsSchema.optional(),
       tags: z.record(z.string(), z.string()).default({}),
+      // With "out geom": a way's points, a relation's members with theirs.
+      geometry: geometrySchema.optional(),
+      members: z
+        .array(
+          z.object({
+            type: z.string(),
+            role: z.string().default(""),
+            geometry: geometrySchema.optional(),
+          }),
+        )
+        .optional(),
     }),
   ),
   remark: z.string().optional(),
@@ -119,17 +155,37 @@ export function parseOverpassResponse(body: unknown): OsmElement[] {
     }
     if (e.bounds) {
       const { minlat, minlon, maxlat, maxlon } = e.bounds;
+      const outline = outlineOf(e);
       return [
         {
           id,
           location: [(minlon + maxlon) / 2, (minlat + maxlat) / 2],
           extentM: haversineM([minlon, minlat], [maxlon, maxlat]),
           tags: e.tags,
+          ...(outline ? { outline } : {}),
         },
       ];
     }
     return [];
   });
+}
+
+type OverpassElement = z.infer<typeof overpassResponseSchema>["elements"][number];
+
+/** A way's line, or a relation's outer ways, from "out geom"; undefined without geometry. */
+function outlineOf(e: OverpassElement): LngLat[][] | undefined {
+  const line = (g: z.infer<typeof geometrySchema>): LngLat[] =>
+    g.flatMap((p): LngLat[] => (p ? [[p.lon, p.lat]] : []));
+  const lines =
+    e.type === "way"
+      ? e.geometry
+        ? [line(e.geometry)]
+        : []
+      : (e.members ?? [])
+          .filter((m) => m.type === "way" && m.role !== "inner" && m.geometry)
+          .map((m) => line(m.geometry!));
+  const kept = lines.filter((l) => l.length >= 2);
+  return kept.length > 0 ? kept : undefined;
 }
 
 async function fetchFrom(url: string, userAgent: string, query: string): Promise<OsmElement[]> {

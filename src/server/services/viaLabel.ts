@@ -5,7 +5,7 @@ export interface TownOnRoute {
   location: LngLat;
   kmFromStart: number;
   population: number | null; // from OSM when tagged
-  kind: "city" | "town";
+  kind: "city" | "town" | "village";
 }
 
 export interface LabelInput {
@@ -15,7 +15,7 @@ export interface LabelInput {
 
 /** Population, or a rough stand-in from the OSM place type when it is not tagged. */
 export function townSize(t: Pick<TownOnRoute, "population" | "kind">): number {
-  return t.population ?? (t.kind === "city" ? 100_000 : 10_000);
+  return t.population ?? (t.kind === "city" ? 100_000 : t.kind === "village" ? 1_000 : 10_000);
 }
 
 function largest(towns: TownOnRoute[]): TownOnRoute {
