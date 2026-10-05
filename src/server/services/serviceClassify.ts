@@ -17,6 +17,26 @@ export interface ServicePointCandidate {
 
 /** "Puncture", "tyre", "tire" in a shop's name or description: a puncture shop. */
 const TYRE_WORDS = /puncture|tyre|tire/i;
+/**
+ * Student and working people's hostels are often mapped as tourism=hostel, but a traveller cannot
+ * stay there: a name with one word from each list ("Ladies hostel", "Boys PG"). Plain alternations
+ * so the same words work in PostgreSQL, which writes word boundaries as \y (RESIDENT_HOSTEL_SQL).
+ */
+const HOSTEL_WORDS = "hostel|hostels|pg|paying guest";
+const RESIDENT_WORDS =
+  "girls?|boys?|ladies|gents|women|womens|students?|college|university|pre-?university|working";
+const words = (alternation: string) => new RegExp(`\\b(${alternation})\\b`, "i");
+
+export function isResidentHostel(name: string): boolean {
+  return words(HOSTEL_WORDS).test(name) && words(RESIDENT_WORDS).test(name);
+}
+
+/** isResidentHostel's two patterns for PostgreSQL's ~* (word boundaries as \y). */
+export const RESIDENT_HOSTEL_SQL = {
+  hostel: `\\y(${HOSTEL_WORDS})\\y`,
+  resident: `\\y(${RESIDENT_WORDS})\\y`,
+};
+
 /** Stays and hospitals bigger than this are campuses or mapping mistakes, not one point. */
 const MAX_EXTENT_M = 3_000;
 
@@ -53,6 +73,7 @@ export function classifyService(e: OsmElement): ServicePointCandidate | null {
     tags.name?.trim() ||
     (kind === "atm" ? tags.brand?.trim() || tags.operator?.trim() : undefined) ||
     null;
+  if (kind === "stay" && name && isResidentHostel(name)) return null;
   return {
     osmId: e.id,
     kind,

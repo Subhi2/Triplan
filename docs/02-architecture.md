@@ -323,7 +323,7 @@ A hand-picked list of about 20 well-known Indian rides, kept as data (`data/ride
 - Forecast requests snap to a 0.05° grid (about 5 km) with at most 2 decimals, identify themselves with `NOMINATIM_USER_AGENT`, run 4 at a time, and are cached for an hour in `geocode_cache` under `metno:` keys (the daily health check deletes them after a day). One point failing leaves it without a forecast; all failing is a 502. The browser waits 0.5 s after the start time changes before asking.
 - The start time is kept in the planner (not in the URL) and shared by the daylight and weather checks.
 
-**GPX export**: the "GPX" button in the bar at the bottom of the panel downloads `src/lib/gpx.ts`'s GPX 1.1 file: the selected route as a track, the stops as waypoints (flags: green start, blue stops, red destination) and the ticked places, or with none ticked the places in the list (at most 300), each described with its category and km. OsmAnd, Organic Maps, Komoot and GPS units navigate it offline. Built in the browser; nothing is sent to the server.
+**GPX export**: the "GPX" button in the bar at the bottom of the panel downloads `src/lib/gpx.ts`'s GPX 1.1 file: the selected route as a track (one per day with a multi-day split), the stops as waypoints (flags: green start, blue stops, red destination) and the ticked places, or with none ticked the places in the list (at most 300), each described with its category and km. OsmAnd, Organic Maps, Komoot and GPS units navigate it offline. Built in the browser; nothing is sent to the server.
 
 ## Phone layout
 
@@ -367,6 +367,18 @@ Hospitals, police, ATMs, puncture and tyre shops, repair shops and stays along t
 - **Search**: `services_along_route(geojson, corridor_m, kinds)`, as `places_along_route`.
 - **API**: `POST /api/services/along { routeId | geometry }` → for hospitals, police, ATMs, puncture and repair shops within 3 km of the road: counts, how many per 50 km, the longest stretch without each (start and destination included, as the fuel gap), and the nearest three of each kind per 10 km to list and pin (`src/lib/safety.ts`).
 - **Planner**: "Safety on the way" under the road strip: a chip per kind with its count; a tap lists them in km order (name, how far off the road, Call for hospitals, police and stays with a phone) and pins them on the map (`servicePins`, both maps). The ride check adds the longest stretch without a hospital (ok up to 60 km, a warning up to 120 km).
+
+## Multi-day split
+
+A route longer than a day's riding is cut into days, each night in a town on the road with places to stay (`src/lib/multiDay.ts`, pure and tested; `dayPlanService.ts`).
+
+- **Riding time along the road**: OSRM reports each step's time; `mergeRoads` keeps it on every road stretch (`RoadStretch.durationS`, bike times × 1.1), so `routeTimeline` maps km to riding minutes: a day ends further along on an expressway than in a ghat. Routes cached before step times were kept (and the recorded fixtures) have none, and time runs in proportion to distance.
+- **How many days**: riding hours a day default to 6 by bike and 8 by car (4–10 to pick). A day may run a fifth over before another day is suggested: 5 h of riding at 4 h a day is 2 days, 7.2 h at 6 h a day is 1. The rider can add or take away days (up to 10).
+- **Where each night falls**: day by day, the target is an even share of the riding time left, so a night a little early or late evens out over the days after it. Towns and cities within 5 km of the road (`townsAlong`) whose riding time is within a quarter of a day of the target are scored on closeness to it, size (population, cities a little more) and the stays within 5 km (`service_point` stays plus our stay places; none counts against a town). At most the 150 biggest towns are weighed, in one query. With no town in the window the day ends on the road at the target ("Night near km 412").
+- **Stays**: the nearest four named stays to each night's town, our stay places (with pages) first, then OpenStreetMap hotels, guest houses, hostels and motels, with tap to call. Student and working people's hostels mapped as tourist ones ("Ladies PG", "Boys Hostel") are left out, at import and in the query (`isResidentHostel`).
+- **API**: `POST /api/route/days { routeId | geometry, distanceKm, durationMin; hoursPerDay; days? }` → `{ suggestedDays, days, hoursPerDay, legs }`, each leg with its km, riding minutes and end (town, road or destination, with stays). One day needs no database. An expired route id is 404 `ROUTE_NOT_FOUND` and the browser resends the geometry and totals.
+- **Planner**: `DaySplit` under the Preview and Story buttons: a route that fits in a day shows one line with the hours a day and "Split over 2 days"; longer ones show "Over N days" with − and +, the hours a day, and a timeline of the days (km, riding time, "Night in Hosapete · 24 stays within 5 km", the stays). The road strip marks each night with a tick; the place list has a "Night in Hosapete · day 2" divider where each day starts. The URL keeps `rh` (hours a day, when not the default) and `d` (days, when not the suggested number).
+- **GPX**: with a split, one track per day ("Day 1: Pune → Hosapete", cut exactly at each night with `sliceLine`) instead of one for the route, and each night and its stays as Lodging waypoints.
 
 ## Plan in plain words
 

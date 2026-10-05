@@ -1,4 +1,5 @@
 import { round5, type LngLat } from "./geo";
+import { isRideHours, MAX_DAYS, type RideHours } from "./multiDay";
 import { DETOUR_LIMITS_KM } from "./places";
 import {
   CORRIDOR_KM,
@@ -11,7 +12,8 @@ import {
 
 // Trips live in the query string so they can be shared:
 //   ?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234&v=bike&c=5
-// plus optional place filters: cat=temple,fort (categories shown) and hd=2 (hide detours over 2 km).
+// plus optional place filters: cat=temple,fort (categories shown) and hd=2 (hide detours over 2 km),
+// and the multi-day split: rh=5 (riding hours a day) and d=3 (days).
 
 export type DetourLimitKm = (typeof DETOUR_LIMITS_KM)[number];
 
@@ -28,6 +30,10 @@ export interface TripUrlState {
   corridorKm: CorridorKm;
   categories: string[]; // empty = all
   maxDetourKm: DetourLimitKm | null;
+  /** Riding hours a day for the multi-day split; null = the vehicle's default. */
+  rideHours: RideHours | null;
+  /** Days to split the route into; null = as many as it needs. */
+  days: number | null;
 }
 
 export function encodeStop({ label, location: [lng, lat] }: UrlStop): string {
@@ -52,6 +58,8 @@ export function parseTripUrl(params: URLSearchParams): TripUrlState {
   const vehicle = params.get("v");
   const corridor = Number(params.get("c"));
   const detour = Number(params.get("hd"));
+  const rideHours = Number(params.get("rh"));
+  const days = Number(params.get("d"));
   return {
     from: decode(params.get("from")),
     via: params
@@ -75,6 +83,8 @@ export function parseTripUrl(params: URLSearchParams): TripUrlState {
     maxDetourKm: DETOUR_LIMITS_KM.includes(detour as DetourLimitKm)
       ? (detour as DetourLimitKm)
       : null,
+    rideHours: isRideHours(rideHours) ? rideHours : null,
+    days: Number.isInteger(days) && days >= 1 && days <= MAX_DAYS ? days : null,
   };
 }
 
@@ -87,5 +97,7 @@ export function serializeTripUrl(state: TripUrlState): string {
   params.set("c", String(state.corridorKm));
   if (state.categories.length > 0) params.set("cat", state.categories.join(","));
   if (state.maxDetourKm !== null) params.set("hd", String(state.maxDetourKm));
+  if (state.rideHours !== null) params.set("rh", String(state.rideHours));
+  if (state.days !== null) params.set("d", String(state.days));
   return params.toString();
 }

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ProviderError } from "@/server/providers/http";
 import { NoRouteError } from "@/server/providers/routing";
-import { buildOsrmRouteUrl, parseOsrmResponse } from "@/server/providers/routing/osrm";
+import {
+  BIKE_DURATION_FACTOR,
+  buildOsrmRouteUrl,
+  parseOsrmResponse,
+} from "@/server/providers/routing/osrm";
 import { rawRouteFixture, routeFixture } from "../helpers/fixtures";
 
 describe("parseOsrmResponse", () => {
@@ -109,11 +113,11 @@ describe("road stretches", () => {
                 duration: 60,
                 summary: "",
                 steps: [
-                  { distance: 100 },
-                  { distance: 300, ref: "NH75" },
-                  { distance: 200, ref: "NH75" },
-                  { distance: 400, ref: " SH 57 " },
-                  { distance: 0, ref: "SH 57" },
+                  { distance: 100, duration: 10 },
+                  { distance: 300, duration: 12, ref: "NH75" },
+                  { distance: 200, duration: 8, ref: "NH75" },
+                  { distance: 400, duration: 30, ref: " SH 57 " },
+                  { distance: 0, duration: 0, ref: "SH 57" },
                 ],
               },
             ],
@@ -123,10 +127,28 @@ describe("road stretches", () => {
       "car",
     );
     expect(route!.roads).toEqual([
-      { distanceM: 100, ref: null },
-      { distanceM: 500, ref: "NH75" },
-      { distanceM: 400, ref: "SH 57" },
+      { distanceM: 100, durationS: 10, ref: null },
+      { distanceM: 500, durationS: 20, ref: "NH75" },
+      { distanceM: 400, durationS: 30, ref: "SH 57" },
     ]);
+  });
+
+  it("times road stretches at the bike's slower pace", () => {
+    const [route] = parseOsrmResponse(
+      {
+        code: "Ok",
+        routes: [
+          {
+            geometry: { type: "LineString", coordinates: [[77.59, 12.97], [75.33, 13.19]] },
+            distance: 1_000,
+            duration: 100,
+            legs: [{ distance: 1_000, duration: 100, summary: "", steps: [{ distance: 1_000, duration: 100 }] }],
+          },
+        ],
+      },
+      "bike",
+    );
+    expect(route!.roads![0]!.durationS).toBeCloseTo(100 * BIKE_DURATION_FACTOR);
   });
 
   it("reads road numbers from the recorded Bengaluru → Samse route", () => {

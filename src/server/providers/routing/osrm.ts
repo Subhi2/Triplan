@@ -40,6 +40,7 @@ const osrmResponseSchema = z.object({
               .array(
                 z.object({
                   distance: z.number().nonnegative(),
+                  duration: z.number().nonnegative().default(0),
                   ref: z.string().optional(),
                 }),
               )
@@ -87,18 +88,28 @@ export function parseOsrmResponse(body: unknown, profile: RouteInput["profile"])
       durationS: l.duration * factor,
       summary: l.summary,
     })),
-    roads: mergeRoads(r.legs.flatMap((l) => l.steps)),
+    roads: mergeRoads(r.legs.flatMap((l) => l.steps), factor),
   }));
 }
 
-/** Road stretches in route order, with consecutive steps on the same road number merged. */
-function mergeRoads(steps: { distance: number; ref?: string }[]): RoadStretch[] {
+/**
+ * Road stretches in route order, with consecutive steps on the same road number merged. Their
+ * times give the multi-day split a km-to-hours timeline (slow ghats, fast expressways).
+ */
+function mergeRoads(
+  steps: { distance: number; duration: number; ref?: string }[],
+  factor: number,
+): RoadStretch[] {
   const roads: RoadStretch[] = [];
   for (const step of steps) {
     const ref = step.ref?.trim() || null;
     const last = roads.at(-1);
-    if (last && last.ref === ref) last.distanceM += step.distance;
-    else if (step.distance > 0) roads.push({ distanceM: step.distance, ref });
+    if (last && last.ref === ref) {
+      last.distanceM += step.distance;
+      last.durationS! += step.duration * factor;
+    } else if (step.distance > 0) {
+      roads.push({ distanceM: step.distance, durationS: step.duration * factor, ref });
+    }
   }
   return roads;
 }

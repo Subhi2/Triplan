@@ -9,6 +9,8 @@ const trip: TripUrlState = {
   corridorKm: 10,
   categories: [],
   maxDetourKm: null,
+  rideHours: null,
+  days: null,
 };
 
 describe("trip URL state", () => {
@@ -48,6 +50,8 @@ describe("trip URL state", () => {
       corridorKm: 5,
       categories: ["temple"],
       maxDetourKm: null,
+      rideHours: null,
+      days: null,
     });
   });
 

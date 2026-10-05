@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { routeCurvature } from "@/lib/curvature";
 import type { ElevationProfile } from "@/lib/elevation";
+import type { DayPlan } from "@/lib/multiDay";
 import type { PlaceDetail } from "@/lib/placeDetail";
 import type { PlaceAlong } from "@/lib/places";
 import type { SavedTrip } from "@/lib/savedTrip";
@@ -94,6 +95,52 @@ const SAFETY = {
   ],
 };
 
+/** Bengaluru → Kalasa via Sakleshpur over two days, a night in Hassan. */
+const DAYS: DayPlan = {
+  suggestedDays: 2,
+  days: 2,
+  hoursPerDay: 4,
+  legs: [
+    {
+      day: 1,
+      fromKm: 0,
+      toKm: 180,
+      rideMin: 170,
+      end: {
+        name: "Hassan",
+        kind: "city",
+        location: [76.1, 13.0],
+        kmFromStart: 180,
+        stayCount: 42,
+        stays: [
+          {
+            id: "node/9",
+            name: "Hotel Hoysala Village",
+            phone: "+91 8172 256 764",
+            location: [76.1, 13.01],
+            distanceKm: 0.8,
+            slug: null,
+          },
+        ],
+      },
+    },
+    {
+      day: 2,
+      fromKm: 180,
+      toKm: 330.8,
+      rideMin: 130,
+      end: {
+        name: null,
+        kind: "destination",
+        location: [75.356, 13.234],
+        kmFromStart: 330.8,
+        stayCount: 0,
+        stays: [],
+      },
+    },
+  ],
+};
+
 function options(fixture: RouteFixture, labels: string[]): RouteOption[] {
   return routeFixture(fixture, "bike").map((r, i) => ({
     id: `${fixture}-${i}`,
@@ -125,6 +172,7 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
   });
   await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
   await page.route("**/api/services/along", (route) => route.fulfill({ json: SAFETY }));
+  await page.route("**/api/route/days", (route) => route.fulfill({ json: DAYS }));
   // Never the terrain tiles: one made-up profile for every route.
   await page.route("**/api/route/profile", (route) =>
     route.fulfill({ json: { profile: PROFILE } }),
@@ -320,6 +368,48 @@ test("safety stops along the road, with call links and the hospital gap", async 
     await check.getByRole("button", { name: /Ride check/ }).click();
   }
   await expect(check.getByText("Hospitals: longest stretch without one is 200 km")).toBeVisible();
+});
+
+test("split a long ride into days, each night in a town with stays", async ({ page }) => {
+  const dayRequests: unknown[] = [];
+  await mockApis(page, []);
+  await mockPlace(page);
+  await page.route("**/api/route/days", (route) => {
+    dayRequests.push(route.request().postDataJSON());
+    return route.fulfill({ json: DAYS });
+  });
+  // Five hours of riding at four a day: two days.
+  await page.goto(
+    "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234&rh=4",
+  );
+  await expect(page.getByRole("heading", { name: "Over 2 days" })).toBeVisible();
+  const days = page.getByRole("list", { name: "Days of riding" });
+  await expect(days).toContainText("Night in Hassan · 42 stays within 5 km");
+  await expect(days).toContainText("Arrive in Kalasa");
+  await expect(days.getByRole("link", { name: "Call" })).toHaveAttribute(
+    "href",
+    "tel:+918172256764",
+  );
+  expect(dayRequests[0]).toMatchObject({ hoursPerDay: 4 });
+  expect(dayRequests[0]).not.toHaveProperty("days");
+  await expect(page.getByRole("list", { name: "Places along the route" })).toContainText(
+    "Night in Hassan · day 2",
+  );
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download GPX file" }).click(),
+  ]);
+  const gpx = await readFile((await download.path())!, "utf8");
+  expect(gpx.match(/<trk>/g)).toHaveLength(2);
+  expect(gpx).toContain("<name>Day 1: Bengaluru → Hassan</name>");
+  expect(gpx).toContain("<name>Hotel Hoysala Village</name>");
+
+  await page.getByRole("button", { name: "One day more" }).click();
+  await expect(page).toHaveURL(/[?&]d=3/);
+  await expect.poll(() => dayRequests.at(-1)).toMatchObject({ days: 3 });
+  await page.getByRole("button", { name: "One day fewer" }).click();
+  await expect(page).not.toHaveURL(/[?&]d=/);
 });
 
 test("stops can be reordered from the keyboard", async ({ page }) => {

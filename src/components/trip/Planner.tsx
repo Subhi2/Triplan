@@ -15,15 +15,18 @@ import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
 import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
 import { StoryShare } from "@/components/ride/StoryShare";
+import { DaySplit } from "@/components/route/DaySplit";
 import { RouteProfile } from "@/components/route/RouteProfile";
 import { SafetyStops } from "@/components/route/SafetyStops";
+import { useDayPlan } from "@/components/route/useDayPlan";
 import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
 import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
-import { gpxFileName, tripGpx } from "@/lib/gpx";
+import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
+import { DEFAULT_RIDE_HOURS, suggestDays, type RideHours } from "@/lib/multiDay";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
@@ -110,6 +113,10 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const [corridorKm, setCorridorKm] = useState<CorridorKm>(initial.corridorKm);
   const [categories, setCategories] = useState<string[]>(initial.categories);
   const [maxDetourKm, setMaxDetourKm] = useState<DetourLimitKm | null>(initial.maxDetourKm);
+  // The multi-day split: riding hours a day (null = the vehicle's default) and days (null = as
+  // many as the route needs).
+  const [rideHours, setRideHours] = useState<RideHours | null>(initial.rideHours);
+  const [dayCount, setDayCount] = useState<number | null>(initial.days);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [routeState, setRouteState] = useState<RouteState>({ status: "idle" });
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
@@ -145,6 +152,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     corridorKm,
     categories,
     maxDetourKm,
+    rideHours,
+    days: dayCount,
   });
   useEffect(() => {
     if (window.location.search !== `?${query}`) {
@@ -224,6 +233,15 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     safety.status === "ok" && safetyKind
       ? safety.summary.points.filter((p) => p.kind === safetyKind)
       : undefined;
+  const hoursPerDay = rideHours ?? DEFAULT_RIDE_HOURS[vehicle];
+  const suggestedDays = selectedRoute ? suggestDays(selectedRoute.durationMin, hoursPerDay) : 1;
+  const days = dayCount ?? suggestedDays;
+  const dayState = useDayPlan(selectedRoute, hoursPerDay, dayCount, days > 1);
+  const dayPlan =
+    days > 1 && dayState.status === "ok" && dayState.routeId === selectedRouteId
+      ? dayState.plan
+      : null;
+  const nights = dayPlan ? dayPlan.legs.slice(0, -1).map((l) => l.end) : [];
   const [previewOpen, setPreviewOpen] = useState(false);
   const closePreview = useCallback(() => setPreviewOpen(false), []);
   const mapCursor =
@@ -358,10 +376,34 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     if (!selectedRoute) return;
     const resolved = stops.flatMap((s) => (s.location ? [{ ...s, location: s.location }] : []));
     const title = saved?.title ?? tripHeadline(resolved.map((s) => s.label));
+    const line = selectedRoute.geometry.coordinates as LngLat[];
+    const short = (label: string) => label.split(",")[0]!.trim();
+    const nightName = (i: number) =>
+      nights[i]?.name ?? `km ${Math.round(nights[i]?.kmFromStart ?? 0)}`;
     const gpx = tripGpx({
       name: title,
       link: saved ? `${window.location.origin}/trips/${saved.id}` : window.location.href,
-      route: selectedRoute.geometry.coordinates as LngLat[],
+      route: line,
+      days: dayPlan?.legs.map((l, i) => ({
+        name: `Day ${l.day}: ${i === 0 ? short(resolved[0]!.label) : nightName(i - 1)} → ${
+          l.end.kind === "destination" ? short(resolved.at(-1)!.label) : nightName(i)
+        }`,
+        route: sliceLine(line, l.fromKm, l.toKm),
+      })),
+      nights: nights.flatMap((n, i) => [
+        {
+          name: `Night ${i + 1}: ${nightName(i)}`,
+          location: n.location,
+          description: `${n.stayCount} stays within 5 km · km ${Math.round(n.kmFromStart)}`,
+          symbol: "Lodging",
+        },
+        ...n.stays.map((st) => ({
+          name: st.name,
+          location: st.location,
+          description: `Stay · night ${i + 1} · ${st.distanceKm.toFixed(1)} km${st.phone ? ` · ${st.phone}` : ""}`,
+          symbol: "Lodging",
+        })),
+      ]),
       stops: resolved.map((s, i) => {
         const role = i === 0 ? "Start" : i === resolved.length - 1 ? "Destination" : `Stop ${i}`;
         return {
@@ -528,6 +570,20 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           />
         </div>
       )}
+      {selectedRoute && (
+        <DaySplit
+          state={dayState}
+          days={days}
+          suggestedDays={suggestedDays}
+          hoursPerDay={hoursPerDay}
+          destination={destination}
+          onHoursChange={(h) => {
+            setRideHours(h === DEFAULT_RIDE_HOURS[vehicle] ? null : h);
+            setDayCount(null);
+          }}
+          onDaysChange={setDayCount}
+        />
+      )}
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
       )}
@@ -565,6 +621,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           places={places}
           activePlaceId={activePlaceId}
           hoverPlaceId={hoverPlaceId}
+          nights={nights.map((n) => ({ km: n.kmFromStart, name: n.name }))}
         />
         <SafetyStops
           state={safety}
@@ -618,6 +675,10 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
                   onHover={setHoverPlaceId}
                   pickedIds={pickedIds}
                   onPickedChange={setPlacePicked}
+                  nights={nights.map((n, i) => ({
+                    km: n.kmFromStart,
+                    label: `Night in ${n.name ?? `km ${Math.round(n.kmFromStart)}`} · day ${i + 2}`,
+                  }))}
                 />
                 {hiddenCount > 0 && (
                   <p className="text-sm text-stone-600 dark:text-stone-400">

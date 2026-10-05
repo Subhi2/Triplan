@@ -147,6 +147,8 @@ export async function tripFromWords(
     corridorKm: 5,
     categories: intent.categories,
     maxDetourKm: null,
+    rideHours: null,
+    days: null,
   };
   const kinds = intent.categories.map((c) => categoryStyle(c).name.toLowerCase()).join(", ");
   const summary = [

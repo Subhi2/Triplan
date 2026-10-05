@@ -63,12 +63,17 @@ export const TABLE_FIXTURES = {
 const baseUrl = process.env.OSRM_BASE_URL ?? "https://router.project-osrm.org";
 const dir = "tests/fixtures/osrm";
 
-/** Keeps only the step fields the app reads (distance, ref, name), so fixtures stay small. */
+/** Keeps only the step fields the app reads (distance, duration, ref, name): small fixtures. */
 function slimSteps(body: unknown): unknown {
   const b = body as { routes?: { legs: { steps?: Record<string, unknown>[] }[] }[] };
   for (const route of b.routes ?? []) {
     for (const leg of route.legs) {
-      leg.steps = leg.steps?.map(({ distance, ref, name }) => ({ distance, ref, name }));
+      leg.steps = leg.steps?.map(({ distance, duration, ref, name }) => ({
+        distance,
+        duration,
+        ref,
+        name,
+      }));
     }
   }
   return b;

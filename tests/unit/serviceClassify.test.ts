@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildServicesQuery } from "@/server/providers/osm/overpass";
-import { classifyService } from "@/server/services/serviceClassify";
+import {
+  classifyService,
+  isResidentHostel,
+  RESIDENT_HOSTEL_SQL,
+} from "@/server/services/serviceClassify";
 
 const el = (tags: Record<string, string>, extentM = 0) => ({
   id: "node/1",
@@ -41,6 +45,19 @@ describe("classifyService", () => {
     expect(classifyService(el({ amenity: "hospital", access: "private" }))).toBeNull();
     expect(classifyService(el({ amenity: "police", disused: "yes" }))).toBeNull();
     expect(classifyService(el({ tourism: "hotel" }, 5_000))).toBeNull();
+  });
+
+  it("leaves out student and working people's hostels mapped as tourist ones", () => {
+    expect(isResidentHostel("Preuniversity girls hostel")).toBe(true);
+    expect(isResidentHostel("Sri Sai Ladies PG")).toBe(true);
+    expect(isResidentHostel("Govt. Pre-University College Boys Hostel")).toBe(true);
+    expect(isResidentHostel("Zostel Gokarna")).toBe(false);
+    expect(isResidentHostel("College Road Residency")).toBe(false);
+    expect(classifyService(el({ tourism: "hostel", name: "BCM Boys Hostel" }))).toBeNull();
+    expect(classifyService(el({ tourism: "hostel", name: "Backpacker Hostel" }))?.kind).toBe(
+      "stay",
+    );
+    expect(RESIDENT_HOSTEL_SQL.hostel).toBe(String.raw`\y(hostel|hostels|pg|paying guest)\y`);
   });
 });
 

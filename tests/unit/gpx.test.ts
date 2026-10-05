@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { gpxFileName, tripGpx } from "@/lib/gpx";
+import { haversineM, type LngLat } from "@/lib/geo";
+import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 
 describe("tripGpx", () => {
   const gpx = tripGpx({
@@ -35,6 +36,44 @@ describe("tripGpx", () => {
   it("escapes names and links", () => {
     expect(gpx).toContain("<name>Ganesha &lt;&amp; Sons&gt; &apos;Temple&apos;</name>");
     expect(gpx).toContain('<link href="https://example.app/trips/1?a=1&amp;b=2">');
+  });
+
+  it("has one track per day and the nights as lodging waypoints for a multi-day split", () => {
+    const days = tripGpx({
+      name: "Pune → Kochi",
+      route: [
+        [73.85, 18.52],
+        [76.27, 9.93],
+      ],
+      stops: [],
+      places: [],
+      days: [
+        { name: "Day 1: Pune → Hosapete", route: [[73.85, 18.52], [76.39, 15.27]] },
+        { name: "Day 2: Hosapete → Kochi", route: [[76.39, 15.27], [76.27, 9.93]] },
+      ],
+      nights: [{ name: "Night 1: Hosapete", location: [76.39, 15.27], symbol: "Lodging" }],
+    });
+    expect(days.match(/<trk>/g)).toHaveLength(2);
+    expect(days).toContain("<name>Day 2: Hosapete → Kochi</name>");
+    expect(days).toContain("<sym>Lodging</sym>");
+  });
+});
+
+describe("sliceLine", () => {
+  // Due north along 76° E, about 111 km per degree.
+  const line: LngLat[] = [
+    [76, 12],
+    [76, 13],
+    [76, 14],
+  ];
+  const length = (l: LngLat[]) => l.slice(1).reduce((n, p, i) => n + haversineM(l[i]!, p), 0) / 1000;
+
+  it("cuts a line exactly at both km, keeping the points between", () => {
+    const part = sliceLine(line, 50, 150);
+    expect(length(part)).toBeCloseTo(100, 3);
+    expect(part).toHaveLength(3);
+    expect(part[1]).toEqual([76, 13]);
+    expect(sliceLine(line, 0, 1_000)).toEqual(line);
   });
 });
 

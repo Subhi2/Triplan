@@ -30,6 +30,8 @@ const trip = {
   corridorKm: 5,
   categories: ["waterfall"],
   maxDetourKm: null,
+  rideHours: null,
+  days: null,
 };
 
 describe("POST /api/trip-from-words", () => {

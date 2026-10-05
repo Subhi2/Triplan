@@ -83,6 +83,8 @@ export function ridePlannerUrl(ride: Pick<Ride, "stops" | "vehicle">): string {
     corridorKm: 5,
     categories: [],
     maxDetourKm: null,
+    rideHours: null,
+    days: null,
   })}`;
 }
 
