@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
 import { Planner } from "@/components/trip/Planner";
 import { SITE_NAME, tripHeadline } from "@/lib/site";
 import { parseTripUrl } from "@/lib/tripUrl";
+import { listRides } from "@/server/services/rideService";
+
+/** Famous rides for "Try a famous ride", read at most hourly; none if the database is down. */
+const famousRides = unstable_cache(() => listRides().catch(() => []), ["famous-rides"], {
+  revalidate: 3600,
+});
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -34,11 +41,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const rides = await famousRides();
   // useSearchParams in Planner needs a Suspense boundary.
   return (
     <Suspense>
-      <Planner />
+      <Planner famousRides={rides} />
     </Suspense>
   );
 }

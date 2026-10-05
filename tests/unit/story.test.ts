@@ -81,8 +81,9 @@ describe("GET /og/story", () => {
     vi.doMock("@/server/services/storyService", () => ({
       storyForRoute: vi.fn(async () => null),
       storyForTrip: vi.fn(async () => null),
+      storyForRide: vi.fn(async () => null),
     }));
-    const { storyForRoute } = await import("@/server/services/storyService");
+    const { storyForRoute, storyForRide } = await import("@/server/services/storyService");
     const { GET } = await import("@/app/og/story/route");
     const id = `${"b".repeat(32)}-1`;
     const res = await GET(
@@ -101,5 +102,7 @@ describe("GET /og/story", () => {
       ],
       "car",
     );
+    await GET(new Request("http://localhost/og/story?ride=pollachi-to-valparai"));
+    expect(storyForRide).toHaveBeenCalledWith("pollachi-to-valparai");
   }, 30_000);
 });

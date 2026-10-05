@@ -11,6 +11,7 @@ import type { Vehicle } from "@/lib/trip";
 import { placesAlong, toPlaceAlong } from "./corridorService";
 import { routeProfile } from "./elevationService";
 import { roadMix } from "./roadMix";
+import { getRide } from "./rideService";
 import { getRouteResult } from "./routeService";
 import { getTrip, getTripLine } from "./tripService";
 
@@ -38,10 +39,13 @@ async function build(
   distanceKm: number,
   durationMin: number | null,
   ghats: [number, number][],
+  knownProfile?: ElevationProfile | null,
 ): Promise<StoryData> {
   const coords = geometry.coordinates as LngLat[];
   const [profile, places] = await Promise.all([
-    routeProfile(geometry, routeId).catch(() => null),
+    knownProfile !== undefined
+      ? Promise.resolve(knownProfile)
+      : routeProfile(geometry, routeId).catch(() => null),
     placesAlong(geometry, STORY_CORRIDOR_M, PLACE_LIST_CATEGORIES)
       .then((rows) => rows.map(toPlaceAlong))
       .catch(() => []),
@@ -112,4 +116,22 @@ export async function storyForTrip(id: string): Promise<StoryData | null> {
     trip.durationMin,
     cached ? (roadMix(cached)?.ghats ?? []) : [],
   );
+}
+
+/** A story for a famous ride, from what was stored when it was seeded. */
+export async function storyForRide(slug: string): Promise<StoryData | null> {
+  const found = await getRide(slug);
+  if (!found) return null;
+  const { ride, geometry } = found;
+  const story = await build(
+    geometry,
+    null,
+    ride.stops,
+    ride.vehicle,
+    ride.distanceKm,
+    ride.durationMin,
+    ride.roadMix?.ghats ?? [],
+    ride.profile,
+  );
+  return { ...story, headline: ride.title };
 }

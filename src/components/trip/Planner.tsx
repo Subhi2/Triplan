@@ -11,6 +11,7 @@ import { placeRowId } from "@/components/place/PlaceRow";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
+import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
 import { StoryShare } from "@/components/ride/StoryShare";
 import { RouteProfile } from "@/components/route/RouteProfile";
@@ -22,6 +23,7 @@ import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, tripGpx } from "@/lib/gpx";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture } from "@/lib/rideCheck";
+import type { RideSummary } from "@/lib/rides";
 import { tripHeadline } from "@/lib/site";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
@@ -65,9 +67,11 @@ type RouteState =
 interface Props {
   /** A saved trip to open (/trips/[id]). */
   savedTrip?: SavedTrip | null;
+  /** Rides offered as "Try a famous ride" while there is no trip. */
+  famousRides?: RideSummary[];
 }
 
-export function Planner({ savedTrip = null }: Props) {
+export function Planner({ savedTrip = null, famousRides = [] }: Props) {
   const searchParams = useSearchParams();
   const [initial] = useState(() => {
     const fromUrl = parseTripUrl(new URLSearchParams(searchParams.toString()));
@@ -669,6 +673,8 @@ export function Planner({ savedTrip = null }: Props) {
             />
           </div>
         ) : null}
+
+        {!hasTrip && !typing && <FamousRidesStrip rides={famousRides} />}
 
         {isDesktop && sidePanel}
       </aside>
