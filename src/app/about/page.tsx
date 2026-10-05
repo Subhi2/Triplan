@@ -3,6 +3,10 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { getStats } from "@/server/services/statsService";
+
+// The numbers are refreshed at most hourly.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `About · ${SITE_NAME}`,
@@ -61,7 +65,19 @@ const SOURCES: { what: string; who: string; href: string; licence: string }[] = 
   },
 ];
 
-export default function AboutPage() {
+function Stat({ value, label }: { value: number | null; label: string }) {
+  return (
+    <div className="flex flex-col-reverse rounded-xl border border-stone-200 bg-(--surface) px-4 py-3 dark:border-stone-700">
+      <dt className="text-sm text-stone-600 dark:text-stone-400">{label}</dt>
+      <dd className="font-display text-3xl font-extrabold">
+        {value === null ? "–" : value.toLocaleString("en-IN")}
+      </dd>
+    </div>
+  );
+}
+
+export default async function AboutPage() {
+  const stats = await getStats().catch(() => null);
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-6">
       <SiteNav current="/about" />
@@ -78,6 +94,17 @@ export default function AboutPage() {
           road, in kilometre order, with what you need to ride it.
         </p>
       </header>
+
+      <section aria-labelledby="numbers">
+        <h2 id="numbers" className="sr-only">
+          In numbers
+        </h2>
+        <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-stats>
+          <Stat value={stats?.places ?? null} label="places along India's roads" />
+          <Stat value={stats?.routesPlanned ?? null} label="rides planned" />
+          <Stat value={stats?.tripsSaved ?? null} label="trips saved" />
+        </dl>
+      </section>
 
       <section aria-labelledby="how" className="flex flex-col gap-3">
         <h2 id="how" className="font-display text-2xl font-bold tracking-tight">

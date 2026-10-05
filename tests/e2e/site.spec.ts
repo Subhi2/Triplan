@@ -4,6 +4,8 @@ test("About tells how it works and credits every data source", async ({ page }) 
   await page.goto("/about");
   await expect(page.getByRole("heading", { name: "About Triplan", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
+  await expect(page.locator("[data-stats]")).toContainText("places along India's roads");
+  await expect(page.locator("[data-stats]")).toContainText("rides planned");
   const sources = page.getByRole("region", { name: "Where the data comes from" });
   for (const name of ["OpenStreetMap", "Wikimedia Commons", "MET Norway", "AWS Terrain Tiles"]) {
     await expect(sources).toContainText(name);

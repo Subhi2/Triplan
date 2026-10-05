@@ -241,6 +241,15 @@ CREATE TABLE ride (
   seeded_at   timestamptz NOT NULL DEFAULT now()
 );
 
+-- Usage counters (migration 0014) -----------------------------------------------
+-- Counts per UTC day: routes planned, AI requests and tokens. Server only (RLS on, no policies).
+CREATE TABLE usage_daily (
+  day   date NOT NULL,
+  key   text NOT NULL,                        -- 'route_planned' | 'ai_trip' | 'ai_tokens_in' | ...
+  count integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, key)
+);
+
 -- Users -------------------------------------------------------------------------
 CREATE TABLE profile (
   user_id      uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

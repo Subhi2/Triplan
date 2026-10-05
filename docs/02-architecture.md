@@ -358,6 +358,13 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - API route handlers validate input with Zod and rate-limit writes per user (e.g. 20 reviews/day).
 - Uploaded images: max 8 MB, resized to 1600 px and 400 px thumbnails, EXIF location stripped unless the user opts in to use it as the place pin.
 
+## Usage numbers
+
+- **Page views**: Vercel Web Analytics (`<Analytics />` in the root layout): no cookies, reported only on Vercel; on the free plan it counts page views (custom events need Pro). Turn it on in the project's Analytics tab.
+- **Counters**: `usage_daily (day, key, count)` (migration 0014, server only), written by `src/server/services/usage.ts` with one atomic upsert: `countUsage`, `takeDailyBudget` (counts and says no over a day's limit, used by the AI endpoint) and `usageTotal`. `POST /api/route` counts `route_planned` with `countLater`, inside Next's `after()`, so counting never slows or fails a request. Nothing about who asked is stored.
+- **Per-visitor limits** for new endpoints: `allowRequest(request, { scope, limit, windowS })` in `writeLimit.ts`, on the same `write_limit` table under `<scope>:<salted IP hash>`, apart from the trip-write counter.
+- **About** shows places, rides planned and trips saved (`statsService.getStats`), refreshed hourly.
+
 ## Deployment
 
 Vercel (Hobby, free, non-commercial) runs the app; the database stays on Supabase (free, `ap-south-1`). Every push to `main` deploys to production; pushes to other branches get preview URLs.

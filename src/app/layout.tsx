@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Atkinson_Hyperlegible, Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -60,7 +61,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${body.variable} ${heading.variable} ${numbers.variable}`}>
-      <body className="min-h-dvh antialiased">{children}</body>
+      <body className="min-h-dvh antialiased">
+        {children}
+        {/* Page views without cookies; reported only on Vercel (docs/02, "Usage numbers"). */}
+        <Analytics />
+      </body>
     </html>
   );
 }

@@ -328,6 +328,20 @@ export const googleUsage = pgTable(
   (t) => [primaryKey({ columns: [t.day, t.sku] })],
 );
 
+// Usage counters ----------------------------------------------------------------
+// Counts per UTC day: routes planned, AI requests and tokens (src/server/services/usage.ts).
+// Nothing about who: no visitor keys, no addresses.
+
+export const usageDaily = pgTable(
+  "usage_daily",
+  {
+    day: date("day").notNull(),
+    key: text("key").notNull(), // 'route_planned' | 'ai_trip' | 'ai_tokens_in' | ...
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.key] })],
+);
+
 // Caches ----------------------------------------------------------------------
 
 export const routeCache = pgTable("route_cache", {

@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NoRouteError } from "@/server/providers/routing";
 
 vi.mock("@/server/services/routeService", () => ({ getRoutes: vi.fn() }));
+vi.mock("@/server/services/usage", () => ({ countLater: vi.fn() }));
 
 const { getRoutes } = await import("@/server/services/routeService");
+const { countLater } = await import("@/server/services/usage");
 const { POST } = await import("@/app/api/route/route");
 
 function post(body: unknown) {
@@ -23,7 +25,20 @@ const trip = {
 };
 
 describe("POST /api/route", () => {
-  beforeEach(() => vi.mocked(getRoutes).mockReset());
+  beforeEach(() => {
+    vi.mocked(getRoutes).mockReset();
+    vi.mocked(countLater).mockReset();
+  });
+
+  it("counts a planned ride only when routing works", async () => {
+    vi.mocked(getRoutes).mockResolvedValue([]);
+    await post(trip);
+    expect(countLater).toHaveBeenCalledWith("route_planned");
+    vi.mocked(countLater).mockReset();
+    vi.mocked(getRoutes).mockRejectedValue(new NoRouteError());
+    await post(trip);
+    expect(countLater).not.toHaveBeenCalled();
+  });
 
   it("rejects invalid trips with 400", async () => {
     expect((await post("not json")).status).toBe(400);

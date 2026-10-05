@@ -43,3 +43,25 @@ export async function forgetOldVisitors(): Promise<number> {
     DELETE FROM write_limit WHERE window_start < now() - ${FORGET_AFTER}::interval RETURNING key`);
   return rows.length;
 }
+
+/**
+ * Counts one request for the visitor under `scope` (its own counter, apart from trip writes);
+ * false once they have made more than `limit` in the current window of `windowS` seconds (at most
+ * a day, after which the daily health check forgets the visitor).
+ */
+export async function allowRequest(
+  request: Request,
+  { scope, limit, windowS }: { scope: string; limit: number; windowS: number },
+): Promise<boolean> {
+  const key = `${scope}:${visitorKey(clientIp(request))}`;
+  const window = `${Math.min(windowS, 86_400)} seconds`;
+  const [row] = await getDb().execute<{ count: number }>(sql`
+    INSERT INTO write_limit (key, window_start, count) VALUES (${key}, now(), 1)
+    ON CONFLICT (key) DO UPDATE SET
+      count = CASE WHEN write_limit.window_start < now() - ${window}::interval
+                   THEN 1 ELSE write_limit.count + 1 END,
+      window_start = CASE WHEN write_limit.window_start < now() - ${window}::interval
+                          THEN now() ELSE write_limit.window_start END
+    RETURNING count`);
+  return (row?.count ?? 0) <= limit;
+}

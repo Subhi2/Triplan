@@ -99,6 +99,13 @@
       "when": 1791177214092,
       "tag": "0013_ride",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791178701864,
+      "tag": "0014_usage_daily",
+      "breakpoints": true
     }
   ]
 }
