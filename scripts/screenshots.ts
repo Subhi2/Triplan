@@ -24,6 +24,8 @@ const KALASA_VIA_SAKLESHPUR =
 const SHOTS: Shot[] = [
   { name: "planner", path: KALASA_VIA_SAKLESHPUR, waitFor: "Along the road" },
   { name: "place", path: "/place/manjarabad-fort", waitFor: "What to carry" },
+  { name: "rides", path: "/rides", waitFor: "Pollachi" },
+  { name: "ride", path: "/rides/pollachi-to-valparai", waitFor: "Plan this ride" },
   { name: "nearby", path: "/nearby" },
   { name: "trips", path: "/trips" },
 ];
@@ -72,6 +74,8 @@ async function main() {
         console.log(`${base}${shot.path} → ${file}`);
         await page.goto(`${base}${shot.path}`, { waitUntil: "domcontentloaded" });
         await settle(page, shot.waitFor);
+        // Next's dev-mode badge would cover a button on phones.
+        await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
         await page.screenshot({ path: file });
       }
       await context.close();

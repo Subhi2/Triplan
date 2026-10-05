@@ -139,6 +139,13 @@ Decided 2026-10-02: give the app an identity people can see and share ("see ever
 
 **Done when:** Bengaluru → Kalasa via Sakleshpur shows about 20 hairpins on the way to Kalasa and the descents into Kalasa on the profile; Pollachi → Valparai shows its 40 hairpins and the climb above Aliyar; a 3D preview that flies the route and saves as a video; its story poster shares to WhatsApp; `/rides` lists the famous rides and each opens in the planner; "2-day monsoon ride from Pune with waterfalls" fills the planner (with a key); safety chips count hospitals along the road; a 2-day split names an overnight town; on an empty Supabase project, the README alone gets from `git clone` through `pnpm db:setup` to a Vercel deploy.
 
+**Built 2026-10-05.** Changes from the steps above:
+
+- The video (step 9) is encoded frame by frame with Mediabunny through WebCodecs (H.264 MP4, else VP9 WebM). MediaRecorder kept wall-clock time across pauses and made a 30 s flyover 2 minutes long.
+- Famous rides (step 10) check their checkpoints within 3 km. Kalhatti was dropped, because the public OSRM server will not route it.
+- The data snapshot (step 20) is committed in `data/snapshot` as gzipped JSON lines (about 10 MB), not CSV on a GitHub Release, so `git clone` alone has the data. COPY streams hung now and then through the pooler; batched `json_populate_recordset` inserts load it in about 20 seconds.
+- Service points cover all 35 states and union territories (110,000+ rows).
+
 ## Phase 5 · Community content
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.
