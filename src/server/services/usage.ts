@@ -36,9 +36,9 @@ export async function usageTotal(key: UsageKey | `test:${string}`): Promise<numb
  * Counts a use after the response has been sent, so counting never slows or fails a request.
  * Outside a request (scripts, tests) it counts in the background.
  */
-export function countLater(key: UsageKey): void {
+export function countLater(key: UsageKey, by = 1): void {
   const count = () =>
-    countUsage(key).catch((err: unknown) => console.warn(`Could not count ${key}`, err));
+    countUsage(key, by).catch((err: unknown) => console.warn(`Could not count ${key}`, err));
   try {
     after(count);
   } catch {

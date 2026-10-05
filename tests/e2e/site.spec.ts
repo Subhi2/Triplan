@@ -30,3 +30,11 @@ test("content pages share the main navigation", async ({ page }) => {
     await expect(nav.getByRole("link", { name })).toBeVisible();
   }
 });
+
+test("without an AI key there is no plain-words box", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("region", { name: "Try a famous ride" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Or say it in plain words" })).toHaveCount(0);
+  const res = await page.request.post("/api/trip-from-words", { data: { text: "Pune to Kolad" } });
+  expect(res.status()).toBe(404);
+});

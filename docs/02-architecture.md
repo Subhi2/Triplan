@@ -358,6 +358,16 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - API route handlers validate input with Zod and rate-limit writes per user (e.g. 20 reviews/day).
 - Uploaded images: max 8 MB, resized to 1600 px and 400 px thumbnails, EXIF location stripped unless the user opts in to use it as the place pin.
 
+## Plan in plain words
+
+"2-day monsoon ride from Pune with waterfalls, under 250 km" becomes a planner trip (`POST /api/trip-from-words { text, near? }`).
+
+- **Off without `ANTHROPIC_API_KEY`**: the box is not shown and the endpoint answers 404, so there is no AI call and no cost.
+- **Reading** (`src/server/providers/llm/`, behind `TripIntentProvider`): one `messages.parse` call to Claude (`ANTHROPIC_TRIP_MODEL`, default `claude-haiku-4-5`: a short sentence needs no bigger model; about US$0.002 a request) with structured outputs (`zodOutputFormat(tripIntentSchema)`): from, to, via, vehicle, categories (our slugs only), days, one-way distance, month. The schema carries no number bounds (the output format does not support them); `cleanIntent` trims and clamps. The rider's text is wrapped in `<request>` and the system prompt says it is data. A refusal or unparseable answer gives "Couldn't read a trip". Timeout 15 s, one retry.
+- **Turning it into a trip** (`tripFromWordsService.ts`): names resolve through our place search (our places first, then Photon), near the map's centre or the start. With no destination named, one is picked from our places (`places_near_point`): of the kinds asked for, within the distance (straight line = road / 1.3; 150 km one way by default, 100 km more per extra day), at least 40% of it away so it is a real ride, in season when a month was named, the most worthwhile first. The answer is the planner's query string; the box loads it.
+- **Limits**: 6 requests per visitor per hour (`allowRequest`, scope `ai`) and 200 a day in all (`takeDailyBudget('ai_trip')`); tokens are counted in `usage_daily`. Set a monthly spend limit in the Anthropic Console as well.
+- **Privacy**: the text is sent to Anthropic to be read; it is never stored or logged (errors log only the provider's message).
+
 ## Usage numbers
 
 - **Page views**: Vercel Web Analytics (`<Analytics />` in the root layout): no cookies, reported only on Vercel; on the free plan it counts page views (custom events need Pro). Turn it on in the project's Analytics tab.

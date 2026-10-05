@@ -38,6 +38,7 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
+import { PlainWordsBox } from "./PlainWordsBox";
 import { PlannerHeader } from "./PlannerHeader";
 import { RideCheck } from "./RideCheck";
 import { RoadStrip } from "./RoadStrip";
@@ -70,9 +71,11 @@ interface Props {
   savedTrip?: SavedTrip | null;
   /** Rides offered as "Try a famous ride" while there is no trip. */
   famousRides?: RideSummary[];
+  /** Whether "plan in plain words" is switched on (the AI key is set). */
+  aiEnabled?: boolean;
 }
 
-export function Planner({ savedTrip = null, famousRides = [] }: Props) {
+export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false }: Props) {
   const searchParams = useSearchParams();
   const [initial] = useState(() => {
     const fromUrl = parseTripUrl(new URLSearchParams(searchParams.toString()));
@@ -677,6 +680,7 @@ export function Planner({ savedTrip = null, famousRides = [] }: Props) {
 
         {!hasTrip && !typing && (
           <>
+            {aiEnabled && <PlainWordsBox near={mapBias.center} />}
             <FamousRidesStrip rides={famousRides} />
             <p className="flex gap-3 text-xs text-stone-600 dark:text-stone-400">
               <Link
