@@ -107,4 +107,5 @@ ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
 - The 3D ride preview, its video and the ride story are MapLibre / our data only: no Google content.
 - The rider's "plan in plain words" text is sent to Anthropic and never stored or logged; the feature stays hidden without `ANTHROPIC_API_KEY`.
 - The data snapshot (`data/snapshot`) never includes trips, reviews, accounts, usage, caches, users' photos or Google ids (`src/lib/snapshot.ts`). Refresh it with `pnpm db:export-snapshot` after imports.
+- No link to the code repository anywhere in the app (footer, planner, About, metadata); the README is where the repository is. `tests/unit/no-repo-link.test.ts` checks it.
 - Never use Nominatim for search-as-you-type (its usage policy forbids it); suggestions come from our own places and Photon. Photon's public server asks for fair use: keep suggestions debounced (300 ms), cached, and for 2+ characters only.

@@ -773,12 +773,6 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
               >
                 About Triplan
               </Link>
-              <a
-                href="https://github.com/Subhi2/Triplan"
-                className="inline-flex min-h-11 items-center underline md:min-h-0"
-              >
-                Code on GitHub
-              </a>
             </p>
           </>
         )}
