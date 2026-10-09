@@ -155,7 +155,7 @@ Decided 2026-10-09 after an audit of features, data and code. Features are ahead
 1. The service worker never stores `/api/` answers or Google photos.
 2. The OSM import treats an empty answer as a busy server when no other server can confirm it. Before closing a place it confirms with the OSM API that the place is gone, and it refuses to close more than 3% of a state without `--force`.
 3. Per-visitor limits on `/api/route`, `/api/geocode?source=osm`, `/api/places/[slug]/google` and `/api/google/photo`. These fail open when the database is down. The request throttle has a bounded queue.
-4. `/api/health` needs `CRON_SECRET`. The daily run also prunes old route and geocode cache rows. `WRITE_LIMIT_SALT` is required in production, server modules import `server-only`, and the server needs its own Google key.
+4. `/api/health` cleans up only for `CRON_SECRET`. The daily run also prunes old route and geocode cache rows. Without `WRITE_LIMIT_SALT`, the salt comes from `DATABASE_URL`, not a fixed string. (Server modules were already kept out of the client by an ESLint rule. A separate server Google key stays optional, as decided in G1-Google.)
 5. Routing and suggestions keep working when the database is down. The database client has connect and statement timeouts.
 6. Security headers.
 7. **Saved trips get an edit token.** Saving returns a token. Only the saving device can change the trip; others can "Save a copy". `/trips` shows the trips saved on this device.

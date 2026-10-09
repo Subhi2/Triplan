@@ -29,10 +29,20 @@ export function clientIp(request: Request): string {
   return forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
+/**
+ * The salt: WRITE_LIMIT_SALT, else a hash of the database URL (a server secret that is always
+ * set), so the hashes cannot be reversed with a salt published in the code. The fixed fallback
+ * is only for tests.
+ */
+function hashSalt(): string {
+  if (process.env.WRITE_LIMIT_SALT) return process.env.WRITE_LIMIT_SALT;
+  const url = process.env.DATABASE_URL;
+  return url ? createHash("sha256").update(`salt:${url}`).digest("hex") : "bike-travelling-guide";
+}
+
 /** A salted hash, so the table never holds an IP address. */
 export function visitorKey(ip: string): string {
-  const salt = process.env.WRITE_LIMIT_SALT ?? "bike-travelling-guide";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
+  return createHash("sha256").update(`${hashSalt()}:${ip}`).digest("hex").slice(0, 32);
 }
 
 /** Counts one write for the visitor; false once they are over the hourly limit. */

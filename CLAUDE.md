@@ -80,7 +80,8 @@ DATABASE_URL=
 NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
 NEXT_PUBLIC_TERRAIN_TILES_URL=    # Terrarium tiles for the profile and 3D terrain; empty = AWS Terrain Tiles
 NEXT_PUBLIC_SITE_URL=             # public address for share cards and the sitemap
-WRITE_LIMIT_SALT=                 # salt for hashed visitor IPs (rate limits)
+WRITE_LIMIT_SALT=                 # salt for hashed visitor IPs (rate limits); default derived from DATABASE_URL
+CRON_SECRET=                      # Vercel Cron's secret for the daily clean-up in /api/health
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=  # one Google key: Maps JavaScript API + Places API (New), used by the map and the server; empty = MapLibre, no Google content
 NEXT_PUBLIC_GOOGLE_MAP_ID=        # Map ID for Advanced Markers
 GOOGLE_MAPS_API_KEY=              # optional separate server key; empty = the key above
