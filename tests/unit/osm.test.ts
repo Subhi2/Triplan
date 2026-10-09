@@ -5,7 +5,12 @@ import {
   createOverpassProvider,
   parseOverpassResponse,
 } from "@/server/providers/osm/overpass";
-import { OsmServerBusyError, OsmTileTooBigError, type OsmElement } from "@/server/providers/osm";
+import {
+  OsmServerBusyError,
+  OsmTileTooBigError,
+  type BBox,
+  type OsmElement,
+} from "@/server/providers/osm";
 import { ProviderError } from "@/server/providers/http";
 import {
   classifyOsmElement,
@@ -156,6 +161,26 @@ describe("Overpass servers", () => {
       { id: "node/1", location: [78.575, 25.458], extentM: 0, tags: { historic: "fort" } },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("checks an empty answer with another server, and accepts it when they agree", async () => {
+    const area = { type: "area", id: 3601950071 };
+    const fort = { type: "node", id: 2, lat: 26.953, lon: 75.846, tags: { historic: "castle" } };
+    const servers = ["https://a.test", "https://b.test", "https://c.test"];
+    const tile = { areaIso: "IN-RJ", bbox: [75.46, 26.54, 75.96, 27.04] as BBox };
+
+    const falseEmpty = vi
+      .fn()
+      .mockResolvedValueOnce(answer(200, { elements: [area] }))
+      .mockResolvedValueOnce(answer(200, { elements: [area, fort] }));
+    vi.stubGlobal("fetch", falseEmpty);
+    const found = await createOverpassProvider(servers, "test").fetchPlaces(tile);
+    expect(found.map((e) => e.id)).toEqual(["node/2"]);
+
+    const reallyEmpty = vi.fn().mockImplementation(async () => answer(200, { elements: [area] }));
+    vi.stubGlobal("fetch", reallyEmpty);
+    await expect(createOverpassProvider(servers, "test").fetchPlaces(tile)).resolves.toEqual([]);
+    expect(reallyEmpty).toHaveBeenCalledTimes(2);
   });
 });
 
