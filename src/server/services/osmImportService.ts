@@ -2,7 +2,9 @@ import { sql } from "drizzle-orm";
 import { CATEGORIES } from "@/lib/categories";
 import { getDb } from "../db";
 import { category } from "../db/schema";
+import type { OsmCurrentProvider } from "../providers/osm/osmApi";
 import type { OsmPlaceCandidate } from "./osmClassify";
+import { closeLimit, planClosures, type CloseCandidate, type ClosePlan } from "./osmClose";
 
 export interface UpsertResult {
   inserted: number;
@@ -139,16 +141,69 @@ export async function databaseNow(): Promise<string> {
   return row!.now;
 }
 
+/** Above this many unseen places the import is clearly broken: refuse before asking the OSM API. */
+const MAX_CLOSE_CHECKS = 5000;
+
 /**
- * After a complete import of a region, marks OSM places that were not seen in it as closed
- * (deleted or retagged in OpenStreetMap). Only call this when every tile succeeded.
+ * After a complete import of a region, closes the OSM places it did not see, but only those
+ * OpenStreetMap confirms are deleted or no longer a place we import (src/server/services/osmClose.ts).
+ * Unseen places that are still in OpenStreetMap stay open. More than 3% of the state's open places
+ * at once is refused unless `force`. Only call this when every tile succeeded.
  * `importStartedAt` must come from databaseNow().
  */
-export async function closeStaleOsmPlaces(state: string, importStartedAt: string): Promise<number> {
-  const rows = await getDb().execute(sql`
-    UPDATE place SET status = 'closed'
-    WHERE source = 'osm' AND state = ${state} AND status = 'verified'
-      AND updated_at < ${importStartedAt}::timestamptz
-    RETURNING id`);
-  return rows.length;
+export async function closeStaleOsmPlaces(
+  state: string,
+  importStartedAt: string,
+  { osm, force = false }: { osm: OsmCurrentProvider; force?: boolean },
+): Promise<ClosePlan & { candidates: number }> {
+  const db = getDb();
+  const unseen = await db.execute<{
+    id: string;
+    osm_id: string;
+    name: string;
+    category: string;
+    lng: number;
+    lat: number;
+  }>(sql`
+    SELECT p.id, p.osm_id, p.name, c.slug AS category,
+      ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat
+    FROM place p JOIN category c ON c.id = p.category_id
+    WHERE p.source = 'osm' AND p.state = ${state} AND p.status = 'verified'
+      AND p.osm_id IS NOT NULL AND p.updated_at < ${importStartedAt}::timestamptz`);
+  const [open] = await db.execute<{ n: number }>(sql`
+    SELECT count(*)::int AS n FROM place
+    WHERE source = 'osm' AND state = ${state} AND status = 'verified'`);
+  const candidates: CloseCandidate[] = unseen.map((r) => ({
+    id: r.id,
+    osmId: r.osm_id,
+    name: r.name,
+    category: r.category,
+    location: [r.lng, r.lat],
+  }));
+  const openInState = open?.n ?? 0;
+
+  if (candidates.length === 0) {
+    return { ...planClosures([], new Map(), openInState), candidates: 0 };
+  }
+  if (candidates.length > MAX_CLOSE_CHECKS && !force) {
+    return {
+      close: [],
+      stillThere: [],
+      unchecked: candidates,
+      limit: closeLimit(openInState),
+      refused: true,
+      candidates: candidates.length,
+    };
+  }
+
+  const current = await osm.fetchCurrent(candidates.map((c) => c.osmId));
+  const plan = planClosures(candidates, current, openInState, { force });
+  if (!plan.refused && plan.close.length > 0) {
+    const ids = plan.close.map((c) => c.place.id);
+    await db.execute(sql`
+      UPDATE place SET status = 'closed'
+      WHERE id IN (SELECT jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb)::uuid)
+        AND status = 'verified'`);
+  }
+  return { ...plan, candidates: candidates.length };
 }

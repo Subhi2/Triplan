@@ -182,6 +182,25 @@ describe("Overpass servers", () => {
     await expect(createOverpassProvider(servers, "test").fetchPlaces(tile)).resolves.toEqual([]);
     expect(reallyEmpty).toHaveBeenCalledTimes(2);
   });
+
+  it("treats an empty answer no other server can confirm as busy, never as an empty tile", async () => {
+    const area = { type: "area", id: 3601950071 };
+    const tile = { areaIso: "IN-RJ", bbox: [75.46, 26.54, 75.96, 27.04] as BBox };
+    const unconfirmed = vi
+      .fn()
+      .mockResolvedValueOnce(answer(200, { elements: [area] }))
+      .mockResolvedValue(answer(429, { error: "rate limited" }));
+    vi.stubGlobal("fetch", unconfirmed);
+    const provider = createOverpassProvider(["https://a.test", "https://b.test"], "test");
+    await expect(provider.fetchPlaces(tile)).rejects.toBeInstanceOf(OsmServerBusyError);
+    expect(unconfirmed).toHaveBeenCalledTimes(2);
+
+    // With a single server there is nobody to ask: its empty answer stands.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(answer(200, { elements: [area] })));
+    await expect(
+      createOverpassProvider(["https://a.test"], "test").fetchPlaces(tile),
+    ).resolves.toEqual([]);
+  });
 });
 
 describe("classifyOsmElement", () => {
