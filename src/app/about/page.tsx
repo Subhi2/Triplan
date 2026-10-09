@@ -117,7 +117,7 @@ export default async function AboutPage() {
             ghat and other roads. Ghats and hairpins are worked out from the road&apos;s shape.
           </li>
           <li>
-            <strong>Places on the road.</strong> A PostGIS corridor search over 40,000+ places from
+            <strong>Places on the road.</strong> A PostGIS corridor search over 90,000+ places from
             OpenStreetMap finds what lies within a few km of the route, how far along it is and how
             far off it, in one query.
           </li>

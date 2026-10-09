@@ -14,7 +14,7 @@ Triplan is a route planner for bike and car travellers in India. Pick a start, a
 
 **Know the road**
 
-- **Places on your road, in km order.** A PostGIS corridor search over 40,000+ places from OpenStreetMap shows what is on the road, what is a detour, and how far off it is.
+- **Places on your road, in km order.** A PostGIS corridor search over 90,000+ places from OpenStreetMap, in every Indian state, shows what is on the road, what is a detour, and how far off it is.
 - **Up to three route options.** Each one shows how its distance splits into national highway, state highway, ghat and other roads, and where the ghats are.
 - **Hairpins and twistiness** on every route card, worked out from the road's shape (the method roadcurvature.com uses): "24 hairpins · 18 km twisty".
 - **Ups and downs.** An elevation profile from open terrain data, with the total climb, the highest point and each big climb named after the town at its foot. Scrub along it and a marker moves on the map.
@@ -133,7 +133,7 @@ pnpm db:setup
 This one command:
 
 1. Runs the migrations: tables, PostGIS functions, indexes and row-level security.
-2. Loads the data snapshot in `data/snapshot/`: every place (40,000+), place guide, photo credit, famous ride and service point (110,000+), about 10 MB.
+2. Loads the data snapshot in `data/snapshot/`: every place (90,000+, all 36 states and union territories), place guide, photo credit, famous ride and service point (110,000+), about 17 MB.
 
 It takes under a minute. Before writing anything it checks every file against its checksum, and it only loads into empty tables. On a database that already has places, `pnpm db:setup -- --replace --yes` empties the snapshot tables first; it refuses while there are saved trips or reviews.
 
