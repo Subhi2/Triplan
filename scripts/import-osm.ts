@@ -3,6 +3,7 @@
 //   pnpm db:import-osm -- --region=kerala,goa                  (region keys: src/server/services/osmRegions.ts)
 //   pnpm db:import-osm -- --region=all --skip=karnataka,kerala (leave regions out)
 //   pnpm db:import-osm -- --region=all --resume                (go on after a stopped run)
+//   pnpm db:import-osm -- --region=odisha --tile-deg=0.5       (smaller first tiles: dense states)
 //   pnpm db:import-osm -- --region=goa --dry-run               (fetch and classify, no database writes)
 // One Overpass request at a time, over the endpoints in OVERPASS_URLS (the next is tried when one
 // is down); each region is split into tiles (1° by default), and a tile that is too big is split
@@ -37,11 +38,18 @@ const time = () => new Date().toTimeString().slice(0, 8);
 const state: TileRunState = { failedInARow: 0 };
 
 /** Imports one region; returns false if any tile failed (the region should be re-run). */
-async function importRegion(key: OsmRegionKey, dryRun: boolean, resume: boolean): Promise<boolean> {
-  const region = OSM_REGIONS[key];
+async function importRegion(
+  key: OsmRegionKey,
+  dryRun: boolean,
+  resume: boolean,
+  tileDeg: number | undefined,
+): Promise<boolean> {
   const provider = getOsmPlacesProvider();
   const file = progressPath("places", key);
   const saved = resume && !dryRun ? readProgress(file) : null;
+  // Dense states time out at their usual 1° or 2° tiles (100 s each) before the halves get in.
+  const startDeg = saved ? saved.tileDeg : tileDeg;
+  const region = startDeg ? { ...OSM_REGIONS[key], tileDeg: startDeg } : OSM_REGIONS[key];
   if (saved?.complete) {
     console.log(`\n${time()} ${region.name}: complete in the run started ${saved.startedAt}`);
     return true;
@@ -52,6 +60,7 @@ async function importRegion(key: OsmRegionKey, dryRun: boolean, resume: boolean)
     startedAt,
     complete: false,
     elements: saved?.elements ?? 0,
+    ...(startDeg ? { tileDeg: startDeg } : {}),
     done: [...(saved?.done ?? [])],
     split: [...(saved?.split ?? [])],
   };
@@ -138,6 +147,7 @@ async function main() {
       region: { type: "string" },
       skip: { type: "string", default: "" },
       resume: { type: "boolean", default: false },
+      "tile-deg": { type: "string" },
       "dry-run": { type: "boolean", default: false },
     },
   });
@@ -153,6 +163,12 @@ async function main() {
     return;
   }
   const dryRun = values["dry-run"];
+  const tileDeg = values["tile-deg"] ? Number(values["tile-deg"]) : undefined;
+  if (tileDeg !== undefined && !(tileDeg >= 0.125 && tileDeg <= 8)) {
+    console.error("--tile-deg must be between 0.125 and 8");
+    process.exitCode = 1;
+    return;
+  }
   const tiles = keys.reduce((n, k) => n + regionTiles(OSM_REGIONS[k]).length, 0);
   console.log(`${time()} Importing ${keys.length} regions, ${tiles} tiles to start with.`);
   if (!dryRun) await ensureCategories();
@@ -160,7 +176,7 @@ async function main() {
   const incomplete: OsmRegionKey[] = [];
   for (const [i, key] of keys.entries()) {
     try {
-      if (!(await importRegion(key, dryRun, values.resume))) incomplete.push(key);
+      if (!(await importRegion(key, dryRun, values.resume, tileDeg))) incomplete.push(key);
     } catch (err) {
       if (!(err instanceof ImportStopped)) throw err;
       console.error(`\n${time()} Stopped: ${err.message}.`);

@@ -15,6 +15,8 @@ const progressSchema = z.object({
   complete: z.boolean(),
   /** Elements Overpass returned over every run, so a resumed region is not taken for empty. */
   elements: z.number().int().nonnegative(),
+  /** The starting tile size when --tile-deg chose one, so a resume cuts the same tiles. */
+  tileDeg: z.number().positive().optional(),
   done: z.array(z.string()),
   split: z.array(z.string()),
 });
