@@ -1,6 +1,7 @@
 import { round3, round5 } from "@/lib/geo";
 import type { JsonCache } from "../../db/cache";
 import { hashKey } from "../cacheKey";
+import { softGet, softSet } from "../softCache";
 import type {
   RouteInput,
   RouteResult,
@@ -26,10 +27,10 @@ export function withRouteCache(inner: RoutingProvider, cache: JsonCache): Routin
   return {
     async route(input) {
       const key = routeCacheKey(input);
-      const hit = (await cache.get(key)) as RouteResult[] | undefined;
+      const hit = (await softGet(cache, key)) as RouteResult[] | undefined;
       if (hit) return hit;
       const routes = await inner.route(input);
-      await cache.set(key, routes);
+      await softSet(cache, key, routes);
       return routes;
     },
   };
@@ -55,10 +56,10 @@ export function withTableCache(
   return {
     async table(input) {
       const key = tableCacheKey(input);
-      const hit = (await cache.get(key)) as (TableCell | null)[] | undefined;
+      const hit = (await softGet(cache, key)) as (TableCell | null)[] | undefined;
       if (hit) return hit;
       const cells = await inner.table(input);
-      await cache.set(key, cells);
+      await softSet(cache, key, cells);
       return cells;
     },
   };

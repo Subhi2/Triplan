@@ -57,6 +57,23 @@ describe("route cache", () => {
     expect(await cached.route(input)).toEqual(routes);
     expect(inner.route).toHaveBeenCalledTimes(1);
   });
+
+  it("still routes when the database behind the cache is down", async () => {
+    const routes = routeFixture("bengaluru-kalasa");
+    const down: JsonCache = {
+      get: async () => {
+        throw new Error("connect ETIMEDOUT");
+      },
+      set: async () => {
+        throw new Error("connect ETIMEDOUT");
+      },
+    };
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const cached = withRouteCache({ route: vi.fn(async () => routes) }, down);
+    expect(await cached.route(input)).toEqual(routes);
+    const geocoded = withGeocodeCache({ search: vi.fn(async () => []) }, down, "photon");
+    expect(await geocoded.search("kalasa")).toEqual([]);
+  });
 });
 
 describe("table cache", () => {

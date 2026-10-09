@@ -93,7 +93,11 @@ async function addTownRoutes(
   deps: RouteServiceDeps,
 ): Promise<Found[]> {
   const samples = found.map((f) => sampleRoute(f.result.geometry));
-  const towns = await deps.townsInBox(candidateBox(start, end));
+  // Without the database there are no towns to route through: the engine's routes stand.
+  const towns = await deps.townsInBox(candidateBox(start, end)).catch((err: unknown) => {
+    console.warn("Towns for extra routes failed", err);
+    return [];
+  });
   const candidates = viaTownCandidates(start, end, towns, samples, MAX_TOWN_TRIES);
   const shortestM = Math.min(...found.map((f) => f.result.distanceM));
   const fastestS = Math.min(...found.map((f) => f.result.durationS));
@@ -153,7 +157,11 @@ export async function getRoutes(
   const routes = await Promise.all(
     found.map(async ({ id, result }) => {
       const distanceKm = result.distanceM / 1000;
-      const towns = (await deps.townsAlong(result.geometry)).filter(
+      const along = await deps.townsAlong(result.geometry).catch((err: unknown) => {
+        console.warn("Towns along the route failed", err);
+        return [];
+      });
+      const towns = along.filter(
         (t) => t.kmFromStart > END_MARGIN_KM && t.kmFromStart < distanceKm - END_MARGIN_KM,
       );
       return { id, result, distanceKm, towns };

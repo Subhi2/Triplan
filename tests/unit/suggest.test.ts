@@ -91,4 +91,13 @@ describe("suggestPlaces", () => {
     const d = deps([local("Sakleshpur", [75.785, 12.943], null)], new Error("Photon down"));
     expect((await suggestPlaces("sakleshpura", {}, d)).map((r) => r.name)).toEqual(["Sakleshpur"]);
   });
+
+  it("still returns Photon's places when the database is down", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const d = deps([], [hit("Kalasa", [75.358, 13.232], "node/1")]);
+    d.local = vi.fn(async () => {
+      throw new Error("connect ETIMEDOUT");
+    });
+    expect((await suggestPlaces("kalasa", {}, d)).map((r) => r.name)).toEqual(["Kalasa"]);
+  });
 });

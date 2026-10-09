@@ -153,6 +153,20 @@ describe("extra route options through towns", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await getRoutes({ stops: [BENGALURU, SAMSE], vehicle: "bike" }, d)).toHaveLength(2);
   });
+
+  it("still returns the engine's routes when the town lookups fail", async () => {
+    const d = deps("bengaluru-samse", []);
+    d.townsAlong = vi.fn(async () => {
+      throw new Error("connect ETIMEDOUT");
+    });
+    d.townsInBox = vi.fn(async () => {
+      throw new Error("connect ETIMEDOUT");
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const routes = await getRoutes({ stops: [BENGALURU, SAMSE], vehicle: "bike" }, d);
+    expect(routes).toHaveLength(2);
+    expect(routes.every((r) => r.towns.length === 0)).toBe(true);
+  });
 });
 
 describe("getRouteGeometry", () => {
