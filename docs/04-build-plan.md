@@ -146,6 +146,48 @@ Decided 2026-10-02: give the app an identity people can see and share ("see ever
 - The data snapshot (step 20) is committed in `data/snapshot` as gzipped JSON lines (about 10 MB), not CSV on a GitHub Release, so `git clone` alone has the data. COPY streams hung now and then through the pooler; batched `json_populate_recordset` inserts load it in about 20 seconds.
 - Service points cover all 35 states and union territories (110,000+ rows).
 
+## Growth G4 · Fix and fill
+
+Decided 2026-10-09 after an audit of features, data and code. Features are ahead of the data. Of 17,000 listable places, none has a description, 13 have best months, vehicle and items to carry, and about 10% have a photo. The audit also found risks to fix first: Google content cached by the service worker, an import that can close live places, open endpoints with no per-visitor limits, and saved trips anyone can overwrite. One commit per step. Migrations are additive only (the dev database is production). Reviews and YouTube (phases 5–6) wait for a later round.
+
+**A · Risks**
+
+1. The service worker never stores `/api/` answers or Google photos.
+2. The OSM import treats an empty answer as a busy server when no other server can confirm it. Before closing a place it confirms with the OSM API that the place is gone, and it refuses to close more than 3% of a state without `--force`.
+3. Per-visitor limits on `/api/route`, `/api/geocode?source=osm`, `/api/places/[slug]/google` and `/api/google/photo`. These fail open when the database is down. The request throttle has a bounded queue.
+4. `/api/health` needs `CRON_SECRET`. The daily run also prunes old route and geocode cache rows. `WRITE_LIMIT_SALT` is required in production, server modules import `server-only`, and the server needs its own Google key.
+5. Routing and suggestions keep working when the database is down. The database client has connect and statement timeouts.
+6. Security headers.
+7. **Saved trips get an edit token.** Saving returns a token. Only the saving device can change the trip; others can "Save a copy". `/trips` shows the trips saved on this device.
+8. CI runs lint, typecheck, tests and build.
+
+**B · Clean data at the source** (classifier rules, then a re-import)
+
+1. One place per name across categories, keeping the most specific category (fort over heritage over attraction).
+2. Generic names are dropped ("Viewpoint", "Shepherd camp", "Cave 3"). `name:en` is used when the name has no Latin letters.
+3. Places are re-categorised by name words (an attraction named "… Temple" becomes a temple; tanks and ponds rank below lakes).
+4. Wikidata links to people, far-away items or items shared by many places are not used for photos. `--recheck` removes the photos already taken from them.
+5. Curated places take the Wikidata id of the OSM place they are linked to.
+6. Category weights in the database follow `src/lib/categories.ts`.
+7. Mountain passes, hot springs, glaciers, named treks, and highway food stops.
+8. After the all-India import: a fresh snapshot.
+
+**C · Fill the place pages**
+
+1. **Estimated guidance.** Best months, best vehicle and items to carry are worked out from the category, the climate zone (from coordinates) and the height. They are shown as "Typical for … here", and curated data always wins.
+2. **Descriptions** from Wikidata (CC0) and Wikipedia (CC BY-SA, credited): `pnpm db:import-descriptions`.
+3. More Wikidata links by name and distance (Wikidata Query Service).
+4. Up to 3 photos per place: OSM `wikimedia_commons` and `image` tags, plus Commons files near the place. Scaled thumbnails only, and tidy credits.
+5. More famous rides outside the south.
+
+**D · Phone UX.** The site menu is reachable after a trip loads. Retry on errors. 44 px targets everywhere. Tap a town on a route card to ride through it. In season badge in the planner list. Plain words keeps its number of days. A night town can become a via stop. Share and "Suggest an edit" on place pages. No empty Videos section. Map moves respect reduced motion. Filters on `/rides`.
+
+**E · Speed.** Measure the corridor search on a 1,500 km route and split the line if it is slow. Simplified route lines to the browser. Towns along a route looked up once. Sitemaps past 45,000 places. Planner panels loaded when needed.
+
+**F · Measure and grow.** Analytics events (save, share, GPX, preview, Ride there, plain words, Near me). An offline page, and the last trip and Near me list kept on the phone. Popular route pages `/routes/[a]-to-[b]`.
+
+**Done when:** a place with only OpenStreetMap data shows typical months, vehicle and items to carry instead of "Not known yet". The planner list shows In season badges on most routes. Google answers never appear in Cache Storage. A trip saved on one device cannot be changed from another. Barabati Fort appears once. Bengaluru → Kalasa and Pune → Goa pass at 375 px.
+
 ## Phase 5 · Community content
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.
