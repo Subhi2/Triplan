@@ -1,3 +1,4 @@
+import type { LngLat } from "@/lib/geo";
 import type { BBox } from "../providers/osm";
 
 export interface OsmRegion {
@@ -163,4 +164,66 @@ export function splitTile([west, south, east, north]: BBox): BBox[] {
 
 export function tileSizeDeg([west, , east]: BBox): number {
   return east - west;
+}
+
+/**
+ * Whether a tile, grown by `marginDeg` on every side, touches a state's outline (polygons of
+ * rings, from Nominatim). Exact for a polygon and a rectangle: a ring point inside the tile, a
+ * tile corner inside a ring, or a ring edge crossing a tile edge. The margin covers the outline's
+ * simplification. Inner rings count as part of the state, so a tile is never skipped for one.
+ */
+export function tileTouchesOutline(tile: BBox, outline: LngLat[][][], marginDeg: number): boolean {
+  const [w, s, e, n] = [
+    tile[0] - marginDeg,
+    tile[1] - marginDeg,
+    tile[2] + marginDeg,
+    tile[3] + marginDeg,
+  ];
+  const corners: LngLat[] = [
+    [w, s],
+    [e, s],
+    [e, n],
+    [w, n],
+  ];
+  const sides: [LngLat, LngLat][] = corners.map((c, i) => [c, corners[(i + 1) % 4]!]);
+  for (const ring of outline.flat()) {
+    if (ring.some(([x, y]) => x >= w && x <= e && y >= s && y <= n)) return true;
+    if (corners.some((c) => insideRing(c, ring))) return true;
+    for (let i = 0; i + 1 < ring.length; i++) {
+      if (sides.some(([a, b]) => segmentsCross(a, b, ring[i]!, ring[i + 1]!))) return true;
+    }
+  }
+  return false;
+}
+
+function insideRing([x, y]: LngLat, ring: LngLat[]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]!;
+    const [xj, yj] = ring[j]!;
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function segmentsCross(a: LngLat, b: LngLat, c: LngLat, d: LngLat): boolean {
+  const cross = (o: LngLat, p: LngLat, q: LngLat) =>
+    (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+  const d1 = cross(c, d, a);
+  const d2 = cross(c, d, b);
+  const d3 = cross(a, b, c);
+  const d4 = cross(a, b, d);
+  return d1 * d2 <= 0 && d3 * d4 <= 0 && !(d1 === 0 && d2 === 0 && d3 === 0 && d4 === 0);
+}
+
+/**
+ * Whether an outline is the state's own: its bounds lie within the state's box (from the same
+ * OSM relation) give or take half a degree. Guards against Nominatim matching another place,
+ * which would make the import skip tiles of the state.
+ */
+export function outlineFitsRegion(outline: LngLat[][][], bbox: BBox): boolean {
+  const points = outline.flat(2);
+  if (points.length === 0) return false;
+  const [w, s, e, n] = padBBox(bbox, 0.5);
+  return points.every(([x, y]) => x >= w && x <= e && y >= s && y <= n);
 }

@@ -46,6 +46,8 @@ export interface TileRunOptions {
   ): Promise<void>;
   log(line: string): void;
   resume?: TileResume;
+  /** False for a tile outside the region (its outline): skipped, never fetched. */
+  keepTile?(tile: BBox): boolean;
   /** Called when a tile is split, so a resume file can record it. */
   onSplit?(tile: BBox): void;
   sleep?: (ms: number) => Promise<void>;
@@ -58,6 +60,8 @@ export interface TileRunResult {
   tiles: number;
   /** Tiles skipped because an earlier run saved them. */
   skipped: number;
+  /** Tiles skipped because they are outside the region. */
+  outside: number;
 }
 
 const fmt = (b: BBox) => `[${b.map((n) => n.toFixed(3)).join(", ")}]`;
@@ -77,6 +81,7 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
   let elementsSeen = 0;
   let done = 0;
   let skipped = 0;
+  let outside = 0;
 
   while (queue.length > 0) {
     const tile = queue.shift()!;
@@ -87,6 +92,10 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
     }
     if (opts.resume?.done.has(key)) {
       skipped++;
+      continue;
+    }
+    if (opts.keepTile && !opts.keepTile(tile)) {
+      outside++;
       continue;
     }
     let elements: OsmElement[] | undefined;
@@ -138,7 +147,7 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
       failed.push(tile);
     }
   }
-  return { failed, elements: elementsSeen, tiles: done, skipped };
+  return { failed, elements: elementsSeen, tiles: done, skipped, outside };
 }
 
 export { fmt as formatBBox };

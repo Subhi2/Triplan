@@ -10,11 +10,24 @@
 // again (src/server/services/osmTiles.ts). The run stops if tiles keep failing. Re-running is
 // safe: places are upserted on osm_id. Each region's saved and split tiles are kept in
 // .import-progress/places-<region>.json; --resume skips those tiles and the regions that finished.
+// Tiles that do not touch the state's outline (from Nominatim, kept in .import-progress) are
+// skipped: a state's box is often half another state.
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { closeDb } from "../src/server/db";
-import { getOsmPlacesProvider } from "../src/server/providers/osm";
+import {
+  getOsmPlacesProvider,
+  getRegionOutline,
+  type RegionOutline,
+} from "../src/server/providers/osm";
 import { classifyOsmElement, dedupeCandidates } from "../src/server/services/osmClassify";
-import { progressPath, readProgress, writeProgress } from "../src/server/services/importProgress";
+import {
+  PROGRESS_DIR,
+  progressPath,
+  readProgress,
+  writeProgress,
+} from "../src/server/services/importProgress";
 import {
   closeStaleOsmPlaces,
   databaseNow,
@@ -23,7 +36,9 @@ import {
 } from "../src/server/services/osmImportService";
 import {
   OSM_REGIONS,
+  outlineFitsRegion,
   resolveRegionKeys,
+  tileTouchesOutline,
   type OsmRegionKey,
 } from "../src/server/services/osmRegions";
 import {
@@ -35,6 +50,26 @@ import {
 } from "../src/server/services/osmTiles";
 
 const time = () => new Date().toTimeString().slice(0, 8);
+/** About 5 km around the outline: covers its simplification (about 500 m) with room to spare. */
+const OUTLINE_MARGIN_DEG = 0.05;
+
+/** The state's outline, cached next to the resume files; null when Nominatim has none. */
+async function regionOutline(key: OsmRegionKey, stateName: string): Promise<RegionOutline | null> {
+  const file = join(PROGRESS_DIR, `outline-${key}.json`);
+  try {
+    return JSON.parse(readFileSync(file, "utf8")) as RegionOutline;
+  } catch {
+    // Not cached yet.
+  }
+  try {
+    const outline = await getRegionOutline(stateName);
+    if (outline) writeFileSync(file, JSON.stringify(outline));
+    return outline;
+  } catch (err) {
+    console.log(`  outline lookup failed: ${(err as Error).message}`);
+    return null;
+  }
+}
 const state: TileRunState = { failedInARow: 0 };
 
 /** Imports one region; returns false if any tile failed (the region should be re-run). */
@@ -75,12 +110,18 @@ async function importRegion(
   if (saved) {
     console.log(`  resuming the run started ${saved.startedAt}: ${saved.done.length} tiles saved`);
   }
-  const { failed } = await runRegionTiles({
+  const found = await regionOutline(key, region.name);
+  const outline = found && outlineFitsRegion(found, region.bbox) ? found : null;
+  if (!outline) console.log("  no usable outline from Nominatim: every tile is fetched");
+  const { failed, outside } = await runRegionTiles({
     region,
     state,
     fetchTile: (bbox) => provider.fetchPlaces({ areaIso: region.iso, bbox }),
     log: (line) => console.log(`  ${time()}${line}`),
     ...(saved ? { resume: { done: new Set(saved.done), split: new Set(saved.split) } } : {}),
+    ...(outline
+      ? { keepTile: (tile) => tileTouchesOutline(tile, outline, OUTLINE_MARGIN_DEG) }
+      : {}),
     onSplit(tile) {
       progress.split.push(fmt(tile));
       save();
@@ -116,6 +157,7 @@ async function importRegion(
   const categories = [...byCategory].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`);
   const { elements } = progress;
   console.log(`${time()} ${region.name}: ${elements} elements -> ${totals.places} places`);
+  if (outside > 0) console.log(`  ${outside} tiles outside the state skipped`);
   console.log(`  by category: ${categories.join(", ")}`);
   // A state with nothing at all means the area lookup failed (e.g. a changed ISO code), not an
   // empty state. Treat it as failed so its existing places are not all marked closed.
