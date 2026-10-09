@@ -27,8 +27,12 @@ const MIN_FUZZY_SIMILARITY = 0.45;
  * Our own verified places and towns matching a search, best match first:
  * exact name or alternative name ("Ooty" is an alt name of Udhagamandalam), then names starting
  * with the query, then names or alt names containing it, then close misspellings ("sakleshpura").
- * Towns first within each tier. Listed before Photon's suggestions. Uses the trigram indexes on
- * name and alt_names_text(alt_names).
+ * Towns starting with the query and our curated places containing it rank with the names
+ * starting with it, ahead of the thousands of plainly named temples and peaks; towns first
+ * within each tier. Well-known villages (town rows) come first only on an exact match, otherwise
+ * after every other match: "kalasa" lists Kalasa and the temple there before Kalasathamman Koil
+ * (Tamil Nadu) and Kalasapadu (Andhra Pradesh). Listed before Photon's suggestions. Uses the
+ * trigram indexes on name and alt_names_text(alt_names).
  */
 export async function searchPlacesByName(query: string, limit = 8): Promise<LocalPlaceMatch[]> {
   const q = query.trim();
@@ -36,26 +40,38 @@ export async function searchPlacesByName(query: string, limit = 8): Promise<Loca
   const contains = `%${escaped}%`;
   const startsWith = `${escaped}%`;
   const rows = await getDb().execute<NameMatchRow>(sql`
-    SELECT p.slug, p.name, p.district, p.state, p.osm_id,
-           ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
-           CASE
-             WHEN lower(p.name) = lower(${q})
-               OR lower(${q}) = ANY (SELECT lower(a) FROM unnest(p.alt_names) a) THEN 0
-             WHEN p.name ILIKE ${startsWith} THEN 1
-             WHEN p.name ILIKE ${contains} OR alt_names_text(p.alt_names) ILIKE ${contains} THEN 2
-             ELSE 3
-           END AS tier
-    FROM place p
-    JOIN category c ON c.id = p.category_id
-    WHERE p.status = 'verified'
-      AND (p.name ILIKE ${contains}
-           OR alt_names_text(p.alt_names) ILIKE ${contains}
-           OR (p.name % ${q} AND similarity(p.name, ${q}) >= ${MIN_FUZZY_SIMILARITY}))
+    SELECT * FROM (
+      SELECT p.slug, p.name, p.district, p.state, p.osm_id,
+             ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
+             CASE
+               WHEN lower(p.name) = lower(${q})
+                 OR lower(${q}) = ANY (SELECT lower(a) FROM unnest(p.alt_names) a) THEN 0
+               WHEN p.name ILIKE ${startsWith} THEN 1
+               WHEN p.name ILIKE ${contains} OR alt_names_text(p.alt_names) ILIKE ${contains} THEN 2
+               ELSE 3
+             END AS tier,
+             c.slug = 'town' AS is_town,
+             c.slug = 'town' AND coalesce(p.osm_tags->>'place', '') = 'village' AS is_village,
+             c.slug = 'town' AND p.osm_tags->>'place' IS DISTINCT FROM 'village' AS real_town,
+             p.source <> 'osm' AS curated,
+             similarity(p.name, ${q}) AS sim
+      FROM place p
+      JOIN category c ON c.id = p.category_id
+      WHERE p.status = 'verified'
+        AND (p.name ILIKE ${contains}
+             OR alt_names_text(p.alt_names) ILIKE ${contains}
+             OR (p.name % ${q} AND similarity(p.name, ${q}) >= ${MIN_FUZZY_SIMILARITY}))
+    ) m
     ORDER BY
-      tier,
-      (c.slug = 'town') DESC,
-      similarity(p.name, ${q}) DESC,
-      p.name
+      (m.is_village AND m.tier > 0),
+      CASE
+        WHEN m.tier = 0 THEN 0
+        WHEN (m.tier = 1 AND m.real_town) OR (m.tier <= 2 AND m.curated) THEN 1
+        ELSE m.tier + 1
+      END,
+      m.is_town DESC,
+      m.sim DESC,
+      m.name
     LIMIT ${limit * 2}`);
 
   // Two OSM features with the same name a few hundred metres apart are one stop for a rider.
