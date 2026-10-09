@@ -50,9 +50,21 @@ export interface TileRunOptions {
   keepTile?(tile: BBox): boolean;
   /** Called when a tile is split, so a resume file can record it. */
   onSplit?(tile: BBox): void;
+  /** Tiles wider than this are split before they are asked for (dense states time out). */
+  splitAboveDeg?: number;
+  /** This run's share of the region; other runs do the other parts at the same time. */
+  part?: TilePart;
   sleep?: (ms: number) => Promise<void>;
   pauseMs?: number;
 }
+
+/** Part `index` (0-based) of `count`: tiles are dealt out by a hash of their box. */
+export interface TilePart {
+  index: number;
+  count: number;
+}
+
+type TileWalk = Pick<TileRunOptions, "resume" | "keepTile" | "splitAboveDeg">;
 
 export interface TileRunResult {
   failed: BBox[];
@@ -62,6 +74,8 @@ export interface TileRunResult {
   skipped: number;
   /** Tiles skipped because they are outside the region. */
   outside: number;
+  /** Tiles left to the other parts. */
+  others: number;
 }
 
 const fmt = (b: BBox) => `[${b.map((n) => n.toFixed(3)).join(", ")}]`;
@@ -70,6 +84,40 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 /** The tiles a region starts with. */
 export function regionTiles(region: OsmRegion): BBox[] {
   return tilesFor(padBBox(region.bbox, BBOX_PAD_DEG), region.tileDeg ?? TILE_DEG);
+}
+
+/** FNV-1a of the tile's key: which part a tile belongs to. */
+export function tilePart(tile: BBox, count: number): number {
+  let h = 0x811c9dc5;
+  for (const ch of fmt(tile)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193) >>> 0;
+  return h % count;
+}
+
+/** Split before asking: split in an earlier run, or wider than splitAboveDeg. */
+function splitFirst(tile: BBox, walk: TileWalk): boolean {
+  if (tileSizeDeg(tile) / 2 < MIN_TILE_DEG) return false;
+  if (walk.resume?.split.has(fmt(tile))) return true;
+  return walk.splitAboveDeg !== undefined && tileSizeDeg(tile) > walk.splitAboveDeg + 1e-9;
+}
+
+/**
+ * The tiles of a region still to fetch, given what is saved (resume) and the outline: none
+ * left means the region is complete, whichever part finished it.
+ */
+export function pendingTiles(region: OsmRegion, walk: TileWalk): BBox[] {
+  const queue = regionTiles(region);
+  const pending: BBox[] = [];
+  while (queue.length > 0) {
+    const tile = queue.shift()!;
+    if (walk.resume?.done.has(fmt(tile))) continue;
+    if (splitFirst(tile, walk)) {
+      queue.unshift(...splitTile(tile));
+      continue;
+    }
+    if (walk.keepTile && !walk.keepTile(tile)) continue;
+    pending.push(tile);
+  }
+  return pending;
 }
 
 /** Runs every tile of a region through `fetchTile` and `onTile`. Throws ImportStopped. */
@@ -82,22 +130,36 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
   let done = 0;
   let skipped = 0;
   let outside = 0;
+  let others = 0;
+  // Halves of a tile this part split while running stay with this part: the other parts never
+  // see them (they do not know about the split).
+  const owned = new Set<string>();
+  const splitInto = (tile: BBox) => {
+    const halves = splitTile(tile);
+    if (owned.has(fmt(tile))) for (const h of halves) owned.add(fmt(h));
+    queue.unshift(...halves);
+  };
 
   while (queue.length > 0) {
     const tile = queue.shift()!;
     const key = fmt(tile);
-    if (opts.resume?.split.has(key) && tileSizeDeg(tile) / 2 >= MIN_TILE_DEG) {
-      queue.unshift(...splitTile(tile));
-      continue;
-    }
     if (opts.resume?.done.has(key)) {
       skipped++;
+      continue;
+    }
+    if (splitFirst(tile, opts)) {
+      splitInto(tile);
       continue;
     }
     if (opts.keepTile && !opts.keepTile(tile)) {
       outside++;
       continue;
     }
+    if (opts.part && !owned.has(key) && tilePart(tile, opts.part.count) !== opts.part.index) {
+      others++;
+      continue;
+    }
+    owned.add(key);
     let elements: OsmElement[] | undefined;
     for (let attempt = 0; ; attempt++) {
       try {
@@ -111,7 +173,7 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
           err instanceof OsmServerBusyError && err.status === 504 && attempt >= BUSY_WAITS_S.length;
         if ((err instanceof OsmTileTooBigError || refusedTooLong) && canSplit) {
           opts.log(`  ${fmt(tile)} too big or refused (${(err as Error).message}); splitting`);
-          queue.unshift(...splitTile(tile));
+          splitInto(tile);
           opts.onSplit?.(tile);
           break;
         }
@@ -147,7 +209,7 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
       failed.push(tile);
     }
   }
-  return { failed, elements: elementsSeen, tiles: done, skipped, outside };
+  return { failed, elements: elementsSeen, tiles: done, skipped, outside, others };
 }
 
 export { fmt as formatBBox };

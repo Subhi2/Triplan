@@ -4,6 +4,7 @@
 //   pnpm db:import-osm -- --region=all --skip=karnataka,kerala (leave regions out)
 //   pnpm db:import-osm -- --region=all --resume                (go on after a stopped run)
 //   pnpm db:import-osm -- --region=odisha --tile-deg=0.5       (smaller first tiles: dense states)
+//   pnpm db:import-osm -- --region=rajasthan --part=2/3        (one of 3 runs sharing a state)
 //   pnpm db:import-osm -- --region=goa --dry-run               (fetch and classify, no database writes)
 // One Overpass request at a time, over the endpoints in OVERPASS_URLS (the next is tried when one
 // is down); each region is split into tiles (1° by default), and a tile that is too big is split
@@ -19,10 +20,12 @@ import { closeDb } from "../src/server/db";
 import {
   getOsmPlacesProvider,
   getRegionOutline,
+  type BBox,
   type RegionOutline,
 } from "../src/server/providers/osm";
 import { classifyOsmElement, dedupeCandidates } from "../src/server/services/osmClassify";
 import {
+  mergeProgress,
   PROGRESS_DIR,
   progressPath,
   readProgress,
@@ -44,8 +47,10 @@ import {
 import {
   formatBBox as fmt,
   ImportStopped,
+  pendingTiles,
   regionTiles,
   runRegionTiles,
+  type TilePart,
   type TileRunState,
 } from "../src/server/services/osmTiles";
 
@@ -72,12 +77,20 @@ async function regionOutline(key: OsmRegionKey, stateName: string): Promise<Regi
 }
 const state: TileRunState = { failedInARow: 0 };
 
-/** Imports one region; returns false if any tile failed (the region should be re-run). */
+interface ImportOptions {
+  dryRun: boolean;
+  resume: boolean;
+  tileDeg: number | undefined;
+  part: TilePart | undefined;
+}
+
+/**
+ * Imports one region (or this run's part of it); returns false if any tile failed (the region
+ * should be re-run).
+ */
 async function importRegion(
   key: OsmRegionKey,
-  dryRun: boolean,
-  resume: boolean,
-  tileDeg: number | undefined,
+  { dryRun, resume, tileDeg, part }: ImportOptions,
 ): Promise<boolean> {
   const provider = getOsmPlacesProvider();
   const file = progressPath("places", key);
@@ -99,8 +112,13 @@ async function importRegion(
     done: [...(saved?.done ?? [])],
     split: [...(saved?.split ?? [])],
   };
+  // A fresh run replaces the file; after that, saves merge with it (other parts write it too).
+  let fresh = !saved;
   const save = () => {
-    if (!dryRun) writeProgress(file, progress);
+    if (dryRun) return;
+    if (fresh) writeProgress(file, progress);
+    else mergeProgress(file, progress);
+    fresh = false;
   };
   save();
   const totals = { places: 0, inserted: 0, updated: 0, linked: 0, duplicates: 0 };
@@ -110,18 +128,25 @@ async function importRegion(
   if (saved) {
     console.log(`  resuming the run started ${saved.startedAt}: ${saved.done.length} tiles saved`);
   }
+  if (part) console.log(`  part ${part.index + 1} of ${part.count}`);
   const found = await regionOutline(key, region.name);
   const outline = found && outlineFitsRegion(found, region.bbox) ? found : null;
   if (!outline) console.log("  no usable outline from Nominatim: every tile is fetched");
+  const walk = {
+    ...(outline
+      ? { keepTile: (tile: BBox) => tileTouchesOutline(tile, outline, OUTLINE_MARGIN_DEG) }
+      : {}),
+    // A resumed dense state splits its remaining big tiles down to --tile-deg before asking.
+    ...((tileDeg ?? startDeg) ? { splitAboveDeg: (tileDeg ?? startDeg)! } : {}),
+  };
   const { failed, outside } = await runRegionTiles({
     region,
     state,
     fetchTile: (bbox) => provider.fetchPlaces({ areaIso: region.iso, bbox }),
     log: (line) => console.log(`  ${time()}${line}`),
     ...(saved ? { resume: { done: new Set(saved.done), split: new Set(saved.split) } } : {}),
-    ...(outline
-      ? { keepTile: (tile) => tileTouchesOutline(tile, outline, OUTLINE_MARGIN_DEG) }
-      : {}),
+    ...walk,
+    ...(part ? { part } : {}),
     onSplit(tile) {
       progress.split.push(fmt(tile));
       save();
@@ -155,7 +180,15 @@ async function importRegion(
   });
 
   const categories = [...byCategory].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`);
-  const { elements } = progress;
+  // What every run of the region saved so far (the parts write the same file).
+  const all = dryRun ? progress : (readProgress(file) ?? progress);
+  const pending = dryRun
+    ? 0
+    : pendingTiles(region, {
+        ...walk,
+        resume: { done: new Set(all.done), split: new Set(all.split) },
+      }).length;
+  const { elements } = all;
   console.log(`${time()} ${region.name}: ${elements} elements -> ${totals.places} places`);
   if (outside > 0) console.log(`  ${outside} tiles outside the state skipped`);
   console.log(`  by category: ${categories.join(", ")}`);
@@ -168,8 +201,8 @@ async function importRegion(
       `  ${totals.inserted} inserted, ${totals.updated} updated, ${totals.linked} linked to ` +
         `curated places, ${totals.duplicates} skipped as duplicates of curated places`,
     );
-    if (failed.length === 0 && !empty) {
-      const closed = await closeStaleOsmPlaces(region.name, startedAt);
+    if (failed.length === 0 && pending === 0 && !empty) {
+      const closed = await closeStaleOsmPlaces(region.name, all.startedAt);
       console.log(`  ${closed} places no longer in OpenStreetMap marked closed`);
       progress.complete = true;
       save();
@@ -177,9 +210,12 @@ async function importRegion(
       console.log(
         `  ${failed.length} tiles failed; re-run to retry. Stale places were not closed.`,
       );
+    } else if (pending > 0) {
+      console.log(`  ${pending} tiles left to the other parts; the last one closes stale places`);
     }
   }
-  return failed.length === 0 && !empty;
+  // A part is done when its own tiles are; the region is complete when no tile is left.
+  return failed.length === 0 && !empty && (pending === 0 || part !== undefined);
 }
 
 async function main() {
@@ -190,6 +226,7 @@ async function main() {
       skip: { type: "string", default: "" },
       resume: { type: "boolean", default: false },
       "tile-deg": { type: "string" },
+      part: { type: "string" },
       "dry-run": { type: "boolean", default: false },
     },
   });
@@ -198,7 +235,7 @@ async function main() {
     if (unknown.length > 0) console.error(`Unknown regions: ${unknown.join(", ")}`);
     console.error(
       "Usage: pnpm db:import-osm -- --region=<all|key[,key...]> [--skip=key[,key...]] [--resume]" +
-        " [--dry-run]\n" +
+        " [--tile-deg=0.5] [--part=1/3] [--dry-run]\n" +
         `Regions: ${Object.keys(OSM_REGIONS).join(", ")}`,
     );
     process.exitCode = 1;
@@ -211,6 +248,17 @@ async function main() {
     process.exitCode = 1;
     return;
   }
+  const partMatch = values.part ? /^(\d+)\/(\d+)$/.exec(values.part) : null;
+  const part: TilePart | undefined = partMatch
+    ? { index: Number(partMatch[1]) - 1, count: Number(partMatch[2]) }
+    : undefined;
+  if (values.part && (!part || part.index < 0 || part.index >= part.count || part.count > 16)) {
+    console.error("--part must look like 2/3 (part 2 of 3, at most 16 parts)");
+    process.exitCode = 1;
+    return;
+  }
+  // Parts share the region's resume file, so they always resume.
+  const resume = values.resume || part !== undefined;
   const tiles = keys.reduce((n, k) => n + regionTiles(OSM_REGIONS[k]).length, 0);
   console.log(`${time()} Importing ${keys.length} regions, ${tiles} tiles to start with.`);
   if (!dryRun) await ensureCategories();
@@ -218,7 +266,7 @@ async function main() {
   const incomplete: OsmRegionKey[] = [];
   for (const [i, key] of keys.entries()) {
     try {
-      if (!(await importRegion(key, dryRun, values.resume, tileDeg))) incomplete.push(key);
+      if (!(await importRegion(key, { dryRun, resume, tileDeg, part }))) incomplete.push(key);
     } catch (err) {
       if (!(err instanceof ImportStopped)) throw err;
       console.error(`\n${time()} Stopped: ${err.message}.`);

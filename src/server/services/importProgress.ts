@@ -43,10 +43,45 @@ export function readProgress(path: string): RegionProgress | null {
   }
 }
 
-/** Writes through a temporary file, so a run killed mid-write leaves the old file whole. */
+/**
+ * Writes through a temporary file, so a run killed mid-write leaves the old file whole. Parts of
+ * a region write the same file; on Windows a rename fails while another process has it open, so
+ * it is tried a few times.
+ */
 export function writeProgress(path: string, progress: RegionProgress): void {
   mkdirSync(dirname(path), { recursive: true });
-  const tmp = `${path}.tmp`;
+  const tmp = `${path}.${process.pid}.tmp`;
   writeFileSync(tmp, JSON.stringify(progress));
-  renameSync(tmp, path);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      renameSync(tmp, path);
+      return;
+    } catch (err) {
+      if (attempt >= 20) throw err;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+    }
+  }
+}
+
+/**
+ * Adds a run's progress to the file's and writes the union: the parts of a region (--part) save
+ * into the same file. The file's start time wins, so stale places are closed against the
+ * earliest start.
+ */
+export function mergeProgress(path: string, progress: RegionProgress): RegionProgress {
+  const current = readProgress(path);
+  const union = (a: string[], b: string[]) => [...new Set([...a, ...b])];
+  const tileDeg = current?.tileDeg ?? progress.tileDeg;
+  const merged: RegionProgress = current
+    ? {
+        startedAt: current.startedAt,
+        complete: current.complete || progress.complete,
+        elements: Math.max(current.elements, progress.elements),
+        ...(tileDeg ? { tileDeg } : {}),
+        done: union(current.done, progress.done),
+        split: union(current.split, progress.split),
+      }
+    : progress;
+  writeProgress(path, merged);
+  return merged;
 }

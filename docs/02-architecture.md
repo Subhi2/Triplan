@@ -214,6 +214,8 @@ As built (migrations `0004`–`0006`): the route line is parsed and simplified o
 
 **Tiles outside the state.** A state's box is often half another state (Andhra Pradesh's half-degree tiles: 238, of which 97 touch the state). Before a region, the import asks Nominatim once for the state's outline (`src/server/providers/osm/regionOutline.ts`, simplified to about 500 m, cached in `.import-progress/outline-<region>.json`) and skips tiles that do not come within 0.05° of it (`tileTouchesOutline`). An outline that does not fit the state's own box, or no outline, means every tile is fetched as before.
 
+**Several runs on one state.** `--part=2/3` runs one of three imports of the same state at once: tiles are dealt out by a hash of their box, a tile a part has to split stays with that part, and every part merges its saved tiles into the region's one resume file (`mergeProgress`). Whichever part finds no tile left (`pendingTiles`) closes the stale places. `--tile-deg` on a resumed state splits its remaining big tiles down to that size before asking, instead of waiting for them to time out.
+
 ## Nearby search (Near me)
 
 The `/nearby` screen lists well-known places the rider can reach from one point (their position, a typed place or a point tapped on the map) within 30 min, 1 h, 2 h or half a day, measured on the road. Straight-line radius is misleading in the ghats, where a place 20 km across a valley can be 60 km by road.
