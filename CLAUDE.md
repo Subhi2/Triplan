@@ -44,7 +44,7 @@ pnpm test:e2e         # Playwright
 pnpm db:setup         # migrations + load data/snapshot into empty tables (--replace --yes, --from-sources)
 pnpm db:migrate       # apply Drizzle migrations
 pnpm db:seed          # load docs/06 seed data
-pnpm db:import-osm -- --region=<key|all>       # places from OpenStreetMap
+pnpm db:import-osm -- --region=<key|all>       # places from OpenStreetMap (--resume after a stopped run)
 pnpm db:import-photos                          # Wikimedia Commons photos
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json

@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "createdAt": "2026-10-05T15:51:44.376Z",
-  "migration": "0015_service_point",
+  "createdAt": "2026-10-09T15:36:50.166Z",
+  "migration": "0016_place_area",
   "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row.",
   "tables": [
     {
@@ -15,9 +15,9 @@
         "parent_id",
         "weight"
       ],
-      "rows": 18,
-      "bytes": 454,
-      "sha256": "9ebc9626f303159fe9c5d196e68726b6714f680f9d4b92a3539d595ae45ca155"
+      "rows": 19,
+      "bytes": 476,
+      "sha256": "3abbd6c3b982a2c85b7115fab8763e3817cc7996dd12c4296c70008af4d7b52a"
     },
     {
       "name": "carry_item",
@@ -60,11 +60,12 @@
         "population",
         "osm_tags",
         "photos_checked_at",
-        "google_place_checked_at"
+        "google_place_checked_at",
+        "area"
       ],
-      "rows": 40134,
-      "bytes": 4214853,
-      "sha256": "7ce3a1c3d081b59c486810fb8611da294bfb4ce73e6ad7829a02321ed922d9a3"
+      "rows": 93033,
+      "bytes": 11654190,
+      "sha256": "6c8514ace8534c5bdad20c8b1b12692aad6fea7b7037d5cb5c15d360dde230f8"
     },
     {
       "name": "place_guide",
@@ -123,9 +124,9 @@
         "uploaded_by",
         "created_at"
       ],
-      "rows": 1654,
-      "bytes": 185690,
-      "sha256": "4da853d164b8d4f9e6952fd70624ef91786fa04f19ff92d64a2d51abb7877278"
+      "rows": 2006,
+      "bytes": 226648,
+      "sha256": "1f8a69b3c47758b4c7e7b9caf12ac86d797e24517521be572fd65c87d9138774"
     },
     {
       "name": "ride",

@@ -42,15 +42,20 @@ export function viaLabels(routes: LabelInput[], viaStops: string[]): string[] {
     const otherTowns = new Set(
       routes.flatMap((o, j) => (j === i ? [] : o.towns.map((t) => t.name))),
     );
-    const unique = route.towns.filter((t) => !otherTowns.has(t.name));
+    // Well-known villages name a route only when it passes no real town: otherwise the village
+    // just past the ghat town would take its place ("via Hassan, Donigal").
+    const towns = route.towns.some((t) => t.kind !== "village")
+      ? route.towns.filter((t) => t.kind !== "village")
+      : route.towns;
+    const unique = towns.filter((t) => !otherTowns.has(t.name));
 
     let picks: TownOnRoute[] = [];
     if (routes.length > 1 && unique.length > 0) {
       picks = [...new Set([largest(unique), unique[unique.length - 1]!])].sort(
         (a, b) => a.kmFromStart - b.kmFromStart,
       );
-    } else if (route.towns.length > 0) {
-      picks = [largest(route.towns)];
+    } else if (towns.length > 0) {
+      picks = [largest(towns)];
     }
     if (picks.length > 0) return `via ${picks.map((t) => t.name).join(", ")}`;
     return routes.length > 1 ? `Route ${i + 1}` : "Direct route";

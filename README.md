@@ -14,7 +14,7 @@ Triplan is a route planner for bike and car travellers in India. Pick a start, a
 
 **Know the road**
 
-- **Places on your road, in km order.** A PostGIS corridor search over 40,000+ places from OpenStreetMap shows what is on the road, what is a detour, and how far off it is.
+- **Places on your road, in km order.** A PostGIS corridor search over 90,000+ places from OpenStreetMap, in every Indian state, shows what is on the road, what is a detour, and how far off it is.
 - **Up to three route options.** Each one shows how its distance splits into national highway, state highway, ghat and other roads, and where the ghats are.
 - **Hairpins and twistiness** on every route card, worked out from the road's shape (the method roadcurvature.com uses): "24 hairpins · 18 km twisty".
 - **Ups and downs.** An elevation profile from open terrain data, with the total climb, the highest point and each big climb named after the town at its foot. Scrub along it and a marker moves on the map.
@@ -133,7 +133,7 @@ pnpm db:setup
 This one command:
 
 1. Runs the migrations: tables, PostGIS functions, indexes and row-level security.
-2. Loads the data snapshot in `data/snapshot/`: every place (40,000+), place guide, photo credit, famous ride and service point (110,000+), about 10 MB.
+2. Loads the data snapshot in `data/snapshot/`: every place (90,000+, all 36 states and union territories), place guide, photo credit, famous ride and service point (110,000+), about 17 MB.
 
 It takes under a minute. Before writing anything it checks every file against its checksum, and it only loads into empty tables. On a database that already has places, `pnpm db:setup -- --replace --yes` empties the snapshot tables first; it refuses while there are saved trips or reviews.
 
@@ -154,7 +154,7 @@ pnpm db:seed-rides                             # route the famous rides in data/
 pnpm db:import-services -- --region=karnataka  # hospitals, police, ATMs, tyre and repair shops, stays
 ```
 
-Imports are safe to re-run (rows are upserted on their OpenStreetMap id), and `--skip=` resumes an `--region=all` run.
+Imports are safe to re-run (rows are upserted on their OpenStreetMap id). A stopped run (no network, a sleeping laptop, Overpass down) goes on where it stopped with `--resume`: each region's saved tiles are kept in `.import-progress/` (not committed), and finished regions are skipped. `--skip=` leaves regions out.
 
 ### 6. Run
 
@@ -241,7 +241,7 @@ The export leaves out trips, reviews, accounts, usage counts, caches, users' pho
 | `type "geography" does not exist` or no PostGIS              | The database must be Supabase (migrations put PostGIS in its `extensions` schema), or create an `extensions` schema first on plain Postgres. |
 | `pnpm db:setup` says tables already have rows                | Use a new database, or `pnpm db:setup -- --replace --yes` on one with no trips or reviews.                                                   |
 | `remaining connection slots are reserved` / too many clients | The session pooler allows 15 connections per project. Stop other dev servers or scripts, or use the transaction pooler for the app.          |
-| Overpass `429` or `504` during an import                     | The public servers are busy. The import waits and tries the next server in `OVERPASS_URLS`; re-run with `--skip=` for the regions done.      |
+| Overpass `429` or `504` during an import                     | The public servers are busy. The import waits and tries the next server in `OVERPASS_URLS`; re-run the command it prints (with `--resume`).  |
 | Routes fail with `Too Many Requests`                         | The public OSRM server is rate limited. Wait a minute (answers are cached for 7 days), or self-host OSRM.                                    |
 | No elevation profile or flat 3D terrain                      | The terrain tile server could not be reached. Check `NEXT_PUBLIC_TERRAIN_TILES_URL` and that it allows CORS.                                 |
 | No "plan in plain words" box                                 | `ANTHROPIC_API_KEY` is empty. Set it and restart (or redeploy).                                                                              |

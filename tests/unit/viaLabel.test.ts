@@ -74,6 +74,31 @@ describe("viaLabels", () => {
       ),
     ).toEqual(["Route 1", "Route 2"]);
   });
+
+  it("names a route after villages only when it passes no real town", () => {
+    const village = (name: string, km: number): TownOnRoute => ({
+      name,
+      kmFromStart: km,
+      population: null,
+      kind: "village",
+      location: [0, 0],
+    });
+    // Donigal, a well-known village past Sakleshpur on the ghat, must not take its place.
+    const withVillages = {
+      ...viaSakleshpur,
+      towns: [
+        ...viaSakleshpur.towns.slice(0, 3),
+        village("Donigal", 235),
+        ...viaSakleshpur.towns.slice(3),
+      ],
+    };
+    const onlyVillages = { distanceKm: 40, towns: [village("Masinagudi", 20)] };
+    expect(viaLabels([viaChikkamagaluru, withVillages], [])).toEqual([
+      "via Tumakuru, Chikkamagaluru",
+      "via Hassan, Sakleshpur",
+    ]);
+    expect(viaLabels([onlyVillages], [])).toEqual(["via Masinagudi"]);
+  });
 });
 
 describe("mainTowns", () => {
