@@ -2,6 +2,7 @@ import { googleEnabled } from "@/lib/google";
 import { GOOGLE_PHOTO_WIDTH } from "@/lib/googleGap";
 import { getGooglePlacesProvider, isPhotoName } from "@/server/providers/google";
 import { takeGoogleBudget } from "@/server/providers/google/budget";
+import { allowRequestOrOpen, REQUEST_LIMITS } from "@/server/services/writeLimit";
 
 const NO_STORE = { "Cache-Control": "private, no-store" };
 
@@ -18,6 +19,9 @@ export async function GET(request: Request) {
   const google = getGooglePlacesProvider();
   if (!googleEnabled || !google) {
     return Response.json({ error: "Google is not set up" }, { status: 404, headers: NO_STORE });
+  }
+  if (!(await allowRequestOrOpen(request, REQUEST_LIMITS.googlePhoto))) {
+    return Response.json({ error: "No more photos for now" }, { status: 429, headers: NO_STORE });
   }
   try {
     if (!(await takeGoogleBudget("photo"))) {

@@ -4,6 +4,7 @@ import { ProviderError } from "@/server/providers/http";
 import { NoRouteError } from "@/server/providers/routing";
 import { getRoutes } from "@/server/services/routeService";
 import { countLater } from "@/server/services/usage";
+import { allowRequestOrOpen, REQUEST_LIMITS } from "@/server/services/writeLimit";
 
 // Up to four routing requests (the trip, then towns for extra options), spaced 1 s apart for the
 // public OSRM server: allow more than the platform's default time.
@@ -17,6 +18,13 @@ export async function POST(request: Request) {
     return Response.json(
       { error: "Invalid trip", issues: z.flattenError(parsed.error) },
       { status: 400 },
+    );
+  }
+
+  if (!(await allowRequestOrOpen(request, REQUEST_LIMITS.route))) {
+    return Response.json(
+      { error: "Too many routes planned from here. Try again in an hour." },
+      { status: 429, headers: { "Retry-After": "3600" } },
     );
   }
 

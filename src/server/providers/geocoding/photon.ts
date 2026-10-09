@@ -77,8 +77,8 @@ export function parsePhotonResponse(body: z.infer<typeof photonResponseSchema>):
 }
 
 // Photon's public instance asks for fair use; suggestions are debounced and cached, and this
-// spaces out whatever still reaches it.
-const throttle = createThrottle(200);
+// spaces out whatever still reaches it. Suggestions older than 3 s are useless: fail fast.
+const throttle = createThrottle(200, Date.now, 3_000);
 
 /** Photon (komoot): search-as-you-type geocoding over OpenStreetMap, tolerant of typos. */
 export function createPhotonProvider(baseUrl: string, userAgent: string): GeocodingProvider {

@@ -144,4 +144,21 @@ describe("createThrottle", () => {
     expect(done).toEqual([0, 1, 2]);
     expect(Date.now() - start).toBe(2_000);
   });
+
+  it("refuses a caller that would wait longer than maxWaitMs, without taking a slot", async () => {
+    vi.useFakeTimers();
+    const wait = createThrottle(1_000, Date.now, 1_500);
+    const start = Date.now();
+    const first = wait();
+    const second = wait(); // waits 1 s
+    await expect(wait()).rejects.toMatchObject({ status: 503 }); // would wait 2 s
+    await vi.advanceTimersByTimeAsync(1_000);
+    await Promise.all([first, second]);
+    // The refused call left no slot behind: the next one runs at 2 s, not 3 s.
+    let ranAt = 0;
+    const fourth = wait().then(() => (ranAt = Date.now() - start));
+    await vi.advanceTimersByTimeAsync(1_000);
+    await fourth;
+    expect(ranAt).toBe(2_000);
+  });
 });

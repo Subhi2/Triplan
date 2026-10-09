@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { GeocodeResult } from "@/lib/trip";
 import { getGeocodingProvider } from "@/server/providers/geocoding";
 import { suggestPlaces } from "@/server/services/suggestService";
+import { allowRequestOrOpen, REQUEST_LIMITS } from "@/server/services/writeLimit";
 
 const querySchema = z.object({
   q: z.string().trim().min(2).max(200),
@@ -29,6 +30,13 @@ export async function GET(request: Request) {
     );
   }
   const { q, source, lat, lon, zoom } = parsed.data;
+  // Only the Nominatim fallback is limited: suggestions are cached and mostly our own places.
+  if (source === "osm" && !(await allowRequestOrOpen(request, REQUEST_LIMITS.nominatim))) {
+    return Response.json(
+      { error: "Too many searches from here. Try again later." },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
+  }
 
   try {
     let results: GeocodeResult[];

@@ -3,6 +3,11 @@ import { NoRouteError } from "@/server/providers/routing";
 
 vi.mock("@/server/services/routeService", () => ({ getRoutes: vi.fn() }));
 vi.mock("@/server/services/usage", () => ({ countLater: vi.fn() }));
+const allowRequestOrOpen = vi.fn();
+vi.mock("@/server/services/writeLimit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/server/services/writeLimit")>()),
+  allowRequestOrOpen,
+}));
 
 const { getRoutes } = await import("@/server/services/routeService");
 const { countLater } = await import("@/server/services/usage");
@@ -28,6 +33,15 @@ describe("POST /api/route", () => {
   beforeEach(() => {
     vi.mocked(getRoutes).mockReset();
     vi.mocked(countLater).mockReset();
+    allowRequestOrOpen.mockReset().mockResolvedValue(true);
+  });
+
+  it("answers 429 once a visitor has planned too many routes, without routing", async () => {
+    allowRequestOrOpen.mockResolvedValue(false);
+    const res = await post(trip);
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("3600");
+    expect(getRoutes).not.toHaveBeenCalled();
   });
 
   it("counts a planned ride only when routing works", async () => {

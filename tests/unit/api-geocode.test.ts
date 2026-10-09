@@ -5,6 +5,11 @@ vi.mock("@/server/providers/geocoding", () => {
   const search = vi.fn();
   return { getGeocodingProvider: () => ({ search }), __search: search };
 });
+const allowRequestOrOpen = vi.fn();
+vi.mock("@/server/services/writeLimit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/server/services/writeLimit")>()),
+  allowRequestOrOpen,
+}));
 
 const { suggestPlaces } = await import("@/server/services/suggestService");
 const geocoding = (await import("@/server/providers/geocoding")) as unknown as {
@@ -18,6 +23,15 @@ describe("GET /api/geocode", () => {
   beforeEach(() => {
     vi.mocked(suggestPlaces).mockReset().mockResolvedValue([]);
     geocoding.__search.mockReset().mockResolvedValue([]);
+    allowRequestOrOpen.mockReset().mockResolvedValue(true);
+  });
+
+  it("limits the Nominatim fallback per visitor, not the suggestions", async () => {
+    allowRequestOrOpen.mockResolvedValue(false);
+    expect((await get("q=kalasa&source=osm")).status).toBe(429);
+    expect(geocoding.__search).not.toHaveBeenCalled();
+    expect((await get("q=kalasa")).status).toBe(200);
+    expect(allowRequestOrOpen).toHaveBeenCalledTimes(1);
   });
 
   it("suggests by default, biased to the map centre and zoom", async () => {

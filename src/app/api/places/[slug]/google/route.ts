@@ -1,6 +1,7 @@
 import { googleEnabled } from "@/lib/google";
 import { PLACE_SLUG_PATTERN } from "@/lib/placeDetail";
 import { getGoogleGapFill } from "@/server/services/googleGapService";
+import { allowRequestOrOpen, REQUEST_LIMITS } from "@/server/services/writeLimit";
 
 // Google content is fetched live and must not be cached or stored (Maps ToS 3.2.3(b)).
 const NO_STORE = { "Cache-Control": "private, no-store" };
@@ -9,12 +10,16 @@ const NO_STORE = { "Cache-Control": "private, no-store" };
  * GET -> GoogleGapResult: Google's photos, rating and reviews for what the place lacks.
  * Only with the Google map on (the Google key set): Google content may not sit next to MapLibre.
  */
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   if (slug.length > 200 || !PLACE_SLUG_PATTERN.test(slug)) {
     return Response.json({ error: "Place not found" }, { status: 404, headers: NO_STORE });
   }
   if (!googleEnabled) {
+    return Response.json({ googlePlaceId: null, fill: null }, { headers: NO_STORE });
+  }
+  // One visitor may not use up the day's Google budget for everyone.
+  if (!(await allowRequestOrOpen(request, REQUEST_LIMITS.googleDetails))) {
     return Response.json({ googlePlaceId: null, fill: null }, { headers: NO_STORE });
   }
   try {
