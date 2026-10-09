@@ -154,7 +154,7 @@ pnpm db:seed-rides                             # route the famous rides in data/
 pnpm db:import-services -- --region=karnataka  # hospitals, police, ATMs, tyre and repair shops, stays
 ```
 
-Imports are safe to re-run (rows are upserted on their OpenStreetMap id), and `--skip=` resumes an `--region=all` run.
+Imports are safe to re-run (rows are upserted on their OpenStreetMap id). A stopped run (no network, a sleeping laptop, Overpass down) goes on where it stopped with `--resume`: each region's saved tiles are kept in `.import-progress/` (not committed), and finished regions are skipped. `--skip=` leaves regions out.
 
 ### 6. Run
 
@@ -241,7 +241,7 @@ The export leaves out trips, reviews, accounts, usage counts, caches, users' pho
 | `type "geography" does not exist` or no PostGIS              | The database must be Supabase (migrations put PostGIS in its `extensions` schema), or create an `extensions` schema first on plain Postgres. |
 | `pnpm db:setup` says tables already have rows                | Use a new database, or `pnpm db:setup -- --replace --yes` on one with no trips or reviews.                                                   |
 | `remaining connection slots are reserved` / too many clients | The session pooler allows 15 connections per project. Stop other dev servers or scripts, or use the transaction pooler for the app.          |
-| Overpass `429` or `504` during an import                     | The public servers are busy. The import waits and tries the next server in `OVERPASS_URLS`; re-run with `--skip=` for the regions done.      |
+| Overpass `429` or `504` during an import                     | The public servers are busy. The import waits and tries the next server in `OVERPASS_URLS`; re-run the command it prints (with `--resume`).  |
 | Routes fail with `Too Many Requests`                         | The public OSRM server is rate limited. Wait a minute (answers are cached for 7 days), or self-host OSRM.                                    |
 | No elevation profile or flat 3D terrain                      | The terrain tile server could not be reached. Check `NEXT_PUBLIC_TERRAIN_TILES_URL` and that it allows CORS.                                 |
 | No "plan in plain words" box                                 | `ANTHROPIC_API_KEY` is empty. Set it and restart (or redeploy).                                                                              |

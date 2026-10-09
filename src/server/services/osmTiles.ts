@@ -21,6 +21,14 @@ const MAX_FAILED_IN_A_ROW = 3;
 /** Overpass looks down: the import stops (the rest can be re-run). */
 export class ImportStopped extends Error {}
 
+/** Tiles from an earlier run of the same region (keys from formatBBox), for --resume. */
+export interface TileResume {
+  /** Tiles saved before: skipped. */
+  done: ReadonlySet<string>;
+  /** Tiles Overpass found too big before: split without asking again. */
+  split: ReadonlySet<string>;
+}
+
 /** Counts failed tiles across regions, so an import stops when Overpass is down. */
 export interface TileRunState {
   failedInARow: number;
@@ -37,6 +45,9 @@ export interface TileRunOptions {
     progress: { done: number; left: number },
   ): Promise<void>;
   log(line: string): void;
+  resume?: TileResume;
+  /** Called when a tile is split, so a resume file can record it. */
+  onSplit?(tile: BBox): void;
   sleep?: (ms: number) => Promise<void>;
   pauseMs?: number;
 }
@@ -45,6 +56,8 @@ export interface TileRunResult {
   failed: BBox[];
   elements: number;
   tiles: number;
+  /** Tiles skipped because an earlier run saved them. */
+  skipped: number;
 }
 
 const fmt = (b: BBox) => `[${b.map((n) => n.toFixed(3)).join(", ")}]`;
@@ -63,9 +76,19 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
   const failed: BBox[] = [];
   let elementsSeen = 0;
   let done = 0;
+  let skipped = 0;
 
   while (queue.length > 0) {
     const tile = queue.shift()!;
+    const key = fmt(tile);
+    if (opts.resume?.split.has(key) && tileSizeDeg(tile) / 2 >= MIN_TILE_DEG) {
+      queue.unshift(...splitTile(tile));
+      continue;
+    }
+    if (opts.resume?.done.has(key)) {
+      skipped++;
+      continue;
+    }
     let elements: OsmElement[] | undefined;
     for (let attempt = 0; ; attempt++) {
       try {
@@ -80,6 +103,7 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
         if ((err instanceof OsmTileTooBigError || refusedTooLong) && canSplit) {
           opts.log(`  ${fmt(tile)} too big or refused (${(err as Error).message}); splitting`);
           queue.unshift(...splitTile(tile));
+          opts.onSplit?.(tile);
           break;
         }
         if (err instanceof OsmServerBusyError && attempt < BUSY_WAITS_S.length) {
@@ -114,7 +138,7 @@ export async function runRegionTiles(opts: TileRunOptions): Promise<TileRunResul
       failed.push(tile);
     }
   }
-  return { failed, elements: elementsSeen, tiles: done };
+  return { failed, elements: elementsSeen, tiles: done, skipped };
 }
 
 export { fmt as formatBBox };

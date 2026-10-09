@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { OsmServerBusyError, OsmTileTooBigError, type BBox } from "@/server/providers/osm";
 import type { OsmRegion } from "@/server/services/osmRegions";
-import { ImportStopped, runRegionTiles } from "@/server/services/osmTiles";
+import { formatBBox, ImportStopped, runRegionTiles } from "@/server/services/osmTiles";
 
 // A one-tile region (1° square), so every tile in a test is easy to follow.
 const region: OsmRegion = { name: "Test", iso: "IN-XX", bbox: [74.02, 15.02, 74.98, 15.98] };
@@ -63,5 +63,41 @@ describe("runRegionTiles", () => {
         onTile: async () => undefined,
       }),
     ).rejects.toBeInstanceOf(ImportStopped);
+  });
+
+  it("resumes: skips saved tiles and splits known big tiles without asking again", async () => {
+    // First run: the 1° tile is too big, its four halves are saved, the last one fails.
+    const split: string[] = [];
+    const done: string[] = [];
+    let calls = 0;
+    const first = await runRegionTiles({
+      ...base,
+      state: { failedInARow: 0 },
+      fetchTile: async (bbox) => {
+        if (bbox[2] - bbox[0] > 0.6) throw new OsmTileTooBigError("timed out");
+        if (++calls === 4) throw new Error("HTTP 400");
+        return [element];
+      },
+      onSplit: (tile) => split.push(formatBBox(tile)),
+      onTile: async (_elements, tile) => {
+        done.push(formatBBox(tile));
+      },
+    });
+    expect(first.failed).toHaveLength(1);
+    expect(split).toHaveLength(1);
+    expect(done).toHaveLength(3);
+
+    // Second run: only the failed quarter is fetched.
+    const fetchTile = vi.fn<(bbox: BBox) => Promise<(typeof element)[]>>(async () => [element]);
+    const second = await runRegionTiles({
+      ...base,
+      state: { failedInARow: 0 },
+      fetchTile,
+      resume: { done: new Set(done), split: new Set(split) },
+      onTile: async () => undefined,
+    });
+    expect(fetchTile).toHaveBeenCalledTimes(1);
+    expect(second).toMatchObject({ failed: [], tiles: 1, skipped: 3 });
+    expect(done).not.toContain(formatBBox(fetchTile.mock.calls[0]![0]));
   });
 });
