@@ -17,6 +17,8 @@ const serverEnvSchema = z.object({
     .string()
     .default(
       "https://overpass-api.de/api/interpreter," +
+        // overpass-api.de's second machine, with its own slots per address.
+        "https://z.overpass-api.de/api/interpreter," +
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter," +
         "https://overpass.kumi.systems/api/interpreter",
     )

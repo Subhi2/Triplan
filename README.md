@@ -2,7 +2,7 @@
 
 **See every hairpin, climb and stop on your road before you ride it.**
 
-Triplan is a route planner for bike and car travellers in India. Pick a start, a destination and any stops on the way, and it shows everything worth stopping for on _that_ road: temples, forts, viewpoints, waterfalls, lakes, treks, food and fuel, in kilometre order. Each route also gets its hairpins, its climbs and a 3D flyover, the hospitals and puncture shops along the way, and a split into days with towns to sleep in.
+Triplan is a route planner for bike and car travellers in India. Pick a start, a destination and any stops on the way, and it shows everything worth stopping for on _that_ road: temples, forts and palaces, viewpoints, peaks, waterfalls, lakes and dams, beaches, caves, museums, national parks and fuel, in kilometre order. Each route also gets its hairpins, its climbs and a 3D flyover, the hospitals and puncture shops along the way, and a split into days with towns to sleep in.
 
 **Live app:** [triplan-blue.vercel.app](https://triplan-blue.vercel.app)
 
@@ -14,7 +14,8 @@ Triplan is a route planner for bike and car travellers in India. Pick a start, a
 
 **Know the road**
 
-- **Places on your road, in km order.** A PostGIS corridor search over 90,000+ places from OpenStreetMap, in every Indian state, shows what is on the road, what is a detour, and how far off it is.
+- **Places on your road, in km order.** A PostGIS corridor search over 90,000+ places from OpenStreetMap, in every Indian state and union territory, shows what is on the road, what is a detour, and how far off it is. That includes every named temple, well-known villages such as Masinagudi, dams, botanical gardens, palaces and museums.
+- **National parks by their outline.** 570 national parks, wildlife sanctuaries and tiger reserves are stored with their boundaries, so a road through Bandipur or Mudumalai lists the park at the km where the road enters it, 0 m off the road, instead of missing it because the park's centre is far away.
 - **Up to three route options.** Each one shows how its distance splits into national highway, state highway, ghat and other roads, and where the ghats are.
 - **Hairpins and twistiness** on every route card, worked out from the road's shape (the method roadcurvature.com uses): "24 hairpins · 18 km twisty".
 - **Ups and downs.** An elevation profile from open terrain data, with the total climb, the highest point and each big climb named after the town at its foot. Scrub along it and a marker moves on the map.
@@ -34,6 +35,7 @@ Triplan is a route planner for bike and car travellers in India. Pick a start, a
 - **Ride story.** A 1080×1920 poster of your route (shape, km, climb, hairpins, top stops) for Instagram stories or WhatsApp status.
 - **Take it with you.** Saved trips with their own link, "Open in Google Maps" with every stop in order, GPX for OsmAnd, Organic Maps and Garmin, and share cards on every link.
 - **Near me.** Well-known places within reach _by road_, and a ride mode that shows what is coming up ahead.
+- **Search that knows small places.** Our own places come first as you type: "kalasa" lists the town and the temple there, and a village like Masinagudi is found by its name. Photon fills in the rest.
 - **Phone first.** It installs as an app (PWA) and runs on a fully open stack: no API key is needed to run it.
 
 ## How it works
@@ -48,6 +50,7 @@ flowchart LR
   A -->|corridor search| DB[(Supabase Postgres + PostGIS)]
   U -->|3D terrain| T
   I[Import scripts] -->|places, services| OV[Overpass / OpenStreetMap]
+  I -->|state outlines| P
   I -->|photos| W[Wikimedia Commons]
   I --> DB
   S[data/snapshot] -->|pnpm db:setup| DB
@@ -56,7 +59,7 @@ flowchart LR
 ```
 
 1. The planner sends the stops to `POST /api/route`, which asks OSRM for up to three routes. Each route is named after a town it passes ("via Sakleshpur") and gets its road mix and hairpin count. Ghats and hairpins are found from the road's shape.
-2. `POST /api/places/along` runs `places_along_route` in PostGIS. The route is simplified once, places within the corridor (2–25 km) are found with a spatial index, and each gets its km from the start (`ST_LineLocatePoint`) and its detour from the road. Safety stops and overnight stays use the same search over a separate `service_point` table.
+2. `POST /api/places/along` runs `places_along_route` in PostGIS. The route is simplified once, places within the corridor (2–25 km) are found with a spatial index, and each gets its km from the start (`ST_LineLocatePoint`) and its detour from the road. Places with an outline (national parks, sanctuaries) are matched by their area: km where the road enters it, detour 0 when the road crosses it. Safety stops and overnight stays use the same search over a separate `service_point` table.
 3. The elevation profile reads heights every 100 m from Terrarium tiles (SRTM for India), smooths them and finds the climbs. The 3D preview drapes the same tiles under MapLibre and flies a chase camera along the route.
 4. Every external service sits behind a provider interface (`src/server/providers/`). Responses are validated with Zod, cached in the database and throttled to each service's fair-use policy, so tests never touch the network.
 
@@ -111,7 +114,7 @@ Then fill in `.env.local`. Only the first two are required:
 | `OSRM_BASE_URL`                   | no      | The routing server. Default: the public OSRM demo server (fair use only; self-host for real traffic).                                |
 | `NOMINATIM_BASE_URL`              | no      | Default `https://nominatim.openstreetmap.org` (1 request per second, used only when Enter is pressed).                               |
 | `PHOTON_BASE_URL`                 | no      | Default `https://photon.komoot.io/api` (suggestions while typing).                                                                   |
-| `OVERPASS_URLS`                   | no      | Overpass servers for the OpenStreetMap imports, tried in order. Only needed for `--from-sources` and the import scripts.             |
+| `OVERPASS_URLS`                   | no      | Overpass servers for the imports, tried in order. Default: overpass-api.de, z.overpass-api.de, maps.mail.ru, kumi.systems.           |
 | `NEXT_PUBLIC_MAP_STYLE_URL`       | no      | A MapLibre style URL. Default: OpenFreeMap "liberty".                                                                                |
 | `NEXT_PUBLIC_TERRAIN_TILES_URL`   | no      | Terrarium PNG tiles `…/{z}/{x}/{y}.png` for the elevation profile and 3D terrain. Default: AWS Terrain Tiles (free, no key).         |
 | `NEXT_PUBLIC_SITE_URL`            | no      | Your public address, for share cards and the sitemap. Vercel's production address is used if empty.                                  |
@@ -154,7 +157,14 @@ pnpm db:seed-rides                             # route the famous rides in data/
 pnpm db:import-services -- --region=karnataka  # hospitals, police, ATMs, tyre and repair shops, stays
 ```
 
-Imports are safe to re-run (rows are upserted on their OpenStreetMap id). A stopped run (no network, a sleeping laptop, Overpass down) goes on where it stopped with `--resume`: each region's saved tiles are kept in `.import-progress/` (not committed), and finished regions are skipped. `--skip=` leaves regions out.
+Imports are safe to re-run (rows are upserted on their OpenStreetMap id). The places import has options for long runs:
+
+- `--resume` goes on where a stopped run stopped (no network, a sleeping laptop, Overpass down). Each region's saved tiles are kept in `.import-progress/` (not committed), and finished regions are skipped.
+- `--part=1/3`, with `--part=2/3` and `--part=3/3` in two more terminals, shares one big state between three runs. Whichever part finishes last closes the places no longer in OpenStreetMap.
+- `--tile-deg=0.5` asks for dense states in half-degree tiles, which the public servers answer without timing out.
+- `--skip=` leaves regions out.
+
+Before each state, the import asks Nominatim once for the state's outline and never asks Overpass for tiles outside it (about a third of them). An empty Overpass answer counts only when a second server agrees, because a busy server sometimes answers a tile full of places with nothing.
 
 ### 6. Run
 
@@ -223,13 +233,17 @@ Google's terms shape the code:
 
 ## Refreshing the data snapshot (maintainers)
 
-After an import, write the snapshot from the live database and commit it:
+After an import, write the snapshot from the live database and commit it. A full refresh of India:
 
 ```bash
-pnpm db:import-services -- --region=all      # or any other import
-pnpm db:export-snapshot                      # rewrites data/snapshot (read only on the database)
+pnpm db:import-osm -- --region=all --resume     # places: hours, on a computer that will not sleep
+pnpm db:import-services -- --region=all         # hospitals, police, ATMs, repair shops, stays
+pnpm db:import-photos                           # Wikimedia photos for new places with a Wikidata link
+pnpm db:export-snapshot                         # rewrites data/snapshot (read only on the database)
 git add data/snapshot && git commit -m "Refresh the data snapshot"
 ```
+
+The public Overpass servers allow a few queries at a time per address, so the places import is the slow part. The last pass of the October 2026 refresh of all of India took about four hours with up to 22 runs side by side: one run per small state, `--part` for the big ones, and different server orders in `OVERPASS_URLS` so the runs spread over overpass-api.de, z.overpass-api.de and maps.mail.ru.
 
 The export leaves out trips, reviews, accounts, usage counts, caches, users' photos and Google ids.
 
@@ -242,6 +256,8 @@ The export leaves out trips, reviews, accounts, usage counts, caches, users' pho
 | `pnpm db:setup` says tables already have rows                | Use a new database, or `pnpm db:setup -- --replace --yes` on one with no trips or reviews.                                                   |
 | `remaining connection slots are reserved` / too many clients | The session pooler allows 15 connections per project. Stop other dev servers or scripts, or use the transaction pooler for the app.          |
 | Overpass `429` or `504` during an import                     | The public servers are busy. The import waits and tries the next server in `OVERPASS_URLS`; re-run the command it prints (with `--resume`).  |
+| An import stopped (network lost, laptop asleep)              | Run the same command with `--resume`. On a laptop, keep it plugged in with the screen on: many laptops cut the network in standby.           |
+| An import is slow                                            | Split big states with `--part=1/3`… and list several servers in `OVERPASS_URLS`, ordered differently per run.                                |
 | Routes fail with `Too Many Requests`                         | The public OSRM server is rate limited. Wait a minute (answers are cached for 7 days), or self-host OSRM.                                    |
 | No elevation profile or flat 3D terrain                      | The terrain tile server could not be reached. Check `NEXT_PUBLIC_TERRAIN_TILES_URL` and that it allows CORS.                                 |
 | No "plan in plain words" box                                 | `ANTHROPIC_API_KEY` is empty. Set it and restart (or redeploy).                                                                              |
@@ -270,7 +286,7 @@ docs/                 product spec, architecture, data model, build plan, design
 | Terrain heights               | [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (SRTM, GMTED and others) | open data, credited on the profile and in the 3D view         |
 | Photos                        | [Wikimedia Commons](https://commons.wikimedia.org)                                         | each photo's own licence and author, stored and shown with it |
 | Routing                       | [OSRM](https://project-osrm.org) on OpenStreetMap data                                     | BSD-2 (software), ODbL (data)                                 |
-| Place search                  | [Photon](https://photon.komoot.io) (komoot), [Nominatim](https://nominatim.org)            | ODbL data, usage policies respected                           |
+| Place search, state outlines  | [Photon](https://photon.komoot.io) (komoot), [Nominatim](https://nominatim.org)            | ODbL data, usage policies respected                           |
 | Weather                       | [MET Norway](https://api.met.no) Locationforecast                                          | CC BY 4.0                                                     |
 | Video encoding                | [Mediabunny](https://mediabunny.dev)                                                       | MPL-2.0                                                       |
 | Google content (optional)     | Google Maps Platform                                                                       | Google's terms; never stored                                  |
