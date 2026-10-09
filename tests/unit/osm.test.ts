@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildPlacesQuery, parseOverpassResponse } from "@/server/providers/osm/overpass";
-import { OsmTileTooBigError, type OsmElement } from "@/server/providers/osm";
+import { afterEach, vi } from "vitest";
+import {
+  buildPlacesQuery,
+  createOverpassProvider,
+  parseOverpassResponse,
+} from "@/server/providers/osm/overpass";
+import { OsmServerBusyError, OsmTileTooBigError, type OsmElement } from "@/server/providers/osm";
 import { ProviderError } from "@/server/providers/http";
 import {
   classifyOsmElement,
@@ -26,7 +31,7 @@ const classify = (id: string) => classifyOsmElement(byId.get(id)!);
 describe("Overpass query and response", () => {
   it("queries each tag filter inside the state boundary and the tile", () => {
     const q = buildPlacesQuery({ areaIso: "IN-GA", bbox: [73.6, 14.8, 74.4, 15.8] });
-    expect(q).toContain('area["ISO3166-2"="IN-GA"]["admin_level"="4"]->.region;');
+    expect(q).toContain('area["ISO3166-2"="IN-GA"]["admin_level"="4"]->.region;\n.region out ids;');
     expect(q).toContain('nwr["amenity"="fuel"](area.region)(14.8,73.6,15.8,74.4);');
     expect(q).toContain('nwr["waterway"="waterfall"](area.region)');
     expect(q).toContain('node["place"~"^(town|city|village)$"](area.region)');
@@ -118,6 +123,39 @@ describe("Overpass query and response", () => {
       parseOverpassResponse({ elements: [], remark: "runtime error: something else" }),
     ).toThrow(ProviderError);
     expect(() => parseOverpassResponse({ nope: true })).toThrow(ProviderError);
+  });
+
+  it("takes an answer without the state's area for a busy server, not an empty tile", () => {
+    expect(() => parseOverpassResponse({ elements: [] }, "IN-UP")).toThrow(OsmServerBusyError);
+    const found = parseOverpassResponse({ elements: [{ type: "area", id: 3601291633 }] }, "IN-UP");
+    expect(found).toEqual([]);
+  });
+});
+
+describe("Overpass servers", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const answer = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+  it("tries the next server on HTTP 500 or an answer without the area", async () => {
+    const fort = { type: "node", id: 1, lat: 25.458, lon: 78.575, tags: { historic: "fort" } };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(answer(500, { error: "oops" }))
+      .mockResolvedValueOnce(answer(200, { elements: [] }))
+      .mockResolvedValueOnce(answer(200, { elements: [{ type: "area", id: 3601291633 }, fort] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const provider = createOverpassProvider(
+      ["https://a.test", "https://b.test", "https://c.test"],
+      "test",
+    );
+    // The first two servers fail this tile; the third answers with the area and a fort.
+    await expect(
+      provider.fetchPlaces({ areaIso: "IN-UP", bbox: [78.56, 25.35, 79.06, 25.85] }),
+    ).resolves.toEqual([
+      { id: "node/1", location: [78.575, 25.458], extentM: 0, tags: { historic: "fort" } },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
 

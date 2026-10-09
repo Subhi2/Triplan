@@ -62,6 +62,7 @@ export function buildPlacesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
   return [
     `[out:json][timeout:${QUERY_TIMEOUT_S}][maxsize:${QUERY_MAXSIZE_BYTES}];`,
     `area["ISO3166-2"="${areaIso}"]["admin_level"="4"]->.region;`,
+    ".region out ids;",
     `(${areas.join("")})->.areas;`,
     `(${statements.join("")})->.found;`,
     "(.found; - .areas;)->.all;",
@@ -93,6 +94,7 @@ export function buildServicesQuery({ areaIso, bbox }: OsmPlacesRequest): string 
   return [
     `[out:json][timeout:${QUERY_TIMEOUT_S}][maxsize:${QUERY_MAXSIZE_BYTES}];`,
     `area["ISO3166-2"="${areaIso}"]["admin_level"="4"]->.region;`,
+    ".region out ids;",
     `(${SERVICE_FILTERS.map((f) => `nwr${f}(area.region)${box};`).join("")})->.all;`,
     "node.all;out body qt;",
     "way.all;out tags bb qt;",
@@ -112,7 +114,8 @@ const geometrySchema = z.array(z.object({ lat: z.number(), lon: z.number() }).nu
 export const overpassResponseSchema = z.object({
   elements: z.array(
     z.object({
-      type: z.enum(["node", "way", "relation"]),
+      // "area": the state's boundary, printed first by the queries above (see AREA_MISSING).
+      type: z.enum(["node", "way", "relation", "area"]),
       id: z.number(),
       lat: z.number().optional(),
       lon: z.number().optional(),
@@ -134,8 +137,14 @@ export const overpassResponseSchema = z.object({
   remark: z.string().optional(),
 });
 
-/** Validates a raw Overpass JSON response. Elements without a position are dropped. */
-export function parseOverpassResponse(body: unknown): OsmElement[] {
+/**
+ * Validates a raw Overpass JSON response. Elements without a position are dropped. With
+ * `areaIso`, the answer must include that state's area (the queries print it first): a server
+ * whose area index lacks the state answers every tile with nothing and HTTP 200, which looked
+ * like empty tiles (Jhansi, Lalitpur, 2026-10-07). That server is treated as busy, so the next
+ * one is tried.
+ */
+export function parseOverpassResponse(body: unknown, areaIso?: string): OsmElement[] {
   const parsed = overpassResponseSchema.safeParse(body);
   if (!parsed.success)
     throw new ProviderError("Overpass returned an unexpected response", "overpass");
@@ -147,8 +156,12 @@ export function parseOverpassResponse(body: unknown): OsmElement[] {
       throw new OsmTileTooBigError(remark);
     throw new ProviderError(`Overpass: ${remark}`, "overpass");
   }
+  if (areaIso && !elements.some((e) => e.type === "area")) {
+    throw new OsmServerBusyError(`the server has no area for ${areaIso} (empty answer)`, 0);
+  }
 
   return elements.flatMap((e): OsmElement[] => {
+    if (e.type === "area") return [];
     const id = `${e.type}/${e.id}`;
     if (e.lat !== undefined && e.lon !== undefined) {
       return [{ id, location: [e.lon, e.lat], extentM: 0, tags: e.tags }];
@@ -188,7 +201,12 @@ function outlineOf(e: OverpassElement): LngLat[][] | undefined {
   return kept.length > 0 ? kept : undefined;
 }
 
-async function fetchFrom(url: string, userAgent: string, query: string): Promise<OsmElement[]> {
+async function fetchFrom(
+  url: string,
+  userAgent: string,
+  query: string,
+  areaIso: string,
+): Promise<OsmElement[]> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -201,7 +219,9 @@ async function fetchFrom(url: string, userAgent: string, query: string): Promise
     // Status 0: the server could not be reached (network error or no answer in time).
     throw new OsmServerBusyError(`${new URL(url).host} unreachable: ${String(err)}`, 0);
   }
-  if (res.status === 429 || res.status === 503 || res.status === 504) {
+  // 500 and 502: the server or its proxy is in trouble (kumi and private.coffee, 2026-10-09);
+  // another server may answer.
+  if ([429, 500, 502, 503, 504].includes(res.status)) {
     throw new OsmServerBusyError(`${new URL(url).host} HTTP ${res.status}`, res.status);
   }
   if (!res.ok) {
@@ -212,7 +232,14 @@ async function fetchFrom(url: string, userAgent: string, query: string): Promise
       res.status,
     );
   }
-  return parseOverpassResponse(await res.json().catch(() => undefined));
+  try {
+    return parseOverpassResponse(await res.json().catch(() => undefined), areaIso);
+  } catch (err) {
+    if (err instanceof OsmServerBusyError) {
+      throw new OsmServerBusyError(`${new URL(url).host}: ${err.message}`, err.status);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -224,12 +251,12 @@ async function fetchFrom(url: string, userAgent: string, query: string): Promise
 export function createOverpassProvider(urls: string[], userAgent: string): OsmPlacesProvider {
   if (urls.length === 0) throw new Error("No Overpass endpoints configured");
   let preferred = 0;
-  async function run(query: string): Promise<OsmElement[]> {
+  async function run(query: string, areaIso: string): Promise<OsmElement[]> {
     let lastBusy: OsmServerBusyError | undefined;
     for (let i = 0; i < urls.length; i++) {
       const index = (preferred + i) % urls.length;
       try {
-        const elements = await fetchFrom(urls[index]!, userAgent, query);
+        const elements = await fetchFrom(urls[index]!, userAgent, query, areaIso);
         preferred = index;
         return elements;
       } catch (err) {
@@ -240,8 +267,8 @@ export function createOverpassProvider(urls: string[], userAgent: string): OsmPl
     throw lastBusy!;
   }
   return {
-    fetchPlaces: (request) => run(buildPlacesQuery(request)),
-    fetchServices: (request) => run(buildServicesQuery(request)),
+    fetchPlaces: (request) => run(buildPlacesQuery(request), request.areaIso),
+    fetchServices: (request) => run(buildServicesQuery(request), request.areaIso),
   };
 }
 
