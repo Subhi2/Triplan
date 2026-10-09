@@ -134,14 +134,7 @@ export default async function AboutPage() {
         <p>
           It is built with Next.js, TypeScript, Tailwind CSS, Supabase Postgres with PostGIS,
           Drizzle, MapLibre GL, Vitest and Playwright, and runs on Vercel. Every outside service
-          sits behind its own small interface, cached and throttled to its fair-use rules.{" "}
-          <a
-            href="https://github.com/Subhi2/Triplan"
-            className="text-brand-dark font-bold underline dark:text-teal-300"
-          >
-            The code is on GitHub
-          </a>{" "}
-          under the MIT licence, with a data snapshot to run it yourself in one command.
+          sits behind its own small interface, cached and throttled to its fair-use rules.
         </p>
       </section>
 
@@ -182,17 +175,7 @@ export default async function AboutPage() {
         <h2 id="who" className="font-display text-2xl font-bold tracking-tight">
           Who made it
         </h2>
-        <p>
-          Built by{" "}
-          <a href="https://github.com/Subhi2" className="underline">
-            Subhash
-          </a>{" "}
-          as a free-time project. Found a wrong place, or a road that should be here?{" "}
-          <a href="https://github.com/Subhi2/Triplan/issues" className="underline">
-            Open an issue
-          </a>
-          .
-        </p>
+        <p>Built by Subhash as a free-time project.</p>
         <p>
           <Link href="/rides" className="text-brand-dark font-bold underline dark:text-teal-300">
             Start with a famous ride
