@@ -73,7 +73,7 @@ Privacy: the position is taken only on a tap, rounded to about 100 m before it l
 17. **Elevation profile** of the selected route: total climb and descent, the highest point, and each big climb ("climbs 853 m in 16 km to Valparai"). Scrubbing the chart moves a marker along the route on the map.
 18. **3D ride preview**: the camera rides the route over 3D terrain, slower through ghats, with km, height and the places as it passes them. It can be saved as a video for Instagram or WhatsApp.
 19. **Ride story**: a tall poster of the trip (route, km, time, climb, hairpins, top stops) shared from the phone's share sheet.
-20. **Famous rides** (`/rides`): about 20 well-known Indian rides, each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. The empty planner offers them as "Try a famous ride".
+20. **Famous rides** (`/rides`): about 25 well-known Indian rides, filtered by part of India and by month, each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. The empty planner offers them as "Try a famous ride".
 21. **Plan in plain words** (when the AI key is set): "2-day monsoon ride from Pune with waterfalls, under 250 km" fills the planner. Typed text is sent to the AI provider to read it, and is never stored.
 22. **Safety stops** along the route: hospitals, police, ATMs, puncture and repair shops, with how many there are per 50 km and the longest stretch without a hospital.
 23. **Multi-day split**: riding hours per day, an overnight town near each split with stays nearby, the place list in Day 1 / Day 2 sections, one GPX track per day.

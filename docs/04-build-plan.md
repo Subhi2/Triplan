@@ -188,6 +188,19 @@ Decided 2026-10-09 after an audit of features, data and code. Features are ahead
 
 **Done when:** a place with only OpenStreetMap data shows typical months, vehicle and items to carry instead of "Not known yet". The planner list shows In season badges on most routes. Google answers never appear in Cache Storage. A trip saved on one device cannot be changed from another. Barabati Fort appears once. Bengaluru → Kalasa and Pune → Goa pass at 375 px.
 
+**Built 2026-10-10.** Changes from the steps above:
+
+- A4: no `server-only` imports. They throw in the import scripts and tests, and an ESLint rule already keeps `src/server` out of components and `src/lib`. The server's own Google key stays optional, as decided in G1-Google. Without `WRITE_LIMIT_SALT`, the salt is derived from `DATABASE_URL`.
+- B: the dry run on Goa found 11 coffee stops, 9 food stops and 1 trek with the new filters. The new rules reach the database with the next `pnpm db:import-osm -- --region=all --resume`. Closing more than 3% of a state needs `--force` after reading `close-<region>.json`.
+- C1: the climate zones were calibrated on the curated Karnataka places (waterfalls best Aug–Nov, temples Oct–Feb, treks avoid Jun–Sep).
+- C2–C4: `pnpm db:link-wikidata`, then `pnpm db:import-photos` and `pnpm db:import-descriptions`. Linking is deliberately strict: a dry run on three Kerala tiles linked about 100 of 3,600 places, all by an exact or near-exact name.
+- C5: six rides were added (Leh–Nubra over Khardung La, Leh–Pangong over Chang La, Srinagar–Leh over Zoji La, the Thamarassery Ghat, Shillong–Sohra, Gangtok–Tsomgo). A dry run of `pnpm db:seed-rides` routed all six within their expected distances.
+- E1: no SQL change. The corridor search took about 0.5 s for 340 km and about 1 s for 1,700 km (Chennai to Kolkata, 17,650 points), within the 2 s the spec asks.
+- E3, E6 and F3 were not built. The towns along a route are looked up two or three times across separate, cached requests. The "route id or geometry" code is one line in each route. Too few trips have been saved for popular route pages, and the famous rides cover them for now.
+- F2: an offline page only. Keeping the last trip and the last Near me list on the phone is still open.
+- Migrations 0017 (trip edit token) and 0018 (description credit) are on the live database.
+
+
 ## Phase 5 · Community content
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.

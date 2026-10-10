@@ -343,7 +343,7 @@ Rides are planned in groups, and in India the plan goes to a WhatsApp group, so 
 
 ## Famous rides
 
-A hand-picked list of about 20 well-known Indian rides, kept as data (`data/rides.json`, validated by `rideSourceSchema` in `src/lib/rides.ts`), never in app logic: the pages and the planner show whatever the `ride` table holds.
+A hand-picked list of about 25 well-known Indian rides, kept as data (`data/rides.json`, validated by `rideSourceSchema` in `src/lib/rides.ts`), never in app logic: the pages and the planner show whatever the `ride` table holds.
 
 - **Coordinates** come from `pnpm rides:lookup -- "<name>" --state="<state>"`: our own places first (towns, peaks, viewpoints), then Nominatim at one request a second. Never typed from memory. Each ride lists its stops (vias force the road riders mean) and checkpoints the route must pass.
 - **`pnpm db:seed-rides`** (`--only=`, `--dry-run`) routes each ride once through the normal routing provider (cached and throttled; alternatives are asked for with two stops, as the planner does, which also warms its cache), keeps the first option that passes every checkpoint within 3 km (bypasses miss town centres by 1–2 km), lands within 15% of the expected distance and has at least the expected hairpins, computes its road mix, curvature and elevation profile, and upserts it (`src/server/services/rideService.ts`). A ride that fails is reported and not stored, so a wrong road is never shown. The public OSRM server does not route the Kalhatti ghat, so it is not in the list.
