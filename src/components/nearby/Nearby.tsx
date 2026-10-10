@@ -27,6 +27,7 @@ import {
   type ReachMinutes,
 } from "@/lib/nearby";
 import { SITE_NAME } from "@/lib/site";
+import { trackEvent } from "@/lib/track";
 import type { Vehicle } from "@/lib/trip";
 import { NearbyFilters, NearbyList } from "./NearbyList";
 import { nearbyRowId } from "./NearbyRow";
@@ -89,6 +90,11 @@ export function Nearby() {
   }, [query]);
 
   const nearby = useNearbyPlaces(origin?.location ?? null, within, vehicle);
+  // One Near me search per point picked (location, typed place or map tap).
+  const originKey = origin ? origin.location.join() : null;
+  useEffect(() => {
+    if (originKey) trackEvent("near_me");
+  }, [originKey]);
   const all = useMemo(() => (nearby.status === "ok" ? nearby.data.places : []), [nearby]);
   const roadTimes = nearby.status === "ok" ? nearby.data.roadTimes : "osrm";
 
@@ -180,6 +186,7 @@ export function Nearby() {
       tripAction={
         origin && (
           <Link
+            onClick={() => trackEvent("ride_there")}
             href={rideThereHref(
               {
                 label: source === "gps" ? MY_LOCATION : (originName ?? "Start"),

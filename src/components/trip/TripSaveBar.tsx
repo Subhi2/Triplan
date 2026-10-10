@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ShareButtons } from "@/components/site/ShareButtons";
 import { isSavedPlan, type CreatedTrip, type SavedTrip, type TripPlan } from "@/lib/savedTrip";
 import { tripHeadline } from "@/lib/site";
+import { trackEvent } from "@/lib/track";
 import { rememberTrip, tripToken } from "@/lib/tripTokens";
 
 interface Props {
@@ -77,6 +78,7 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
     try {
       const { trip, editToken } = await action();
       if (editToken) {
+        trackEvent("trip_saved");
         rememberTrip(trip.id, editToken);
         setCanEdit(true);
       }

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { LngLat } from "@/lib/geo";
+import { trackEvent } from "@/lib/track";
 
 const EXAMPLES = [
   "Monsoon waterfalls from Pune, under 120 km",
@@ -42,6 +43,7 @@ export function PlainWordsBox({ near }: { near: LngLat }) {
       if (!res.ok || !data.query) throw new Error(data.error ?? `HTTP ${res.status}`);
       setState({ status: "done", summary: data.summary ?? "", picked: data.picked ?? null });
       // A full page load: the planner reads its trip from the address once.
+      trackEvent("plain_words");
       window.location.assign(`/?${data.query}`);
     } catch (err) {
       setState({

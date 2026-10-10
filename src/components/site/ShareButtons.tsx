@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { whatsAppUrl } from "@/lib/site";
+import { trackEvent } from "@/lib/track";
 
 interface Props {
   /** The share sheet's title. */
@@ -36,6 +37,7 @@ export function ShareButtons({ title, text, path, linkClassName, onNotice }: Pro
   const url = () => (path ? `${window.location.origin}${path}` : window.location.href);
 
   async function copyLink() {
+    trackEvent("share");
     const href = url();
     try {
       await navigator.clipboard.writeText(href);
@@ -46,6 +48,7 @@ export function ShareButtons({ title, text, path, linkClassName, onNotice }: Pro
   }
 
   async function share() {
+    trackEvent("share");
     try {
       await navigator.share({ title, text, url: url() });
     } catch (err) {
@@ -65,6 +68,7 @@ export function ShareButtons({ title, text, path, linkClassName, onNotice }: Pro
         <>
           <a
             href={whatsAppUrl(text, url())}
+            onClick={() => trackEvent("share")}
             target="_blank"
             rel="noopener noreferrer"
             className={linkClassName}

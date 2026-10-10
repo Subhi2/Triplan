@@ -35,6 +35,8 @@ export default defineConfig({
       GOOGLE_MAPS_API_KEY: "",
       // No AI key: "plan in plain words" stays hidden and nothing calls the model.
       ANTHROPIC_API_KEY: "",
+      // Feature counts are not written to the database from tests.
+      USAGE_EVENTS_OFF: "1",
     },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,

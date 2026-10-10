@@ -22,6 +22,7 @@ import { formatMetres } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
 import { detourLabel, type PlaceAlong } from "@/lib/places";
 import { TERRAIN_CREDIT_SHORT, terrainTilesUrl } from "@/lib/terrain";
+import { trackEvent } from "@/lib/track";
 import {
   drawFrame,
   VIDEO_BITRATE,
@@ -784,6 +785,7 @@ function SavedVideo({
 }) {
   const canShare = typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [file] });
   function download() {
+    trackEvent("video_saved");
     const a = document.createElement("a");
     a.href = url;
     a.download = file.name;
