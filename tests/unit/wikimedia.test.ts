@@ -38,8 +38,16 @@ describe("parseItems", () => {
         ],
       },
     });
-    expect(items.get("Q1149")).toEqual({ file: "File:Indira.jpg", human: true, location: null });
-    expect(items.get("Q2")).toEqual({ file: null, human: false, location: [103.8483, 1.2797] });
+    expect(items.get("Q1149")).toMatchObject({
+      file: "File:Indira.jpg",
+      human: true,
+      location: null,
+    });
+    expect(items.get("Q2")).toMatchObject({
+      file: null,
+      human: false,
+      location: [103.8483, 1.2797],
+    });
   });
 
   it("keeps the first image when an item has several", () => {
@@ -145,6 +153,8 @@ describe("wikidataFits", () => {
     file: "File:x.jpg",
     human: false,
     location: null,
+    enwiki: null,
+    description: null,
     ...extra,
   });
   const kushinagar = { location: [83.8875, 26.7398] as [number, number], category: "temple" };

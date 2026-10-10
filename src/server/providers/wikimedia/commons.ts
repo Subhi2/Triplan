@@ -30,6 +30,8 @@ export const sparqlSchema = z.object({
         image: z.object({ value: z.string() }).optional(),
         coord: z.object({ value: z.string() }).optional(),
         human: z.object({ value: z.string() }).optional(),
+        article: z.object({ value: z.string() }).optional(),
+        desc: z.object({ value: z.string() }).optional(),
       }),
     ),
   }),
@@ -81,11 +83,21 @@ export function parseItems(data: z.infer<typeof sparqlSchema>): Map<string, Wiki
   for (const b of data.results.bindings) {
     const id = b.item.value.split("/").pop() ?? "";
     if (!WIKIDATA_ID.test(id)) continue;
-    const item = items.get(id) ?? { file: null, human: false, location: null };
+    const item: WikidataItem = items.get(id) ?? {
+      file: null,
+      human: false,
+      location: null,
+      enwiki: null,
+      description: null,
+    };
     const name = decodeURIComponent(b.image?.value.split("/Special:FilePath/")[1] ?? "");
     if (!item.file && name) item.file = `File:${name}`;
     item.human ||= b.human?.value === "true";
     item.location ??= parsePoint(b.coord?.value);
+    // https://en.wikipedia.org/wiki/Jog_Falls -> "Jog Falls"
+    const article = b.article?.value.split("/wiki/")[1];
+    item.enwiki ??= article ? decodeURIComponent(article).replace(/_/g, " ") : null;
+    item.description ??= b.desc?.value.trim() || null;
     items.set(id, item);
   }
   return items;
@@ -158,8 +170,10 @@ export function createWikimediaProvider(userAgent: string): WikimediaProvider {
       }
       const values = ids.map((id) => `wd:${id}`).join(" ");
       const query =
-        `SELECT ?item ?image ?coord ?human WHERE { VALUES ?item { ${values} } ` +
+        `SELECT ?item ?image ?coord ?human ?article ?desc WHERE { VALUES ?item { ${values} } ` +
         "OPTIONAL { ?item wdt:P18 ?image } OPTIONAL { ?item wdt:P625 ?coord } " +
+        "OPTIONAL { ?article schema:about ?item; schema:isPartOf <https://en.wikipedia.org/> } " +
+        'OPTIONAL { ?item schema:description ?desc FILTER(lang(?desc) = "en") } ' +
         "BIND(EXISTS { ?item wdt:P31 wd:Q5 } AS ?human) }";
       const { status, data } = await fetchJson(
         "wikidata",

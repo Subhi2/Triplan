@@ -251,6 +251,15 @@ In the planner, a place row opens the place in the side panel (desktop) or botto
 - Images are shown from Wikimedia's servers (`thumb.wikimedia.org`, `upload.wikimedia.org`), never copied. The place details show each photo with its author (linked to the file page), licence and "Wikimedia Commons"; list rows show the 330 px thumbnail without a credit, which is one tap away in the details.
 - Every place looked up gets `place.photos_checked_at`, found or not, and is skipped for 90 days. Fuel stations and towns are skipped. Re-run after an OSM import to cover new places.
 
+### Descriptions from Wikipedia and Wikidata
+
+`pnpm db:import-descriptions [-- --limit=N]` (`descriptionImportService.ts`, G4 step C2) gives a description to places that have none and either a Wikidata id or an English `wikipedia` tag.
+
+- **Wikipedia first.** The text is the first three sentences of the English Wikipedia article (`src/server/providers/wikimedia/wikipedia.ts`, 20 articles per request, intros only, plain text). Brackets with other scripts or pronunciations are dropped, and the text is cut at a sentence by 600 characters. The article is the one in the OSM tag, else the Wikidata item's English article; the same Wikidata query as the photos returns it. The text is CC BY-SA 4.0, so `place.description_source`, `description_license` and `description_url` (migration 0018) hold the credit, and the page shows "From Wikipedia, CC BY-SA 4.0" with a link to the article.
+- **Wikidata otherwise.** With no article (or an intro under 80 characters), Wikidata's own English description (CC0) is used when it is 40 characters or longer. Shorter ones only repeat the category ("temple in India").
+- **Same checks as photos.** No text comes from an item that is a person or lies far from the place (`wikidataFits`).
+- An existing description is never overwritten. Every place looked up gets `description_checked_at` and is skipped for 90 days.
+
 ### Google Maps links
 
 `src/lib/googleMaps.ts` builds links to Google Maps with the documented Maps URLs; nothing is fetched from Google or stored. A place's link (on its list row and in its details) searches its name with the map at its exact coordinates (`/maps/search/<name>/@lat,lng,17z`; the documented `api=1` form cannot search at a position, and a name-and-state search listed every match in the state). A unique name opens that place's page with photos and reviews; a common name ("Shiva Temple") still lists matches, with the map on the right spot. Once a place's Google place id is known (see "Google Maps Platform" below) the link opens that exact place (`/maps/search/?api=1&query=<name>&query_place_id=<id>`). Ticked places open with the trip as directions (`/maps/dir/?api=1&origin=&destination=&waypoints=`, coordinates, `travelmode=driving` since Maps URLs have no two-wheeler mode): via stops and ticked places are sorted by their distance along the selected route, places already in the trip are not repeated, and more than 9 stops gives no link.

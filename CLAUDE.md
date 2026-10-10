@@ -45,7 +45,8 @@ pnpm db:setup         # migrations + load data/snapshot into empty tables (--rep
 pnpm db:migrate       # apply Drizzle migrations
 pnpm db:seed          # load docs/06 seed data
 pnpm db:import-osm -- --region=<key|all>       # places from OpenStreetMap (--resume after a stopped run)
-pnpm db:import-photos                          # Wikimedia Commons photos
+pnpm db:import-photos                          # Wikimedia Commons photos (--recheck drops wrong links)
+pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptions, credited
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json
 pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)

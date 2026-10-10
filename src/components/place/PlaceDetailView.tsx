@@ -230,7 +230,25 @@ export function PlaceDetailView({
         headingLevel={sub}
       />
 
-      {place.description && <p className="text-sm leading-relaxed">{place.description}</p>}
+      {place.description && (
+        <div className="flex flex-col gap-1">
+          <p className="text-sm leading-relaxed">{place.description}</p>
+          {place.descriptionCredit && (
+            <p className="text-xs text-stone-600 dark:text-stone-400">
+              From{" "}
+              <a
+                href={place.descriptionCredit.url}
+                rel={external}
+                target="_blank"
+                className="underline"
+              >
+                {place.descriptionCredit.source === "wikipedia" ? "Wikipedia" : "Wikidata"}
+              </a>
+              , {place.descriptionCredit.license}
+            </p>
+          )}
+        </div>
+      )}
 
       <Section title="Getting there" level={sub}>
         <dl className="grid grid-cols-2 gap-2">

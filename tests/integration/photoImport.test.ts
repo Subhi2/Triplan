@@ -28,7 +28,10 @@ describe.skipIf(!process.env.DATABASE_URL)("Wikimedia photo import", () => {
       return new Map(
         ids
           .filter((id) => id === QID_YES)
-          .map((id) => [id, { file: image.file, human: false, location: null }]),
+          .map((id) => [
+            id,
+            { file: image.file, human: false, location: null, enwiki: null, description: null },
+          ]),
       );
     },
     imageInfo: async (files) => new Map(files.map((f) => [f, image])),

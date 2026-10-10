@@ -21,6 +21,9 @@ interface DetailRow extends Record<string, unknown> {
   district: string | null;
   state: string | null;
   description: string | null;
+  description_source: string | null;
+  description_license: string | null;
+  description_url: string | null;
   rating_avg: number | null;
   rating_count: number;
   trending_score: number;
@@ -137,7 +140,8 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
   const [row] = await db.execute<DetailRow>(sql`
     SELECT p.id, p.slug, p.name, c.slug AS category,
            ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
-           p.district, p.state, p.description, p.rating_avg, p.rating_count, p.trending_score,
+           p.district, p.state, p.description, p.description_source, p.description_license,
+           p.description_url, p.rating_avg, p.rating_count, p.trending_score,
            p.osm_id, p.osm_tags, p.google_place_id,
            pg.place_id IS NOT NULL AS has_guide, pg.best_vehicles::text[] AS best_vehicles,
            pg.last_mile_note, pg.road_condition, pg.best_months, pg.ok_months, pg.avoid_months,
@@ -202,6 +206,17 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
     district: row.district,
     state: row.state,
     description: row.description ?? (tags.description?.trim() || null),
+    descriptionCredit:
+      row.description &&
+      (row.description_source === "wikipedia" || row.description_source === "wikidata") &&
+      row.description_license &&
+      row.description_url
+        ? {
+            source: row.description_source,
+            license: row.description_license,
+            url: row.description_url,
+          }
+        : null,
     rating: row.rating_avg,
     ratingCount: row.rating_count,
     trending: row.trending_score >= TRENDING_MIN_SCORE,

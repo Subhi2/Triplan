@@ -5,6 +5,8 @@ export interface WikidataItem {
   file: string | null; // main image (P18): "File:Jog Falls at Shimoga.jpg"
   human: boolean; // an instance of human (P31 = Q5): OSM's wikidata tag on a memorial
   location: LngLat | null; // coordinates (P625)
+  enwiki: string | null; // title of the English Wikipedia article about it
+  description: string | null; // Wikidata's own short English description (CC0)
 }
 
 /** A photo on Wikimedia Commons with what we must show next to it (docs/07, G1.2). */

@@ -76,6 +76,8 @@ export interface PlaceDetail {
   district: string | null;
   state: string | null;
   description: string | null;
+  /** Where an imported description comes from, to credit under it (Wikipedia is CC BY-SA). */
+  descriptionCredit: { source: "wikipedia" | "wikidata"; license: string; url: string } | null;
   rating: number | null; // our reviews
   ratingCount: number;
   trending: boolean;

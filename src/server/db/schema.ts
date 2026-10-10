@@ -70,6 +70,13 @@ export const place = pgTable(
     district: text("district"),
     state: text("state"),
     description: text("description"),
+    // Where an imported description comes from, its licence and the page to credit (G4): for
+    // example "wikipedia", "CC BY-SA 4.0" and the article URL. Null for our own text.
+    descriptionSource: text("description_source"),
+    descriptionLicense: text("description_license"),
+    descriptionUrl: text("description_url"),
+    // When the description import last looked for this place (rechecked after 90 days).
+    descriptionCheckedAt: timestamp("description_checked_at", { withTimezone: true }),
     status: placeStatus("status").notNull().default("unverified"),
     source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
     osmId: text("osm_id"), // "node/123", "way/456"; unique, the OSM import upserts on it

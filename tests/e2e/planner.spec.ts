@@ -593,6 +593,7 @@ const FORT_DETAIL: PlaceDetail = {
   district: "Hassan",
   state: "Karnataka",
   description: null,
+  descriptionCredit: null,
   rating: null,
   ratingCount: 0,
   trending: false,

@@ -70,7 +70,8 @@ export const DEPENDENT_TABLES = ["trip", "trip_stop", "review", "social_post"] a
 export const SNAPSHOT_LICENCE =
   "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap " +
   "(© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). " +
-  "Photo files stay with their authors under the licence in each media row.";
+  "Photo files stay with their authors under the licence in each media row. Imported place " +
+  "descriptions keep the licence in their place row (description_license, description_url).";
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
 const quote = (name: string) => {
