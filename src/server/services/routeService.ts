@@ -1,6 +1,6 @@
 import type { LineString } from "geojson";
 import { routeCurvature } from "@/lib/curvature";
-import type { LngLat } from "@/lib/geo";
+import { simplifyLine, type LngLat } from "@/lib/geo";
 import { ROUTE_ID_PATTERN } from "@/lib/places";
 import type { RouteOption, TripRequest } from "@/lib/trip";
 import { routeDbCache, type JsonCache } from "../db/cache";
@@ -26,6 +26,8 @@ import { roadMix } from "./roadMix";
 import { mainTowns, viaLabels, type TownOnRoute } from "./viaLabel";
 
 const MAX_ROUTES = 3;
+/** Tolerance of the route line sent to the browser. */
+const BROWSER_LINE_M = 10;
 /** Towns tried as a via point for extra options, per search (one routing request each). */
 const MAX_TOWN_TRIES = 3;
 const TOWN_RADIUS_M = 2_000;
@@ -175,7 +177,13 @@ export async function getRoutes(
 
   return routes.map((r, i) => ({
     id: r.id,
-    geometry: r.result.geometry,
+    // The browser gets the line simplified to about 10 m: OSRM's full line has about 13 points a
+    // km (a 1,700 km route, 17,000). Hairpins and the road mix are measured on the full line
+    // here, and route_cache keeps it for the place, profile and weather lookups by route id.
+    geometry: {
+      type: "LineString" as const,
+      coordinates: simplifyLine(r.result.geometry.coordinates as LngLat[], BROWSER_LINE_M),
+    },
     distanceKm: r.distanceKm,
     durationMin: Math.round(r.result.durationS / 60),
     viaLabel: labels[i]!,

@@ -46,6 +46,48 @@ export function resampleLine(coords: LngLat[], stepM: number): LngLat[] {
   return out;
 }
 
+/**
+ * Douglas–Peucker: drops points that lie within `toleranceM` of the line through their
+ * neighbours, keeping both ends. Measured on a flat projection around the line's middle, which
+ * is close enough for a few metres. Iterative, so a 20,000-point route cannot overflow the stack.
+ */
+export function simplifyLine(coords: LngLat[], toleranceM: number): LngLat[] {
+  if (coords.length <= 2) return coords;
+  const midLat = toRad(coords[Math.floor(coords.length / 2)]![1]);
+  const mPerDegLat = (Math.PI / 180) * EARTH_RADIUS_M;
+  const mPerDegLng = mPerDegLat * Math.cos(midLat);
+  const xy = coords.map(([lng, lat]) => [lng * mPerDegLng, lat * mPerDegLat] as const);
+  const keep = new Uint8Array(coords.length);
+  keep[0] = 1;
+  keep[coords.length - 1] = 1;
+  const stack: [number, number][] = [[0, coords.length - 1]];
+  while (stack.length > 0) {
+    const [first, last] = stack.pop()!;
+    const [ax, ay] = xy[first]!;
+    const [bx, by] = xy[last]!;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    let worst = -1;
+    let worstD = toleranceM;
+    for (let i = first + 1; i < last; i++) {
+      const [px, py] = xy[i]!;
+      // Distance to the segment (to the end point when the segment has no length).
+      const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+      const d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+      if (d > worstD) {
+        worstD = d;
+        worst = i;
+      }
+    }
+    if (worst >= 0) {
+      keep[worst] = 1;
+      stack.push([first, worst], [worst, last]);
+    }
+  }
+  return coords.filter((_, i) => keep[i] === 1);
+}
+
 /** Rounds to 5 decimals (~1 m), the precision used for cache keys and URLs. */
 export function round5(n: number): number {
   return Math.round(n * 1e5) / 1e5;
