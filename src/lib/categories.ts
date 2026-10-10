@@ -15,6 +15,8 @@ export const CATEGORIES = {
   waterfall: { name: "Waterfall", color: "#0284c7", icon: "droplets", weight: 1.1 },
   trek: { name: "Trek", color: "#15803d", icon: "footprints", weight: 1 },
   peak: { name: "Peak", color: "#4d7c0f", icon: "mountain", weight: 0.9 },
+  // Road passes riders ride to (Khardung La, Sela): OSM mountain_pass=yes.
+  pass: { name: "Mountain pass", color: "#0f766e", icon: "mountain-snow", weight: 1.2 },
   cave: { name: "Cave", color: "#57534e", icon: "circle-dashed", weight: 1 },
   lake: { name: "Lake", color: "#0e7490", icon: "waves", weight: 0.9 }, // many are village tanks
   wildlife: { name: "Wildlife", color: "#047857", icon: "paw-print", weight: 1.1 }, // parks, sanctuaries, zoos

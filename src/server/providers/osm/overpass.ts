@@ -35,6 +35,16 @@ const PLACE_FILTERS = [
   '["amenity"="place_of_worship"]["wikidata"]',
   '["amenity"="place_of_worship"]["wikipedia"]',
   '["amenity"="fuel"]',
+  // Added 2026-10-10 (G4): mountain passes, hot springs, glaciers, treks, and food stops riders
+  // look for (highway services, dhabas, notable restaurants and coffee houses), not every eatery.
+  '["mountain_pass"="yes"]["name"]',
+  '["natural"~"^(hot_spring|glacier)$"]["name"]',
+  '["route"="hiking"]["name"]',
+  '["highway"="trailhead"]["name"]',
+  '["highway"~"^(services|rest_area)$"]["name"]',
+  '["amenity"~"^(restaurant|fast_food)$"]["name"~"dhaba",i]',
+  '["amenity"~"^(restaurant|fast_food|cafe)$"]["wikidata"]',
+  '["amenity"="cafe"]["name"~"coffee (house|day)",i]',
 ];
 
 /**

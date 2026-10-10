@@ -12,10 +12,12 @@ import {
   type OsmElement,
 } from "@/server/providers/osm";
 import { ProviderError } from "@/server/providers/http";
+import type { CategorySlug as CategorySlugForTest } from "@/lib/categories";
 import {
   classifyOsmElement,
   dedupeCandidates,
   osmSlug,
+  splitDuplicates,
   type OsmPlaceCandidate,
 } from "@/server/services/osmClassify";
 import {
@@ -483,5 +485,98 @@ describe("coverage import rules (2026-10-05)", () => {
     expect(at({ historic: "tomb", name: "Gol Gumbaz" })?.category).toBe("heritage");
     expect(at({ tourism: "viewpoint", name: "Kalhatty Falls" })?.category).toBe("waterfall");
     expect(at({ tourism: "viewpoint", name: "Doddabetta Peak" })?.category).toBe("viewpoint");
+  });
+});
+
+describe("data clean-up rules (G4, 2026-10-10)", () => {
+  const at = (
+    tags: Record<string, string>,
+    id = "node/7",
+    location: [number, number] = [85.9, 20.5],
+  ) => classifyOsmElement({ id, location, extentM: 0, tags });
+
+  it("drops names that only say what the place is, survey labels and placeholders", () => {
+    expect(at({ tourism: "viewpoint", name: "Viewpoint" })).toBeNull();
+    expect(at({ tourism: "viewpoint", name: "View point" })).toBeNull();
+    expect(at({ water: "lake", name: "Lake" })).toBeNull();
+    expect(at({ natural: "peak", name: "Pt 6080m" })).toBeNull();
+    expect(at({ natural: "peak", name: "Peak 5980" })).toBeNull();
+    expect(at({ natural: "cave_entrance", name: "Cave No. 12" })).toBeNull();
+    expect(at({ tourism: "camp_site", name: "Shepherd camp" })).toBeNull();
+    expect(
+      at({ tourism: "attraction", name: "Waterfall (to be verified in the field)" }),
+    ).toBeNull();
+    expect(at({ natural: "peak", name: "卡里加" })).toBeNull();
+    // Descriptive and notable names stay.
+    expect(at({ tourism: "viewpoint", name: "Sunset Point" })?.category).toBe("viewpoint");
+    expect(at({ natural: "cave_entrance", name: "Cave 1", wikidata: "Q1" })?.category).toBe("cave");
+    expect(at({ natural: "peak", name: "卡里加", "name:en": "Kariga" })?.name).toBe("Kariga");
+  });
+
+  it("files attractions and viewpoints by what their name says", () => {
+    expect(at({ tourism: "attraction", name: "Hidimba Devi Temple" })?.category).toBe("temple");
+    expect(at({ tourism: "attraction", name: "Durga Temple" })?.category).toBe("temple");
+    expect(at({ tourism: "attraction", name: "Se Cathedral" })?.category).toBe("worship");
+    expect(at({ tourism: "attraction", name: "Sheesh Mahal" })?.category).toBe("heritage");
+    expect(at({ tourism: "attraction", name: "Bellandur Kere" })?.category).toBe("lake");
+    expect(at({ tourism: "viewpoint", name: "Om Beach" })?.category).toBe("beach");
+    expect(at({ tourism: "attraction", name: "Raigad Fort" })?.category).toBe("fort");
+    expect(at({ tourism: "attraction", name: "Borra Caves" })?.category).toBe("cave");
+    expect(at({ tourism: "attraction", name: "Ramgarh Lake" })?.category).toBe("lake");
+    expect(at({ tourism: "attraction", name: "Statue of Unity" })?.category).toBe("attraction");
+  });
+
+  it("imports mountain passes, hot springs, treks and food stops", () => {
+    expect(at({ mountain_pass: "yes", highway: "milestone", name: "Khardung La" })?.category).toBe(
+      "pass",
+    );
+    expect(at({ natural: "hot_spring", name: "Manikaran Hot Spring" })?.category).toBe(
+      "attraction",
+    );
+    expect(at({ route: "hiking", name: "Kudremukh Trek" }, "relation/5")?.category).toBe("trek");
+    expect(at({ highway: "services", name: "Food Plaza Kunigal" })?.category).toBe("food");
+    expect(at({ amenity: "restaurant", name: "Punjabi Dhaba" })?.category).toBe("food");
+    expect(at({ amenity: "cafe", name: "India Coffee House" })?.category).toBe("coffee");
+    expect(
+      at({ natural: "peak", name: "Doddabetta", wikimedia_commons: "Category:Doddabetta" }),
+    ).toMatchObject({ osmTags: { wikimedia_commons: "Category:Doddabetta" } });
+  });
+
+  const place = (osmId: string, category: CategorySlugForTest, name: string, extra = {}) =>
+    ({
+      osmId,
+      slug: osmId,
+      name,
+      altNames: [],
+      category,
+      location: [85.8786, 20.4807],
+      population: null,
+      wikidataId: null,
+      osmTags: {},
+      ...extra,
+    }) as OsmPlaceCandidate;
+
+  it("keeps one place per name across categories, the most specific one", () => {
+    // Barabati Fort, Cuttack: mapped as a fort, as heritage and as an attraction.
+    const { kept, dropped } = splitDuplicates([
+      place("node/1", "attraction", "Barabati Fort", { wikidataId: "Q4858805" }),
+      place("way/2", "heritage", "Barabati Fort"),
+      place("way/3", "fort", "Barabati fort"),
+    ]);
+    expect(kept).toHaveLength(1);
+    expect(kept[0]).toMatchObject({ osmId: "way/3", category: "fort", wikidataId: "Q4858805" });
+    expect(dropped.map((d) => d.osmId).sort()).toEqual(["node/1", "way/2"]);
+  });
+
+  it("merges plurals, but never towns, fuel stations or camp sites with other categories", () => {
+    expect(
+      dedupeCandidates([
+        place("node/1", "waterfall", "Gira Waterfalls"),
+        place("node/2", "waterfall", "Gira Waterfall"),
+      ]),
+    ).toHaveLength(1);
+    expect(
+      dedupeCandidates([place("node/1", "town", "Hampi"), place("node/2", "heritage", "Hampi")]),
+    ).toHaveLength(2);
   });
 });

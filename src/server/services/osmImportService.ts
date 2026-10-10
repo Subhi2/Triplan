@@ -13,7 +13,10 @@ export interface UpsertResult {
   duplicates: number; // skipped: duplicates a curated/user place
 }
 
-/** Makes sure every category the import can produce exists. */
+/**
+ * Makes sure every category the import can produce exists, with the name, icon and ranking
+ * weight in src/lib/categories.ts (the database drifted when weights changed in code).
+ */
 export async function ensureCategories(): Promise<void> {
   const rows = Object.entries(CATEGORIES).map(([slug, c]) => ({
     slug,
@@ -21,7 +24,27 @@ export async function ensureCategories(): Promise<void> {
     icon: c.icon,
     weight: c.weight,
   }));
-  await getDb().insert(category).values(rows).onConflictDoNothing({ target: category.slug });
+  await getDb()
+    .insert(category)
+    .values(rows)
+    .onConflictDoUpdate({
+      target: category.slug,
+      set: { name: sql`excluded.name`, icon: sql`excluded.icon`, weight: sql`excluded.weight` },
+    });
+}
+
+/**
+ * Closes OSM places the classifier now drops as duplicates of another place in the same tile
+ * (splitDuplicates): left open, the OSM API check would keep them, since they still exist.
+ */
+export async function closeOsmDuplicates(osmIds: string[]): Promise<number> {
+  if (osmIds.length === 0) return 0;
+  const rows = await getDb().execute(sql`
+    UPDATE place SET status = 'closed'
+    WHERE source = 'osm' AND status = 'verified'
+      AND osm_id IN (SELECT jsonb_array_elements_text(${JSON.stringify(osmIds)}::jsonb))
+    RETURNING id`);
+  return rows.length;
 }
 
 /**
@@ -58,12 +81,16 @@ export async function upsertOsmPlaces(
       osm_id: string;
       place_id: string;
       population: number | null;
+      wikidata_id: string | null;
+      osm_tags: Record<string, string>;
     }>(sql`
       WITH c AS (
         SELECT * FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
-          AS c(osm_id text, name text, category text, lng float8, lat float8, population int)
+          AS c(osm_id text, name text, category text, lng float8, lat float8, population int,
+               wikidata_id text, osm_tags jsonb)
       )
-      SELECT DISTINCT ON (c.osm_id) c.osm_id, p.id AS place_id, c.population
+      SELECT DISTINCT ON (c.osm_id) c.osm_id, p.id AS place_id, c.population, c.wikidata_id,
+             c.osm_tags
       FROM c
       JOIN place p
         ON p.source <> 'osm'
@@ -76,7 +103,9 @@ export async function upsertOsmPlaces(
     const matched = new Set(matches.map((m) => m.osm_id));
     result.duplicates = matched.size;
 
-    // One link per existing place (several OSM elements can match the same curated place).
+    // One link per existing place (several OSM elements can match the same curated place). The
+    // curated place also takes the element's Wikidata id and tags when it has none, so the photo
+    // and description imports find it (Belur and Halebidu had no photo).
     const links = [...new Map(matches.map((m) => [m.place_id, m])).values()];
     if (links.length > 0) {
       const linked = await tx.execute(sql`
@@ -89,6 +118,15 @@ export async function upsertOsmPlaces(
           AND NOT EXISTS (SELECT 1 FROM place q WHERE q.osm_id = m.osm_id)
         RETURNING p.id`);
       result.linked = linked.length;
+      // Newly or earlier linked: fill what the curated row lacks.
+      await tx.execute(sql`
+        UPDATE place p
+        SET wikidata_id = coalesce(p.wikidata_id, m.wikidata_id),
+            osm_tags = coalesce(p.osm_tags, m.osm_tags)
+        FROM jsonb_to_recordset(${JSON.stringify(links)}::jsonb)
+          AS m(osm_id text, place_id uuid, wikidata_id text, osm_tags jsonb)
+        WHERE p.id = m.place_id AND p.osm_id = m.osm_id
+          AND ((p.wikidata_id IS NULL AND m.wikidata_id IS NOT NULL) OR p.osm_tags IS NULL)`);
     }
 
     const rest = rows.filter((r) => !matched.has(r.osm_id));

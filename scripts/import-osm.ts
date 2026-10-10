@@ -28,7 +28,7 @@ import {
   type BBox,
   type RegionOutline,
 } from "../src/server/providers/osm";
-import { classifyOsmElement, dedupeCandidates } from "../src/server/services/osmClassify";
+import { classifyOsmElement, splitDuplicates } from "../src/server/services/osmClassify";
 import {
   mergeProgress,
   PROGRESS_DIR,
@@ -37,6 +37,7 @@ import {
   writeProgress,
 } from "../src/server/services/importProgress";
 import {
+  closeOsmDuplicates,
   closeStaleOsmPlaces,
   databaseNow,
   ensureCategories,
@@ -127,7 +128,7 @@ async function importRegion(
     fresh = false;
   };
   save();
-  const totals = { places: 0, inserted: 0, updated: 0, linked: 0, duplicates: 0 };
+  const totals = { places: 0, inserted: 0, updated: 0, linked: 0, duplicates: 0, merged: 0 };
   const byCategory = new Map<string, number>();
 
   console.log(`\n${time()} ${region.name} (${region.iso}): ${regionTiles(region).length} tiles`);
@@ -158,7 +159,7 @@ async function importRegion(
       save();
     },
     async onTile(tileElements, tile, { done, left }) {
-      const candidates = dedupeCandidates(
+      const { kept: candidates, dropped } = splitDuplicates(
         tileElements.map(classifyOsmElement).filter((c) => c !== null),
       );
       for (const c of candidates) byCategory.set(c.category, (byCategory.get(c.category) ?? 0) + 1);
@@ -171,6 +172,8 @@ async function importRegion(
         return;
       }
       const r = await upsertOsmPlaces(candidates, region.name);
+      // Copies of a kept place (a fort also mapped as heritage) saved by an earlier import.
+      totals.merged += await closeOsmDuplicates(dropped.map((d) => d.osmId));
       totals.inserted += r.inserted;
       totals.updated += r.updated;
       totals.linked += r.linked;
@@ -206,7 +209,8 @@ async function importRegion(
   if (!dryRun) {
     console.log(
       `  ${totals.inserted} inserted, ${totals.updated} updated, ${totals.linked} linked to ` +
-        `curated places, ${totals.duplicates} skipped as duplicates of curated places`,
+        `curated places, ${totals.duplicates} skipped as duplicates of curated places, ` +
+        `${totals.merged} earlier copies of the same place closed`,
     );
     if (failed.length === 0 && pending === 0 && !empty) {
       const plan = await closeStaleOsmPlaces(region.name, all.startedAt, {
