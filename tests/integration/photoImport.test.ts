@@ -23,9 +23,13 @@ describe.skipIf(!process.env.DATABASE_URL)("Wikimedia photo import", () => {
   };
   const asked: string[][] = [];
   const provider: WikimediaProvider = {
-    imageFiles: async (ids) => {
+    items: async (ids) => {
       asked.push(ids);
-      return new Map(ids.filter((id) => id === QID_YES).map((id) => [id, image.file]));
+      return new Map(
+        ids
+          .filter((id) => id === QID_YES)
+          .map((id) => [id, { file: image.file, human: false, location: null }]),
+      );
     },
     imageInfo: async (files) => new Map(files.map((f) => [f, image])),
   };
@@ -56,7 +60,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Wikimedia photo import", () => {
     expect(await placesNeedingPhotos(10, ids)).toHaveLength(2);
 
     const result = await importWikimediaPhotos(provider, { limit: 10, onlyIds: ids, pauseMs: 0 });
-    expect(result).toEqual({ checked: 2, found: 1 });
+    expect(result).toEqual({ checked: 2, found: 1, rejected: 0 });
     expect(asked.flat().sort()).toEqual([QID_YES, QID_NO].sort());
 
     const media = await getDb().execute(sql`

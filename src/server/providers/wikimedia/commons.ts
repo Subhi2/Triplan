@@ -1,9 +1,17 @@
 import { z } from "zod";
+import type { LngLat } from "@/lib/geo";
 import { fetchJson, ProviderError } from "../http";
-import { COMMONS_BATCH, WIKIDATA_BATCH, type CommonsImage, type WikimediaProvider } from "./types";
+import {
+  COMMONS_BATCH,
+  WIKIDATA_BATCH,
+  type CommonsImage,
+  type WikidataItem,
+  type WikimediaProvider,
+} from "./types";
 
-// Wikidata's query service gives each item's main image (P18); the Commons API gives the image's
-// author, licence and thumbnail URLs. Both ask for an identifying User-Agent. Only photo formats
+// Wikidata's query service gives each item's main image (P18), coordinates (P625) and whether it
+// is a person, to check the link; the Commons API gives the image's author, licence and
+// thumbnail URLs. Both ask for an identifying User-Agent. Only photo formats
 // are kept (no SVG maps or logos, no PDFs).
 
 const SPARQL_URL = "https://query.wikidata.org/sparql";
@@ -19,7 +27,9 @@ export const sparqlSchema = z.object({
     bindings: z.array(
       z.object({
         item: z.object({ value: z.string() }),
-        image: z.object({ value: z.string() }),
+        image: z.object({ value: z.string() }).optional(),
+        coord: z.object({ value: z.string() }).optional(),
+        human: z.object({ value: z.string() }).optional(),
       }),
     ),
   }),
@@ -59,15 +69,26 @@ export const imageInfoSchema = z.object({
     .optional(),
 });
 
-/** P18 bindings -> Wikidata id to "File:<name>". The first image wins when an item has several. */
-export function parseImageFiles(data: z.infer<typeof sparqlSchema>): Map<string, string> {
-  const files = new Map<string, string>();
+/** "Point(75.7581 12.9173)" -> [75.7581, 12.9173]. */
+function parsePoint(wkt: string | undefined): LngLat | null {
+  const m = wkt ? /^Point\(\s*(-?[\d.]+)\s+(-?[\d.]+)\s*\)$/i.exec(wkt) : null;
+  return m ? [Number(m[1]), Number(m[2])] : null;
+}
+
+/** Bindings -> Wikidata id to its item. The first image and coordinates win when there are several. */
+export function parseItems(data: z.infer<typeof sparqlSchema>): Map<string, WikidataItem> {
+  const items = new Map<string, WikidataItem>();
   for (const b of data.results.bindings) {
     const id = b.item.value.split("/").pop() ?? "";
-    const name = decodeURIComponent(b.image.value.split("/Special:FilePath/")[1] ?? "");
-    if (WIKIDATA_ID.test(id) && name && !files.has(id)) files.set(id, `File:${name}`);
+    if (!WIKIDATA_ID.test(id)) continue;
+    const item = items.get(id) ?? { file: null, human: false, location: null };
+    const name = decodeURIComponent(b.image?.value.split("/Special:FilePath/")[1] ?? "");
+    if (!item.file && name) item.file = `File:${name}`;
+    item.human ||= b.human?.value === "true";
+    item.location ??= parsePoint(b.coord?.value);
+    items.set(id, item);
   }
-  return files;
+  return items;
 }
 
 const ENTITIES: Record<string, string> = {
@@ -129,14 +150,17 @@ export function parseImageInfo(data: z.infer<typeof imageInfoSchema>): Map<strin
 export function createWikimediaProvider(userAgent: string): WikimediaProvider {
   const headers = { "User-Agent": userAgent, Accept: "application/json" };
   return {
-    async imageFiles(wikidataIds) {
+    async items(wikidataIds) {
       const ids = wikidataIds.filter((id) => WIKIDATA_ID.test(id));
       if (ids.length === 0) return new Map();
       if (ids.length > WIKIDATA_BATCH) {
         throw new Error(`At most ${WIKIDATA_BATCH} Wikidata ids per request`);
       }
       const values = ids.map((id) => `wd:${id}`).join(" ");
-      const query = `SELECT ?item ?image WHERE { VALUES ?item { ${values} } ?item wdt:P18 ?image }`;
+      const query =
+        `SELECT ?item ?image ?coord ?human WHERE { VALUES ?item { ${values} } ` +
+        "OPTIONAL { ?item wdt:P18 ?image } OPTIONAL { ?item wdt:P625 ?coord } " +
+        "BIND(EXISTS { ?item wdt:P31 wd:Q5 } AS ?human) }";
       const { status, data } = await fetchJson(
         "wikidata",
         SPARQL_URL,
@@ -153,7 +177,7 @@ export function createWikimediaProvider(userAgent: string): WikimediaProvider {
         60_000,
       );
       if (status !== 200) throw new ProviderError(`Wikidata HTTP ${status}`, "wikidata", status);
-      return parseImageFiles(data);
+      return parseItems(data);
     },
 
     async imageInfo(files) {
