@@ -251,6 +251,14 @@ In the planner, a place row opens the place in the side panel (desktop) or botto
 - Images are shown from Wikimedia's servers (`thumb.wikimedia.org`, `upload.wikimedia.org`), never copied. The place details show each photo with its author (linked to the file page), licence and "Wikimedia Commons"; list rows show the 330 px thumbnail without a credit, which is one tap away in the details.
 - Every place looked up gets `place.photos_checked_at`, found or not, and is skipped for 90 days. Fuel stations and towns are skipped. Re-run after an OSM import to cover new places.
 
+### Wikidata links for places without one
+
+`pnpm db:link-wikidata [-- --limit=N] [--dry-run]` (`wikidataLinkService.ts`, G4 step C3) links places that have no Wikidata id. Only about 14% had one, and photos and descriptions come through it. Run it before the photo and description imports.
+
+- Places of the link categories (heritage, forts, temples, waterfalls, lakes, peaks, passes, viewpoints, caves, beaches, wildlife, museums, attractions) are grouped into half-degree tiles. Each tile gets one Wikidata query (`wikibase:box`) for the items with coordinates and an English name, leaving out settlements (items with a population) and people.
+- A place takes an item when the names are clearly alike: trigram similarity 0.6 or more, as pg_trgm measures it. The item must also be close: 1 km, or more for parks, lakes, beaches, peaks and passes. A place named with what it is ("Kadinamkulam Lake") only takes an item whose name says so too, so it never gets the village it is named after. Two items that match about as well mean no link. An item already on another place is never reused, and each item goes to the closest place.
+- Links go into `place.wikidata_id`. The OSM import keeps them (`coalesce` on upsert), since OSM has no id for these places. Finished tiles are kept in `.import-progress/wikidata-links.json`. A dry run on three Kerala tiles linked about 100 of 3,600 places, all of them by an exact or near-exact name.
+
 ### Descriptions from Wikipedia and Wikidata
 
 `pnpm db:import-descriptions [-- --limit=N]` (`descriptionImportService.ts`, G4 step C2) gives a description to places that have none and either a Wikidata id or an English `wikipedia` tag.

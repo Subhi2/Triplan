@@ -153,6 +153,7 @@ This runs these steps in order, and each one can also be run on its own:
 pnpm db:migrate                                # tables only
 pnpm db:seed                                   # categories, carry items, the hand-written demo places
 pnpm db:import-osm -- --region=karnataka       # places from OpenStreetMap (region keys: src/server/services/osmRegions.ts)
+pnpm db:link-wikidata                          # Wikidata links for places that have none
 pnpm db:import-photos                          # photos from Wikimedia Commons, with credits
 pnpm db:import-descriptions                    # descriptions from Wikipedia and Wikidata, credited
 pnpm db:seed-rides                             # route the famous rides in data/rides.json
@@ -240,6 +241,7 @@ After an import, write the snapshot from the live database and commit it. A full
 ```bash
 pnpm db:import-osm -- --region=all --resume     # places: hours, on a computer that will not sleep
 pnpm db:import-services -- --region=all         # hospitals, police, ATMs, repair shops, stays
+pnpm db:link-wikidata                           # Wikidata links for places without one (before photos)
 pnpm db:import-photos                           # Wikimedia photos for new places with a Wikidata link
 pnpm db:import-descriptions                     # Wikipedia and Wikidata text for places with none
 pnpm db:export-snapshot                         # rewrites data/snapshot (read only on the database)

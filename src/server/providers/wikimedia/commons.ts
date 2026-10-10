@@ -6,6 +6,7 @@ import {
   WIKIDATA_BATCH,
   type CommonsImage,
   type WikidataItem,
+  type WikidataPlaceItem,
   type WikimediaProvider,
 } from "./types";
 
@@ -70,6 +71,30 @@ export const imageInfoSchema = z.object({
     })
     .optional(),
 });
+
+export const boxSchema = z.object({
+  results: z.object({
+    bindings: z.array(
+      z.object({
+        item: z.object({ value: z.string() }),
+        label: z.object({ value: z.string() }),
+        loc: z.object({ value: z.string() }),
+      }),
+    ),
+  }),
+});
+
+/** Box bindings -> items, one per id (the first coordinates win). */
+export function parseBoxItems(data: z.infer<typeof boxSchema>): WikidataPlaceItem[] {
+  const items = new Map<string, WikidataPlaceItem>();
+  for (const b of data.results.bindings) {
+    const id = b.item.value.split("/").pop() ?? "";
+    const location = parsePoint(b.loc.value);
+    if (!WIKIDATA_ID.test(id) || !location || items.has(id)) continue;
+    items.set(id, { id, label: b.label.value.trim(), location });
+  }
+  return [...items.values()];
+}
 
 /** "Point(75.7581 12.9173)" -> [75.7581, 12.9173]. */
 function parsePoint(wkt: string | undefined): LngLat | null {
@@ -192,6 +217,32 @@ export function createWikimediaProvider(userAgent: string): WikimediaProvider {
       );
       if (status !== 200) throw new ProviderError(`Wikidata HTTP ${status}`, "wikidata", status);
       return parseItems(data);
+    },
+
+    async itemsInBox([west, south, east, north]) {
+      const query =
+        "SELECT ?item ?label ?loc WHERE { SERVICE wikibase:box { ?item wdt:P625 ?loc . " +
+        `bd:serviceParam wikibase:cornerSouthWest "Point(${west} ${south})"^^geo:wktLiteral . ` +
+        `bd:serviceParam wikibase:cornerNorthEast "Point(${east} ${north})"^^geo:wktLiteral . } ` +
+        '?item rdfs:label ?label . FILTER(lang(?label) = "en") ' +
+        "FILTER NOT EXISTS { ?item wdt:P1082 [] } FILTER NOT EXISTS { ?item wdt:P31 wd:Q5 } }";
+      const { status, data } = await fetchJson(
+        "wikidata",
+        SPARQL_URL,
+        boxSchema,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            Accept: "application/sparql-results+json",
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ query }).toString(),
+        },
+        90_000,
+      );
+      if (status !== 200) throw new ProviderError(`Wikidata HTTP ${status}`, "wikidata", status);
+      return parseBoxItems(data);
     },
 
     async imageInfo(files) {

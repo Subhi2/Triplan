@@ -21,9 +21,21 @@ export interface CommonsImage {
   height: number;
 }
 
+/** A Wikidata item with coordinates and an English name, to link places that have no id. */
+export interface WikidataPlaceItem {
+  id: string; // "Q672241"
+  label: string;
+  location: LngLat;
+}
+
 export interface WikimediaProvider {
   /** Main image, whether it is a person, and coordinates of each item, by id ("Q672241"). */
   items(wikidataIds: string[]): Promise<Map<string, WikidataItem>>;
+  /**
+   * Items with coordinates and an English name inside a box [west, south, east, north], leaving
+   * out settlements (items with a population): the candidates for linking our places.
+   */
+  itemsInBox(box: [number, number, number, number]): Promise<WikidataPlaceItem[]>;
   /** Credit, licence and sized URLs for Commons files, by file title; missing files are left out. */
   imageInfo(files: string[]): Promise<Map<string, CommonsImage>>;
 }

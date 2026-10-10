@@ -160,7 +160,8 @@ export async function upsertOsmPlaces(
         location = excluded.location,
         area = excluded.area,
         state = excluded.state,
-        wikidata_id = excluded.wikidata_id,
+        -- A link found later (pnpm db:link-wikidata) stays when OSM has none.
+        wikidata_id = coalesce(excluded.wikidata_id, place.wikidata_id),
         population = excluded.population,
         osm_tags = excluded.osm_tags,
         status = CASE WHEN place.status = 'closed' THEN 'verified'::place_status ELSE place.status END
