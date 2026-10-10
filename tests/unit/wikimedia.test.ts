@@ -6,8 +6,10 @@ import {
   parseImageInfo,
   parseItems,
   sparqlSchema,
+  tidyAuthor,
 } from "@/server/providers/wikimedia/commons";
 import type { WikidataItem } from "@/server/providers/wikimedia";
+import { osmPhotoFiles } from "@/server/services/photoImportService";
 import { wikidataFits } from "@/server/services/wikidataCheck";
 import { jsonFixture } from "../helpers/fixtures";
 
@@ -171,5 +173,40 @@ describe("wikidataFits", () => {
     expect(wikidataFits(kushinagar, item({}))).toBe(true); // no coordinates: nothing to compare
     const park = { location: [76.6, 11.7] as [number, number], category: "wildlife" };
     expect(wikidataFits(park, item({ location: [76.75, 11.65] }))).toBe(true); // 17 km
+  });
+});
+
+describe("photos from a place's OSM tags", () => {
+  it("reads Commons files from wikimedia_commons and image, skipping categories and other hosts", () => {
+    expect(
+      osmPhotoFiles({ commons: "File:Jog_Falls.jpg;Category:Jog Falls", image: null }),
+    ).toEqual(["File:Jog Falls.jpg"]);
+    expect(
+      osmPhotoFiles({
+        commons: null,
+        image: "https://commons.wikimedia.org/wiki/File:Bekal_Fort_%281%29.jpg",
+      }),
+    ).toEqual(["File:Bekal Fort (1).jpg"]);
+    expect(
+      osmPhotoFiles({
+        commons: null,
+        image:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Shakambari_temple.JPG/960px-Shakambari_temple.JPG",
+      }),
+    ).toEqual(["File:Shakambari temple.JPG"]);
+    expect(osmPhotoFiles({ commons: null, image: "https://example.com/fort.jpg" })).toEqual([]);
+    expect(osmPhotoFiles({ commons: "File:Map of the fort.svg", image: null })).toEqual([]);
+  });
+});
+
+describe("tidyAuthor", () => {
+  it("drops unknown authors and cuts paragraph-long credits at a word", () => {
+    expect(tidyAuthor("Unknown author Unknown author")).toBeNull();
+    expect(tidyAuthor("  Nvvchar  ")).toBe("Nvvchar");
+    const long = tidyAuthor(
+      "Photograph by the Archaeological Survey of India, taken during the survey of the western forts in the year 1891 by an unnamed officer",
+    )!;
+    expect(long.length).toBeLessThanOrEqual(81);
+    expect(long.endsWith("…")).toBe(true);
   });
 });

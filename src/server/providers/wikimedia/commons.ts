@@ -147,6 +147,21 @@ export function htmlToText(html: string): string {
     .trim();
 }
 
+/** Longer credits (whole paragraphs on some files) are cut; the full one is on the file page. */
+const MAX_AUTHOR_CHARS = 80;
+
+/**
+ * A credit fit for a caption: no "Unknown author" (the page then says so and links the file
+ * page), and at most MAX_AUTHOR_CHARS, cut at a word.
+ */
+export function tidyAuthor(text: string): string | null {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (!t || /^(unknown author\s*)+$/i.test(t)) return null;
+  if (t.length <= MAX_AUTHOR_CHARS) return t;
+  const cut = t.slice(0, MAX_AUTHOR_CHARS);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 40)).trim()}…`;
+}
+
 /** Drops the utm_* tracking parameters Commons adds to its URLs. */
 export function cleanUrl(url: string): string {
   const u = new URL(url);
@@ -169,13 +184,13 @@ export function parseImageInfo(data: z.infer<typeof imageInfoSchema>): Map<strin
     const scaled = info.thumburl !== undefined && info.thumbwidth === WIDTH;
     const url = cleanUrl(scaled ? info.thumburl! : info.url);
     const thumbUrl = scaled ? url.replace(`/${WIDTH}px-`, `/${THUMB_WIDTH}px-`) : url;
-    const author = htmlToText(String(info.extmetadata?.Artist?.value ?? "")).slice(0, 200);
+    const author = tidyAuthor(htmlToText(String(info.extmetadata?.Artist?.value ?? "")));
     images.set(asked.get(page.title) ?? page.title, {
       file: page.title,
       url,
       thumbUrl,
       pageUrl: info.descriptionurl,
-      author: author || null,
+      author,
       license,
       width: scaled ? (info.thumbwidth ?? info.width) : info.width,
       height: scaled ? (info.thumbheight ?? info.height) : info.height,
