@@ -435,7 +435,8 @@ test("safety stops along the road, with call links and the hospital gap", async 
 
 test("split a long ride into days, each night in a town with stays", async ({ page }) => {
   const dayRequests: unknown[] = [];
-  await mockApis(page, []);
+  const routeRequests: { stops: { label: string }[] }[] = [];
+  await mockApis(page, routeRequests);
   await mockPlace(page);
   await page.route("**/api/route/days", (route) => {
     dayRequests.push(route.request().postDataJSON());
@@ -473,6 +474,12 @@ test("split a long ride into days, each night in a town with stays", async ({ pa
   await expect.poll(() => dayRequests.at(-1)).toMatchObject({ days: 3 });
   await page.getByRole("button", { name: "One day fewer" }).click();
   await expect(page).not.toHaveURL(/[?&]d=/);
+
+  // The night's town becomes a stop, in road order.
+  await page.getByRole("button", { name: "Stop here" }).click();
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Bengaluru", "Hassan", "Sakleshpur", "Kalasa"]);
 });
 
 test("stops can be reordered from the keyboard", async ({ page }) => {

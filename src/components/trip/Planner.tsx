@@ -606,6 +606,13 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             setDayCount(null);
           }}
           onDaysChange={setDayCount}
+          onStopHere={stops.length - 2 < MAX_VIA_STOPS ? addToTrip : null}
+          isStop={(location) => stopIndexAt(stopLocations, location) >= 0}
+          onOpenStay={(slug) => {
+            const stay = allPlaces.find((p) => p.slug === slug);
+            if (stay) openPlaceDetail(stay);
+            else window.location.assign(`/place/${slug}`);
+          }}
         />
       )}
       {(saved || plan) && (
