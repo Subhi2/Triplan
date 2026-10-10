@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -9,18 +10,17 @@ import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
 import { placeRowId } from "@/components/place/PlaceRow";
+import { LoadStreak } from "@/components/motion/LoadStreak";
+import { useListTurn } from "@/components/place/useListTurn";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
 import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
-import { StoryShare } from "@/components/ride/StoryShare";
-import { DaySplit } from "@/components/route/DaySplit";
-import { RouteProfile } from "@/components/route/RouteProfile";
-import { SafetyStops } from "@/components/route/SafetyStops";
 import { useDayPlan } from "@/components/route/useDayPlan";
 import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
 import { pointAtKm, type LngLat } from "@/lib/geo";
@@ -44,14 +44,25 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
-import { PlainWordsBox } from "./PlainWordsBox";
 import { PlannerHeader } from "./PlannerHeader";
-import { RideCheck } from "./RideCheck";
 import { RoadStrip } from "./RoadStrip";
 import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { TripSaveBar } from "./TripSaveBar";
+
+// Panels that show only once a route is on screen (or only with the AI key) load then, not with
+// the planner: the chart, the day split, safety stops, the ride check and the story poster.
+const RouteProfile = dynamic(() =>
+  import("@/components/route/RouteProfile").then((m) => m.RouteProfile),
+);
+const DaySplit = dynamic(() => import("@/components/route/DaySplit").then((m) => m.DaySplit));
+const SafetyStops = dynamic(() =>
+  import("@/components/route/SafetyStops").then((m) => m.SafetyStops),
+);
+const RideCheck = dynamic(() => import("./RideCheck").then((m) => m.RideCheck));
+const StoryShare = dynamic(() => import("@/components/ride/StoryShare").then((m) => m.StoryShare));
+const PlainWordsBox = dynamic(() => import("./PlainWordsBox").then((m) => m.PlainWordsBox));
 
 /** Height of the header floating over the map on phones, kept clear when framing the route. */
 const FLOATING_HEADER_PX = 72;
@@ -119,6 +130,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const [dayCount, setDayCount] = useState<number | null>(initial.days);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [routeState, setRouteState] = useState<RouteState>({ status: "idle" });
+  // Bumped by "Try again" after a routing error.
+  const [routeAttempt, setRouteAttempt] = useState(0);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [activePlaceId, setActivePlaceId] = useState<string | null>(null);
   const [hoverPlaceId, setHoverPlaceId] = useState<string | null>(null);
@@ -207,7 +220,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
         });
       });
     return () => ctrl.abort();
-  }, [routeBody]);
+  }, [routeBody, routeAttempt]);
 
   const routes = routeState.status === "ok" ? routeState.routes : [];
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
@@ -249,9 +262,16 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       ? pointAtKm(selectedRoute.geometry.coordinates as LngLat[], scrubKm)
       : null;
 
-  // Category and detour filters apply in the browser; the list is already ordered by km.
+  // Category and detour filters apply in the browser; the list is already ordered by km. While
+  // the same route reloads (a wider corridor), its places stay on screen, dimmed.
+  const refreshing = placesState.status === "loading" && placesState.previous !== undefined;
   const allPlaces = useMemo(
-    () => (placesState.status === "ok" ? placesState.places : []),
+    () =>
+      placesState.status === "ok"
+        ? placesState.places
+        : placesState.status === "loading"
+          ? (placesState.previous ?? [])
+          : [],
     [placesState],
   );
   const categoryCounts = useMemo(() => {
@@ -268,6 +288,18 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     // No category picked: the best stops only. A picked category shows every place in it.
     return categories.length === 0 ? bestAlongRoute(matching) : matching;
   }, [allPlaces, categories, maxDetourKm]);
+  // Switching route or filter turns the list from that side (docs/08 "Motion").
+  const turn = useListTurn(
+    {
+      routeIndex: Math.max(
+        0,
+        routes.findIndex((r) => r.id === selectedRouteId),
+      ),
+      filterKey: `${categories.join(",")}|${maxDetourKm ?? ""}`,
+      filterRank: categories.length + (maxDetourKm === null ? 0 : 1),
+    },
+    routes.map((r) => r.id).join(","),
+  );
   const hiddenCount =
     categories.length === 0
       ? allPlaces.filter((p) => maxDetourKm === null || p.detourKm <= maxDetourKm).length -
@@ -527,9 +559,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           </div>
         )}
         {routeState.status === "error" && (
-          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-            {routeState.message}
-          </p>
+          <RetryAlert message={routeState.message} onRetry={() => setRouteAttempt((n) => n + 1)} />
         )}
         {routeState.status === "ok" && (
           <>
@@ -546,6 +576,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
               selectedId={selectedRouteId}
               onSelect={setSelectedRouteId}
               climbM={climbM}
+              onRideThrough={stops.length - 2 < MAX_VIA_STOPS ? addToTrip : null}
+              isStop={(location) => stopIndexAt(stopLocations, location) >= 0}
             />
           </>
         )}
@@ -582,6 +614,13 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             setDayCount(null);
           }}
           onDaysChange={setDayCount}
+          onStopHere={stops.length - 2 < MAX_VIA_STOPS ? addToTrip : null}
+          isStop={(location) => stopIndexAt(stopLocations, location) >= 0}
+          onOpenStay={(slug) => {
+            const stay = allPlaces.find((p) => p.slug === slug);
+            if (stay) openPlaceDetail(stay);
+            else window.location.assign(`/place/${slug}`);
+          }}
         />
       )}
       {(saved || plan) && (
@@ -630,7 +669,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             setSafetyPick(kind && selectedRoute ? { routeId: selectedRoute.id, kind } : null)
           }
         />
-        {placesState.status === "loading" && (
+        {placesState.status === "loading" && !refreshing && (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-stone-600 dark:text-stone-400">Finding places…</p>
             {[0, 1, 2].map((i) => (
@@ -644,12 +683,13 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           </div>
         )}
         {placesState.status === "error" && (
-          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-            {placesState.message}
-          </p>
+          <RetryAlert message={placesState.message} onRetry={placesState.retry} />
         )}
-        {placesState.status === "ok" && (
-          <>
+        {(placesState.status === "ok" || refreshing) && (
+          <div
+            aria-busy={refreshing}
+            className={`flex flex-col gap-3 transition-opacity duration-500 ${refreshing ? "refreshing" : ""}`}
+          >
             {allPlaces.length > 0 && (
               <PlaceFilters
                 counts={categoryCounts}
@@ -665,6 +705,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             {places.length > 0 ? (
               <>
                 <PlaceList
+                  key={turn.key}
+                  turn={turn.turn}
                   places={places}
                   activeId={activePlaceId}
                   hoverId={hoverPlaceId}
@@ -697,7 +739,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
                   : "No places match these filters."}
               </p>
             )}
-          </>
+          </div>
         )}
       </section>
       <GoogleMapsBar
@@ -731,15 +773,20 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             : "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none lg:w-[24rem] dark:md:border-stone-800"
         } ${typing ? "z-30" : "z-10"}`}
       >
-        <PlannerHeader
-          compact={compactHeader}
-          fromLabel={first?.label ?? ""}
-          toLabel={last?.label ?? ""}
-          vehicle={vehicle}
-          corridorKm={corridorKm}
-          viaCount={stops.length - 2}
-          formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
-        />
+        <div className="relative">
+          <PlannerHeader
+            compact={compactHeader}
+            fromLabel={first?.label ?? ""}
+            toLabel={last?.label ?? ""}
+            vehicle={vehicle}
+            corridorKm={corridorKm}
+            viaCount={stops.length - 2}
+            formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
+          />
+          <LoadStreak
+            active={routeState.status === "loading" || placesState.status === "loading"}
+          />
+        </div>
 
         {showForm ? (
           <div

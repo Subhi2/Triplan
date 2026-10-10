@@ -48,7 +48,8 @@ export function parseNominatimResponse(
 }
 
 // Public Nominatim: max 1 request/second per the usage policy. Slightly over to be safe.
-const throttle = createThrottle(1_100);
+// More than 10 s of queue fails fast instead of holding the request open.
+const throttle = createThrottle(1_100, Date.now, 10_000);
 
 export function createNominatimProvider(baseUrl: string, userAgent: string): GeocodingProvider {
   return {

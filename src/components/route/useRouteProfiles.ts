@@ -9,7 +9,7 @@ export type ProfileState =
   | { status: "loading" }
   | { status: "ok"; profile: ElevationProfile }
   | { status: "none" } // the terrain could not be read
-  | { status: "error" };
+  | { status: "error"; retry?: () => void };
 
 async function loadProfile(route: RouteOption, signal: AbortSignal): Promise<ProfileState> {
   const post = (body: object) =>
@@ -37,6 +37,7 @@ export function useRouteProfiles(
   selectedId: string | null,
 ): Record<string, ProfileState> {
   const [profiles, setProfiles] = useState<Record<string, ProfileState>>({});
+  const [attempt, setAttempt] = useState(0);
   const key = routes.map((r) => r.id).join();
 
   useEffect(() => {
@@ -55,13 +56,17 @@ export function useRouteProfiles(
           ctrl.signal.aborted ? null : { status: "error" },
         );
         if (!state || ctrl.signal.aborted) return;
-        setProfiles((prev) => ({ ...prev, [route.id]: state }));
+        const shown: ProfileState =
+          state.status === "error"
+            ? { status: "error", retry: () => setAttempt((n) => n + 1) }
+            : state;
+        setProfiles((prev) => ({ ...prev, [route.id]: shown }));
       }
     })();
     return () => ctrl.abort();
     // key stands for routes; the selected route only orders the first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, attempt]);
 
   return profiles;
 }

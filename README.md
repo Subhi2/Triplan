@@ -118,7 +118,8 @@ Then fill in `.env.local`. Only the first two are required:
 | `NEXT_PUBLIC_MAP_STYLE_URL`       | no      | A MapLibre style URL. Default: OpenFreeMap "liberty".                                                                                |
 | `NEXT_PUBLIC_TERRAIN_TILES_URL`   | no      | Terrarium PNG tiles `…/{z}/{x}/{y}.png` for the elevation profile and 3D terrain. Default: AWS Terrain Tiles (free, no key).         |
 | `NEXT_PUBLIC_SITE_URL`            | no      | Your public address, for share cards and the sitemap. Vercel's production address is used if empty.                                  |
-| `WRITE_LIMIT_SALT`                | no      | Any random string. It salts the hashed visitor IPs used for rate limits.                                                             |
+| `WRITE_LIMIT_SALT`                | no      | Any random string. It salts the hashed visitor IPs used for rate limits. Default: derived from `DATABASE_URL`.                       |
+| `CRON_SECRET`                     | no      | Any random string. Vercel Cron sends it to `/api/health`; without it the daily clean-up of old counters and cache rows is skipped.   |
 | `ANTHROPIC_API_KEY`               | no      | Turns on "plan in plain words". Empty hides the box and makes no AI calls. See [Plan in plain words](#plan-in-plain-words-optional). |
 | `ANTHROPIC_TRIP_MODEL`            | no      | The Claude model for it. Default `claude-haiku-4-5`.                                                                                 |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | no      | Turns on the Google map, and Google photos and reviews for places with none of their own. See [Google Maps](#google-maps-optional).  |
@@ -152,7 +153,9 @@ This runs these steps in order, and each one can also be run on its own:
 pnpm db:migrate                                # tables only
 pnpm db:seed                                   # categories, carry items, the hand-written demo places
 pnpm db:import-osm -- --region=karnataka       # places from OpenStreetMap (region keys: src/server/services/osmRegions.ts)
+pnpm db:link-wikidata                          # Wikidata links for places that have none
 pnpm db:import-photos                          # photos from Wikimedia Commons, with credits
+pnpm db:import-descriptions                    # descriptions from Wikipedia and Wikidata, credited
 pnpm db:seed-rides                             # route the famous rides in data/rides.json
 pnpm db:import-services -- --region=karnataka  # hospitals, police, ATMs, tyre and repair shops, stays
 ```
@@ -188,7 +191,7 @@ The unit and end-to-end tests mock every external service with recorded fixtures
 ## Deploy to Vercel
 
 1. Push your clone to GitHub. In Vercel, click **Add New → Project** and import it. The framework (Next.js), install command (`pnpm install`) and build command are detected.
-2. Under **Environment Variables**, add `DATABASE_URL` (the **transaction pooler** string, port 6543) and `NOMINATIM_USER_AGENT`, plus any optional ones from the table above (`ANTHROPIC_API_KEY`, the Google keys, `NEXT_PUBLIC_SITE_URL`, `WRITE_LIMIT_SALT`).
+2. Under **Environment Variables**, add `DATABASE_URL` (the **transaction pooler** string, port 6543) and `NOMINATIM_USER_AGENT`, plus any optional ones from the table above (`ANTHROPIC_API_KEY`, the Google keys, `NEXT_PUBLIC_SITE_URL`, `WRITE_LIMIT_SALT`, `CRON_SECRET`).
 3. Click **Deploy**. `vercel.json` already pins the functions to Mumbai (`bom1`, next to the database) and adds a daily cron on `/api/health`, which keeps the free Supabase project from pausing and clears old counters. Change the region there if your database is elsewhere.
 4. In the project's **Analytics** tab, switch on **Web Analytics** for page views (no cookies; the `<Analytics />` component is already in the layout).
 5. Optional: add your own domain under **Settings → Domains**, and set `NEXT_PUBLIC_SITE_URL` to it.
@@ -238,7 +241,9 @@ After an import, write the snapshot from the live database and commit it. A full
 ```bash
 pnpm db:import-osm -- --region=all --resume     # places: hours, on a computer that will not sleep
 pnpm db:import-services -- --region=all         # hospitals, police, ATMs, repair shops, stays
+pnpm db:link-wikidata                           # Wikidata links for places without one (before photos)
 pnpm db:import-photos                           # Wikimedia photos for new places with a Wikidata link
+pnpm db:import-descriptions                     # Wikipedia and Wikidata text for places with none
 pnpm db:export-snapshot                         # rewrites data/snapshot (read only on the database)
 git add data/snapshot && git commit -m "Refresh the data snapshot"
 ```

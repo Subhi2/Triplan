@@ -56,6 +56,10 @@ async function mockRouting(page: Page) {
 async function placeRows(page: Page) {
   const list = page.getByRole("list", { name: "Places along the route" });
   await expect(list.getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+  // A list that reloads (a wider corridor) stays on screen, dimmed and aria-busy, until it is done.
+  await expect(page.locator("[aria-busy=true]", { has: list })).toHaveCount(0, {
+    timeout: 30_000,
+  });
   // Each row carries its facts as data attributes (PlaceRow), independent of the layout.
   const rows = await list
     .locator(":scope > li")
@@ -69,7 +73,8 @@ async function placeRows(page: Page) {
 
 async function setCorridor(page: Page, km: string) {
   const list = page.getByRole("list", { name: "Places along the route" });
-  const before = await list.innerText();
+  // textContent, which toHaveText compares (innerText differs in whitespace and always "changed").
+  const before = (await list.textContent()) ?? "";
   if (await page.getByRole("button", { name: "Edit trip" }).isVisible()) {
     await page.getByRole("button", { name: "Edit trip" }).click();
   }
@@ -156,8 +161,8 @@ test("category chips and the detour toggle filter the list", async ({ page }) =>
   expect(decodeURIComponent(page.url())).toContain("cat=temple&hd=1");
 });
 
-// Phase 4 "done when" (docs/04-build-plan.md). Saved trips are open, so this writes a real trip to
-// the shared list and deletes it afterwards.
+// Phase 4 "done when" (docs/04-build-plan.md). This writes a real trip to the database and deletes
+// it afterwards.
 test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", async ({
   page,
 }, testInfo) => {
@@ -184,7 +189,7 @@ test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", as
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}\?/);
 
-    // Everyone's list shows it; opening it restores the stops and the route.
+    // This device's list shows it; opening it restores the stops and the route.
     await page.goto("/trips");
     await page.getByRole("link", { name: new RegExp(title) }).click();
     // The dev server compiles the trip page on first visit, then routes with the real OSRM.

@@ -8,6 +8,18 @@ import { getDb } from "../db";
 /** Trip saves and renames allowed per visitor per hour. */
 export const WRITES_PER_HOUR = 30;
 
+/**
+ * Per-visitor limits on endpoints that call rate-limited or billed services (OSRM, Nominatim,
+ * Google). Generous, because many riders share one mobile carrier address; they stop one script
+ * from getting the server blocked or using up the day's Google budget for everyone.
+ */
+export const REQUEST_LIMITS = {
+  route: { scope: "route", limit: 120, windowS: 3600 },
+  nominatim: { scope: "nominatim", limit: 60, windowS: 3600 },
+  googleDetails: { scope: "google", limit: 30, windowS: 3600 },
+  googlePhoto: { scope: "gphoto", limit: 40, windowS: 3600 },
+} as const;
+
 /** Rows for visitors not seen for this long are deleted by the daily health check. */
 const FORGET_AFTER = "1 day";
 
@@ -17,10 +29,20 @@ export function clientIp(request: Request): string {
   return forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
+/**
+ * The salt: WRITE_LIMIT_SALT, else a hash of the database URL (a server secret that is always
+ * set), so the hashes cannot be reversed with a salt published in the code. The fixed fallback
+ * is only for tests.
+ */
+function hashSalt(): string {
+  if (process.env.WRITE_LIMIT_SALT) return process.env.WRITE_LIMIT_SALT;
+  const url = process.env.DATABASE_URL;
+  return url ? createHash("sha256").update(`salt:${url}`).digest("hex") : "bike-travelling-guide";
+}
+
 /** A salted hash, so the table never holds an IP address. */
 export function visitorKey(ip: string): string {
-  const salt = process.env.WRITE_LIMIT_SALT ?? "bike-travelling-guide";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
+  return createHash("sha256").update(`${hashSalt()}:${ip}`).digest("hex").slice(0, 32);
 }
 
 /** Counts one write for the visitor; false once they are over the hourly limit. */
@@ -64,4 +86,20 @@ export async function allowRequest(
                           THEN now() ELSE write_limit.window_start END
     RETURNING count`);
   return (row?.count ?? 0) <= limit;
+}
+
+/**
+ * allowRequest for endpoints that work without the database: when the count cannot be kept, the
+ * request goes through rather than failing (routing and search still work with the database down).
+ */
+export async function allowRequestOrOpen(
+  request: Request,
+  limit: { scope: string; limit: number; windowS: number },
+): Promise<boolean> {
+  try {
+    return await allowRequest(request, limit);
+  } catch (err) {
+    console.warn(`Request limit ${limit.scope} not checked: ${(err as Error).message}`);
+    return true;
+  }
 }

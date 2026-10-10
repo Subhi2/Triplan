@@ -45,6 +45,10 @@ CREATE TABLE place (
   rating_count  int NOT NULL DEFAULT 0,
   trending_score real NOT NULL DEFAULT 0,
   photos_checked_at timestamptz,           -- last Wikimedia photo lookup (pnpm db:import-photos)
+  description_source  text,                -- 'wikipedia' | 'wikidata' for imported text (0018)
+  description_license text,                -- 'CC BY-SA 4.0' | 'CC0', shown with the text
+  description_url     text,                -- the article or item to credit
+  description_checked_at timestamptz,      -- last lookup (pnpm db:import-descriptions)
   created_by    uuid REFERENCES auth.users(id),
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()

@@ -9,7 +9,7 @@ export type NearbyState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "ok"; data: NearbyResponse }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; retry: () => void };
 
 /**
  * Loads the places within `within` minutes of `at` (all place-list categories; filtering is
@@ -21,6 +21,7 @@ export function useNearbyPlaces(
   vehicle: Vehicle,
 ): NearbyState {
   const [state, setState] = useState<NearbyState>({ status: "idle" });
+  const [attempt, setAttempt] = useState(0);
   const lng = at ? round3(at[0]) : null;
   const lat = at ? round3(at[1]) : null;
 
@@ -48,10 +49,11 @@ export function useNearbyPlaces(
         setState({
           status: "error",
           message: err instanceof Error ? err.message : "Could not load places",
+          retry: () => setAttempt((n) => n + 1),
         });
       });
     return () => ctrl.abort();
-  }, [lng, lat, within, vehicle]);
+  }, [lng, lat, within, vehicle, attempt]);
 
   return state;
 }

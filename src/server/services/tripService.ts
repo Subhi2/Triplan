@@ -1,5 +1,12 @@
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { sql } from "drizzle-orm";
-import type { CreateTripRequest, SavedTrip, TripPlan, TripSummary } from "@/lib/savedTrip";
+import {
+  MAX_DEVICE_TRIPS,
+  type CreateTripRequest,
+  type SavedTrip,
+  type TripPlan,
+  type TripSummary,
+} from "@/lib/savedTrip";
 import {
   CORRIDOR_KM,
   DEFAULT_CORRIDOR_KM,
@@ -10,13 +17,36 @@ import {
 } from "@/lib/trip";
 import { getDb } from "../db";
 
-// Saved trips are open: no sign-in and no owners (user_id stays empty). Everyone sees the same
-// list, and anyone with a trip's link can open, rename or update it.
+// No sign-in: user_id stays empty. Anyone with a trip's link can open it; only the device that
+// saved it can rename or change it, with the edit token returned once by createTrip (only its
+// sha256 is stored). Trips saved before tokens (edit_token_hash null) are read only. There is no
+// list of everyone's trips: a device lists the trips it saved or opened (src/lib/tripTokens.ts).
 
 type Db = ReturnType<typeof getDb>;
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
-const MAX_LIST = 200;
+export const hashEditToken = (token: string) => createHash("sha256").update(token).digest("hex");
+
+/** A new edit token (256 random bits) and the hash stored for it. */
+export function newEditToken(): { token: string; hash: string } {
+  const token = randomBytes(32).toString("base64url");
+  return { token, hash: hashEditToken(token) };
+}
+
+export type TripEditAccess = "ok" | "not-found" | "read-only" | "no-token" | "wrong-token";
+
+/** Whether `token` may change the trip. */
+export async function tripEditAccess(id: string, token: string | null): Promise<TripEditAccess> {
+  const [row] = await getDb().execute<{ hash: string | null }>(
+    sql`SELECT edit_token_hash AS hash FROM trip WHERE id = ${id}`,
+  );
+  if (!row) return "not-found";
+  if (!row.hash) return "read-only";
+  if (!token) return "no-token";
+  const given = Buffer.from(hashEditToken(token));
+  const stored = Buffer.from(row.hash);
+  return given.length === stored.length && timingSafeEqual(given, stored) ? "ok" : "wrong-token";
+}
 
 interface TripRow extends Record<string, unknown> {
   id: string;
@@ -109,23 +139,30 @@ export async function getTrip(id: string): Promise<SavedTrip | null> {
   };
 }
 
-export async function createTrip(input: CreateTripRequest): Promise<SavedTrip> {
+/** Saves a trip. The edit token is returned this once: the saving device keeps it. */
+export async function createTrip(
+  input: CreateTripRequest,
+): Promise<{ trip: SavedTrip; editToken: string }> {
   const c = routeColumns(input);
+  const edit = newEditToken();
   const id = await getDb().transaction(async (tx) => {
     const [row] = await tx.execute<{ id: string }>(sql`
       INSERT INTO trip (title, vehicle, corridor_m, route_geom, route_id, via_label, distance_m,
-                        duration_s, is_public)
+                        duration_s, is_public, edit_token_hash)
       VALUES (${input.title}, ${c.vehicle}, ${c.corridorM},
               ST_SetSRID(ST_GeomFromGeoJSON(${c.geojson}), 4326)::geography, ${c.routeId},
-              ${c.viaLabel}, ${c.distanceM}, ${c.durationS}, true)
+              ${c.viaLabel}, ${c.distanceM}, ${c.durationS}, true, ${edit.hash})
       RETURNING id`);
     await writeStops(tx, row!.id, input.stops);
     return row!.id;
   });
-  return (await getTrip(id))!;
+  return { trip: (await getTrip(id))!, editToken: edit.token };
 }
 
-/** Renames a trip and/or replaces its plan. Null if there is no such trip. */
+/**
+ * Renames a trip and/or replaces its plan. Null if there is no such trip. Callers check
+ * tripEditAccess first.
+ */
 export async function updateTrip(
   id: string,
   update: { title?: string; plan?: TripPlan },
@@ -154,8 +191,9 @@ export async function updateTrip(
   return found ? getTrip(id) : null;
 }
 
-/** Every saved trip, most recently changed first. */
-export async function listTrips(limit = MAX_LIST): Promise<TripSummary[]> {
+/** The trips with these ids (a device's own list), most recently changed first. */
+export async function listTrips(ids: string[]): Promise<TripSummary[]> {
+  if (ids.length === 0) return [];
   const rows = await getDb().execute<SummaryRow>(sql`
     SELECT t.id, t.title, t.vehicle::text AS vehicle, t.via_label, t.distance_m, t.duration_s,
            t.updated_at, s.from_label, s.to_label, s.stop_count
@@ -166,8 +204,9 @@ export async function listTrips(limit = MAX_LIST): Promise<TripSummary[]> {
              count(*)::int AS stop_count
       FROM trip_stop WHERE trip_id = t.id
     ) s
+    WHERE t.id IN (SELECT jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb)::uuid)
     ORDER BY t.updated_at DESC
-    LIMIT ${limit}`);
+    LIMIT ${MAX_DEVICE_TRIPS}`);
   return rows.map((r) => ({
     id: r.id,
     title: r.title,

@@ -17,6 +17,11 @@ vi.mock("@/server/providers/google", async (importOriginal) => ({
 }));
 const takeGoogleBudget = vi.fn();
 vi.mock("@/server/providers/google/budget", () => ({ takeGoogleBudget }));
+const allowRequestOrOpen = vi.fn();
+vi.mock("@/server/services/writeLimit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/server/services/writeLimit")>()),
+  allowRequestOrOpen,
+}));
 
 const { getGoogleGapFill, getGooglePlaceId } = await import("@/server/services/googleGapService");
 const gapRoute = await import("@/app/api/places/[slug]/google/route");
@@ -32,6 +37,19 @@ beforeEach(() => {
   vi.mocked(getGooglePlaceId).mockReset().mockResolvedValue(null);
   google.photoUri.mockReset().mockResolvedValue("https://lh3.googleusercontent.com/p/x=w800");
   takeGoogleBudget.mockReset().mockResolvedValue(true);
+  allowRequestOrOpen.mockReset().mockResolvedValue(true);
+});
+
+describe("per-visitor Google limits", () => {
+  it("stops one visitor from using up the day's budget", async () => {
+    allowRequestOrOpen.mockResolvedValue(false);
+    const gap = await gapRoute.GET(req("/"), withSlug("manjarabad-fort"));
+    expect(await gap.json()).toEqual({ googlePlaceId: null, fill: null });
+    expect(getGoogleGapFill).not.toHaveBeenCalled();
+    const photo = await photoRoute.GET(req("/api/google/photo?name=places/x/photos/y"));
+    expect(photo.status).toBe(429);
+    expect(takeGoogleBudget).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/places/[slug]/google", () => {

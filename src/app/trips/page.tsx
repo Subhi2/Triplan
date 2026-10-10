@@ -1,32 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
-import { formatDuration, formatKm } from "@/lib/format";
+import { DeviceTrips } from "@/components/trip/DeviceTrips";
 import { SITE_NAME } from "@/lib/site";
-import { listTrips } from "@/server/services/tripService";
 
-// The list changes whenever anyone saves a trip.
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: `Your trips · ${SITE_NAME}`,
+  // Each device's own list: nothing here for search engines.
+  robots: { index: false, follow: true },
+};
 
-export const metadata: Metadata = { title: `Saved trips · ${SITE_NAME}` };
-
-const updated = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "Asia/Kolkata",
-});
-
-export default async function TripsPage() {
-  const trips = await listTrips();
+/** The trips saved or opened on this device. Each trip's link opens it for anyone. */
+export default function TripsPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
       <SiteNav current="/trips" />
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold">Saved trips</h1>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+            Your trips
+          </h1>
           <p className="text-sm text-stone-600 dark:text-stone-400">
-            Trips saved by everyone. Open one to see its route and places.
+            Trips saved or opened on this device. Share a trip by its link.
           </p>
         </div>
         <Link
@@ -36,39 +32,8 @@ export default async function TripsPage() {
           Plan a trip
         </Link>
       </header>
-      {trips.length === 0 ? (
-        <p className="text-sm text-stone-600 dark:text-stone-400">
-          No saved trips yet. Plan a trip and press Save trip.
-        </p>
-      ) : (
-        <ul className="divide-y divide-stone-200 dark:divide-stone-800" aria-label="Saved trips">
-          {trips.map((t) => (
-            <li key={t.id}>
-              <Link
-                href={`/trips/${t.id}`}
-                className="block rounded-md px-2 py-3 hover:bg-stone-100 dark:hover:bg-stone-900"
-              >
-                <span className="block font-semibold">{t.title}</span>
-                <span className="block text-sm">
-                  {t.from} → {t.to}
-                  {t.viaCount > 0 && ` · ${t.viaCount} stop${t.viaCount > 1 ? "s" : ""}`}
-                </span>
-                <span className="block text-xs text-stone-600 dark:text-stone-400">
-                  {[
-                    t.viaLabel,
-                    t.distanceKm !== null && formatKm(t.distanceKm * 1000),
-                    t.durationMin !== null && formatDuration(t.durationMin),
-                    t.vehicle === "bike" ? "Bike" : "Car",
-                    `saved ${updated.format(new Date(t.updatedAt))}`,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <DeviceTrips />
+      <SiteFooter />
     </main>
   );
 }

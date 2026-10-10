@@ -7,7 +7,7 @@ import { tripIdSchema } from "@/lib/savedTrip";
 import { SITE_NAME, tripHeadline } from "@/lib/site";
 import { getTrip } from "@/server/services/tripService";
 
-// Anyone may update a trip, so always show the latest version.
+// The saving device may update the trip at any time, so always show the latest version.
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };

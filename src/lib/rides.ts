@@ -63,12 +63,66 @@ export interface RideSummary {
   region: string;
   vehicle: Vehicle;
   tags: string[];
+  bestMonths: number[];
   stops: UrlStop[];
   distanceKm: number;
   durationMin: number;
   ascentM: number | null;
   hairpins: number;
   line: LngLat[];
+}
+
+/** Broad parts of India for filtering rides, by the first state a ride's region names. */
+export const RIDE_AREAS = ["South", "West", "North and Himalaya", "East and North-east"] as const;
+export type RideArea = (typeof RIDE_AREAS)[number];
+
+const AREA_OF_STATE: Record<string, RideArea> = {
+  karnataka: "South",
+  kerala: "South",
+  "tamil nadu": "South",
+  telangana: "South",
+  "andhra pradesh": "South",
+  puducherry: "South",
+  goa: "West",
+  maharashtra: "West",
+  gujarat: "West",
+  rajasthan: "West",
+  "madhya pradesh": "West",
+  "himachal pradesh": "North and Himalaya",
+  ladakh: "North and Himalaya",
+  "jammu and kashmir": "North and Himalaya",
+  "andaman and nicobar islands": "East and North-east",
+  uttarakhand: "North and Himalaya",
+  punjab: "North and Himalaya",
+  haryana: "North and Himalaya",
+  delhi: "North and Himalaya",
+  "uttar pradesh": "North and Himalaya",
+  "west bengal": "East and North-east",
+  sikkim: "East and North-east",
+  assam: "East and North-east",
+  "arunachal pradesh": "East and North-east",
+  meghalaya: "East and North-east",
+  nagaland: "East and North-east",
+  manipur: "East and North-east",
+  mizoram: "East and North-east",
+  tripura: "East and North-east",
+  odisha: "East and North-east",
+  bihar: "East and North-east",
+  jharkhand: "East and North-east",
+  chhattisgarh: "East and North-east",
+};
+
+/**
+ * "Himachal Pradesh and Ladakh" -> "North and Himalaya": the area of the first state the region
+ * names (state names with "and" in them, such as Jammu and Kashmir, match whole). Null for an
+ * unknown state.
+ */
+export function rideArea(region: string): RideArea | null {
+  const r = region.trim().toLowerCase();
+  const state = Object.keys(AREA_OF_STATE)
+    .sort((a, b) => b.length - a.length)
+    .find((s) => r === s || r.startsWith(`${s} `) || r.startsWith(`${s},`));
+  return state ? AREA_OF_STATE[state]! : null;
 }
 
 /** The planner link that opens a ride with the same stops. */

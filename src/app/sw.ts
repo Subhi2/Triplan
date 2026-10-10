@@ -1,6 +1,7 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { NetworkOnly, Serwist } from "serwist";
+import { isNeverCached } from "../lib/swCache";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -15,7 +16,18 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  // The first matching rule wins: our API and Google are never stored (src/lib/swCache.ts).
+  // A page that cannot load offline (and is not cached) shows /~offline instead of an error.
+  fallbacks: {
+    entries: [{ url: "/~offline", matcher: ({ request }) => request.destination === "document" }],
+  },
+  runtimeCaching: [
+    {
+      matcher: ({ url, sameOrigin }) => isNeverCached(url, sameOrigin),
+      handler: new NetworkOnly(),
+    },
+    ...defaultCache,
+  ],
 });
 
 serwist.addEventListeners();

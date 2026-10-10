@@ -23,6 +23,7 @@ function place(p: Partial<PlaceNear> & Pick<PlaceNear, "id" | "name" | "location
     rating: null,
     ratingCount: 0,
     bestMonths: [],
+    bestMonthsEstimated: false,
     thumbUrl: null,
     trending: false,
     notable: true,
@@ -72,11 +73,13 @@ const FORT_DETAIL: PlaceDetail = {
   district: "Hassan",
   state: "Karnataka",
   description: null,
+  descriptionCredit: null,
   rating: null,
   ratingCount: 0,
   trending: false,
   guide: null,
   carry: [],
+  estimate: null,
   media: [],
   googlePlaceId: null,
   videos: [],
@@ -228,12 +231,17 @@ test.describe("with location allowed", () => {
     await expect(page.getByText("Sakleshpur", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Within 2 hours by car" })).toBeVisible();
     expect(await locationRequests(page)).toBe(0);
+    // A list around a named place can be shared on.
+    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
   });
 
   test("ride there from a nearby place opens the planner and routes", async ({ page }) => {
     await mockApis(page);
     await page.goto("/nearby");
     await page.getByRole("button", { name: "Use my location" }).click();
+    // No Share around the rider's own position: it would hand out where they are.
+    await expect(rows(page).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Copy link" })).toHaveCount(0);
     await rows(page).first().getByRole("button").first().click();
     await expect(page.getByRole("heading", { name: "Manjarabad Fort" })).toBeVisible();
 

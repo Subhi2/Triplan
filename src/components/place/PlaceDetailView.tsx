@@ -45,6 +45,18 @@ function Field(props: { label: string; value: React.ReactNode; source?: string; 
   );
 }
 
+/** Says that the fields above or below are estimated, not checked for this place. */
+function EstimateNote({ basis }: { basis: string }) {
+  return (
+    <p className="text-xs text-stone-600 dark:text-stone-400">
+      <span className="mr-1.5 rounded-full border border-stone-300 px-2 py-0.5 font-bold dark:border-stone-600">
+        Estimate
+      </span>
+      {basis}. Not checked for this place yet.
+    </p>
+  );
+}
+
 function Section(props: { title: string; level: 2 | 3; children: React.ReactNode }) {
   const H = props.level === 2 ? "h2" : "h3";
   return (
@@ -90,6 +102,8 @@ export function PlaceDetailView({
 }: Props) {
   const cat = categoryStyle(place.category);
   const g = place.guide;
+  const guessed = place.estimate?.guide ? place.estimate.basis : null;
+  const guessedCarry = place.estimate?.carry ? place.estimate.basis : null;
   const H = headingLevel === 1 ? "h1" : "h2";
   const sub = headingLevel === 1 ? 2 : 3;
   const [lng, lat] = place.location;
@@ -216,7 +230,25 @@ export function PlaceDetailView({
         headingLevel={sub}
       />
 
-      {place.description && <p className="text-sm leading-relaxed">{place.description}</p>}
+      {place.description && (
+        <div className="flex flex-col gap-1">
+          <p className="text-sm leading-relaxed">{place.description}</p>
+          {place.descriptionCredit && (
+            <p className="text-xs text-stone-600 dark:text-stone-400">
+              From{" "}
+              <a
+                href={place.descriptionCredit.url}
+                rel={external}
+                target="_blank"
+                className="underline"
+              >
+                {place.descriptionCredit.source === "wikipedia" ? "Wikipedia" : "Wikidata"}
+              </a>
+              , {place.descriptionCredit.license}
+            </p>
+          )}
+        </div>
+      )}
 
       <Section title="Getting there" level={sub}>
         <dl className="grid grid-cols-2 gap-2">
@@ -227,6 +259,7 @@ export function PlaceDetailView({
                 ? g.bestVehicles.map((v) => VEHICLE_LABELS[v]).join(", ")
                 : null
             }
+            source={guessed ? "typical" : undefined}
           />
           <Field label="Last mile" value={g?.lastMileNote} wide />
           <Field
@@ -242,7 +275,8 @@ export function PlaceDetailView({
       </Section>
 
       <Section title="When to go" level={sub}>
-        <MonthStrip guide={g} month={month} />
+        {guessed && <EstimateNote basis={guessed} />}
+        <MonthStrip guide={g} month={month} estimated={Boolean(guessed)} />
         <dl className="mt-1 grid grid-cols-2 gap-2">
           <Field label="Time of day" value={g?.bestTimeOfDay} />
           <Field
@@ -253,6 +287,7 @@ export function PlaceDetailView({
       </Section>
 
       <Section title="What to carry" level={sub}>
+        {guessedCarry && !guessed && <EstimateNote basis={guessedCarry} />}
         <CarryList carry={place.carry} month={month} />
       </Section>
 
@@ -299,10 +334,9 @@ export function PlaceDetailView({
         )}
       </Section>
 
-      <Section title="Videos and reels" level={sub}>
-        {place.videos.length === 0 ? (
-          <p className="text-sm text-stone-600 dark:text-stone-400">No videos yet.</p>
-        ) : (
+      {/* Nothing fills videos until the YouTube discovery (phase 6): no empty section till then. */}
+      {place.videos.length > 0 && (
+        <Section title="Videos and reels" level={sub}>
           <ul className="space-y-1 text-sm">
             {place.videos.map((v) => (
               <li key={v.url}>
@@ -322,8 +356,8 @@ export function PlaceDetailView({
               </li>
             ))}
           </ul>
-        )}
-      </Section>
+        </Section>
+      )}
 
       <footer className="flex flex-col gap-2 border-t border-stone-200 pt-3 text-sm dark:border-stone-800">
         <p className="flex flex-wrap gap-x-4 gap-y-1">

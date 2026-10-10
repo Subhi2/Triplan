@@ -76,9 +76,14 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 | What | How |
 |---|---|
 | Picked route | Draws itself along the road, 1.2 s, ease-out (`useDrawIn`, both maps) |
-| Lists and cards | Rise 8 px into place (`animate-rise`), 40–60 ms apart, at most 10 staggered |
+| Lists and cards | Rise 18 px into place (`animate-rise`, 0.85 s, `--ease-expo`: races in, settles slowly), 40–60 ms apart, at most 10 staggered |
+| Switching route or filter | The place list comes in from the side the rider moved to (`animate-turn-next` / `-prev`, `useListTurn`): a later route or a narrower filter from the right, back from the left. A new trip rises as usual |
+| Numbers | km, ride time, hairpins and climb count up as their card appears (`CountUp`, 1.2 s, cubic ease-out), and on to the new value when it changes. On server-rendered pages only numbers below the fold count, when they scroll into view; screen readers get the final value |
+| Pointer proximity | With a mouse, cards and rows near the pointer lean, grow slightly and glow (`useCrown` + `crown`, `crown-glow`; the glide is 0.86 s, `--ease-glide`); place and Near me rows grow a 3 px teal rail (`crown-rail`). Never on touch |
 | Month bars | Grow from the bottom (`animate-grow-up`), 30 ms apart |
 | Bottom sheet | Springs up (`animate-sheet-in`, slight overshoot) |
-| Loading | Shimmer blocks where routes, places and photos will be |
-| Press / focus | Scale 0.97 on press; 3 px teal focus ring |
-| Reduced motion | Every animation and transition off (`prefers-reduced-motion`) |
+| Loading | Shimmer blocks where routes, places and photos will be; a teal-to-orange streak runs under the planner header while routes or places load (`LoadStreak`); a list reloading for the same route stays on screen, dimmed (`refreshing`) |
+| Press / hover / focus | Scale 0.97 on press; the main buttons rise 3 px with a soft teal shadow on hover (`lift`); text fields get a 2 px teal ring inside a soft glow (`field-glow`), other controls the 3 px teal focus ring; a search that finds nothing shakes the field (`nudge`) |
+| Reduced motion | Every animation and transition off (`prefers-reduced-motion`): no streak, no lift, no proximity, numbers shown at once |
+
+The motion is inspired by the BentoMotion layer of an internal admin panel: long expo curves, staggered entrances and pointer proximity, tuned to the Ghat Road look (teal and ghat orange, warm paper), not its colours.

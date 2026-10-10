@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SAFETY_KINDS, SAFETY_STYLE, telLink, type SafetyKind } from "@/lib/safety";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import type { SafetyState } from "./useSafetyAlong";
 
 interface Props {
@@ -20,7 +21,10 @@ const LISTED = 8;
  */
 export function SafetyStops({ state, selected, onSelect }: Props) {
   const [showAll, setShowAll] = useState(false);
-  if (state.status === "idle" || state.status === "error") return null;
+  if (state.status === "idle") return null;
+  if (state.status === "error") {
+    return <RetryAlert quiet message="Could not load safety stops." onRetry={state.retry} />;
+  }
   if (state.status === "loading") {
     return <div aria-hidden className="shimmer h-10 rounded-xl" />;
   }

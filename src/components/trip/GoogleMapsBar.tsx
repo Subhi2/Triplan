@@ -1,6 +1,7 @@
 "use client";
 
 import { MAX_GOOGLE_WAYPOINTS, type GoogleMapsTrip } from "@/lib/googleMaps";
+import { trackEvent } from "@/lib/track";
 
 interface Props {
   trip: GoogleMapsTrip;
@@ -46,7 +47,10 @@ export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Pro
       </span>
       <button
         type="button"
-        onClick={onDownloadGpx}
+        onClick={() => {
+          trackEvent("gpx");
+          onDownloadGpx();
+        }}
         aria-label="Download GPX file"
         title="Download the route, stops and places as a GPX file, for OsmAnd, Organic Maps and GPS units"
         className="inline-flex min-h-12 items-center rounded-xl border border-stone-300 bg-(--surface) px-4 font-bold whitespace-nowrap hover:border-stone-500 md:min-h-10 dark:border-stone-700"
@@ -56,9 +60,10 @@ export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Pro
       {trip.url ? (
         <a
           href={trip.url}
+          onClick={() => trackEvent("google_maps")}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-brand hover:bg-brand-dark inline-flex min-h-12 items-center rounded-xl px-4 font-bold whitespace-nowrap text-white shadow-sm md:min-h-10"
+          className="lift bg-brand hover:bg-brand-dark inline-flex min-h-12 items-center rounded-xl px-4 font-bold whitespace-nowrap text-white shadow-sm md:min-h-10"
         >
           Open in Google Maps
           {trip.waypointCount > 0 && (

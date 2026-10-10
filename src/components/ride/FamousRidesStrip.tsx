@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { formatKm } from "@/lib/format";
+import { CountUp } from "@/components/motion/CountUp";
+import { CrownList } from "@/components/motion/CrownList";
 import { ridePlannerUrl, type RideSummary } from "@/lib/rides";
 import { RouteSketch } from "./RouteSketch";
 
@@ -22,14 +23,18 @@ export function FamousRidesStrip({ rides }: { rides: RideSummary[] }) {
           All rides
         </Link>
       </div>
-      <ul className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1">
+      <CrownList
+        className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pt-2 pb-1"
+        selector="[data-ride]"
+        config={{ axis: "x", radius: 170, lift: 6, shift: 8, grow: 0.04, glow: 0.6 }}
+      >
         {rides.slice(0, 8).map((r) => (
           <li key={r.slug} className="w-40 shrink-0 snap-start">
             {/* A full page load: the planner reads its trip from the address once. */}
             <a
               href={ridePlannerUrl(r)}
               data-ride={r.slug}
-              className="flex h-full flex-col gap-1.5 rounded-xl border border-stone-200 bg-(--surface) p-2 hover:border-stone-400 dark:border-stone-700"
+              className="crown crown-glow flex h-full flex-col gap-1.5 rounded-xl border border-stone-200 bg-(--surface) p-2 hover:border-stone-400 dark:border-stone-700"
             >
               <RouteSketch
                 line={r.line}
@@ -37,13 +42,18 @@ export function FamousRidesStrip({ rides }: { rides: RideSummary[] }) {
               />
               <span className="line-clamp-2 text-sm leading-tight font-bold">{r.title}</span>
               <span className="tabular mt-auto font-mono text-xs text-stone-600 dark:text-stone-400">
-                {formatKm(r.distanceKm * 1000)}
-                {r.hairpins > 0 && ` · ${r.hairpins} hairpins`}
+                <CountUp value={r.distanceKm} unit="km" fromServer />
+                {r.hairpins > 0 && (
+                  <>
+                    {" · "}
+                    <CountUp value={r.hairpins} fromServer /> hairpins
+                  </>
+                )}
               </span>
             </a>
           </li>
         ))}
-      </ul>
+      </CrownList>
     </section>
   );
 }

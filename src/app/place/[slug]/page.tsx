@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PlaceDetailView } from "@/components/place/PlaceDetailView";
+import { ShareButtons } from "@/components/site/ShareButtons";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
 import { categoryStyle } from "@/lib/categories";
@@ -67,6 +68,9 @@ function placeJsonLd(place: PlaceDetail) {
   };
 }
 
+const secondary =
+  "text-brand-dark inline-flex min-h-11 items-center text-sm font-bold hover:underline md:min-h-0 dark:text-teal-300";
+
 export default async function PlacePage({ params }: Props) {
   const place = await loadPlace((await params).slug);
   if (!place) notFound();
@@ -87,12 +91,25 @@ export default async function PlacePage({ params }: Props) {
         month={new Date().getMonth() + 1}
         headingLevel={1}
         actions={
-          <Link
-            href={`/?${new URLSearchParams({ to: destination }).toString()}`}
-            className="bg-brand hover:bg-brand-dark inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-white md:min-h-0 md:py-1.5"
-          >
-            Plan a ride here
-          </Link>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Link
+              href={`/?${new URLSearchParams({ to: destination }).toString()}`}
+              className="bg-brand hover:bg-brand-dark inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-white md:min-h-0 md:py-1.5"
+            >
+              Plan a ride here
+            </Link>
+            <Link
+              href={`/nearby?${new URLSearchParams({ at: destination }).toString()}`}
+              className={secondary}
+            >
+              What&apos;s near here
+            </Link>
+            <ShareButtons
+              title={place.name}
+              text={`${place.name}: when to go, how to get there, what to carry`}
+              linkClassName={secondary}
+            />
+          </div>
         }
       />
       <SiteFooter />

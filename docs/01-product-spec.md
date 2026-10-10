@@ -51,7 +51,7 @@ Help riders plan a trip by showing everything worth stopping for along the exact
    - Reviews list.
    - "Add to trip" button: inserts the place as a via stop at its place along the route (before the first via stop further along) and recomputes the route. Once added, it shows "In your trip (stop N)" and "Remove from trip".
    - Links to related videos / reels (from the hidden-places pipeline).
-5. **Saved trips** (open, no sign-in): save, rename, reopen, save changes or save as a new trip, and share the trip's link (`/trips/[id]`). There are no owners: every saved trip is in one list that everyone sees, and anyone with a trip's link can open and update it. A reopened trip selects the route option it was saved with.
+5. **Saved trips** (no sign-in): save, rename, reopen, save changes or save as a new trip, and share the trip's link (`/trips/[id]`). Anyone with a trip's link can open it and save a copy; only the device that saved it can rename it or save changes. "Your trips" lists the trips saved or opened on this device. A reopened trip selects the route option it was saved with.
 
 ### Near me (G2, added 2026-09-30)
 
@@ -73,7 +73,7 @@ Privacy: the position is taken only on a tap, rounded to about 100 m before it l
 17. **Elevation profile** of the selected route: total climb and descent, the highest point, and each big climb ("climbs 853 m in 16 km to Valparai"). Scrubbing the chart moves a marker along the route on the map.
 18. **3D ride preview**: the camera rides the route over 3D terrain, slower through ghats, with km, height and the places as it passes them. It can be saved as a video for Instagram or WhatsApp.
 19. **Ride story**: a tall poster of the trip (route, km, time, climb, hairpins, top stops) shared from the phone's share sheet.
-20. **Famous rides** (`/rides`): about 20 well-known Indian rides, each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. The empty planner offers them as "Try a famous ride".
+20. **Famous rides** (`/rides`): about 25 well-known Indian rides, filtered by part of India and by month, each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. The empty planner offers them as "Try a famous ride".
 21. **Plan in plain words** (when the AI key is set): "2-day monsoon ride from Pune with waterfalls, under 250 km" fills the planner. Typed text is sent to the AI provider to read it, and is never stored.
 22. **Safety stops** along the route: hospitals, police, ATMs, puncture and repair shops, with how many there are per 50 km and the longest stretch without a hospital.
 23. **Multi-day split**: riding hours per day, an overnight town near each split with stays nearby, the place list in Day 1 / Day 2 sections, one GPX track per day.
@@ -107,7 +107,7 @@ User stories:
 
 1. **Home / Trip planner** (`/`): trip form on top (collapsible on mobile), map, route cards, place list. Mobile: map on top half, list in a draggable bottom sheet.
 2. **Place detail** (`/place/[slug]`).
-3. **Saved trips** (`/trips`, everyone's trips), **trip** (`/trips/[id]`: the planner opened with the trip; this is its share link).
+3. **Your trips** (`/trips`, the trips saved or opened on this device), **trip** (`/trips/[id]`: the planner opened with the trip; this is its share link).
 4. **Add a place** (`/contribute`).
 5. **Admin** (`/admin/*`): moderation queues, discovery queue.
 6. **Sign in** (`/login`), only if accounts are added later.
@@ -124,7 +124,7 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 - Adding via stop "Sakleshpur" produces a route passing within 1 km of Sakleshpur town.
 - With seed data loaded, the Sakleshpur route lists Manjarabad Fort and Ballalarayana Durga; the Chikkamagaluru route lists Belur. Mullayanagiri, Devaramane and Shravanabelagola are real detours: they appear only with a 10 km or wider corridor and are flagged as detours. Neither lists places only on the other route (with default 5 km corridor, detours flagged).
 - Places are ordered by km from start and km values are within 5% of real road distance.
-- Place detail shows all guide fields, with "Not known yet" for empty ones rather than hiding them.
+- Place detail shows all guide fields, with "Not known yet" for empty ones rather than hiding them. A place nobody has written a guide for gets typical months, vehicle and items to carry for its category and climate, marked as an estimate.
 - Works at 375 px width; Lighthouse PWA and accessibility scores ≥ 90.
 - Route + places response under 2 s for a 350 km route with 5,000 places in the DB (routing cached).
 

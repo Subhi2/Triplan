@@ -7,8 +7,11 @@ import { useLocate } from "@/components/geo/useLocate";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapFrame, MapStop } from "@/components/map/types";
 import { PlacePanel } from "@/components/place/PlacePanel";
+import { ShareButtons } from "@/components/site/ShareButtons";
+import { SiteMenu } from "@/components/site/SiteMenu";
 import type { MapBias } from "@/components/trip/StopInput";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { roundLngLat3, type LngLat } from "@/lib/geo";
 import {
@@ -24,6 +27,7 @@ import {
   type ReachMinutes,
 } from "@/lib/nearby";
 import { SITE_NAME } from "@/lib/site";
+import { trackEvent } from "@/lib/track";
 import type { Vehicle } from "@/lib/trip";
 import { NearbyFilters, NearbyList } from "./NearbyList";
 import { nearbyRowId } from "./NearbyRow";
@@ -86,6 +90,11 @@ export function Nearby() {
   }, [query]);
 
   const nearby = useNearbyPlaces(origin?.location ?? null, within, vehicle);
+  // One Near me search per point picked (location, typed place or map tap).
+  const originKey = origin ? origin.location.join() : null;
+  useEffect(() => {
+    if (originKey) trackEvent("near_me");
+  }, [originKey]);
   const all = useMemo(() => (nearby.status === "ok" ? nearby.data.places : []), [nearby]);
   const roadTimes = nearby.status === "ok" ? nearby.data.roadTimes : "osrm";
 
@@ -177,6 +186,7 @@ export function Nearby() {
       tripAction={
         origin && (
           <Link
+            onClick={() => trackEvent("ride_there")}
             href={rideThereHref(
               {
                 label: source === "gps" ? MY_LOCATION : (originName ?? "Start"),
@@ -224,6 +234,16 @@ export function Nearby() {
           </span>
         )}
       </div>
+      {/* Only around a named place: a list around the rider's own position would share it. */}
+      {nearby.status === "ok" && origin?.label && (
+        <div className="-mt-2 flex flex-wrap items-center gap-x-3">
+          <ShareButtons
+            title={`Near ${origin.label}`}
+            text={`Places within ${WITHIN_WORDS[within]} of ${origin.label} by ${vehicle}`}
+            linkClassName="text-brand-dark inline-flex min-h-11 items-center text-sm font-bold hover:underline md:min-h-0 dark:text-teal-300"
+          />
+        </div>
+      )}
       {nearby.status === "loading" && (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-stone-600 dark:text-stone-400">Finding places in reach…</p>
@@ -237,11 +257,7 @@ export function Nearby() {
           ))}
         </div>
       )}
-      {nearby.status === "error" && (
-        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-          {nearby.message}
-        </p>
-      )}
+      {nearby.status === "error" && <RetryAlert message={nearby.message} onRetry={nearby.retry} />}
       {nearby.status === "ok" && (
         <>
           {roadTimes === "straight" && (
@@ -420,12 +436,25 @@ export function Nearby() {
               )}
             </div>
           </div>
-          <Link
-            href="/trips"
-            className="text-brand-dark inline-flex min-h-11 shrink-0 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
-          >
-            {floatingHeader ? "Trips" : "Saved trips"}
-          </Link>
+          {floatingHeader ? (
+            <SiteMenu className="shrink-0" />
+          ) : (
+            <nav aria-label="Main" className="flex shrink-0 items-center">
+              {[
+                { href: "/rides", label: "Rides" },
+                { href: "/trips", label: "Trips" },
+                { href: "/about", label: "About" },
+              ].map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          )}
         </header>
         {isDesktop && <div className="mt-3">{panel}</div>}
       </aside>

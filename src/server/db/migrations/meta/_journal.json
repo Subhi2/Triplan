@@ -120,6 +120,20 @@
       "when": 1791218605286,
       "tag": "0016_place_area",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791565771919,
+      "tag": "0017_trip_edit_token",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791599262289,
+      "tag": "0018_place_description_credit",
+      "breakpoints": true
     }
   ]
 }

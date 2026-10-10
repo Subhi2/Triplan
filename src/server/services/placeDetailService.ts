@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { estimateGuide, parseElevation } from "@/lib/guideDefaults";
 import {
   GUIDE_VEHICLES,
   type GuideVehicle,
@@ -20,6 +21,9 @@ interface DetailRow extends Record<string, unknown> {
   district: string | null;
   state: string | null;
   description: string | null;
+  description_source: string | null;
+  description_license: string | null;
+  description_url: string | null;
   rating_avg: number | null;
   rating_count: number;
   trending_score: number;
@@ -136,7 +140,8 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
   const [row] = await db.execute<DetailRow>(sql`
     SELECT p.id, p.slug, p.name, c.slug AS category,
            ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
-           p.district, p.state, p.description, p.rating_avg, p.rating_count, p.trending_score,
+           p.district, p.state, p.description, p.description_source, p.description_license,
+           p.description_url, p.rating_avg, p.rating_count, p.trending_score,
            p.osm_id, p.osm_tags, p.google_place_id,
            pg.place_id IS NOT NULL AS has_guide, pg.best_vehicles::text[] AS best_vehicles,
            pg.last_mile_note, pg.road_condition, pg.best_months, pg.ok_months, pg.avoid_months,
@@ -176,6 +181,22 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
   ]);
 
   const tags = row.osm_tags ?? {};
+  const curatedGuide = toGuide(row);
+  const curatedCarry = carry.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    months: c.months,
+    reason: c.reason,
+  }));
+  // Nobody wrote a guide or a carry list: estimate them, and say so on the page.
+  const estimated =
+    curatedGuide && curatedCarry.length > 0
+      ? null
+      : estimateGuide({
+          category: row.category,
+          location: [row.lng, row.lat],
+          elevationM: parseElevation(tags.ele),
+        });
   return {
     id: row.id,
     slug: row.slug,
@@ -185,11 +206,29 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
     district: row.district,
     state: row.state,
     description: row.description ?? (tags.description?.trim() || null),
+    descriptionCredit:
+      row.description &&
+      (row.description_source === "wikipedia" || row.description_source === "wikidata") &&
+      row.description_license &&
+      row.description_url
+        ? {
+            source: row.description_source,
+            license: row.description_license,
+            url: row.description_url,
+          }
+        : null,
     rating: row.rating_avg,
     ratingCount: row.rating_count,
     trending: row.trending_score >= TRENDING_MIN_SCORE,
-    guide: toGuide(row),
-    carry: carry.map((c) => ({ slug: c.slug, name: c.name, months: c.months, reason: c.reason })),
+    guide: curatedGuide ?? estimated?.guide ?? null,
+    carry: curatedCarry.length > 0 ? curatedCarry : (estimated?.carry ?? []),
+    estimate: estimated
+      ? {
+          guide: !curatedGuide,
+          carry: curatedCarry.length === 0,
+          basis: estimated.basis,
+        }
+      : null,
     media: media.map((m) => ({
       url: m.url,
       thumbUrl: m.thumb_url,

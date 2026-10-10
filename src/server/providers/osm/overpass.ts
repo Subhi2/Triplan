@@ -35,6 +35,16 @@ const PLACE_FILTERS = [
   '["amenity"="place_of_worship"]["wikidata"]',
   '["amenity"="place_of_worship"]["wikipedia"]',
   '["amenity"="fuel"]',
+  // Added 2026-10-10 (G4): mountain passes, hot springs, glaciers, treks, and food stops riders
+  // look for (highway services, dhabas, notable restaurants and coffee houses), not every eatery.
+  '["mountain_pass"="yes"]["name"]',
+  '["natural"~"^(hot_spring|glacier)$"]["name"]',
+  '["route"="hiking"]["name"]',
+  '["highway"="trailhead"]["name"]',
+  '["highway"~"^(services|rest_area)$"]["name"]',
+  '["amenity"~"^(restaurant|fast_food)$"]["name"~"dhaba",i]',
+  '["amenity"~"^(restaurant|fast_food|cafe)$"]["wikidata"]',
+  '["amenity"="cafe"]["name"~"coffee (house|day)",i]',
 ];
 
 /**
@@ -253,16 +263,18 @@ export function createOverpassProvider(urls: string[], userAgent: string): OsmPl
   let preferred = 0;
   // An empty answer is checked with the next server that answers: some servers answer tiles
   // full of places (Jaipur, 2026-10-09) with nothing, the state's area included. Empty is
-  // accepted when no other server answers or every one agrees.
+  // accepted when another server agrees (or only one is configured). When no other server
+  // answers, the tile is treated as busy and retried, never taken as empty: an empty tile
+  // ends with its places marked closed.
   async function run(query: string, areaIso: string): Promise<OsmElement[]> {
     let lastBusy: OsmServerBusyError | undefined;
-    let empty: OsmElement[] | undefined;
+    let sawEmpty = false;
     for (let i = 0; i < urls.length; i++) {
       const index = (preferred + i) % urls.length;
       try {
         const elements = await fetchFrom(urls[index]!, userAgent, query, areaIso);
-        if (elements.length === 0 && !empty && urls.length > 1) {
-          empty = elements;
+        if (elements.length === 0 && !sawEmpty && urls.length > 1) {
+          sawEmpty = true;
           continue;
         }
         preferred = index;
@@ -272,7 +284,9 @@ export function createOverpassProvider(urls: string[], userAgent: string): OsmPl
         lastBusy = err;
       }
     }
-    if (empty) return empty;
+    if (sawEmpty) {
+      throw new OsmServerBusyError("empty answer, and no other server answered to confirm it", 429);
+    }
     throw lastBusy!;
   }
   return {

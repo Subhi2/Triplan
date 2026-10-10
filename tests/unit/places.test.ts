@@ -94,6 +94,7 @@ describe("bestAlongRoute", () => {
     rating: null,
     ratingCount: 0,
     bestMonths: [],
+    bestMonthsEstimated: false,
     thumbUrl: null,
     trending: false,
     notable: false,

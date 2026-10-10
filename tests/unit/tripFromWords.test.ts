@@ -170,7 +170,17 @@ describe("tripFromWords", () => {
     deps.provider = provider(intent({ to: "Kolad" }));
     const out = await tripFromWords("Pune to Kolad", undefined, deps);
     expect(out.ok && out.trip.to?.label).toBe("Kolad");
+    expect(out.ok && out.trip.days).toBeNull();
     expect(deps.placesNear).not.toHaveBeenCalled();
+  });
+
+  it("opens a 2-day ride split into two days, at most ten", async () => {
+    deps.provider = provider(intent({ to: "Kolad", days: 2 }));
+    const two = await tripFromWords("2-day ride from Pune to Kolad", undefined, deps);
+    expect(two.ok && two.trip.days).toBe(2);
+    deps.provider = provider(intent({ to: "Kolad", days: 14 }));
+    const long = await tripFromWords("two weeks from Pune to Kolad", undefined, deps);
+    expect(long.ok && long.trip.days).toBe(10);
   });
 
   it("explains what is missing", async () => {

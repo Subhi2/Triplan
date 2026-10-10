@@ -28,7 +28,7 @@ const normalise = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "")
  * data), then Photon results for everything else, minus Photon's copies of places we already list
  * (same OSM id, or the same name within 3 km). A place of ours found only as a misspelling ("Samsi"
  * for "samse") comes after Photon's places named exactly what was typed. If Photon is down, our
- * places still come back.
+ * places still come back, and if the database is down, Photon's do.
  */
 export async function suggestPlaces(
   query: string,
@@ -36,7 +36,10 @@ export async function suggestPlaces(
   deps: SuggestDeps = defaultDeps(),
 ): Promise<GeocodeResult[]> {
   const [local, remote] = await Promise.all([
-    deps.local(query, MAX_LOCAL_SUGGESTIONS),
+    deps.local(query, MAX_LOCAL_SUGGESTIONS).catch((err: unknown) => {
+      console.error("Our place suggestions failed", err);
+      return [];
+    }),
     deps.photon.search(query, { limit: MAX_SUGGESTIONS, ...bias }).catch((err: unknown) => {
       console.error("Photon suggestions failed", err);
       return [];

@@ -6,6 +6,7 @@
 //   pnpm db:import-osm -- --region=odisha --tile-deg=0.5       (smaller first tiles: dense states)
 //   pnpm db:import-osm -- --region=rajasthan --part=2/3        (one of 3 runs sharing a state)
 //   pnpm db:import-osm -- --region=goa --dry-run               (fetch and classify, no database writes)
+//   pnpm db:import-osm -- --region=goa --resume --force        (close more than 3% of a state)
 // One Overpass request at a time, over the endpoints in OVERPASS_URLS (the next is tried when one
 // is down); each region is split into tiles (1° by default), and a tile that is too big is split
 // again (src/server/services/osmTiles.ts). The run stops if tiles keep failing. Re-running is
@@ -13,17 +14,21 @@
 // .import-progress/places-<region>.json; --resume skips those tiles and the regions that finished.
 // Tiles that do not touch the state's outline (from Nominatim, kept in .import-progress) are
 // skipped: a state's box is often half another state.
+// When a region is complete, places it did not see are closed only if the OSM API says they are
+// deleted or no longer a place we import, and at most 3% of the state's places without --force
+// (src/server/services/osmClose.ts). The full list goes to .import-progress/close-<region>.json.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { closeDb } from "../src/server/db";
 import {
+  getOsmCurrentProvider,
   getOsmPlacesProvider,
   getRegionOutline,
   type BBox,
   type RegionOutline,
 } from "../src/server/providers/osm";
-import { classifyOsmElement, dedupeCandidates } from "../src/server/services/osmClassify";
+import { classifyOsmElement, splitDuplicates } from "../src/server/services/osmClassify";
 import {
   mergeProgress,
   PROGRESS_DIR,
@@ -32,6 +37,7 @@ import {
   writeProgress,
 } from "../src/server/services/importProgress";
 import {
+  closeOsmDuplicates,
   closeStaleOsmPlaces,
   databaseNow,
   ensureCategories,
@@ -80,6 +86,7 @@ const state: TileRunState = { failedInARow: 0 };
 interface ImportOptions {
   dryRun: boolean;
   resume: boolean;
+  force: boolean;
   tileDeg: number | undefined;
   part: TilePart | undefined;
 }
@@ -90,7 +97,7 @@ interface ImportOptions {
  */
 async function importRegion(
   key: OsmRegionKey,
-  { dryRun, resume, tileDeg, part }: ImportOptions,
+  { dryRun, resume, force, tileDeg, part }: ImportOptions,
 ): Promise<boolean> {
   const provider = getOsmPlacesProvider();
   const file = progressPath("places", key);
@@ -121,7 +128,7 @@ async function importRegion(
     fresh = false;
   };
   save();
-  const totals = { places: 0, inserted: 0, updated: 0, linked: 0, duplicates: 0 };
+  const totals = { places: 0, inserted: 0, updated: 0, linked: 0, duplicates: 0, merged: 0 };
   const byCategory = new Map<string, number>();
 
   console.log(`\n${time()} ${region.name} (${region.iso}): ${regionTiles(region).length} tiles`);
@@ -152,7 +159,7 @@ async function importRegion(
       save();
     },
     async onTile(tileElements, tile, { done, left }) {
-      const candidates = dedupeCandidates(
+      const { kept: candidates, dropped } = splitDuplicates(
         tileElements.map(classifyOsmElement).filter((c) => c !== null),
       );
       for (const c of candidates) byCategory.set(c.category, (byCategory.get(c.category) ?? 0) + 1);
@@ -165,6 +172,8 @@ async function importRegion(
         return;
       }
       const r = await upsertOsmPlaces(candidates, region.name);
+      // Copies of a kept place (a fort also mapped as heritage) saved by an earlier import.
+      totals.merged += await closeOsmDuplicates(dropped.map((d) => d.osmId));
       totals.inserted += r.inserted;
       totals.updated += r.updated;
       totals.linked += r.linked;
@@ -196,16 +205,42 @@ async function importRegion(
   // empty state. Treat it as failed so its existing places are not all marked closed.
   const empty = elements === 0;
   if (empty) console.log(`  No places found: check the ISO3166-2 code ${region.iso} in OSM.`);
+  let closeRefused = false;
   if (!dryRun) {
     console.log(
       `  ${totals.inserted} inserted, ${totals.updated} updated, ${totals.linked} linked to ` +
-        `curated places, ${totals.duplicates} skipped as duplicates of curated places`,
+        `curated places, ${totals.duplicates} skipped as duplicates of curated places, ` +
+        `${totals.merged} earlier copies of the same place closed`,
     );
     if (failed.length === 0 && pending === 0 && !empty) {
-      const closed = await closeStaleOsmPlaces(region.name, all.startedAt);
-      console.log(`  ${closed} places no longer in OpenStreetMap marked closed`);
-      progress.complete = true;
-      save();
+      const plan = await closeStaleOsmPlaces(region.name, all.startedAt, {
+        osm: getOsmCurrentProvider(),
+        force,
+      });
+      const list = {
+        close: plan.close.map((c) => ({ ...c.place, reason: c.reason })),
+        stillThere: plan.stillThere,
+        unchecked: plan.unchecked,
+      };
+      writeFileSync(join(PROGRESS_DIR, `close-${key}.json`), JSON.stringify(list, null, 1));
+      console.log(
+        `  ${plan.candidates} places not seen: ${plan.close.length} gone from OpenStreetMap, ` +
+          `${plan.stillThere.length} still there and ${plan.unchecked.length} unchecked (kept open)`,
+      );
+      for (const c of plan.close.slice(0, 15)) {
+        console.log(`    ${c.reason} ${c.place.osmId} ${c.place.name} (${c.place.category})`);
+      }
+      if (plan.refused) {
+        closeRefused = true;
+        console.log(
+          `  NOT closed: more than ${plan.limit} places. Check close-${key}.json, then close them ` +
+            `with: pnpm db:import-osm -- --region=${key} --resume --force`,
+        );
+      } else {
+        console.log(`  ${plan.close.length} places marked closed`);
+        progress.complete = true;
+        save();
+      }
     } else if (failed.length > 0) {
       console.log(
         `  ${failed.length} tiles failed; re-run to retry. Stale places were not closed.`,
@@ -215,7 +250,7 @@ async function importRegion(
     }
   }
   // A part is done when its own tiles are; the region is complete when no tile is left.
-  return failed.length === 0 && !empty && (pending === 0 || part !== undefined);
+  return failed.length === 0 && !empty && !closeRefused && (pending === 0 || part !== undefined);
 }
 
 async function main() {
@@ -228,6 +263,7 @@ async function main() {
       "tile-deg": { type: "string" },
       part: { type: "string" },
       "dry-run": { type: "boolean", default: false },
+      force: { type: "boolean", default: false },
     },
   });
   const { keys, unknown } = resolveRegionKeys(values.region ?? "", values.skip);
@@ -235,7 +271,7 @@ async function main() {
     if (unknown.length > 0) console.error(`Unknown regions: ${unknown.join(", ")}`);
     console.error(
       "Usage: pnpm db:import-osm -- --region=<all|key[,key...]> [--skip=key[,key...]] [--resume]" +
-        " [--tile-deg=0.5] [--part=1/3] [--dry-run]\n" +
+        " [--tile-deg=0.5] [--part=1/3] [--dry-run] [--force]\n" +
         `Regions: ${Object.keys(OSM_REGIONS).join(", ")}`,
     );
     process.exitCode = 1;
@@ -266,7 +302,8 @@ async function main() {
   const incomplete: OsmRegionKey[] = [];
   for (const [i, key] of keys.entries()) {
     try {
-      if (!(await importRegion(key, { dryRun, resume, tileDeg, part }))) incomplete.push(key);
+      const options = { dryRun, resume, force: values.force, tileDeg, part };
+      if (!(await importRegion(key, options))) incomplete.push(key);
     } catch (err) {
       if (!(err instanceof ImportStopped)) throw err;
       console.error(`\n${time()} Stopped: ${err.message}.`);

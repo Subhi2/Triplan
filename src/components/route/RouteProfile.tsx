@@ -4,6 +4,7 @@ import { useState } from "react";
 import { elevationAt, type Climb, type ElevationProfile } from "@/lib/elevation";
 import { formatKm, formatMetres } from "@/lib/format";
 import { TERRAIN_CREDIT_SHORT } from "@/lib/terrain";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import { ElevationChart, niceStep } from "./ElevationChart";
 import type { ProfileState } from "./useRouteProfiles";
 
@@ -23,7 +24,12 @@ export function climbSummary(c: Climb): string {
 
 /** The selected route's ups and downs: totals, the chart, the big climbs, a table of heights. */
 export function RouteProfile({ state, ghats, cursorKm, onCursorChange, markKm }: Props) {
-  if (!state || state.status === "error" || state.status === "none") return null;
+  if (!state || state.status === "none") return null;
+  if (state.status === "error") {
+    return state.retry ? (
+      <RetryAlert quiet message="Could not load the ups and downs." onRetry={state.retry} />
+    ) : null;
+  }
   return (
     <section aria-labelledby="profile-heading" className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">

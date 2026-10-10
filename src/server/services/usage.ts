@@ -1,12 +1,14 @@
 import { after } from "next/server";
 import { sql } from "drizzle-orm";
+import type { UsageEvent } from "@/lib/usageEvents";
 import { getDb } from "../db";
 
 // Counts per UTC day in usage_daily: routes planned (shown on About), AI requests and tokens (the
 // AI budget). Counted in the database, so it holds across serverless instances. Nothing about who
 // asked is stored.
 
-export type UsageKey = "route_planned" | "ai_trip" | "ai_tokens_in" | "ai_tokens_out" | "story";
+export type UsageKey =
+  "route_planned" | "ai_trip" | "ai_tokens_in" | "ai_tokens_out" | "story" | `event:${UsageEvent}`;
 
 /** Adds `by` to today's count for `key`; returns the new count for today. */
 export async function countUsage(key: UsageKey | `test:${string}`, by = 1): Promise<number> {

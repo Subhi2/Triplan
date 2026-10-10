@@ -1,6 +1,7 @@
 import type { LineString } from "geojson";
 import { sql } from "drizzle-orm";
 import type { LngLat } from "@/lib/geo";
+import { estimateBestMonths } from "@/lib/guideDefaults";
 import { TRENDING_MIN_SCORE, type PlaceAlong } from "@/lib/places";
 import { getDb } from "../db";
 
@@ -69,6 +70,8 @@ export async function placesAlong(
 }
 
 export function toPlaceAlong(row: PlaceAlongRow): PlaceAlong {
+  // No curated months: the typical ones for the category and climate, marked as estimated.
+  const estimated = row.bestMonths.length === 0;
   return {
     id: row.id,
     slug: row.slug,
@@ -79,7 +82,8 @@ export function toPlaceAlong(row: PlaceAlongRow): PlaceAlong {
     detourKm: row.detourM / 1000,
     rating: row.ratingAvg,
     ratingCount: row.ratingCount,
-    bestMonths: row.bestMonths,
+    bestMonths: estimated ? estimateBestMonths(row.category, row.location) : row.bestMonths,
+    bestMonthsEstimated: estimated,
     thumbUrl: row.thumbUrl,
     trending: row.trendingScore >= TRENDING_MIN_SCORE,
     notable: row.notable,

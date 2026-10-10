@@ -1,5 +1,6 @@
 import { categoryStyle } from "@/lib/categories";
 import type { LngLat } from "@/lib/geo";
+import { MAX_DAYS } from "@/lib/multiDay";
 import type { GeocodeResult } from "@/lib/trip";
 import type { TripUrlState, UrlStop } from "@/lib/tripUrl";
 import type { TripIntent, TripIntentProvider, TripIntentResult } from "../providers/llm";
@@ -148,7 +149,8 @@ export async function tripFromWords(
     categories: intent.categories,
     maxDetourKm: null,
     rideHours: null,
-    days: null,
+    // "A 2-day ride" opens the planner split into two days.
+    days: intent.days ? Math.min(MAX_DAYS, intent.days) : null,
   };
   const kinds = intent.categories.map((c) => categoryStyle(c).name.toLowerCase()).join(", ");
   const summary = [

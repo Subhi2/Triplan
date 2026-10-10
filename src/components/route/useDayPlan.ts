@@ -8,7 +8,7 @@ import type { RouteOption } from "@/lib/trip";
 export type DayPlanState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "error" }
+  | { status: "error"; retry: () => void }
   | { status: "ok"; routeId: string; plan: DayPlan };
 
 /**
@@ -22,6 +22,7 @@ export function useDayPlan(
   needed: boolean,
 ): DayPlanState {
   const [state, setState] = useState<DayPlanState>({ status: "idle" });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!route || !needed) {
       setState({ status: "idle" });
@@ -48,9 +49,11 @@ export function useDayPlan(
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setState({ status: "ok", routeId: route.id, plan: (await res.json()) as DayPlan });
     })().catch(() => {
-      if (!ctrl.signal.aborted) setState({ status: "error" });
+      if (!ctrl.signal.aborted) {
+        setState({ status: "error", retry: () => setAttempt((n) => n + 1) });
+      }
     });
     return () => ctrl.abort();
-  }, [route, hoursPerDay, days, needed]);
+  }, [route, hoursPerDay, days, needed, attempt]);
   return state;
 }

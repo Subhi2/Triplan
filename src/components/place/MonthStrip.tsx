@@ -13,6 +13,12 @@ const RATING_STYLE: Record<
   avoid: { label: "Avoid", bar: "h-3 bg-ghat", now: "Better avoided now" },
 };
 const UNKNOWN_BAR = "h-2 bg-stone-200 dark:bg-stone-700";
+/** For estimated months: the same scale, said less firmly. */
+const ESTIMATED_NOW: Record<NonNullable<MonthRating>, string> = {
+  best: "Usually a good time now",
+  ok: "Usually OK now",
+  avoid: "Usually better avoided now",
+};
 
 const MONTH_LONG = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i, 1).toLocaleString("en-IN", { month: "long" }),
@@ -22,10 +28,12 @@ interface Props {
   guide: Pick<PlaceGuide, "bestMonths" | "okMonths" | "avoidMonths"> | null;
   /** The current month (1–12), outlined. */
   month: number;
+  /** The months are estimated (src/lib/guideDefaults.ts): softer words, lighter bars. */
+  estimated?: boolean;
 }
 
 /** Twelve bars, January to December, marked best / ok / avoid, with the ranges in words. */
-export function MonthStrip({ guide, month }: Props) {
+export function MonthStrip({ guide, month, estimated = false }: Props) {
   const ratings = monthRatings(guide);
   if (ratings.every((r) => r === null)) return <NotKnown />;
 
@@ -48,10 +56,14 @@ export function MonthStrip({ guide, month }: Props) {
               : "text-brand-dark dark:text-teal-300"
           }`}
         >
-          {RATING_STYLE[nowRating].now}, in {MONTH_LONG[month - 1]}
+          {estimated ? ESTIMATED_NOW[nowRating] : RATING_STYLE[nowRating].now}, in{" "}
+          {MONTH_LONG[month - 1]}
         </p>
       )}
-      <ol className="grid grid-cols-12 items-end gap-1" aria-label="Months to visit">
+      <ol
+        className={`grid grid-cols-12 items-end gap-1 ${estimated ? "opacity-70" : ""}`}
+        aria-label={estimated ? "Months to visit, estimated" : "Months to visit"}
+      >
         {ratings.map((r, i) => {
           const name = MONTH_SHORT[i]!;
           const label = r ? RATING_STYLE[r].label : "Not known";

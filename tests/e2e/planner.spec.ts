@@ -254,6 +254,72 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
   await expect(cards).toHaveCount(1);
 });
 
+test("a failed request offers Try again instead of a dead end", async ({ page }) => {
+  await mockApis(page, []);
+  // The routing server and then the place list are down until Try again is pressed. (A switch,
+  // not a count of calls: in development React runs each effect twice, so requests come twice.)
+  let routeDown = true;
+  await page.route("**/api/route", (route) =>
+    routeDown
+      ? route.fulfill({ status: 502, json: { error: "The routing service is unavailable" } })
+      : route.fallback(),
+  );
+  // Only the place list's request (the ride check asks for fuel stations on its own).
+  let placesDown = true;
+  await page.route("**/api/places/along", (route) => {
+    const body = route.request().postDataJSON() as { categories?: string[] };
+    return !body.categories && placesDown
+      ? route.fulfill({ status: 500, json: { error: "Could not load places" } })
+      : route.fallback();
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  await expect(page.getByText("The routing service is unavailable")).toBeVisible();
+  routeDown = false;
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toHaveCount(
+    2,
+  );
+
+  await expect(page.getByText("Could not load places")).toBeVisible();
+  placesDown = false;
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("Could not load places")).toBeHidden();
+});
+
+test("ride through a town on the picked route to keep to that road", async ({ page }) => {
+  const routeRequests: { stops: { label: string }[] }[] = [];
+  await mockApis(page, routeRequests);
+  // The Hassan route passes Hassan and Sakleshpur (the mock has no towns otherwise).
+  await page.route("**/api/route", async (route) => {
+    const body = route.request().postDataJSON() as { stops: unknown[] };
+    if (body.stops.length !== 2) return route.fallback();
+    routeRequests.push(body as { stops: { label: string }[] });
+    const routes = options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"]);
+    routes[1] = {
+      ...routes[1]!,
+      towns: ["Hassan", "Sakleshpur"],
+      townStops: [
+        { name: "Hassan", location: [76.0996, 13.0072] },
+        { name: "Sakleshpur", location: [75.785, 12.943] },
+      ],
+    };
+    return route.fulfill({ json: { routes } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await cards.filter({ hasText: "via Hassan, Sakleshpur" }).click();
+  await page.getByRole("button", { name: "Sakleshpur", exact: true }).click();
+
+  // Sakleshpur is a stop now, so the trip keeps to that road.
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Bengaluru", "Sakleshpur", "Kalasa"]);
+  await expect(cards).toHaveCount(1);
+  await expect(cards.nth(0)).toContainText("via Sakleshpur");
+});
+
 test("the route's ups and downs, scrubbed from the keyboard", async ({ page }) => {
   await mockApis(page, []);
   await page.goto(
@@ -372,7 +438,8 @@ test("safety stops along the road, with call links and the hospital gap", async 
 
 test("split a long ride into days, each night in a town with stays", async ({ page }) => {
   const dayRequests: unknown[] = [];
-  await mockApis(page, []);
+  const routeRequests: { stops: { label: string }[] }[] = [];
+  await mockApis(page, routeRequests);
   await mockPlace(page);
   await page.route("**/api/route/days", (route) => {
     dayRequests.push(route.request().postDataJSON());
@@ -410,6 +477,12 @@ test("split a long ride into days, each night in a town with stays", async ({ pa
   await expect.poll(() => dayRequests.at(-1)).toMatchObject({ days: 3 });
   await page.getByRole("button", { name: "One day fewer" }).click();
   await expect(page).not.toHaveURL(/[?&]d=/);
+
+  // The night's town becomes a stop, in road order.
+  await page.getByRole("button", { name: "Stop here" }).click();
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Bengaluru", "Hassan", "Sakleshpur", "Kalasa"]);
 });
 
 test("stops can be reordered from the keyboard", async ({ page }) => {
@@ -508,6 +581,7 @@ const FORT: PlaceAlong = {
   rating: null,
   ratingCount: 0,
   bestMonths: [8, 9, 10, 11, 12, 1],
+  bestMonthsEstimated: false,
   thumbUrl: null,
   trending: false,
   notable: true,
@@ -522,6 +596,7 @@ const FORT_DETAIL: PlaceDetail = {
   district: "Hassan",
   state: "Karnataka",
   description: null,
+  descriptionCredit: null,
   rating: null,
   ratingCount: 0,
   trending: false,
@@ -544,6 +619,7 @@ const FORT_DETAIL: PlaceDetail = {
     { slug: "raincoat", name: "Raincoat", months: [6, 7, 8, 9], reason: null },
     { slug: "grip_shoes", name: "Shoes with good grip", months: [], reason: null },
   ],
+  estimate: null,
   media: [],
   googlePlaceId: null,
   videos: [],
@@ -618,7 +694,7 @@ test("save the trip with its route, then see changes that are not saved", async 
       durationMin: 400,
       updatedAt: new Date().toISOString(),
     };
-    return route.fulfill({ status: 201, json: { trip } });
+    return route.fulfill({ status: 201, json: { trip, editToken: "test-edit-token" } });
   });
   await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
 
@@ -649,10 +725,14 @@ test("save the trip with its route, then see changes that are not saved", async 
     stops: [{ label: "Bengaluru" }, { label: "Kalasa" }],
   });
 
-  // A change to the saved trip can be saved or kept as a new trip.
+  // This device saved it, so it may rename it and save changes, with the trip's edit token.
+  await expect(page.getByRole("button", { name: "Rename" })).toBeVisible();
   await cards.filter({ hasText: "via Chikkamagaluru" }).click();
   await expect(page.getByText("Changes not saved.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
+  const patch = page.waitForRequest((r) => r.method() === "PATCH");
+  await page.route("**/api/trips/*", (route) => route.fulfill({ status: 500, json: {} }));
+  await page.getByRole("button", { name: "Save changes" }).click();
+  expect((await patch).headers()["authorization"]).toBe("Bearer test-edit-token");
 });
 
 test("tick places and open the trip in Google Maps with them as stops", async ({ page }) => {
@@ -717,10 +797,17 @@ test("on phones the map comes first, then a one-line header and the sheet", asyn
   );
   for (const target of [
     page.getByRole("button", { name: "Edit trip" }),
-    page.getByRole("link", { name: "Trips" }),
+    page.getByRole("button", { name: "More" }),
   ]) {
     expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
+  // The other screens stay reachable with a trip loaded.
+  await page.getByRole("button", { name: "More" }).click();
+  for (const name of ["Famous rides", "Your trips", "About"]) {
+    await expect(page.getByRole("link", { name })).toBeVisible();
+  }
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("link", { name: "Famous rides" })).toBeHidden();
 });
 
 const pump = (name: string, kmFromStart: number): PlaceAlong => ({

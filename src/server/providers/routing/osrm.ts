@@ -160,12 +160,10 @@ export function parseOsrmTableResponse(
 }
 
 // One throttle per process for routes and tables: the public demo server is for light use only.
-const throttle = createThrottle(1_000);
+// A queue over 20 s fails fast: /api/route makes up to four requests within its 60 s.
+const throttle = createThrottle(1_000, Date.now, 20_000);
 
-/**
- * Well under the service worker's 10 s network timeout for /api/* (Serwist defaultCache), so the
- * Near me screen gets an answer, or its straight-line fallback, rather than a stale cached one.
- */
+/** Short, so the Near me screen soon gets an answer or its straight-line fallback. */
 const TABLE_TIMEOUT_MS = 6_000;
 
 export function createOsrmProvider(baseUrl: string): RoutingProvider {

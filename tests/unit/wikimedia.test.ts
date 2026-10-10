@@ -3,20 +3,53 @@ import {
   cleanUrl,
   htmlToText,
   imageInfoSchema,
-  parseImageFiles,
   parseImageInfo,
+  parseItems,
   sparqlSchema,
+  tidyAuthor,
 } from "@/server/providers/wikimedia/commons";
+import type { WikidataItem } from "@/server/providers/wikimedia";
+import { osmPhotoFiles } from "@/server/services/photoImportService";
+import { wikidataFits } from "@/server/services/wikidataCheck";
 import { jsonFixture } from "../helpers/fixtures";
 
 // Fixtures recorded 2026-09-29 from query.wikidata.org and the Commons API.
 
-describe("parseImageFiles", () => {
+describe("parseItems", () => {
   it("maps each Wikidata id to its main image's file title", () => {
-    const files = parseImageFiles(sparqlSchema.parse(jsonFixture("wikimedia/sparql-p18.json")));
-    expect(files.get("Q672241")).toBe("File:Jog Falls at Shimoga.jpg");
-    expect(files.get("Q4855049")).toBe("File:Old Bangalore Fort, Inside View.JPG");
-    expect(files.has("Q85744926")).toBe(false); // Bahmani Tombs: no image on Wikidata
+    const items = parseItems(sparqlSchema.parse(jsonFixture("wikimedia/sparql-p18.json")));
+    expect(items.get("Q672241")?.file).toBe("File:Jog Falls at Shimoga.jpg");
+    expect(items.get("Q4855049")?.file).toBe("File:Old Bangalore Fort, Inside View.JPG");
+    expect(items.has("Q85744926")).toBe(false); // Bahmani Tombs: no image on Wikidata
+  });
+
+  it("reads whether the item is a person, and its coordinates", () => {
+    const items = parseItems({
+      results: {
+        bindings: [
+          {
+            item: { value: "http://www.wikidata.org/entity/Q1149" },
+            human: { value: "true" },
+            image: { value: "http://commons.wikimedia.org/wiki/Special:FilePath/Indira.jpg" },
+          },
+          {
+            item: { value: "http://www.wikidata.org/entity/Q2" },
+            human: { value: "false" },
+            coord: { value: "Point(103.8483 1.2797)" },
+          },
+        ],
+      },
+    });
+    expect(items.get("Q1149")).toMatchObject({
+      file: "File:Indira.jpg",
+      human: true,
+      location: null,
+    });
+    expect(items.get("Q2")).toMatchObject({
+      file: null,
+      human: false,
+      location: [103.8483, 1.2797],
+    });
   });
 
   it("keeps the first image when an item has several", () => {
@@ -24,8 +57,8 @@ describe("parseImageFiles", () => {
       item: { value: "http://www.wikidata.org/entity/Q1" },
       image: { value: `http://commons.wikimedia.org/wiki/Special:FilePath/${file}` },
     });
-    const files = parseImageFiles({ results: { bindings: [binding("A.jpg"), binding("B.jpg")] } });
-    expect(files.get("Q1")).toBe("File:A.jpg");
+    const items = parseItems({ results: { bindings: [binding("A.jpg"), binding("B.jpg")] } });
+    expect(items.get("Q1")?.file).toBe("File:A.jpg");
   });
 });
 
@@ -114,5 +147,66 @@ describe("htmlToText and cleanUrl", () => {
         "https://upload.wikimedia.org/x/X.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo",
       ),
     ).toBe("https://upload.wikimedia.org/x/X.jpg");
+  });
+});
+
+describe("wikidataFits", () => {
+  const item = (extra: Partial<WikidataItem>): WikidataItem => ({
+    file: "File:x.jpg",
+    human: false,
+    location: null,
+    enwiki: null,
+    description: null,
+    ...extra,
+  });
+  const kushinagar = { location: [83.8875, 26.7398] as [number, number], category: "temple" };
+
+  it("rejects a person: a memorial's wikidata tag often names who it remembers", () => {
+    expect(
+      wikidataFits({ location: [77.2496, 28.6545], category: "heritage" }, item({ human: true })),
+    ).toBe(false);
+  });
+
+  it("rejects an item far from the place, allowing more room for big places", () => {
+    expect(wikidataFits(kushinagar, item({ location: [103.8483, 1.2797] }))).toBe(false); // Singapore
+    expect(wikidataFits(kushinagar, item({ location: [83.889, 26.741] }))).toBe(true);
+    expect(wikidataFits(kushinagar, item({}))).toBe(true); // no coordinates: nothing to compare
+    const park = { location: [76.6, 11.7] as [number, number], category: "wildlife" };
+    expect(wikidataFits(park, item({ location: [76.75, 11.65] }))).toBe(true); // 17 km
+  });
+});
+
+describe("photos from a place's OSM tags", () => {
+  it("reads Commons files from wikimedia_commons and image, skipping categories and other hosts", () => {
+    expect(
+      osmPhotoFiles({ commons: "File:Jog_Falls.jpg;Category:Jog Falls", image: null }),
+    ).toEqual(["File:Jog Falls.jpg"]);
+    expect(
+      osmPhotoFiles({
+        commons: null,
+        image: "https://commons.wikimedia.org/wiki/File:Bekal_Fort_%281%29.jpg",
+      }),
+    ).toEqual(["File:Bekal Fort (1).jpg"]);
+    expect(
+      osmPhotoFiles({
+        commons: null,
+        image:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Shakambari_temple.JPG/960px-Shakambari_temple.JPG",
+      }),
+    ).toEqual(["File:Shakambari temple.JPG"]);
+    expect(osmPhotoFiles({ commons: null, image: "https://example.com/fort.jpg" })).toEqual([]);
+    expect(osmPhotoFiles({ commons: "File:Map of the fort.svg", image: null })).toEqual([]);
+  });
+});
+
+describe("tidyAuthor", () => {
+  it("drops unknown authors and cuts paragraph-long credits at a word", () => {
+    expect(tidyAuthor("Unknown author Unknown author")).toBeNull();
+    expect(tidyAuthor("  Nvvchar  ")).toBe("Nvvchar");
+    const long = tidyAuthor(
+      "Photograph by the Archaeological Survey of India, taken during the survey of the western forts in the year 1891 by an unnamed officer",
+    )!;
+    expect(long.length).toBeLessThanOrEqual(81);
+    expect(long.endsWith("…")).toBe(true);
   });
 });

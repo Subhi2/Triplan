@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { LngLat } from "@/lib/geo";
+import { trackEvent } from "@/lib/track";
 
 const EXAMPLES = [
   "Monsoon waterfalls from Pune, under 120 km",
@@ -42,6 +43,7 @@ export function PlainWordsBox({ near }: { near: LngLat }) {
       if (!res.ok || !data.query) throw new Error(data.error ?? `HTTP ${res.status}`);
       setState({ status: "done", summary: data.summary ?? "", picked: data.picked ?? null });
       // A full page load: the planner reads its trip from the address once.
+      trackEvent("plain_words");
       window.location.assign(`/?${data.query}`);
     } catch (err) {
       setState({
@@ -69,12 +71,12 @@ export function PlainWordsBox({ near }: { near: LngLat }) {
           onChange={(e) => setText(e.target.value)}
           maxLength={300}
           placeholder="2-day monsoon ride from Pune with waterfalls"
-          className="min-h-12 min-w-0 flex-1 rounded-xl border border-stone-300 bg-stone-50 px-3 text-base md:min-h-11 dark:border-stone-600 dark:bg-stone-800"
+          className="field-glow min-h-12 min-w-0 flex-1 rounded-xl border border-stone-300 bg-stone-50 px-3 text-base md:min-h-11 dark:border-stone-600 dark:bg-stone-800"
         />
         <button
           type="submit"
           disabled={state.status === "busy" || text.trim().length < 3}
-          className="bg-brand min-h-12 shrink-0 rounded-xl px-4 font-bold text-white disabled:opacity-50 md:min-h-11"
+          className="lift bg-brand min-h-12 shrink-0 rounded-xl px-4 font-bold text-white disabled:opacity-50 md:min-h-11"
         >
           {state.status === "busy" ? "Planning…" : "Plan it"}
         </button>
@@ -89,7 +91,7 @@ export function PlainWordsBox({ near }: { near: LngLat }) {
                   setText(ex);
                   void plan(undefined, ex);
                 }}
-                className="min-h-9 rounded-full bg-stone-100 px-3 text-left text-xs dark:bg-stone-800"
+                className="min-h-11 rounded-full bg-stone-100 px-3 text-left text-xs md:min-h-9 dark:bg-stone-800"
               >
                 {ex}
               </button>

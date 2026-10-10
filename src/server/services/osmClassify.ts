@@ -47,6 +47,11 @@ const KEPT_TAGS = [
   "website",
   "fee",
   "description",
+  "wikimedia_commons",
+  "image",
+  "mountain_pass",
+  "sac_scale",
+  "cuisine",
 ];
 
 const NAME_TAGS = [
@@ -108,6 +113,35 @@ const GENERIC_TEMPLE_NAMES =
 const SHRINE_IN_COMPLEX = /\bprasanna$/i;
 /** Park zones mapped apart from the park: buffer zones are left out, core zones named as the park. */
 const BUFFER_ZONE = /\bbuffer\b/i;
+/**
+ * Names that only say what the place is ("Viewpoint", "Lake"): as good as unnamed in a list.
+ * Descriptive names ("Sunset Point") are kept.
+ */
+const GENERIC_NAMES =
+  /^(the )?(view ?point|lake|pond|tank|water ?falls?|falls|cave|peak|hill ?top|beach|fort|dam|park|garden|museum|attraction|tourist (spot|place|point)|camp ?site|statue|monument|memorial|ruins|point)s?$/i;
+/** Survey labels and numbered features: "Pt 6080m", "Peak 5980", "Cave 3", "Cave No. 12". */
+const SURVEY_NAMES = /^(pt\.?|point|peak|cave|camp)\s*(no\.?\s*)?\d+[a-z]?\s*m?$/i;
+/** Mappers' placeholders. */
+const PLACEHOLDER_NAMES = /\b(to be verified|not verified|unnamed|no name)\b/i;
+/** Herders' camps in Ladakh and Himachal, mapped as camp sites. */
+const SHEPHERD_CAMP = /^shepherd'?s? (camp|hut|shelter)/i;
+/** Chinese, Japanese or Korean script: names of peaks on the border, not usable in this app. */
+const CJK = /[぀-ヿ㐀-鿿가-힯]/;
+
+/** An attraction or viewpoint whose name says what it is: "Hidimba Devi Temple" is a temple. */
+const NAMED_AS: [RegExp, CategorySlug][] = [
+  [
+    /\b(temples?|mandir|mandira|devasthana(m)?|devalaya(m)?|gudi|kovil|koil|basadi|jinalaya|gompa|monastery)\b/i,
+    "temple",
+  ],
+  [/\b(church|cathedral|basilica|mosque|masjid|dargah|gurudwara|gurdwara|synagogue)\b/i, "worship"],
+  [/\b(palace|mahal|haveli)\b/i, "heritage"],
+  [/\b(lake|kere|sarovar|talab|talao|jheel|reservoir)\b/i, "lake"],
+  [/\b(caves?|guha|gufa|gupha)\b/i, "cave"],
+  [/\bbeach\b/i, "beach"],
+  [/\b(forts?|fortress|citadel|killa|kila|qila|qilla|kote|durg)\b/i, "fort"],
+  [/\b(museum|sangrahalaya)\b/i, "museum"],
+];
 
 /** "Mhadei WLS Core Zone" -> "Mhadei Wildlife Sanctuary". */
 export function wildlifeName(name: string): string {
@@ -181,6 +215,7 @@ function categoryFor(tags: Record<string, string>): CategorySlug | null {
   // one also tagged as an attraction is still kept.
   if (isWildlife(tags)) return "wildlife";
   if (t("waterway") === "waterfall" || t("natural") === "waterfall") return "waterfall";
+  if (t("mountain_pass") === "yes") return "pass";
   if (t("historic") === "fort" || t("historic") === "castle") return "fort";
   if (t("amenity") === "place_of_worship") {
     return TEMPLE_RELIGIONS.has(t("religion") ?? "") ? "temple" : "worship";
@@ -208,7 +243,9 @@ function categoryFor(tags: Record<string, string>): CategorySlug | null {
     return "lake";
   }
   if (t("tourism") === "viewpoint") return "viewpoint";
+  if (t("route") === "hiking" || t("highway") === "trailhead") return "trek";
   if (t("tourism") === "camp_site") return "stay";
+  if (t("natural") === "hot_spring" || t("natural") === "glacier") return "attraction";
   if (
     t("tourism") === "attraction" ||
     t("tourism") === "theme_park" ||
@@ -218,6 +255,11 @@ function categoryFor(tags: Record<string, string>): CategorySlug | null {
   }
   if (t("waterway") === "dam") return "attraction";
   if (t("leisure") === "garden" && t("garden:type") === "botanical") return "attraction";
+  // Food stops: highway services, dhabas and notable restaurants; notable cafés and coffee houses
+  // (the Overpass query fetches only these, not every restaurant).
+  if (t("highway") === "services" || t("highway") === "rest_area") return "food";
+  if (t("amenity") === "cafe") return "coffee";
+  if (t("amenity") === "restaurant" || t("amenity") === "fast_food") return "food";
   if (t("amenity") === "fuel") return "fuel";
   return null;
 }
@@ -275,6 +317,18 @@ export function classifyOsmElement(el: OsmElement): OsmPlaceCandidate | null {
   }
   // An unnamed viewpoint or peak is not useful in a list, nor is a name with no letters ("15 | 36").
   if (!name || !LETTER.test(name)) return null;
+  // Nor is a name that only says what the place is, a survey label or a placeholder, unless the
+  // place has a Wikidata or Wikipedia link.
+  if (
+    !(tags.wikidata || tags.wikipedia) &&
+    (GENERIC_NAMES.test(name) ||
+      SURVEY_NAMES.test(name) ||
+      PLACEHOLDER_NAMES.test(name) ||
+      SHEPHERD_CAMP.test(name))
+  ) {
+    return null;
+  }
+  if (!LATIN.test(name) && CJK.test(name)) return null;
   // Temples come in by name now (not only with a Wikidata link): drop the ones named "Temple".
   if (
     category === "temple" &&
@@ -287,8 +341,11 @@ export function classifyOsmElement(el: OsmElement): OsmPlaceCandidate | null {
     if (BUFFER_ZONE.test(name)) return null;
     name = wildlifeName(name);
   }
-  if ((category === "viewpoint" || category === "attraction") && WATERFALL_WORDS.test(name)) {
-    category = "waterfall";
+  if (category === "viewpoint" || category === "attraction") {
+    const named = name;
+    category = WATERFALL_WORDS.test(named)
+      ? "waterfall"
+      : (NAMED_AS.find(([words]) => words.test(named))?.[1] ?? category);
   }
 
   if (tags.historic === "castle") {
@@ -328,27 +385,106 @@ export function classifyOsmElement(el: OsmElement): OsmPlaceCandidate | null {
 }
 
 /**
- * Drops OSM duplicates of the same place (e.g. a fort mapped as a node and as an outline, or a
- * long beach mapped in parts): same category and name within 300 m (towns 3 km, beaches 2 km,
- * lakes 1 km). Keeps the one with a Wikidata link, then the way/relation over the node.
+ * Most specific first: one place mapped as a fort and as heritage and as an attraction (Barabati
+ * Fort) is kept as the fort.
  */
-export function dedupeCandidates(candidates: OsmPlaceCandidate[]): OsmPlaceCandidate[] {
+const SPECIFIC_FIRST: CategorySlug[] = [
+  "fort",
+  "waterfall",
+  "pass",
+  "temple",
+  "worship",
+  "museum",
+  "wildlife",
+  "cave",
+  "beach",
+  "peak",
+  "lake",
+  "trek",
+  "food",
+  "coffee",
+  "heritage",
+  "viewpoint",
+  "attraction",
+];
+/** Kept apart: same-named towns, fuel stations and camp sites are often different places. */
+const OWN_GROUP = new Set<CategorySlug>(["town", "fuel", "stay"]);
+const PLURAL_WORDS: Record<string, string> = {
+  falls: "fall",
+  waterfalls: "waterfall",
+  forts: "fort",
+  temples: "temple",
+  caves: "cave",
+  lakes: "lake",
+  beaches: "beach",
+  gardens: "garden",
+};
+
+/** "Gira Waterfalls" and "Gira waterfall" are one name. */
+export function dedupeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .split(" ")
+    .map((w) => PLURAL_WORDS[w] ?? w)
+    .join(" ");
+}
+
+const radiusOf = (c: OsmPlaceCandidate) => DEDUPE_RADIUS_M[c.category] ?? DEFAULT_DEDUPE_RADIUS_M;
+const rankOf = (c: OsmPlaceCandidate) => {
+  const i = SPECIFIC_FIRST.indexOf(c.category);
+  return i < 0 ? SPECIFIC_FIRST.length : i;
+};
+
+/**
+ * Splits OSM duplicates of the same place (a fort mapped as a node and as an outline, a long beach
+ * mapped in parts, a fort also tagged as heritage): the same name (plurals aside) within 300 m
+ * (towns 3 km, beaches 2 km, lakes 1 km, parks 10 km), across place categories. Keeps the most
+ * specific category, then the one with a Wikidata link, then the way/relation over the node; a
+ * Wikidata link of a dropped copy moves to the kept one. Towns, fuel stations and camp sites only
+ * merge with their own category. The import closes the dropped ones that it saved before.
+ */
+export function splitDuplicates(candidates: OsmPlaceCandidate[]): {
+  kept: OsmPlaceCandidate[];
+  dropped: OsmPlaceCandidate[];
+} {
   const score = (c: OsmPlaceCandidate) =>
     (c.wikidataId ? 2 : 0) + (c.osmId.startsWith("node/") ? 0 : 1);
   const groups = new Map<string, OsmPlaceCandidate[]>();
   for (const c of candidates) {
-    const key = `${c.category}|${c.name.toLowerCase()}`;
+    const key = `${OWN_GROUP.has(c.category) ? c.category : "*"}|${dedupeName(c.name)}`;
     groups.set(key, [...(groups.get(key) ?? []), c]);
   }
 
   const kept: OsmPlaceCandidate[] = [];
+  const dropped: OsmPlaceCandidate[] = [];
   for (const group of groups.values()) {
     const chosen: OsmPlaceCandidate[] = [];
-    for (const c of [...group].sort((a, b) => score(b) - score(a))) {
-      const radius = DEDUPE_RADIUS_M[c.category] ?? DEFAULT_DEDUPE_RADIUS_M;
-      if (!chosen.some((k) => haversineM(k.location, c.location) <= radius)) chosen.push(c);
+    const ordered = [...group].sort((a, b) => rankOf(a) - rankOf(b) || score(b) - score(a));
+    for (const c of ordered) {
+      const same = chosen.find(
+        (k) => haversineM(k.location, c.location) <= Math.max(radiusOf(k), radiusOf(c)),
+      );
+      if (!same) {
+        chosen.push({ ...c, osmTags: { ...c.osmTags } });
+        continue;
+      }
+      if (!same.wikidataId && c.wikidataId) {
+        same.wikidataId = c.wikidataId;
+        same.osmTags.wikidata = c.wikidataId;
+        if (c.osmTags.wikipedia && !same.osmTags.wikipedia) {
+          same.osmTags.wikipedia = c.osmTags.wikipedia;
+        }
+      }
+      dropped.push(c);
     }
     kept.push(...chosen);
   }
-  return kept;
+  return { kept, dropped };
+}
+
+/** The candidates without their duplicates (see splitDuplicates). */
+export function dedupeCandidates(candidates: OsmPlaceCandidate[]): OsmPlaceCandidate[] {
+  return splitDuplicates(candidates).kept;
 }

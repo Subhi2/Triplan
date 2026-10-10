@@ -26,7 +26,7 @@ test("an unknown address gets a way back", async ({ page }) => {
 test("content pages share the main navigation", async ({ page }) => {
   await page.goto("/trips");
   const nav = page.getByRole("navigation", { name: "Main" });
-  for (const name of ["Famous rides", "Near me", "Saved trips", "About"]) {
+  for (const name of ["Famous rides", "Near me", "Your trips", "About"]) {
     await expect(nav.getByRole("link", { name })).toBeVisible();
   }
 });
@@ -37,4 +37,25 @@ test("without an AI key there is no plain-words box", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Or say it in plain words" })).toHaveCount(0);
   const res = await page.request.post("/api/trip-from-words", { data: { text: "Pune to Kolad" } });
   expect(res.status()).toBe(404);
+});
+
+test("a place page plans a ride, looks around and shares, with no empty sections", async ({
+  page,
+}) => {
+  await page.goto("/place/manjarabad-fort");
+  await expect(page.getByRole("heading", { name: "Manjarabad Fort", level: 1 })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Plan a ride here" })).toHaveAttribute(
+    "href",
+    /^\/\?to=Manjarabad/,
+  );
+  await expect(page.getByRole("link", { name: "What's near here" })).toHaveAttribute(
+    "href",
+    /^\/nearby\?at=Manjarabad\+Fort%40/,
+  );
+  // Desktop: WhatsApp and Copy link (phones get the share sheet).
+  await expect(page.getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
+    "href",
+    /wa\.me|whatsapp/,
+  );
+  await expect(page.getByRole("heading", { name: "Videos and reels" })).toHaveCount(0);
 });

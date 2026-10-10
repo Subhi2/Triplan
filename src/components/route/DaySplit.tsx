@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { formatDuration } from "@/lib/format";
+import type { LngLat } from "@/lib/geo";
 import { MAX_DAYS, RIDE_HOURS, type DayLeg, type RideHours } from "@/lib/multiDay";
 import { telLink } from "@/lib/safety";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import type { DayPlanState } from "./useDayPlan";
 
 interface Props {
@@ -16,6 +18,12 @@ interface Props {
   onHoursChange: (hours: RideHours) => void;
   /** Null goes back to the days the route needs. */
   onDaysChange: (days: number | null) => void;
+  /** Makes a night's town a via stop; null when the trip has no room for another stop. */
+  onStopHere?: ((town: { name: string; location: LngLat }) => void) | null;
+  /** Whether a place is already one of the trip's stops. */
+  isStop?: (location: LngLat) => boolean;
+  /** Opens a stay's details in the planner; without it the stay links to its page. */
+  onOpenStay?: (slug: string) => void;
 }
 
 function HoursSelect({ value, onChange }: { value: RideHours; onChange: (h: RideHours) => void }) {
@@ -58,6 +66,9 @@ export function DaySplit({
   destination,
   onHoursChange,
   onDaysChange,
+  onStopHere = null,
+  isStop = () => false,
+  onOpenStay,
 }: Props) {
   if (days === 1) {
     return (
@@ -113,9 +124,7 @@ export function DaySplit({
       </div>
       {state.status === "loading" && <div aria-hidden className="shimmer h-24 rounded-xl" />}
       {state.status === "error" && (
-        <p className="text-sm text-stone-600 dark:text-stone-400">
-          Could not split this route into days. Try again in a moment.
-        </p>
+        <RetryAlert quiet message="Could not split this route into days." onRetry={state.retry} />
       )}
       {legs.length > 0 && (
         <ol aria-label="Days of riding" className="flex flex-col">
@@ -135,8 +144,8 @@ export function DaySplit({
                   riding
                 </span>
               </p>
-              <p className="text-sm">
-                {endLabel(leg, destination)}
+              <p className="flex flex-wrap items-center gap-x-1 text-sm">
+                <span>{endLabel(leg, destination)}</span>
                 {leg.end.stayCount > 0 && (
                   <span className="text-stone-600 dark:text-stone-400">
                     {" "}
@@ -144,6 +153,21 @@ export function DaySplit({
                     {leg.end.stayCount === 1 ? "stay" : "stays"} within 5 km
                   </span>
                 )}
+                {onStopHere &&
+                  leg.end.name &&
+                  leg.end.kind !== "destination" &&
+                  leg.end.kind !== "road" &&
+                  !isStop(leg.end.location) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onStopHere({ name: leg.end.name!, location: leg.end.location })
+                      }
+                      className="text-brand-dark inline-flex min-h-11 items-center px-1 font-bold hover:underline md:min-h-0 dark:text-teal-300"
+                    >
+                      Stop here
+                    </button>
+                  )}
               </p>
               {leg.end.stays.length > 0 && (
                 <ul
@@ -158,7 +182,15 @@ export function DaySplit({
                         className="flex min-h-11 items-center gap-2 text-sm md:min-h-8"
                       >
                         <span className="min-w-0 flex-1 truncate">
-                          {s.slug ? (
+                          {s.slug && onOpenStay ? (
+                            <button
+                              type="button"
+                              onClick={() => onOpenStay(s.slug!)}
+                              className="font-bold hover:underline"
+                            >
+                              {s.name}
+                            </button>
+                          ) : s.slug ? (
                             <Link href={`/place/${s.slug}`} className="font-bold hover:underline">
                               {s.name}
                             </Link>

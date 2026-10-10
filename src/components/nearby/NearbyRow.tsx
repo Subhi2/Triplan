@@ -52,7 +52,8 @@ export function NearbyRow(props: Props) {
       data-ride-min={place.rideMin !== null ? Math.round(place.rideMin) : undefined}
       data-km={(place.roadKm ?? place.distanceKm).toFixed(1)}
       data-in-season={inSeason || undefined}
-      className={`animate-rise flex items-stretch border-b border-stone-200/70 last:border-b-0 dark:border-stone-800 ${
+      data-nearby-row
+      className={`animate-rise crown crown-rail flex items-stretch border-b border-stone-200/70 last:border-b-0 dark:border-stone-800 ${
         active
           ? "bg-brand-tint dark:bg-teal-950/60"
           : highlighted
@@ -117,7 +118,7 @@ export function NearbyRow(props: Props) {
                   {place.rating.toFixed(1)} ({place.ratingCount}) ·{" "}
                 </>
               )}
-              {bestTimeSummary(place.bestMonths)}
+              {bestTimeSummary(place.bestMonths, place.bestMonthsEstimated)}
             </span>
           </span>
           {place.thumbUrl && (

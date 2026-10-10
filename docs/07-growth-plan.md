@@ -62,6 +62,8 @@ Status (2026-10-02): G2.1, G2.2, G2.4, G2.5 and G2.8 are built in "Growth G3 · 
 | Plan in plain words | Typing a wish is easier than filling a form | Claude Haiku 4.5 through structured outputs (about US$0.002 a request, capped per day) |
 | One-command data setup | Anyone who clones the repo gets the whole dataset | GitHub Releases; snapshot under ODbL because it is derived from OpenStreetMap |
 
+**G4 · Fix and fill (decided 2026-10-09).** The features are ahead of the data. Almost every place page said "Not known yet" for months, vehicle and what to carry, had no description and often no photo. G4 fills those from open data (estimated guidance labelled as such, Wikidata and Wikipedia text, more Commons photos). It also cleans the OpenStreetMap import, closes the risks an audit found and fixes the phone dead ends. Steps are in `04-build-plan.md` "Growth G4 · Fix and fill". Saved trips get a per-device edit token instead of being editable by anyone.
+
 **Later: needs decisions, accounts or money.**
 
 - Reviews, rider photos, "Add a place" (Phase 5). Decide how to stop spam without sign-in.

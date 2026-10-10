@@ -3,13 +3,16 @@
 import { categoryStyle } from "@/lib/categories";
 import { googleEnabled } from "@/lib/google";
 import { placeGoogleMapsHref } from "@/lib/googleMaps";
-import { bestTimeSummary } from "@/lib/months";
+import { bestTimeSummary, isInSeason } from "@/lib/months";
+import type { ListTurn } from "@/lib/listTurn";
 import { detourLabel, ON_ROUTE_MAX_KM, type PlaceAlong } from "@/lib/places";
 
 interface Props {
   place: PlaceAlong;
   /** Position in the list, to stagger the rows as they appear. */
   index: number;
+  /** After a switch of route or filter, the rows come in from that side instead of rising. */
+  turn?: ListTurn | null;
   active: boolean;
   highlighted: boolean;
   onSelect: () => void;
@@ -25,6 +28,12 @@ export function placeRowId(placeId: string) {
 
 /** Rows after this many appear together: a long stagger would feel slow. */
 const STAGGERED_ROWS = 10;
+
+const ENTRANCE = {
+  rise: "animate-rise",
+  next: "animate-turn-next",
+  prev: "animate-turn-prev",
+} as const;
 
 /** A place in the list, led by its km marker so the list reads like the road (docs/08-design.md). */
 export function PlaceRow(props: Props) {
@@ -42,7 +51,8 @@ export function PlaceRow(props: Props) {
       data-name={place.name}
       data-detour={detour}
       data-category={cat.name}
-      className={`animate-rise flex items-stretch border-b border-stone-200/70 last:border-b-0 dark:border-stone-800 ${
+      data-place-row
+      className={`${ENTRANCE[props.turn ?? "rise"]} crown crown-rail flex items-stretch border-b border-stone-200/70 last:border-b-0 dark:border-stone-800 ${
         active
           ? "bg-brand-tint dark:bg-teal-950/60"
           : highlighted
@@ -92,6 +102,11 @@ export function PlaceRow(props: Props) {
               >
                 {detour}
               </span>
+              {isInSeason(place.bestMonths, new Date().getMonth() + 1) && (
+                <span className="bg-brand-tint text-brand-dark rounded-full px-2 text-xs font-bold dark:bg-teal-950 dark:text-teal-200">
+                  In season
+                </span>
+              )}
               {place.trending && (
                 <span className="text-ghat-dark rounded-full bg-orange-100 px-2 text-xs font-bold dark:bg-orange-950 dark:text-orange-300">
                   Trending
@@ -108,7 +123,7 @@ export function PlaceRow(props: Props) {
                   {place.rating.toFixed(1)} ({place.ratingCount}) ·{" "}
                 </>
               )}
-              {bestTimeSummary(place.bestMonths)}
+              {bestTimeSummary(place.bestMonths, place.bestMonthsEstimated)}
             </span>
           </span>
           {place.thumbUrl && (

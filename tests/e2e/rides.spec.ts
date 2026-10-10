@@ -13,6 +13,20 @@ test("the gallery lists the famous rides with their numbers", async ({ page }) =
   );
 });
 
+test("the gallery filters rides by part of India and by month", async ({ page }) => {
+  await page.goto("/rides");
+  const cards = page.getByRole("list", { name: "Famous rides" }).getByRole("link");
+  const all = await cards.count();
+  await page.getByRole("button", { name: "North and Himalaya" }).click();
+  await expect(page.getByRole("link", { name: /Pollachi to Valparai/ })).toHaveCount(0);
+  expect(await cards.count()).toBeLessThan(all);
+  // High passes are not ridden in January.
+  await page.getByRole("combobox").selectOption({ label: "Jan" });
+  await expect(page.getByText("No famous ride fits that yet.")).toBeVisible();
+  await page.getByRole("button", { name: "Show all rides" }).click();
+  await expect(cards).toHaveCount(all);
+});
+
 test("a ride page shows the route's facts and opens it in the planner", async ({ page }) => {
   await page.goto("/rides/pollachi-to-valparai");
   await expect(page).toHaveTitle(/Pollachi to Valparai/);

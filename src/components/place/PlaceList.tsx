@@ -1,6 +1,8 @@
 "use client";
 
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useRef } from "react";
+import { useCrown } from "@/components/motion/useCrown";
+import type { ListTurn } from "@/lib/listTurn";
 import type { PlaceAlong } from "@/lib/places";
 import { PlaceRow, placeRowId } from "./PlaceRow";
 
@@ -14,10 +16,15 @@ interface Props {
   onPickedChange: (place: PlaceAlong, picked: boolean) => void;
   /** Nights of a multi-day split, in km order: the list shows where each day ends. */
   nights?: { km: number; label: string }[];
+  /** The way the list came in after the last switch of route or filter (docs/08 "Motion"). */
+  turn?: ListTurn | null;
 }
 
 export function PlaceList(props: Props) {
   const { places, activeId, hoverId, onSelect, onHover, nights = [] } = props;
+  const list = useRef<HTMLOListElement>(null);
+  // Rows near the mouse slide aside and grow a teal rail.
+  useCrown(list, "[data-place-row]", { axis: "y", radius: 90, lift: 6, shift: 5, rail: 3 });
   // Bring the active place into view, e.g. after its marker was clicked on the map.
   useEffect(() => {
     if (activeId) {
@@ -28,7 +35,7 @@ export function PlaceList(props: Props) {
   }, [activeId]);
 
   return (
-    <ol aria-label="Places along the route" className="flex flex-col">
+    <ol ref={list} aria-label="Places along the route" className="flex flex-col">
       {places.map((p, i) => {
         // The nights passed between the previous place and this one.
         const prevKm = i > 0 ? places[i - 1]!.kmFromStart : -Infinity;
@@ -48,6 +55,7 @@ export function PlaceList(props: Props) {
             <PlaceRow
               place={p}
               index={i}
+              turn={props.turn}
               active={p.id === activeId}
               highlighted={p.id === hoverId}
               onSelect={() => onSelect(p.id)}

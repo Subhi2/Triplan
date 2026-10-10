@@ -20,6 +20,8 @@
     "db:import-osm": "tsx --env-file=.env.local scripts/import-osm.ts",
     "db:import-services": "tsx --env-file=.env.local scripts/import-services.ts",
     "db:import-photos": "tsx --env-file=.env.local scripts/import-photos.ts",
+    "db:import-descriptions": "tsx --env-file=.env.local scripts/import-descriptions.ts",
+    "db:link-wikidata": "tsx --env-file=.env.local scripts/link-wikidata.ts",
     "db:seed-rides": "tsx --env-file=.env.local scripts/seed-rides.ts",
     "db:setup": "tsx --env-file=.env.local scripts/setup-db.ts",
     "db:export-snapshot": "tsx --env-file=.env.local scripts/export-snapshot.ts",

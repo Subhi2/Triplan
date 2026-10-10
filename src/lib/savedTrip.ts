@@ -10,8 +10,9 @@ import {
   type Vehicle,
 } from "./trip";
 
-// Saved trips are open: no sign-in, no owners. Everyone sees, opens and updates the same list,
-// and a trip's link (/trips/[id]) is its share link.
+// Saved trips need no sign-in. A trip's link (/trips/[id]) is its share link and anyone with it
+// can open the trip; only the device that saved it can change it (an edit token, kept in the
+// browser by src/lib/tripTokens.ts). Each device lists the trips it saved or opened.
 
 export const tripTitleSchema = z.string().trim().min(1).max(120);
 
@@ -45,6 +46,22 @@ export type UpdateTripRequest = z.infer<typeof updateTripSchema>;
 
 export const tripIdSchema = z.uuid();
 
+/** How many trips a device keeps in its list (/trips). */
+export const MAX_DEVICE_TRIPS = 50;
+
+/** Query of GET /api/trips: the device's trip ids, comma-separated. */
+export const tripIdsSchema = z
+  .string()
+  .default("")
+  .transform((s) => s.split(",").filter(Boolean))
+  .pipe(z.array(tripIdSchema).max(MAX_DEVICE_TRIPS));
+
+/** Response of POST /api/trips: the trip, and its edit token (sent this once). */
+export interface CreatedTrip {
+  trip: SavedTrip;
+  editToken: string;
+}
+
 export interface SavedTrip {
   id: string;
   title: string;
@@ -58,7 +75,7 @@ export interface SavedTrip {
   updatedAt: string; // ISO
 }
 
-/** A row of the saved trips list (/trips). */
+/** A row of a device's trip list (/trips). */
 export interface TripSummary {
   id: string;
   title: string;

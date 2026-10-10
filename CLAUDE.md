@@ -45,7 +45,9 @@ pnpm db:setup         # migrations + load data/snapshot into empty tables (--rep
 pnpm db:migrate       # apply Drizzle migrations
 pnpm db:seed          # load docs/06 seed data
 pnpm db:import-osm -- --region=<key|all>       # places from OpenStreetMap (--resume after a stopped run)
-pnpm db:import-photos                          # Wikimedia Commons photos
+pnpm db:import-photos                          # Wikimedia Commons photos (--recheck drops wrong links)
+pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptions, credited
+pnpm db:link-wikidata                          # link places to Wikidata by name and distance (--dry-run)
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json
 pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)
@@ -67,7 +69,7 @@ Add these scripts to `package.json` as the phases introduce them.
 - Months are stored as integers 1–12.
 - Every image stored or displayed must carry `source`, `license` and `author`. Never re-host social media videos or photos; embed or link them.
 - Secrets live in `.env.local` (never committed). Keep `.env.example` up to date.
-- Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`).
+- Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`). GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and unit tests on every push; it cannot build (the ISR pages need the database).
 - Small commits, one feature per commit, message in imperative mood.
 
 ## Environment variables
@@ -80,7 +82,8 @@ DATABASE_URL=
 NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
 NEXT_PUBLIC_TERRAIN_TILES_URL=    # Terrarium tiles for the profile and 3D terrain; empty = AWS Terrain Tiles
 NEXT_PUBLIC_SITE_URL=             # public address for share cards and the sitemap
-WRITE_LIMIT_SALT=                 # salt for hashed visitor IPs (rate limits)
+WRITE_LIMIT_SALT=                 # salt for hashed visitor IPs (rate limits); default derived from DATABASE_URL
+CRON_SECRET=                      # Vercel Cron's secret for the daily clean-up in /api/health
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=  # one Google key: Maps JavaScript API + Places API (New), used by the map and the server; empty = MapLibre, no Google content
 NEXT_PUBLIC_GOOGLE_MAP_ID=        # Map ID for Advanced Markers
 GOOGLE_MAPS_API_KEY=              # optional separate server key; empty = the key above

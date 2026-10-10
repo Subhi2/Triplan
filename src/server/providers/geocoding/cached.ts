@@ -1,4 +1,5 @@
 import type { JsonCache } from "../../db/cache";
+import { softGet, softSet } from "../softCache";
 import type { GeocodeHit, GeocodeOptions, GeocodingProvider } from "./types";
 
 /**
@@ -27,10 +28,10 @@ export function withGeocodeCache(
   return {
     async search(query, options = {}) {
       const key = geocodeCacheKey(namespace, query, options);
-      const hit = (await cache.get(key)) as GeocodeHit[] | undefined;
+      const hit = (await softGet(cache, key)) as GeocodeHit[] | undefined;
       if (hit) return hit;
       const results = await inner.search(query, options);
-      await cache.set(key, results);
+      await softSet(cache, key, results);
       return results;
     },
   };

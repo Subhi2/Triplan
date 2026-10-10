@@ -8,6 +8,9 @@ export { schema };
 // import job and scripts. Keep each process small and release idle connections.
 const MAX_CONNECTIONS = 5;
 const IDLE_TIMEOUT_S = 20;
+// An unreachable database fails a request in 10 s (the default is 30) so the caches and
+// suggestions can fall back to the services they front.
+const CONNECT_TIMEOUT_S = 10;
 
 function createDb(url: string) {
   // prepare: false keeps this working through Supabase's transaction pooler.
@@ -15,6 +18,7 @@ function createDb(url: string) {
     prepare: false,
     max: MAX_CONNECTIONS,
     idle_timeout: IDLE_TIMEOUT_S,
+    connect_timeout: CONNECT_TIMEOUT_S,
   });
   return { db: drizzle(client, { schema }), client };
 }

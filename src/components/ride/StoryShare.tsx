@@ -93,7 +93,7 @@ export function StoryShare({ storyUrl, title, link }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-(--surface) px-4 text-sm font-bold active:scale-[0.97] md:min-h-11 dark:border-stone-600"
+        className="lift inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-(--surface) px-4 text-sm font-bold active:scale-[0.97] md:min-h-11 dark:border-stone-600"
       >
         <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden fill="none" stroke="currentColor">
           <rect x="5" y="2" width="10" height="16" rx="2" strokeWidth="1.6" />

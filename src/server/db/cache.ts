@@ -58,6 +58,27 @@ export async function forgetOldForecasts(): Promise<number> {
   return rows.length;
 }
 
+/** Rows deleted per table per daily run, so the first clean-up of a big table stays quick. */
+const PRUNE_BATCH = 5000;
+
+/**
+ * Deletes cache rows no reader will use again: route_cache past its 7 days (routes, tables and
+ * elevation profiles), geocode_cache past its 30 days. Returns how many rows were deleted.
+ */
+export async function forgetOldCache(): Promise<{ routes: number; geocodes: number }> {
+  const db = getDb();
+  const routes = await db.execute(sql`
+    DELETE FROM route_cache WHERE key IN (
+      SELECT key FROM route_cache WHERE created_at < now() - interval '8 days' LIMIT ${PRUNE_BATCH})
+    RETURNING key`);
+  const geocodes = await db.execute(sql`
+    DELETE FROM geocode_cache WHERE query IN (
+      SELECT query FROM geocode_cache WHERE created_at < now() - interval '31 days'
+      LIMIT ${PRUNE_BATCH})
+    RETURNING query`);
+  return { routes: routes.length, geocodes: geocodes.length };
+}
+
 /** geocode_cache, 30 days. */
 export const geocodeDbCache: JsonCache = {
   async get(key) {

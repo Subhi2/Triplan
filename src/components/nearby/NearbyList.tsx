@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useCrown } from "@/components/motion/useCrown";
 import { categoryStyle } from "@/lib/categories";
 import type { PlaceNear } from "@/lib/nearby";
 import type { Vehicle } from "@/lib/trip";
 import { NearbyRow, nearbyRowId } from "./NearbyRow";
 
 const chip =
-  "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
+  "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
 const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
 const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 
@@ -77,6 +78,8 @@ interface ListProps {
 export function NearbyList(props: ListProps) {
   const { places, vehicle, month, activeId, hoverId, onSelect, onHover } = props;
   // Bring the active place into view, e.g. after its marker was tapped on the map.
+  const list = useRef<HTMLOListElement>(null);
+  useCrown(list, "[data-nearby-row]", { axis: "y", radius: 90, lift: 6, shift: 5, rail: 3 });
   useEffect(() => {
     if (activeId) {
       document
@@ -86,7 +89,7 @@ export function NearbyList(props: ListProps) {
   }, [activeId]);
 
   return (
-    <ol aria-label="Places near you" className="flex flex-col">
+    <ol ref={list} aria-label="Places near you" className="flex flex-col">
       {places.map((p, i) => (
         <NearbyRow
           key={p.id}

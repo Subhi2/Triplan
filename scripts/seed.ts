@@ -3,31 +3,12 @@
 // Run with `pnpm db:seed` (reads DATABASE_URL from .env.local).
 import { eq, sql } from "drizzle-orm";
 import { CATEGORIES } from "../src/lib/categories";
+import { CARRY_ITEMS } from "../src/lib/carryItems";
 import { closeDb, getDb } from "../src/server/db";
 import { carryItem, category, place, placeCarry, placeGuide } from "../src/server/db/schema";
 import { readSeedDoc, slugify, type SeedPlace } from "./seed-doc";
 
-const CARRY_META: Record<string, { name: string; icon: string }> = {
-  raincoat: { name: "Raincoat", icon: "cloud-rain" },
-  leech_socks: { name: "Leech socks", icon: "bug" },
-  cash: { name: "Cash", icon: "banknote" },
-  torch: { name: "Torch", icon: "flashlight" },
-  jacket: { name: "Jacket", icon: "shirt" },
-  gloves: { name: "Gloves", icon: "hand" },
-  water_2l: { name: "Water (2 L)", icon: "cup-soda" },
-  cap: { name: "Cap", icon: "sun" },
-  trekking_shoes: { name: "Trekking shoes", icon: "footprints" },
-  grip_shoes: { name: "Shoes with good grip", icon: "footprints" },
-  socks_hot_rock: { name: "Socks for hot rock", icon: "thermometer-sun" },
-  modest_clothing: { name: "Modest clothing", icon: "shirt" },
-  traditional_attire: { name: "Traditional attire", icon: "shirt" },
-  snacks: { name: "Snacks", icon: "cookie" },
-  dry_bag: { name: "Dry bag", icon: "backpack" },
-  spare_clothes: { name: "Spare clothes", icon: "shirt" },
-  power_bank: { name: "Power bank", icon: "battery-charging" },
-  first_aid: { name: "First aid kit", icon: "cross" },
-  forest_permit: { name: "Forest permit", icon: "file-check" },
-};
+const CARRY_META: Record<string, { name: string; icon: string }> = CARRY_ITEMS;
 
 function withMeta<T>(slugs: string[], meta: Record<string, T>, kind: string) {
   return slugs.map((slug) => {

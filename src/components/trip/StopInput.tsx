@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { nudge } from "@/components/motion/nudge";
 import type { LngLat } from "@/lib/geo";
 import type { GeocodeResult } from "@/lib/trip";
 
@@ -86,11 +87,14 @@ export function StopInput({
         setActive(-1);
         setStatus("idle");
         setOpen(true);
+        // A search the rider asked for (Enter) that found nothing: the field shakes its head.
+        if (m === "osm" && r.length === 0) nudge(input.current);
       })
       .catch((err: unknown) => {
         if (!ctrl.signal.aborted) {
           console.error(err);
           setStatus("error");
+          if (m === "osm") nudge(input.current);
         }
       });
   }
@@ -175,7 +179,7 @@ export function StopInput({
         onKeyDown={handleKeyDown}
         onFocus={() => results.length > 0 && setOpen(true)}
         onBlur={() => setOpen(false)}
-        className={`focus:ring-brand w-full rounded-xl border bg-stone-50 py-2.5 pl-3 text-base ${trailing ? "pr-12" : "pr-3"} text-stone-900 outline-none focus:bg-(--surface) focus:ring-2 md:py-2 dark:bg-stone-950 dark:text-stone-100 ${
+        className={`field-glow w-full rounded-xl border bg-stone-50 py-2.5 pl-3 text-base ${trailing ? "pr-12" : "pr-3"} text-stone-900 outline-none focus:bg-(--surface) md:py-2 dark:bg-stone-950 dark:text-stone-100 ${
           resolved ? "border-brand/50" : "border-stone-200 dark:border-stone-700"
         }`}
       />

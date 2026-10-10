@@ -1,0 +1,30 @@
+# Lint, typecheck and unit tests on every push and pull request. No build here: About, the rides
+# pages and the sitemap prerender from the database, which CI has no access to; Vercel builds
+# every deploy with its own settings. Integration and end-to-end tests need the database too, so
+# they run locally (pnpm test:integration, pnpm test:e2e).
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # the version comes from "packageManager" in package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
