@@ -50,6 +50,8 @@ export interface RouteOption {
   durationMin: number;
   viaLabel: string; // "via Sakleshpur"
   towns: string[];
+  /** The same towns with where they are, so one can become a via stop ("Ride through"). */
+  townStops?: { name: string; location: LngLat }[];
   roadMix: RoadMix | null; // null when the routing engine does not report road numbers
   curvature: RouteCurvature | null; // hairpins and twistiness, from the road's shape
 }

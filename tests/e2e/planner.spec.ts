@@ -284,6 +284,39 @@ test("a failed request offers Try again instead of a dead end", async ({ page })
   await expect(page.getByText("Could not load places")).toBeHidden();
 });
 
+test("ride through a town on the picked route to keep to that road", async ({ page }) => {
+  const routeRequests: { stops: { label: string }[] }[] = [];
+  await mockApis(page, routeRequests);
+  // The Hassan route passes Hassan and Sakleshpur (the mock has no towns otherwise).
+  await page.route("**/api/route", async (route) => {
+    const body = route.request().postDataJSON() as { stops: unknown[] };
+    if (body.stops.length !== 2) return route.fallback();
+    routeRequests.push(body as { stops: { label: string }[] });
+    const routes = options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"]);
+    routes[1] = {
+      ...routes[1]!,
+      towns: ["Hassan", "Sakleshpur"],
+      townStops: [
+        { name: "Hassan", location: [76.0996, 13.0072] },
+        { name: "Sakleshpur", location: [75.785, 12.943] },
+      ],
+    };
+    return route.fulfill({ json: { routes } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await cards.filter({ hasText: "via Hassan, Sakleshpur" }).click();
+  await page.getByRole("button", { name: "Sakleshpur", exact: true }).click();
+
+  // Sakleshpur is a stop now, so the trip keeps to that road.
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Bengaluru", "Sakleshpur", "Kalasa"]);
+  await expect(cards).toHaveCount(1);
+  await expect(cards.nth(0)).toContainText("via Sakleshpur");
+});
+
 test("the route's ups and downs, scrubbed from the keyboard", async ({ page }) => {
   await mockApis(page, []);
   await page.goto(

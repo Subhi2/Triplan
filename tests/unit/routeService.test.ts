@@ -53,6 +53,9 @@ describe("getRoutes", () => {
     expect(routes.map((r) => r.viaLabel)).toEqual(["via Chikkamagaluru", "via Hassan, Sakleshpur"]);
     // Start and destination towns are not "via" towns.
     expect(routes[1]!.towns).toEqual(["Hassan", "Sakleshpur", "Mudigere"]);
+    // With where they are, so the rider can ride through one of them.
+    expect(routes[1]!.townStops?.map((s) => s.name)).toEqual(routes[1]!.towns);
+    expect(routes[1]!.townStops?.[0]?.location).toEqual([0, 0]);
     expect(routes[0]!.distanceKm).toBeCloseTo(337.6, 1);
     // Both reach Kalasa through the hills: hairpins from the road's shape.
     expect(routes[0]!.curvature!.hairpins).toBeGreaterThan(10);

@@ -568,6 +568,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
               selectedId={selectedRouteId}
               onSelect={setSelectedRouteId}
               climbM={climbM}
+              onRideThrough={stops.length - 2 < MAX_VIA_STOPS ? addToTrip : null}
+              isStop={(location) => stopIndexAt(stopLocations, location) >= 0}
             />
           </>
         )}

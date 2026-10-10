@@ -180,6 +180,7 @@ export async function getRoutes(
     durationMin: Math.round(r.result.durationS / 60),
     viaLabel: labels[i]!,
     towns: mainTowns(r.towns).map((t) => t.name),
+    townStops: mainTowns(r.towns).map((t) => ({ name: t.name, location: t.location })),
     roadMix: roadMix(r.result),
     curvature: routeCurvature(r.result.geometry, waypoints),
   }));
