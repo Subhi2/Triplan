@@ -107,11 +107,23 @@ export interface SitemapPlace {
   rich: boolean;
 }
 
+/** Places per sitemap file (the format allows 50,000 URLs). */
+export const SITEMAP_PLACES_PER_FILE = 40_000;
+
+/** How many places have a page worth indexing (see listSitemapPlaces). */
+export async function countSitemapPlaces(): Promise<number> {
+  const [row] = await getDb().execute<{ n: number }>(sql`
+    SELECT count(*)::int AS n FROM place p JOIN category c ON c.id = p.category_id
+    WHERE p.status = 'verified' AND c.slug NOT IN ('fuel', 'town')`);
+  return row?.n ?? 0;
+}
+
 /**
  * Verified places that have a page worth indexing: every category in the place list (fuel
- * stations and towns only label and support routes). Richest first, capped for one sitemap file.
+ * stations and towns only label and support routes). Richest first; `part` 0 is the first
+ * SITEMAP_PLACES_PER_FILE, part 1 the next, and so on.
  */
-export async function listSitemapPlaces(limit = 45000): Promise<SitemapPlace[]> {
+export async function listSitemapPlaces(part = 0): Promise<SitemapPlace[]> {
   const rows = await getDb().execute<{ slug: string; updated_at: string | Date; rich: boolean }>(
     sql`
       SELECT p.slug, p.updated_at,
@@ -122,8 +134,8 @@ export async function listSitemapPlaces(limit = 45000): Promise<SitemapPlace[]> 
       FROM place p
       JOIN category c ON c.id = p.category_id
       WHERE p.status = 'verified' AND c.slug NOT IN ('fuel', 'town')
-      ORDER BY rich DESC, p.updated_at DESC
-      LIMIT ${limit}`,
+      ORDER BY rich DESC, p.updated_at DESC, p.slug
+      LIMIT ${SITEMAP_PLACES_PER_FILE} OFFSET ${part * SITEMAP_PLACES_PER_FILE}`,
   );
   return rows.map((r) => ({ slug: r.slug, updatedAt: new Date(r.updated_at), rich: r.rich }));
 }
