@@ -2,10 +2,16 @@ import { sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import type { TripPlan } from "@/lib/savedTrip";
 import { closeDb, getDb } from "@/server/db";
-import { createTrip, getTrip, listTrips, updateTrip } from "@/server/services/tripService";
+import {
+  createTrip,
+  getTrip,
+  listTrips,
+  tripEditAccess,
+  updateTrip,
+} from "@/server/services/tripService";
 
-// Against the seeded database (`pnpm db:seed`). Saved trips are one shared list, so this trip gets
-// a unique title and is deleted afterwards.
+// Against the seeded database (`pnpm db:seed`, migrations through 0017). The trip gets a unique
+// title and is deleted afterwards.
 
 describe.skipIf(!process.env.DATABASE_URL)("saved trips", () => {
   const title = `Integration trip ${Date.now()}`;
@@ -38,7 +44,8 @@ describe.skipIf(!process.env.DATABASE_URL)("saved trips", () => {
         viaLabel: "via Manjarabad Fort",
       },
     };
-    const created = await createTrip({ title, ...plan });
+    const { trip: created, editToken } = await createTrip({ title, ...plan });
+    expect(editToken).toMatch(/^[\w-]{43}$/);
     expect(created).toMatchObject({
       title,
       vehicle: "bike",
@@ -55,6 +62,16 @@ describe.skipIf(!process.env.DATABASE_URL)("saved trips", () => {
       WHERE s.trip_id = ${created.id} ORDER BY s.position`);
     expect(linked.find((s) => s.label === "Manjarabad Fort")?.slug).toBe("manjarabad-fort");
 
+    // Only the token that came back with the trip may change it; the database keeps its hash.
+    expect(await tripEditAccess(created.id, editToken)).toBe("ok");
+    expect(await tripEditAccess(created.id, null)).toBe("no-token");
+    expect(await tripEditAccess(created.id, `${editToken}x`)).toBe("wrong-token");
+    const [stored] = await getDb().execute<{ hash: string }>(
+      sql`SELECT edit_token_hash AS hash FROM trip WHERE id = ${created.id}`,
+    );
+    expect(stored?.hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(stored?.hash).not.toContain(editToken);
+
     const renamed = await updateTrip(created.id, { title: `${title} renamed` });
     expect(renamed?.title).toBe(`${title} renamed`);
     expect(renamed?.stops).toHaveLength(3);
@@ -69,7 +86,8 @@ describe.skipIf(!process.env.DATABASE_URL)("saved trips", () => {
       stops: [plan.stops[0], plan.stops[2]],
     });
 
-    expect((await listTrips()).find((t) => t.id === created.id)).toMatchObject({
+    expect(await listTrips([])).toEqual([]);
+    expect((await listTrips([created.id])).find((t) => t.id === created.id)).toMatchObject({
       from: "Bengaluru",
       to: "Kalasa",
       viaCount: 0,
@@ -80,6 +98,7 @@ describe.skipIf(!process.env.DATABASE_URL)("saved trips", () => {
   it("is null for a trip that does not exist", async () => {
     const missing = "00000000-0000-4000-8000-000000000000";
     expect(await getTrip(missing)).toBeNull();
+    expect(await tripEditAccess(missing, "x")).toBe("not-found");
     expect(await updateTrip(missing, { title: "x" })).toBeNull();
   });
 });

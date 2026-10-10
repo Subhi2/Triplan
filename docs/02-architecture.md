@@ -26,7 +26,7 @@ src/
     page.tsx                    # trip planner
     nearby/page.tsx             # Near me: well-known places within reach of a point
     place/[slug]/page.tsx       # place page (ISR, 1 hour)
-    trips/page.tsx              # everyone's saved trips
+    trips/page.tsx              # the trips saved or opened on this device
     trips/[id]/page.tsx         # the planner opened with a saved trip (its share link)
     place/[slug]/opengraph-image.tsx, trips/[id]/opengraph-image.tsx   # share cards
     og/plan/route.tsx           # share card of an unsaved planner link
@@ -230,7 +230,7 @@ The `/nearby` screen lists well-known places the rider can reach from one point 
 
 Caching: table answers go in `route_cache` for 7 days under `table:v1:` keys (origin at 3 decimals, destinations, profile).
 
-Privacy: the position is only ever taken on a tap (never on page load) and is rounded to 3 decimals (~100 m) before it reaches a URL, a request, a cache key or a trip stop. `/api/places/near` answers `Cache-Control: private, no-store`, stores nothing, and logs only error messages, never the request or the position. Saved trips are public (`/trips`), which is why "My location" as a trip start is rounded too.
+Privacy: the position is only ever taken on a tap (never on page load) and is rounded to 3 decimals (~100 m) before it reaches a URL, a request, a cache key or a trip stop. `/api/places/near` answers `Cache-Control: private, no-store`, stores nothing, and logs only error messages, never the request or the position. Saved trips are public to anyone with the link, which is why "My location" as a trip start is rounded too.
 
 ## Place detail and "Add to trip"
 
@@ -298,10 +298,13 @@ Not filled by Google: the place list and map markers (a rating per row would be 
 
 ## Saved trips
 
-Saved trips are open: no sign-in and no owners (`trip.user_id` stays empty, `is_public` is always true). `/trips` lists everyone's trips, most recently changed first, and `/trips/[id]` opens the planner with a trip; that URL is the share link. Anyone can rename a trip or save changes to it.
+Saved trips need no sign-in (`trip.user_id` stays empty, `is_public` is always true). `/trips/[id]` opens the planner with a trip; that URL is the share link, and anyone with it can open the trip.
+
+- **Edit token** (migration 0017, decided 2026-10-09): `POST /api/trips` returns `{ trip, editToken }`. The token is 32 random bytes, sent this once; only its sha256 is stored (`trip.edit_token_hash`). `PATCH /api/trips/[id]` needs `Authorization: Bearer <token>`: 401 without one, 403 with the wrong one, and 403 for trips saved before tokens (read only). Anyone else gets "Save a copy" (a new trip of their own). Before this, anyone could overwrite any trip, and `/trips` listed every trip id.
+- **Your trips** (`/trips`): the trips this device saved or opened, newest first, at most 50. The ids and the tokens live in `localStorage` (`src/lib/tripTokens.ts`; every read and write in try/catch). The page asks `GET /api/trips?ids=` for their summaries. There is no list of everyone's trips.
 
 - Saving sends the stops, vehicle, corridor and the selected route (id, geometry, distance, time, label). The geometry is stored in `trip.route_geom`; the route id is stored so reopening selects the same route option (route ids are deterministic hashes of the routing request). Stops that match one of our places (same name within 150 m) get `trip_stop.place_id`.
-- In the planner the URL keeps the working state (`/trips/[id]?from=...`), so a reload keeps unsaved edits; the bare link opens the saved version. The save bar shows "Changes not saved" when the stops, vehicle, corridor or selected route differ from the saved trip, with "Save changes" and "Save as new trip".
+- In the planner the URL keeps the working state (`/trips/[id]?from=...`), so a reload keeps unsaved edits; the bare link opens the saved version. The save bar shows "Changes not saved" when the stops, vehicle, corridor or selected route differ from the saved trip, with "Save changes" and "Save as new trip" on the device that saved it, and "Save as my trip" elsewhere.
 - The app server writes trips with the table owner's connection; the RLS policies on `trip` only matter for requests made with the Supabase keys.
 
 ## Share cards and search engines

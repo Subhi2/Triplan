@@ -618,7 +618,7 @@ test("save the trip with its route, then see changes that are not saved", async 
       durationMin: 400,
       updatedAt: new Date().toISOString(),
     };
-    return route.fulfill({ status: 201, json: { trip } });
+    return route.fulfill({ status: 201, json: { trip, editToken: "test-edit-token" } });
   });
   await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
 
@@ -649,10 +649,14 @@ test("save the trip with its route, then see changes that are not saved", async 
     stops: [{ label: "Bengaluru" }, { label: "Kalasa" }],
   });
 
-  // A change to the saved trip can be saved or kept as a new trip.
+  // This device saved it, so it may rename it and save changes, with the trip's edit token.
+  await expect(page.getByRole("button", { name: "Rename" })).toBeVisible();
   await cards.filter({ hasText: "via Chikkamagaluru" }).click();
   await expect(page.getByText("Changes not saved.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
+  const patch = page.waitForRequest((r) => r.method() === "PATCH");
+  await page.route("**/api/trips/*", (route) => route.fulfill({ status: 500, json: {} }));
+  await page.getByRole("button", { name: "Save changes" }).click();
+  expect((await patch).headers()["authorization"]).toBe("Bearer test-edit-token");
 });
 
 test("tick places and open the trip in Google Maps with them as stops", async ({ page }) => {

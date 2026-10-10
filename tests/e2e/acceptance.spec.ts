@@ -156,8 +156,8 @@ test("category chips and the detour toggle filter the list", async ({ page }) =>
   expect(decodeURIComponent(page.url())).toContain("cat=temple&hd=1");
 });
 
-// Phase 4 "done when" (docs/04-build-plan.md). Saved trips are open, so this writes a real trip to
-// the shared list and deletes it afterwards.
+// Phase 4 "done when" (docs/04-build-plan.md). This writes a real trip to the database and deletes
+// it afterwards.
 test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", async ({
   page,
 }, testInfo) => {
@@ -184,7 +184,7 @@ test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", as
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page).toHaveURL(/\/trips\/[0-9a-f-]{36}\?/);
 
-    // Everyone's list shows it; opening it restores the stops and the route.
+    // This device's list shows it; opening it restores the stops and the route.
     await page.goto("/trips");
     await page.getByRole("link", { name: new RegExp(title) }).click();
     // The dev server compiles the trip page on first visit, then routes with the real OSRM.

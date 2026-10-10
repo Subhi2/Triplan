@@ -424,7 +424,7 @@ export function Nearby() {
             href="/trips"
             className="text-brand-dark inline-flex min-h-11 shrink-0 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
           >
-            {floatingHeader ? "Trips" : "Saved trips"}
+            {floatingHeader ? "Trips" : "Your trips"}
           </Link>
         </header>
         {isDesktop && <div className="mt-3">{panel}</div>}

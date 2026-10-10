@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isSavedPlan, type SavedTrip, type TripPlan } from "@/lib/savedTrip";
+import { isSavedPlan, type CreatedTrip, type SavedTrip, type TripPlan } from "@/lib/savedTrip";
 import { tripHeadline, whatsAppUrl } from "@/lib/site";
+import { rememberTrip, tripToken } from "@/lib/tripTokens";
 
 interface Props {
   /** The saved trip open in the planner, if any. */
@@ -15,15 +16,27 @@ interface Props {
 
 type Mode = "idle" | "naming" | "renaming";
 
-async function send(url: string, method: "POST" | "PATCH", body: object): Promise<SavedTrip> {
+class NotYoursError extends Error {}
+
+async function send(
+  url: string,
+  method: "POST" | "PATCH",
+  body: object,
+  token?: string | null,
+): Promise<Partial<CreatedTrip> & { trip: SavedTrip }> {
   const res = await fetch(url, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(body),
   });
-  const data = (await res.json().catch(() => ({}))) as { trip?: SavedTrip; error?: string };
-  if (!res.ok || !data.trip) throw new Error(data.error ?? `HTTP ${res.status}`);
-  return data.trip;
+  const data = (await res.json().catch(() => ({}))) as Partial<CreatedTrip> & { error?: string };
+  const message = data.error ?? `HTTP ${res.status}`;
+  if (res.status === 401 || res.status === 403) throw new NotYoursError(message);
+  if (!res.ok || !data.trip) throw new Error(message);
+  return { ...data, trip: data.trip };
 }
 
 const primary =
@@ -35,7 +48,8 @@ const link =
  * Save the trip, rename it, save changes to it or save it as a new trip, and share its link:
  * the phone's share sheet on phones, WhatsApp and "Copy link" elsewhere. An unsaved trip shares
  * the planner link, which holds the whole trip in its query string.
- * Saved trips are open: no sign-in, and everyone sees them in the saved trips list.
+ * No sign-in: the device that saved a trip keeps its edit token and may change it; anyone else
+ * with the link can open it and save a copy. Every trip opened here joins this device's list.
  */
 export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
   const [mode, setMode] = useState<Mode>("idle");
@@ -45,6 +59,15 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
   const [notice, setNotice] = useState("");
 
   const changed = saved !== null && plan !== null && !isSavedPlan(saved, plan);
+
+  // Whether this device saved the trip (holds its edit token). Read after mounting: the server
+  // does not know the browser's storage.
+  const [canEdit, setCanEdit] = useState(false);
+  useEffect(() => {
+    if (!saved) return;
+    rememberTrip(saved.id);
+    setCanEdit(tripToken(saved.id) !== null);
+  }, [saved]);
 
   // The share sheet on touch screens; desktop share sheets rarely include WhatsApp. Null until
   // mounted: the links need window.location, which the server does not have.
@@ -62,15 +85,21 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
   const shareUrl = () =>
     saved && !changed ? `${window.location.origin}/trips/${saved.id}` : window.location.href;
 
-  async function run(action: () => Promise<SavedTrip>, done: string) {
+  async function run(action: () => ReturnType<typeof send>, done: string) {
     setBusy(true);
     setError(null);
     setNotice("");
     try {
-      onSaved(await action());
+      const { trip, editToken } = await action();
+      if (editToken) {
+        rememberTrip(trip.id, editToken);
+        setCanEdit(true);
+      }
+      onSaved(trip);
       setMode("idle");
       setNotice(done);
     } catch (err) {
+      if (err instanceof NotYoursError) setCanEdit(false);
       setError(err instanceof Error ? err.message : "Could not save the trip");
     } finally {
       setBusy(false);
@@ -89,11 +118,14 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
     const t = title.trim();
     if (!t) return;
     if (mode === "renaming" && saved) {
-      void run(() => send(`/api/trips/${saved.id}`, "PATCH", { title: t }), "Renamed.");
+      void run(
+        () => send(`/api/trips/${saved.id}`, "PATCH", { title: t }, tripToken(saved.id)),
+        "Renamed.",
+      );
     } else if (plan) {
       void run(
         () => send("/api/trips", "POST", { title: t, ...plan }),
-        "Saved. Anyone with the link can open this trip.",
+        "Saved. Anyone with the link can open this trip; only this device can change it.",
       );
     }
   }
@@ -165,7 +197,7 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
           </button>
           {mode === "naming" && (
             <p className="w-full text-xs text-stone-600 dark:text-stone-400">
-              Saved trips are open to everyone: they are listed under Saved trips.
+              Anyone with the link can open it. Only this device can rename or change it.
             </p>
           )}
         </form>
@@ -177,17 +209,43 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
               <span className="font-semibold">{saved.title}</span>
             </p>
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => startNaming("renaming", saved.title)}
-                className={link}
-              >
-                Rename
-              </button>
+              {canEdit ? (
+                <button
+                  type="button"
+                  onClick={() => startNaming("renaming", saved.title)}
+                  className={link}
+                >
+                  Rename
+                </button>
+              ) : (
+                !changed && (
+                  <button
+                    type="button"
+                    onClick={() => startNaming("naming", saved.title)}
+                    className={link}
+                  >
+                    Save a copy
+                  </button>
+                )
+              )}
               {shareButtons}
             </div>
           </div>
-          {changed && (
+          {changed && !canEdit && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="text-amber-800 dark:text-amber-400">
+                Changed. This trip was saved on another device.
+              </span>
+              <button
+                type="button"
+                onClick={() => startNaming("naming", saved.title)}
+                className={primary}
+              >
+                Save as my trip
+              </button>
+            </div>
+          )}
+          {changed && canEdit && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="text-amber-800 dark:text-amber-400">Changes not saved.</span>
               <button
@@ -195,7 +253,7 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
                 disabled={busy}
                 onClick={() =>
                   void run(
-                    () => send(`/api/trips/${saved.id}`, "PATCH", { plan }),
+                    () => send(`/api/trips/${saved.id}`, "PATCH", { plan }, tripToken(saved.id)),
                     "Changes saved.",
                   )
                 }

@@ -26,7 +26,7 @@ test("an unknown address gets a way back", async ({ page }) => {
 test("content pages share the main navigation", async ({ page }) => {
   await page.goto("/trips");
   const nav = page.getByRole("navigation", { name: "Main" });
-  for (const name of ["Famous rides", "Near me", "Saved trips", "About"]) {
+  for (const name of ["Famous rides", "Near me", "Your trips", "About"]) {
     await expect(nav.getByRole("link", { name })).toBeVisible();
   }
 });

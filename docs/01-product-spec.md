@@ -51,7 +51,7 @@ Help riders plan a trip by showing everything worth stopping for along the exact
    - Reviews list.
    - "Add to trip" button: inserts the place as a via stop at its place along the route (before the first via stop further along) and recomputes the route. Once added, it shows "In your trip (stop N)" and "Remove from trip".
    - Links to related videos / reels (from the hidden-places pipeline).
-5. **Saved trips** (open, no sign-in): save, rename, reopen, save changes or save as a new trip, and share the trip's link (`/trips/[id]`). There are no owners: every saved trip is in one list that everyone sees, and anyone with a trip's link can open and update it. A reopened trip selects the route option it was saved with.
+5. **Saved trips** (no sign-in): save, rename, reopen, save changes or save as a new trip, and share the trip's link (`/trips/[id]`). Anyone with a trip's link can open it and save a copy; only the device that saved it can rename it or save changes. "Your trips" lists the trips saved or opened on this device. A reopened trip selects the route option it was saved with.
 
 ### Near me (G2, added 2026-09-30)
 
@@ -107,7 +107,7 @@ User stories:
 
 1. **Home / Trip planner** (`/`): trip form on top (collapsible on mobile), map, route cards, place list. Mobile: map on top half, list in a draggable bottom sheet.
 2. **Place detail** (`/place/[slug]`).
-3. **Saved trips** (`/trips`, everyone's trips), **trip** (`/trips/[id]`: the planner opened with the trip; this is its share link).
+3. **Your trips** (`/trips`, the trips saved or opened on this device), **trip** (`/trips/[id]`: the planner opened with the trip; this is its share link).
 4. **Add a place** (`/contribute`).
 5. **Admin** (`/admin/*`): moderation queues, discovery queue.
 6. **Sign in** (`/login`), only if accounts are added later.
