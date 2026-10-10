@@ -2,7 +2,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { routeCurvature } from "@/lib/curvature";
 import type { LngLat } from "@/lib/geo";
-import { monthRange, ridePlannerUrl, ridesFileSchema, type RideSource } from "@/lib/rides";
+import {
+  monthRange,
+  rideArea,
+  ridePlannerUrl,
+  ridesFileSchema,
+  type RideSource,
+} from "@/lib/rides";
 import { parseTripUrl } from "@/lib/tripUrl";
 import { buildRide, distanceToLineM, rideProblems } from "@/server/services/rideService";
 import { routeFixture } from "../helpers/fixtures";
@@ -86,5 +92,19 @@ describe("ride checks", () => {
       alternatives: true,
       profile: "bike",
     });
+  });
+});
+
+describe("rideArea", () => {
+  it("files a ride under the part of India of the first state it names", () => {
+    expect(rideArea("Karnataka")).toBe("South");
+    expect(rideArea("Himachal Pradesh and Ladakh")).toBe("North and Himalaya");
+    expect(rideArea("Assam and Arunachal Pradesh")).toBe("East and North-east");
+    expect(rideArea("Maharashtra")).toBe("West");
+    expect(rideArea("Atlantis")).toBeNull();
+  });
+
+  it("knows every region in data/rides.json", () => {
+    for (const r of rides) expect(rideArea(r.region), r.region).not.toBeNull();
   });
 });
