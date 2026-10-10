@@ -3,7 +3,7 @@
 import { categoryStyle } from "@/lib/categories";
 import { googleEnabled } from "@/lib/google";
 import { placeGoogleMapsHref } from "@/lib/googleMaps";
-import { bestTimeSummary } from "@/lib/months";
+import { bestTimeSummary, isInSeason } from "@/lib/months";
 import type { ListTurn } from "@/lib/listTurn";
 import { detourLabel, ON_ROUTE_MAX_KM, type PlaceAlong } from "@/lib/places";
 
@@ -102,6 +102,11 @@ export function PlaceRow(props: Props) {
               >
                 {detour}
               </span>
+              {isInSeason(place.bestMonths, new Date().getMonth() + 1) && (
+                <span className="bg-brand-tint text-brand-dark rounded-full px-2 text-xs font-bold dark:bg-teal-950 dark:text-teal-200">
+                  In season
+                </span>
+              )}
               {place.trending && (
                 <span className="text-ghat-dark rounded-full bg-orange-100 px-2 text-xs font-bold dark:bg-orange-950 dark:text-orange-300">
                   Trending
