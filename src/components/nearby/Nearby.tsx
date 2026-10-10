@@ -10,6 +10,7 @@ import { PlacePanel } from "@/components/place/PlacePanel";
 import { SiteMenu } from "@/components/site/SiteMenu";
 import type { MapBias } from "@/components/trip/StopInput";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { roundLngLat3, type LngLat } from "@/lib/geo";
 import {
@@ -238,11 +239,7 @@ export function Nearby() {
           ))}
         </div>
       )}
-      {nearby.status === "error" && (
-        <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-          {nearby.message}
-        </p>
-      )}
+      {nearby.status === "error" && <RetryAlert message={nearby.message} onRetry={nearby.retry} />}
       {nearby.status === "ok" && (
         <>
           {roadTimes === "straight" && (

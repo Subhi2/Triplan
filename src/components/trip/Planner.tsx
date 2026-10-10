@@ -23,6 +23,7 @@ import { SafetyStops } from "@/components/route/SafetyStops";
 import { useDayPlan } from "@/components/route/useDayPlan";
 import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { categoryStyle } from "@/lib/categories";
 import { pointAtKm, type LngLat } from "@/lib/geo";
@@ -121,6 +122,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const [dayCount, setDayCount] = useState<number | null>(initial.days);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [routeState, setRouteState] = useState<RouteState>({ status: "idle" });
+  // Bumped by "Try again" after a routing error.
+  const [routeAttempt, setRouteAttempt] = useState(0);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [activePlaceId, setActivePlaceId] = useState<string | null>(null);
   const [hoverPlaceId, setHoverPlaceId] = useState<string | null>(null);
@@ -209,7 +212,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
         });
       });
     return () => ctrl.abort();
-  }, [routeBody]);
+  }, [routeBody, routeAttempt]);
 
   const routes = routeState.status === "ok" ? routeState.routes : [];
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
@@ -548,9 +551,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           </div>
         )}
         {routeState.status === "error" && (
-          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-            {routeState.message}
-          </p>
+          <RetryAlert message={routeState.message} onRetry={() => setRouteAttempt((n) => n + 1)} />
         )}
         {routeState.status === "ok" && (
           <>
@@ -665,9 +666,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           </div>
         )}
         {placesState.status === "error" && (
-          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-            {placesState.message}
-          </p>
+          <RetryAlert message={placesState.message} onRetry={placesState.retry} />
         )}
         {(placesState.status === "ok" || refreshing) && (
           <div

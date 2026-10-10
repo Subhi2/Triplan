@@ -254,6 +254,36 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
   await expect(cards).toHaveCount(1);
 });
 
+test("a failed request offers Try again instead of a dead end", async ({ page }) => {
+  await mockApis(page, []);
+  // The routing server fails once; the places list fails once too.
+  let routeCalls = 0;
+  await page.route("**/api/route", (route) =>
+    ++routeCalls === 1
+      ? route.fulfill({ status: 502, json: { error: "The routing service is unavailable" } })
+      : route.fallback(),
+  );
+  // Only the place list's request (the ride check asks for fuel stations on its own).
+  let listCalls = 0;
+  await page.route("**/api/places/along", (route) => {
+    const body = route.request().postDataJSON() as { categories?: string[] };
+    return !body.categories && ++listCalls === 1
+      ? route.fulfill({ status: 500, json: { error: "Could not load places" } })
+      : route.fallback();
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  await expect(page.getByText("The routing service is unavailable")).toBeVisible();
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toHaveCount(
+    2,
+  );
+
+  await expect(page.getByText("Could not load places")).toBeVisible();
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("Could not load places")).toBeHidden();
+});
+
 test("the route's ups and downs, scrubbed from the keyboard", async ({ page }) => {
   await mockApis(page, []);
   await page.goto(

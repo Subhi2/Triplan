@@ -8,12 +8,13 @@ import type { RouteOption } from "@/lib/trip";
 export type SafetyState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "error" }
+  | { status: "error"; retry: () => void }
   | { status: "ok"; summary: SafetySummary };
 
 /** Safety stops along the selected route: the small route id first, the geometry if it expired. */
 export function useSafetyAlong(route: RouteOption | null): SafetyState {
   const [state, setState] = useState<SafetyState>({ status: "idle" });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!route) {
       setState({ status: "idle" });
@@ -34,9 +35,11 @@ export function useSafetyAlong(route: RouteOption | null): SafetyState {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setState({ status: "ok", summary: (await res.json()) as SafetySummary });
     })().catch(() => {
-      if (!ctrl.signal.aborted) setState({ status: "error" });
+      if (!ctrl.signal.aborted) {
+        setState({ status: "error", retry: () => setAttempt((n) => n + 1) });
+      }
     });
     return () => ctrl.abort();
-  }, [route]);
+  }, [route, attempt]);
   return state;
 }

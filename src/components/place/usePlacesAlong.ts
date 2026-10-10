@@ -9,7 +9,7 @@ export type PlacesState =
   /** `previous`: the places of the same route, still shown (dimmed) while the new ones load. */
   | { status: "loading"; previous?: PlaceAlong[] }
   | { status: "ok"; places: PlaceAlong[] }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; retry: () => void };
 
 /**
  * Loads every place within the corridor of the route: the place-list categories (filtering is
@@ -23,6 +23,7 @@ export function usePlacesAlong(
   categories?: string[],
 ): PlacesState {
   const [state, setState] = useState<PlacesState>({ status: "idle" });
+  const [attempt, setAttempt] = useState(0);
   const last = useRef<{ routeId: string; places: PlaceAlong[] } | null>(null);
   // A string, so a new array with the same categories does not reload.
   const categoryKey = categories?.join(",") ?? "";
@@ -60,10 +61,11 @@ export function usePlacesAlong(
       setState({
         status: "error",
         message: err instanceof Error ? err.message : "Could not load places",
+        retry: () => setAttempt((n) => n + 1),
       });
     });
     return () => ctrl.abort();
-  }, [route, corridorKm, categoryKey]);
+  }, [route, corridorKm, categoryKey, attempt]);
 
   return state;
 }

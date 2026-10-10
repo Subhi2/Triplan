@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDuration } from "@/lib/format";
 import { MAX_DAYS, RIDE_HOURS, type DayLeg, type RideHours } from "@/lib/multiDay";
 import { telLink } from "@/lib/safety";
+import { RetryAlert } from "@/components/ui/RetryAlert";
 import type { DayPlanState } from "./useDayPlan";
 
 interface Props {
@@ -113,9 +114,7 @@ export function DaySplit({
       </div>
       {state.status === "loading" && <div aria-hidden className="shimmer h-24 rounded-xl" />}
       {state.status === "error" && (
-        <p className="text-sm text-stone-600 dark:text-stone-400">
-          Could not split this route into days. Try again in a moment.
-        </p>
+        <RetryAlert quiet message="Could not split this route into days." onRetry={state.retry} />
       )}
       {legs.length > 0 && (
         <ol aria-label="Days of riding" className="flex flex-col">
