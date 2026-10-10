@@ -91,6 +91,7 @@ const AREA_OF_STATE: Record<string, RideArea> = {
   "himachal pradesh": "North and Himalaya",
   ladakh: "North and Himalaya",
   "jammu and kashmir": "North and Himalaya",
+  "andaman and nicobar islands": "East and North-east",
   uttarakhand: "North and Himalaya",
   punjab: "North and Himalaya",
   haryana: "North and Himalaya",
@@ -111,13 +112,17 @@ const AREA_OF_STATE: Record<string, RideArea> = {
   chhattisgarh: "East and North-east",
 };
 
-/** "Himachal Pradesh and Ladakh" -> "North and Himalaya"; null for an unknown state. */
+/**
+ * "Himachal Pradesh and Ladakh" -> "North and Himalaya": the area of the first state the region
+ * names (state names with "and" in them, such as Jammu and Kashmir, match whole). Null for an
+ * unknown state.
+ */
 export function rideArea(region: string): RideArea | null {
-  const first = region
-    .split(/\s+and\s+|,|·/i)[0]!
-    .trim()
-    .toLowerCase();
-  return AREA_OF_STATE[first] ?? null;
+  const r = region.trim().toLowerCase();
+  const state = Object.keys(AREA_OF_STATE)
+    .sort((a, b) => b.length - a.length)
+    .find((s) => r === s || r.startsWith(`${s} `) || r.startsWith(`${s},`));
+  return state ? AREA_OF_STATE[state]! : null;
 }
 
 /** The planner link that opens a ride with the same stops. */

@@ -689,5 +689,189 @@
       "km": 265,
       "hairpinsMin": 3
     }
+  },
+  {
+    "slug": "kozhikode-to-wayanad-via-thamarassery",
+    "title": "Kozhikode to Wayanad via the Thamarassery Ghat",
+    "blurb": "From the Malabar coast up the Thamarassery Ghat, nine hairpins from Adivaram to the Lakkidi viewpoint, onto the Wayanad plateau at Kalpetta.",
+    "region": "Kerala",
+    "vehicle": "bike",
+    "tags": ["Thamarassery Ghat", "Wayanad", "hairpins"],
+    "bestMonths": [9, 10, 11, 12, 1, 2],
+    "notes": "The ghat jams on weekend evenings, and heavy monsoon rain closes it now and then.",
+    "stops": [
+      {
+        "label": "Kozhikode",
+        "location": [75.77547, 11.24506]
+      },
+      {
+        "label": "Kalpetta",
+        "location": [76.08281, 11.61028]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Adivaram",
+        "location": [76.01261, 11.48498]
+      },
+      {
+        "label": "Lakkidi",
+        "location": [76.01883, 11.51184]
+      }
+    ],
+    "expect": {
+      "km": 72,
+      "hairpinsMin": 6
+    }
+  },
+  {
+    "slug": "leh-to-nubra-via-khardung-la",
+    "title": "Leh to Nubra Valley over Khardung La",
+    "blurb": "Up from Leh in loops to Khardung La at about 5,350 m, one of the highest roads riders can take, and down to the sand dunes and monastery of Diskit in the Nubra Valley.",
+    "region": "Ladakh",
+    "vehicle": "bike",
+    "tags": ["Khardung La", "Nubra", "high pass"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Nubra needs an Inner Line Permit. Spend two days in Leh first: the pass is over 5,300 m.",
+    "stops": [
+      {
+        "label": "Leh",
+        "location": [77.58481, 34.1642]
+      },
+      {
+        "label": "Diskit",
+        "location": [77.55065, 34.55123]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Khardung La",
+        "location": [77.60469, 34.27866]
+      }
+    ],
+    "expect": {
+      "km": 118,
+      "hairpinsMin": 5
+    }
+  },
+  {
+    "slug": "leh-to-pangong-via-chang-la",
+    "title": "Leh to Pangong Tso over Chang La",
+    "blurb": "East from Leh past Karu, over Chang La at about 5,360 m, through Tangtse and along the long blue lake of Pangong Tso to Spangmik.",
+    "region": "Ladakh",
+    "vehicle": "bike",
+    "tags": ["Chang La", "Pangong Tso", "high pass"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Pangong needs an Inner Line Permit. Streams can flood the road on summer afternoons; cross early.",
+    "stops": [
+      {
+        "label": "Leh",
+        "location": [77.58481, 34.1642]
+      },
+      {
+        "label": "Spangmik",
+        "location": [78.45734, 33.90769]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Chang La",
+        "location": [77.93044, 34.04717]
+      },
+      {
+        "label": "Tangtse",
+        "location": [78.16773, 34.03015]
+      }
+    ],
+    "expect": {
+      "km": 165,
+      "hairpinsMin": 5
+    }
+  },
+  {
+    "slug": "srinagar-to-leh-via-zoji-la",
+    "title": "Srinagar to Leh over Zoji La",
+    "blurb": "From the Kashmir valley by Sonamarg over Zoji La, then through Drass and Kargil and over Namika La and Fotu La to Leh: the classic way into Ladakh.",
+    "region": "Jammu and Kashmir and Ladakh",
+    "vehicle": "bike",
+    "tags": ["Zoji La", "Kargil", "high passes"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Zoji La opens from about May to November; near the top the road is broken and muddy, and it closes for snow.",
+    "stops": [
+      {
+        "label": "Srinagar",
+        "location": [74.82044, 34.07474]
+      },
+      {
+        "label": "Sonamarg",
+        "location": [75.29656, 34.30239]
+      },
+      {
+        "label": "Kargil",
+        "location": [76.12558, 34.5593]
+      },
+      {
+        "label": "Leh",
+        "location": [77.58481, 34.1642]
+      }
+    ],
+    "checkpoints": [
+      {
+        "label": "Drass",
+        "location": [75.75076, 34.42927]
+      }
+    ],
+    "expect": {
+      "km": 420,
+      "hairpinsMin": 5
+    }
+  },
+  {
+    "slug": "shillong-to-sohra",
+    "title": "Shillong to Sohra (Cherrapunji)",
+    "blurb": "South from Shillong across the rolling Khasi Hills to Sohra on the edge of the plateau, among the wettest places on earth, with waterfalls and living root bridges below.",
+    "region": "Meghalaya",
+    "vehicle": "bike",
+    "tags": ["Cherrapunji", "waterfalls", "Khasi Hills"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "In the monsoon the falls are at their biggest, but the road is wet and often in cloud.",
+    "stops": [
+      {
+        "label": "Shillong",
+        "location": [91.88279, 25.57599]
+      },
+      {
+        "label": "Sohra",
+        "location": [91.72924, 25.27773]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 54
+    }
+  },
+  {
+    "slug": "gangtok-to-tsomgo-lake",
+    "title": "Gangtok to Tsomgo Lake",
+    "blurb": "A steep climb from Gangtok on the road towards Nathu La, from forest to bare mountainside, to the glacial Tsomgo Lake at about 3,750 m.",
+    "region": "Sikkim",
+    "vehicle": "car",
+    "tags": ["Tsomgo Lake", "Nathu La road", "high lake"],
+    "bestMonths": [3, 4, 5, 10, 11],
+    "notes": "A permit is needed, arranged through a registered operator in Gangtok; private vehicles from outside Sikkim may be turned back.",
+    "stops": [
+      {
+        "label": "Gangtok",
+        "location": [88.61227, 27.32905]
+      },
+      {
+        "label": "Tsomgo Lake",
+        "location": [88.76176, 27.37457]
+      }
+    ],
+    "checkpoints": [],
+    "expect": {
+      "km": 38
+    }
   }
 ]
