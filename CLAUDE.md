@@ -67,7 +67,7 @@ Add these scripts to `package.json` as the phases introduce them.
 - Months are stored as integers 1–12.
 - Every image stored or displayed must carry `source`, `license` and `author`. Never re-host social media videos or photos; embed or link them.
 - Secrets live in `.env.local` (never committed). Keep `.env.example` up to date.
-- Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`).
+- Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`). GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and unit tests on every push; it cannot build (the ISR pages need the database).
 - Small commits, one feature per commit, message in imperative mood.
 
 ## Environment variables
