@@ -7,6 +7,7 @@ import { useLocate } from "@/components/geo/useLocate";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapFrame, MapStop } from "@/components/map/types";
 import { PlacePanel } from "@/components/place/PlacePanel";
+import { ShareButtons } from "@/components/site/ShareButtons";
 import { SiteMenu } from "@/components/site/SiteMenu";
 import type { MapBias } from "@/components/trip/StopInput";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
@@ -226,6 +227,16 @@ export function Nearby() {
           </span>
         )}
       </div>
+      {/* Only around a named place: a list around the rider's own position would share it. */}
+      {nearby.status === "ok" && origin?.label && (
+        <div className="-mt-2 flex flex-wrap items-center gap-x-3">
+          <ShareButtons
+            title={`Near ${origin.label}`}
+            text={`Places within ${WITHIN_WORDS[within]} of ${origin.label} by ${vehicle}`}
+            linkClassName="text-brand-dark inline-flex min-h-11 items-center text-sm font-bold hover:underline md:min-h-0 dark:text-teal-300"
+          />
+        </div>
+      )}
       {nearby.status === "loading" && (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-stone-600 dark:text-stone-400">Finding places in reach…</p>

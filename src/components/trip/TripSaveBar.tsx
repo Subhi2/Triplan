@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ShareButtons } from "@/components/site/ShareButtons";
 import { isSavedPlan, type CreatedTrip, type SavedTrip, type TripPlan } from "@/lib/savedTrip";
-import { tripHeadline, whatsAppUrl } from "@/lib/site";
+import { tripHeadline } from "@/lib/site";
 import { rememberTrip, tripToken } from "@/lib/tripTokens";
 
 interface Props {
@@ -69,22 +70,6 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
     setCanEdit(tripToken(saved.id) !== null);
   }, [saved]);
 
-  // The share sheet on touch screens; desktop share sheets rarely include WhatsApp. Null until
-  // mounted: the links need window.location, which the server does not have.
-  const [shareWith, setShareWith] = useState<"sheet" | "links" | null>(null);
-  useEffect(() => {
-    setShareWith(
-      typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches
-        ? "sheet"
-        : "links",
-    );
-  }, []);
-
-  const shareText = () =>
-    `${tripHeadline((plan?.stops ?? saved?.stops ?? []).map((s) => s.label))} · places along the route`;
-  const shareUrl = () =>
-    saved && !changed ? `${window.location.origin}/trips/${saved.id}` : window.location.href;
-
   async function run(action: () => ReturnType<typeof send>, done: string) {
     setBusy(true);
     setError(null);
@@ -130,47 +115,15 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
     }
   }
 
-  async function copyLink() {
-    const url = shareUrl();
-    try {
-      await navigator.clipboard.writeText(url);
-      setNotice("Link copied.");
-    } catch {
-      setNotice(`Share this link: ${url}`);
-    }
-  }
-
-  async function share() {
-    try {
-      await navigator.share({
-        title: saved?.title ?? defaultTitle,
-        text: shareText(),
-        url: shareUrl(),
-      });
-    } catch (err) {
-      // AbortError: the rider closed the share sheet.
-      if (!(err instanceof DOMException && err.name === "AbortError")) await copyLink();
-    }
-  }
-
-  const shareButtons = !shareWith ? null : shareWith === "sheet" ? (
-    <button type="button" onClick={share} className={link}>
-      Share
-    </button>
-  ) : (
-    <>
-      <a
-        href={whatsAppUrl(shareText(), shareUrl())}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={link}
-      >
-        WhatsApp
-      </a>
-      <button type="button" onClick={copyLink} className={link}>
-        Copy link
-      </button>
-    </>
+  const shareButtons = (
+    <ShareButtons
+      title={saved?.title ?? defaultTitle}
+      text={`${tripHeadline((plan?.stops ?? saved?.stops ?? []).map((s) => s.label))} · places along the route`}
+      // Before saving (or with changes), the planner link, which holds the whole trip.
+      path={saved && !changed ? `/trips/${saved.id}` : undefined}
+      linkClassName={link}
+      onNotice={setNotice}
+    />
   );
 
   return (

@@ -38,3 +38,24 @@ test("without an AI key there is no plain-words box", async ({ page }) => {
   const res = await page.request.post("/api/trip-from-words", { data: { text: "Pune to Kolad" } });
   expect(res.status()).toBe(404);
 });
+
+test("a place page plans a ride, looks around and shares, with no empty sections", async ({
+  page,
+}) => {
+  await page.goto("/place/manjarabad-fort");
+  await expect(page.getByRole("heading", { name: "Manjarabad Fort", level: 1 })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Plan a ride here" })).toHaveAttribute(
+    "href",
+    /^\/\?to=Manjarabad/,
+  );
+  await expect(page.getByRole("link", { name: "What's near here" })).toHaveAttribute(
+    "href",
+    /^\/nearby\?at=Manjarabad\+Fort%40/,
+  );
+  // Desktop: WhatsApp and Copy link (phones get the share sheet).
+  await expect(page.getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
+    "href",
+    /wa\.me|whatsapp/,
+  );
+  await expect(page.getByRole("heading", { name: "Videos and reels" })).toHaveCount(0);
+});

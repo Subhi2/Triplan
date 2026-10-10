@@ -316,10 +316,9 @@ export function PlaceDetailView({
         )}
       </Section>
 
-      <Section title="Videos and reels" level={sub}>
-        {place.videos.length === 0 ? (
-          <p className="text-sm text-stone-600 dark:text-stone-400">No videos yet.</p>
-        ) : (
+      {/* Nothing fills videos until the YouTube discovery (phase 6): no empty section till then. */}
+      {place.videos.length > 0 && (
+        <Section title="Videos and reels" level={sub}>
           <ul className="space-y-1 text-sm">
             {place.videos.map((v) => (
               <li key={v.url}>
@@ -339,8 +338,8 @@ export function PlaceDetailView({
               </li>
             ))}
           </ul>
-        )}
-      </Section>
+        </Section>
+      )}
 
       <footer className="flex flex-col gap-2 border-t border-stone-200 pt-3 text-sm dark:border-stone-800">
         <p className="flex flex-wrap gap-x-4 gap-y-1">
