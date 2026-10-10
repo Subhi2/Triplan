@@ -47,6 +47,9 @@ export function MapView(props: MapViewProps) {
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const hovered = useRef<string | null>(null);
   const coarsePointer = useMediaQuery("(pointer: coarse)");
+  // With reduced motion, the camera jumps instead of flying (docs/08, "Motion").
+  const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const ms = (duration: number) => (reduceMotion ? 0 : duration);
 
   const padding = { top: 48 + topInset, left: 48, right: 48, bottom: 48 + bottomInset };
 
@@ -58,8 +61,9 @@ export function MapView(props: MapViewProps) {
     const points = framePoints(routes, stops, props.frame);
     const b = bounds(points);
     if (!b) return;
-    if (points.length === 1) map.flyTo({ center: points[0], zoom: 10, duration: 600, padding });
-    else map.fitBounds(b, { padding, duration: 600, maxZoom: 12 });
+    if (points.length === 1) {
+      map.flyTo({ center: points[0], zoom: 10, duration: ms(600), padding });
+    } else map.fitBounds(b, { padding, duration: ms(600), maxZoom: 12 });
     // frame captures the inputs; re-running on every render would fight the user's panning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frame]);
@@ -74,7 +78,7 @@ export function MapView(props: MapViewProps) {
         center: place.location,
         zoom: Math.max(map.getZoom(), 10),
         padding,
-        duration: 500,
+        duration: ms(500),
       });
     }
     // Only when the active place changes.
@@ -111,7 +115,7 @@ export function MapView(props: MapViewProps) {
       const clusterId: unknown = f.properties?.cluster_id;
       if (!map || !source || typeof clusterId !== "number") return;
       const zoom = await source.getClusterExpansionZoom(clusterId);
-      map.easeTo({ center: f.geometry.coordinates as LngLat, zoom, duration: 500 });
+      map.easeTo({ center: f.geometry.coordinates as LngLat, zoom, duration: ms(500) });
     } else if (typeof id === "string") {
       props.onSelectRoute(id);
     }

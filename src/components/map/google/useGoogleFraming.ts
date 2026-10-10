@@ -2,6 +2,7 @@
 
 import { useMap } from "@vis.gl/react-google-maps";
 import { useEffect } from "react";
+import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { bounds, frameKey, framePoints, type MapViewProps } from "../types";
 
 const PADDING = 48;
@@ -11,6 +12,10 @@ const MAX_FRAME_ZOOM = 12;
 /** Frames the routes (or the given frame, or stops) when they change, and brings the active place into view. */
 export function useGoogleFraming(props: MapViewProps) {
   const map = useMap();
+  // With reduced motion, the camera jumps instead of panning (docs/08, "Motion").
+  const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const moveTo = (at: google.maps.LatLngLiteral) =>
+    reduceMotion ? map?.setCenter(at) : map?.panTo(at);
   const { routes, stops, places, activePlaceId, topInset = 0 } = props;
 
   const frame = frameKey(routes, stops, props.frame);
@@ -20,7 +25,7 @@ export function useGoogleFraming(props: MapViewProps) {
     const b = bounds(points);
     if (!b) return;
     if (points.length === 1) {
-      map.panTo({ lng: points[0]![0], lat: points[0]![1] });
+      moveTo({ lng: points[0]![0], lat: points[0]![1] });
       map.setZoom(10);
       return;
     }
@@ -42,7 +47,7 @@ export function useGoogleFraming(props: MapViewProps) {
     if (!map || !place) return;
     const at = { lng: place.location[0], lat: place.location[1] };
     if (!map.getBounds()?.contains(at)) {
-      map.panTo(at);
+      moveTo(at);
       if ((map.getZoom() ?? 0) < 10) map.setZoom(10);
     }
     // Only when the active place changes.
