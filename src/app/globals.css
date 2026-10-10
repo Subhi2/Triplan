@@ -27,16 +27,50 @@
 
   --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1.05);
+  /* Long, settling curves (docs/08 "Motion"): entrances race in and settle slowly; things that
+     follow the pointer glide after it. */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --animate-rise: rise 0.45s var(--ease-out-soft) both;
+  --animate-rise: rise 0.85s var(--ease-expo) both;
+  --animate-turn-next: turn-next 0.9s var(--ease-expo) both;
+  --animate-turn-prev: turn-prev 0.9s var(--ease-expo) both;
   --animate-sheet-in: sheet-in 0.45s var(--ease-spring) both;
   --animate-grow-up: grow-up 0.35s var(--ease-out-soft) both;
   --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-streak: streak 1.6s var(--ease-expo) infinite;
 
   @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(18px);
+    }
+  }
+  /* A list after switching route or filter comes in from the side the rider moved to. */
+  @keyframes turn-next {
+    from {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+  }
+  @keyframes turn-prev {
+    from {
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+  }
+  /* The loading streak under the planner header: a stretch of road lighting up, end to end. */
+  @keyframes streak {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    15% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(360%);
+      opacity: 0;
     }
   }
   @keyframes sheet-in {
@@ -128,6 +162,66 @@ body {
   animation: var(--animate-shimmer);
 }
 
+/* Pointer proximity (useCrown): cards and rows near the mouse lean towards it, glowing faintly;
+   the vars are written by the hook and glide after the pointer. Mouse only, never on touch. */
+@utility crown {
+  translate: var(--crown-x, 0px) var(--crown-y, 0px);
+  scale: var(--crown-scale, 1);
+  transition:
+    translate 0.86s var(--ease-glide),
+    scale 0.86s var(--ease-glide),
+    box-shadow 0.6s var(--ease-glide),
+    background-color 0.6s var(--ease-glide),
+    border-color 0.6s var(--ease-glide);
+}
+@utility crown-glow {
+  box-shadow: 0 0 0 1px
+    color-mix(in oklab, var(--color-brand) calc(var(--crown-glow, 0) * 100%), transparent);
+}
+/* Place rows: a teal rail on the left grows as the pointer comes near. */
+@utility crown-rail {
+  box-shadow: inset var(--crown-rail, 0px) 0 0 var(--color-brand);
+}
+
+/* The main buttons rise to meet the mouse with a soft teal shadow, and give under a press. */
+@utility lift {
+  transition:
+    translate 0.6s var(--ease-glide),
+    box-shadow 0.6s var(--ease-glide),
+    background-color 0.18s,
+    color 0.18s;
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      translate: 0 -3px;
+      box-shadow: 0 12px 22px -10px color-mix(in oklab, var(--color-brand) 55%, transparent);
+    }
+  }
+  &:active:not(:disabled) {
+    translate: 0 1px;
+    box-shadow: none;
+    transition-duration: 0.12s;
+  }
+}
+
+/* Text fields: a solid teal ring (the focus indicator) inside a wide, soft glow that settles in. */
+@utility field-glow {
+  transition:
+    box-shadow 0.7s var(--ease-expo),
+    background-color 0.3s;
+  &:focus {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-brand),
+      0 0 0 7px color-mix(in oklab, var(--color-brand) 20%, transparent);
+  }
+}
+
+/* A list still on screen while its new contents load: dimmed and not clickable. */
+@utility refreshing {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -135,5 +229,13 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  /* No movement on hover, and no streak: "Finding routes…" and the shimmer say it loads. */
+  .lift:hover,
+  .lift:active {
+    translate: none !important;
+  }
+  [data-load-streak] {
+    display: none !important;
   }
 }
