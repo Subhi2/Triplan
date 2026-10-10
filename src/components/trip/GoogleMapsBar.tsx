@@ -58,7 +58,7 @@ export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Pro
           href={trip.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-brand hover:bg-brand-dark inline-flex min-h-12 items-center rounded-xl px-4 font-bold whitespace-nowrap text-white shadow-sm md:min-h-10"
+          className="lift bg-brand hover:bg-brand-dark inline-flex min-h-12 items-center rounded-xl px-4 font-bold whitespace-nowrap text-white shadow-sm md:min-h-10"
         >
           Open in Google Maps
           {trip.waypointCount > 0 && (

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { CountUp, type CountUnit } from "@/components/motion/CountUp";
 import { RideActions } from "@/components/ride/RideActions";
 import { RouteSketch } from "@/components/ride/RouteSketch";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
 import { RoadMixBar } from "@/components/trip/RoadMixBar";
 import { categoryStyle, PLACE_LIST_CATEGORIES } from "@/lib/categories";
-import { formatDuration, formatKm, formatMetres } from "@/lib/format";
+import { formatKm } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
 import { bestAlongRoute, detourLabel } from "@/lib/places";
 import { monthRange, ridePlannerUrl, type Ride } from "@/lib/rides";
@@ -69,11 +70,13 @@ function rideJsonLd(ride: Ride) {
   };
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function Fact({ label, value, unit }: { label: string; value: number; unit: CountUnit }) {
   return (
     <div className="rounded-xl border border-stone-200 bg-(--surface) px-3 py-2 dark:border-stone-700">
       <dt className="text-xs text-stone-600 dark:text-stone-400">{label}</dt>
-      <dd className="tabular font-mono text-lg font-semibold">{value}</dd>
+      <dd className="tabular font-mono text-lg font-semibold">
+        <CountUp value={value} unit={unit} fromServer />
+      </dd>
     </div>
   );
 }
@@ -117,13 +120,13 @@ export default async function RidePage({ params }: Props) {
       <RouteSketch line={line} className="bg-brand-tint h-56 w-full rounded-2xl dark:bg-teal-950" />
 
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Fact label="Distance" value={formatKm(ride.distanceKm * 1000)} />
-        <Fact label="Ride time" value={formatDuration(ride.durationMin)} />
-        {ride.ascentM !== null && <Fact label="Climb" value={formatMetres(ride.ascentM)} />}
+        <Fact label="Distance" value={ride.distanceKm} unit="km" />
+        <Fact label="Ride time" value={ride.durationMin} unit="duration" />
+        {ride.ascentM !== null && <Fact label="Climb" value={ride.ascentM} unit="metres" />}
         {ride.hairpins > 0 ? (
-          <Fact label="Hairpins" value={String(ride.hairpins)} />
+          <Fact label="Hairpins" value={ride.hairpins} unit="count" />
         ) : (
-          ride.profile && <Fact label="Highest" value={formatMetres(ride.profile.highest.m)} />
+          ride.profile && <Fact label="Highest" value={ride.profile.highest.m} unit="metres" />
         )}
       </dl>
 

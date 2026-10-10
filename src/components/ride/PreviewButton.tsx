@@ -6,7 +6,7 @@ export function PreviewButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="bg-brand-tint text-brand-dark inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold active:scale-[0.97] md:min-h-11 dark:bg-teal-950 dark:text-teal-200"
+      className="lift bg-brand-tint text-brand-dark inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold active:scale-[0.97] md:min-h-11 dark:bg-teal-950 dark:text-teal-200"
     >
       <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden fill="none" stroke="currentColor">
         <path d="M3 15l4-6 3 4 2-3 5 5z" strokeWidth="1.6" strokeLinejoin="round" />

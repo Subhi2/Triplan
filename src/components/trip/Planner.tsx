@@ -9,6 +9,8 @@ import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
 import { PlacePanel } from "@/components/place/PlacePanel";
 import { placeRowId } from "@/components/place/PlaceRow";
+import { LoadStreak } from "@/components/motion/LoadStreak";
+import { useListTurn } from "@/components/place/useListTurn";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
@@ -249,9 +251,16 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       ? pointAtKm(selectedRoute.geometry.coordinates as LngLat[], scrubKm)
       : null;
 
-  // Category and detour filters apply in the browser; the list is already ordered by km.
+  // Category and detour filters apply in the browser; the list is already ordered by km. While
+  // the same route reloads (a wider corridor), its places stay on screen, dimmed.
+  const refreshing = placesState.status === "loading" && placesState.previous !== undefined;
   const allPlaces = useMemo(
-    () => (placesState.status === "ok" ? placesState.places : []),
+    () =>
+      placesState.status === "ok"
+        ? placesState.places
+        : placesState.status === "loading"
+          ? (placesState.previous ?? [])
+          : [],
     [placesState],
   );
   const categoryCounts = useMemo(() => {
@@ -268,6 +277,18 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     // No category picked: the best stops only. A picked category shows every place in it.
     return categories.length === 0 ? bestAlongRoute(matching) : matching;
   }, [allPlaces, categories, maxDetourKm]);
+  // Switching route or filter turns the list from that side (docs/08 "Motion").
+  const turn = useListTurn(
+    {
+      routeIndex: Math.max(
+        0,
+        routes.findIndex((r) => r.id === selectedRouteId),
+      ),
+      filterKey: `${categories.join(",")}|${maxDetourKm ?? ""}`,
+      filterRank: categories.length + (maxDetourKm === null ? 0 : 1),
+    },
+    routes.map((r) => r.id).join(","),
+  );
   const hiddenCount =
     categories.length === 0
       ? allPlaces.filter((p) => maxDetourKm === null || p.detourKm <= maxDetourKm).length -
@@ -630,7 +651,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             setSafetyPick(kind && selectedRoute ? { routeId: selectedRoute.id, kind } : null)
           }
         />
-        {placesState.status === "loading" && (
+        {placesState.status === "loading" && !refreshing && (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-stone-600 dark:text-stone-400">Finding places…</p>
             {[0, 1, 2].map((i) => (
@@ -648,8 +669,11 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             {placesState.message}
           </p>
         )}
-        {placesState.status === "ok" && (
-          <>
+        {(placesState.status === "ok" || refreshing) && (
+          <div
+            aria-busy={refreshing}
+            className={`flex flex-col gap-3 transition-opacity duration-500 ${refreshing ? "refreshing" : ""}`}
+          >
             {allPlaces.length > 0 && (
               <PlaceFilters
                 counts={categoryCounts}
@@ -665,6 +689,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             {places.length > 0 ? (
               <>
                 <PlaceList
+                  key={turn.key}
+                  turn={turn.turn}
                   places={places}
                   activeId={activePlaceId}
                   hoverId={hoverPlaceId}
@@ -697,7 +723,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
                   : "No places match these filters."}
               </p>
             )}
-          </>
+          </div>
         )}
       </section>
       <GoogleMapsBar
@@ -731,15 +757,20 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             : "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none lg:w-[24rem] dark:md:border-stone-800"
         } ${typing ? "z-30" : "z-10"}`}
       >
-        <PlannerHeader
-          compact={compactHeader}
-          fromLabel={first?.label ?? ""}
-          toLabel={last?.label ?? ""}
-          vehicle={vehicle}
-          corridorKm={corridorKm}
-          viaCount={stops.length - 2}
-          formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
-        />
+        <div className="relative">
+          <PlannerHeader
+            compact={compactHeader}
+            fromLabel={first?.label ?? ""}
+            toLabel={last?.label ?? ""}
+            vehicle={vehicle}
+            corridorKm={corridorKm}
+            viaCount={stops.length - 2}
+            formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
+          />
+          <LoadStreak
+            active={routeState.status === "loading" || placesState.status === "loading"}
+          />
+        </div>
 
         {showForm ? (
           <div

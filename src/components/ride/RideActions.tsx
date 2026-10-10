@@ -31,7 +31,7 @@ export function RideActions(props: Props) {
         {/* A full page load: the planner reads its trip from the address once. */}
         <a
           href={props.plannerUrl}
-          className="bg-brand hover:bg-brand-dark inline-flex min-h-12 items-center rounded-xl px-5 font-bold text-white md:min-h-11"
+          className="lift bg-brand hover:bg-brand-dark inline-flex min-h-12 items-center rounded-xl px-5 font-bold text-white md:min-h-11"
         >
           Plan this ride
         </a>

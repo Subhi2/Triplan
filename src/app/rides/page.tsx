@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CountUp } from "@/components/motion/CountUp";
+import { CrownList } from "@/components/motion/CrownList";
 import { RouteSketch } from "@/components/ride/RouteSketch";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
-import { formatDuration, formatKm, formatMetres } from "@/lib/format";
 import { SITE_NAME } from "@/lib/site";
 import { listRides } from "@/server/services/rideService";
 
@@ -35,7 +36,20 @@ export default async function RidesPage() {
       {rides.length === 0 ? (
         <p className="text-stone-600 dark:text-stone-400">No rides yet.</p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Famous rides">
+        <CrownList
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-label="Famous rides"
+          selector="[data-ride-card]"
+          config={{
+            axis: "xy",
+            radius: 300,
+            lift: 10,
+            shift: 10,
+            grow: 0.03,
+            glow: 0.6,
+            toward: true,
+          }}
+        >
           {rides.map((r, i) => (
             <li
               key={r.slug}
@@ -44,7 +58,8 @@ export default async function RidesPage() {
             >
               <Link
                 href={`/rides/${r.slug}`}
-                className="group flex h-full flex-col gap-3 rounded-2xl border border-stone-200 bg-(--surface) p-4 hover:border-stone-400 dark:border-stone-700"
+                data-ride-card
+                className="crown crown-glow group flex h-full flex-col gap-3 rounded-2xl border border-stone-200 bg-(--surface) p-4 hover:border-stone-400 dark:border-stone-700"
               >
                 <RouteSketch
                   line={r.line}
@@ -57,19 +72,23 @@ export default async function RidesPage() {
                   <span className="text-sm text-stone-600 dark:text-stone-400">{r.region}</span>
                 </span>
                 <span className="tabular mt-auto flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm">
-                  <span>{formatKm(r.distanceKm * 1000)}</span>
-                  <span>{formatDuration(r.durationMin)}</span>
+                  <CountUp value={r.distanceKm} unit="km" fromServer />
+                  <CountUp value={r.durationMin} unit="duration" fromServer />
                   {r.hairpins > 0 && (
                     <span className="text-ghat-dark font-semibold dark:text-orange-300">
-                      {r.hairpins} hairpins
+                      <CountUp value={r.hairpins} fromServer /> hairpins
                     </span>
                   )}
-                  {r.ascentM !== null && <span>↑ {formatMetres(r.ascentM)}</span>}
+                  {r.ascentM !== null && (
+                    <span>
+                      ↑ <CountUp value={r.ascentM} unit="metres" fromServer />
+                    </span>
+                  )}
                 </span>
               </Link>
             </li>
           ))}
-        </ul>
+        </CrownList>
       )}
       <SiteFooter />
     </main>

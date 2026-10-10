@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
+import { CountUp } from "@/components/motion/CountUp";
+import { useCrown } from "@/components/motion/useCrown";
 import type { RouteCurvature } from "@/lib/curvature";
-import { formatDuration, formatKm, formatMetres } from "@/lib/format";
 import type { RouteOption } from "@/lib/trip";
 import { RoadMixBar } from "./RoadMixBar";
 
@@ -13,19 +15,25 @@ interface Props {
   climbM?: Record<string, number>;
 }
 
-/** The route options: the picked one raised on a white card, the others quieter. */
+/**
+ * The route options: the picked one raised on a white card, the others quieter. The numbers
+ * count up as the cards rise, and the cards lean towards the mouse (docs/08 "Motion").
+ */
 export function RouteCards({ routes, selectedId, onSelect, climbM = {} }: Props) {
+  const list = useRef<HTMLUListElement>(null);
+  useCrown(list, "[data-route-card]", { axis: "y", radius: 130, lift: 5, shift: 4, grow: 0.012 });
   return (
-    <ul className="flex flex-col gap-2" aria-label="Route options">
+    <ul ref={list} className="flex flex-col gap-2" aria-label="Route options">
       {routes.map((r, i) => {
         const selected = r.id === selectedId;
         return (
           <li key={r.id} className="animate-rise" style={{ animationDelay: `${i * 60}ms` }}>
             <button
               type="button"
+              data-route-card
               aria-pressed={selected}
               onClick={() => onSelect(r.id)}
-              className={`w-full rounded-2xl text-left ${
+              className={`crown w-full rounded-2xl text-left ${
                 selected
                   ? "border-brand border-2 bg-(--surface) p-3.5 shadow-sm"
                   : "border border-stone-200 px-3.5 py-3 hover:border-stone-400 hover:bg-(--surface) dark:border-stone-700"
@@ -40,14 +48,19 @@ export function RouteCards({ routes, selectedId, onSelect, climbM = {} }: Props)
                     selected ? "" : "text-stone-600 dark:text-stone-300"
                   }`}
                 >
-                  {formatDuration(r.durationMin)}
+                  <CountUp value={r.durationMin} unit="duration" delayMs={i * 60} />
                 </span>
               </span>
               <span className="mt-1 block text-sm text-stone-600 dark:text-stone-300">
-                <span className="tabular font-mono">{formatKm(r.distanceKm * 1000)}</span>
+                <CountUp
+                  value={r.distanceKm}
+                  unit="km"
+                  delayMs={i * 60}
+                  className="tabular font-mono"
+                />
                 {r.towns.length > 0 && <> · {r.towns.join(" · ")}</>}
               </span>
-              <RouteFacts curvature={r.curvature} climbM={climbM[r.id]} />
+              <RouteFacts curvature={r.curvature} climbM={climbM[r.id]} delayMs={i * 60} />
               {r.roadMix && <RoadMixBar mix={r.roadMix} compact={!selected} />}
             </button>
           </li>
@@ -64,9 +77,11 @@ export function RouteCards({ routes, selectedId, onSelect, climbM = {} }: Props)
 function RouteFacts({
   curvature,
   climbM,
+  delayMs,
 }: {
   curvature: RouteCurvature | null;
   climbM: number | undefined;
+  delayMs: number;
 }) {
   const hairpins = curvature?.hairpins ?? 0;
   const twistyKm = curvature?.twistyKm ?? 0;
@@ -85,14 +100,20 @@ function RouteFacts({
       {hairpins > 0 && (
         <span className="text-ghat-dark inline-flex items-center gap-1 font-bold dark:text-orange-300">
           <HairpinIcon />
-          <span className="tabular font-mono">{hairpins}</span>{" "}
+          <CountUp value={hairpins} delayMs={delayMs} className="tabular font-mono" />{" "}
           {hairpins === 1 ? "hairpin" : "hairpins"}
         </span>
       )}
       {twistyKm >= 5 && (
         <span className="text-stone-600 dark:text-stone-300">
           {hairpins > 0 && <span aria-hidden>· </span>}
-          <span className="tabular font-mono">{formatKm(twistyKm * 1000)}</span> twisty
+          <CountUp
+            value={twistyKm}
+            unit="km"
+            delayMs={delayMs}
+            className="tabular font-mono"
+          />{" "}
+          twisty
         </span>
       )}
       {showClimb && (
@@ -102,7 +123,9 @@ function RouteFacts({
           data-climb={climbM}
         >
           {(hairpins > 0 || twistyKm >= 5) && <span aria-hidden>· </span>}
-          <span className="tabular font-mono">↑ {formatMetres(climbM)}</span>
+          <span className="tabular font-mono">
+            ↑ <CountUp value={climbM} unit="metres" />
+          </span>
           <span className="sr-only"> of climbing</span>
         </span>
       )}
