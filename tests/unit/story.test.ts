@@ -15,6 +15,7 @@ const place = (id: string, km: number, extra: Partial<PlaceAlong> = {}): PlaceAl
   rating: null,
   ratingCount: 0,
   bestMonths: [],
+  bestMonthsEstimated: false,
   thumbUrl: null,
   trending: false,
   notable: false,

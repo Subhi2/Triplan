@@ -118,7 +118,7 @@ export function PlaceRow(props: Props) {
                   {place.rating.toFixed(1)} ({place.ratingCount}) ·{" "}
                 </>
               )}
-              {bestTimeSummary(place.bestMonths)}
+              {bestTimeSummary(place.bestMonths, place.bestMonthsEstimated)}
             </span>
           </span>
           {place.thumbUrl && (

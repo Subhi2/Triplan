@@ -42,6 +42,8 @@ export interface PlaceNear {
   rating: number | null;
   ratingCount: number;
   bestMonths: number[];
+  /** The months are estimated from the category and climate (src/lib/guideDefaults.ts). */
+  bestMonthsEstimated: boolean;
   thumbUrl: string | null;
   trending: boolean;
   notable: boolean;

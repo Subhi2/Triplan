@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { estimateGuide, parseElevation } from "@/lib/guideDefaults";
 import {
   GUIDE_VEHICLES,
   type GuideVehicle,
@@ -176,6 +177,22 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
   ]);
 
   const tags = row.osm_tags ?? {};
+  const curatedGuide = toGuide(row);
+  const curatedCarry = carry.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    months: c.months,
+    reason: c.reason,
+  }));
+  // Nobody wrote a guide or a carry list: estimate them, and say so on the page.
+  const estimated =
+    curatedGuide && curatedCarry.length > 0
+      ? null
+      : estimateGuide({
+          category: row.category,
+          location: [row.lng, row.lat],
+          elevationM: parseElevation(tags.ele),
+        });
   return {
     id: row.id,
     slug: row.slug,
@@ -188,8 +205,15 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
     rating: row.rating_avg,
     ratingCount: row.rating_count,
     trending: row.trending_score >= TRENDING_MIN_SCORE,
-    guide: toGuide(row),
-    carry: carry.map((c) => ({ slug: c.slug, name: c.name, months: c.months, reason: c.reason })),
+    guide: curatedGuide ?? estimated?.guide ?? null,
+    carry: curatedCarry.length > 0 ? curatedCarry : (estimated?.carry ?? []),
+    estimate: estimated
+      ? {
+          guide: !curatedGuide,
+          carry: curatedCarry.length === 0,
+          basis: estimated.basis,
+        }
+      : null,
     media: media.map((m) => ({
       url: m.url,
       thumbUrl: m.thumb_url,

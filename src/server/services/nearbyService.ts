@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { PLACE_LIST_CATEGORIES } from "@/lib/categories";
 import { bearingDeg, type LngLat } from "@/lib/geo";
+import { estimateBestMonths } from "@/lib/guideDefaults";
 import { monthIn } from "@/lib/months";
 import {
   fameScore,
@@ -104,6 +105,8 @@ function defaultDeps(): NearbyDeps {
 
 function toPlaceNear(origin: LngLat, row: PlaceNearRow): PlaceNear {
   const trending = row.trendingScore >= TRENDING_MIN_SCORE;
+  // No curated months: the typical ones for the category and climate, marked as estimated.
+  const estimated = row.bestMonths.length === 0;
   return {
     id: row.id,
     slug: row.slug,
@@ -116,7 +119,8 @@ function toPlaceNear(origin: LngLat, row: PlaceNearRow): PlaceNear {
     bearingDeg: (bearingDeg(origin, row.location) + 360) % 360,
     rating: row.ratingAvg,
     ratingCount: row.ratingCount,
-    bestMonths: row.bestMonths,
+    bestMonths: estimated ? estimateBestMonths(row.category, row.location) : row.bestMonths,
+    bestMonthsEstimated: estimated,
     thumbUrl: row.thumbUrl,
     trending,
     notable: row.notable,

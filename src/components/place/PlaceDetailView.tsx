@@ -45,6 +45,18 @@ function Field(props: { label: string; value: React.ReactNode; source?: string; 
   );
 }
 
+/** Says that the fields above or below are estimated, not checked for this place. */
+function EstimateNote({ basis }: { basis: string }) {
+  return (
+    <p className="text-xs text-stone-600 dark:text-stone-400">
+      <span className="mr-1.5 rounded-full border border-stone-300 px-2 py-0.5 font-bold dark:border-stone-600">
+        Estimate
+      </span>
+      {basis}. Not checked for this place yet.
+    </p>
+  );
+}
+
 function Section(props: { title: string; level: 2 | 3; children: React.ReactNode }) {
   const H = props.level === 2 ? "h2" : "h3";
   return (
@@ -90,6 +102,8 @@ export function PlaceDetailView({
 }: Props) {
   const cat = categoryStyle(place.category);
   const g = place.guide;
+  const guessed = place.estimate?.guide ? place.estimate.basis : null;
+  const guessedCarry = place.estimate?.carry ? place.estimate.basis : null;
   const H = headingLevel === 1 ? "h1" : "h2";
   const sub = headingLevel === 1 ? 2 : 3;
   const [lng, lat] = place.location;
@@ -227,6 +241,7 @@ export function PlaceDetailView({
                 ? g.bestVehicles.map((v) => VEHICLE_LABELS[v]).join(", ")
                 : null
             }
+            source={guessed ? "typical" : undefined}
           />
           <Field label="Last mile" value={g?.lastMileNote} wide />
           <Field
@@ -242,7 +257,8 @@ export function PlaceDetailView({
       </Section>
 
       <Section title="When to go" level={sub}>
-        <MonthStrip guide={g} month={month} />
+        {guessed && <EstimateNote basis={guessed} />}
+        <MonthStrip guide={g} month={month} estimated={Boolean(guessed)} />
         <dl className="mt-1 grid grid-cols-2 gap-2">
           <Field label="Time of day" value={g?.bestTimeOfDay} />
           <Field
@@ -253,6 +269,7 @@ export function PlaceDetailView({
       </Section>
 
       <Section title="What to carry" level={sub}>
+        {guessedCarry && !guessed && <EstimateNote basis={guessedCarry} />}
         <CarryList carry={place.carry} month={month} />
       </Section>
 

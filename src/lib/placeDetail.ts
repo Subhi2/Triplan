@@ -81,6 +81,11 @@ export interface PlaceDetail {
   trending: boolean;
   guide: PlaceGuide | null;
   carry: CarryEntry[];
+  /**
+   * Set when the guide or the items to carry are estimated from the category, climate and height
+   * (src/lib/guideDefaults.ts) because nobody has written them for this place.
+   */
+  estimate: { guide: boolean; carry: boolean; basis: string } | null;
   media: PlaceMedia[];
   /** Google's id for the place, once looked up: the only Google data we store. */
   googlePlaceId: string | null;

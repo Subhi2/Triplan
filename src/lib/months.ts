@@ -34,9 +34,10 @@ export function formatMonthRanges(months: number[]): string {
   return runs.map(([s, e]) => (s === e ? name(s) : `${name(s)}–${name(e)}`)).join(", ");
 }
 
-export function bestTimeSummary(bestMonths: number[]): string {
+export function bestTimeSummary(bestMonths: number[], estimated = false): string {
   const ranges = formatMonthRanges(bestMonths);
-  return ranges ? `Best ${ranges}` : "Best time not known yet";
+  if (!ranges) return "Best time not known yet";
+  return estimated ? `Usually best ${ranges}` : `Best ${ranges}`;
 }
 
 /** Whether this month is one of a place's best months (1–12). */
