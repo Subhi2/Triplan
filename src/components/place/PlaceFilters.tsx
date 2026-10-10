@@ -14,7 +14,7 @@ interface Props {
 }
 
 const chip =
-  "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
+  "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
 const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
 const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 
@@ -82,7 +82,7 @@ export function PlaceFilters(props: Props) {
           value={props.maxDetourKm ?? 2}
           disabled={props.maxDetourKm === null}
           onChange={(e) => props.onMaxDetourChange(Number(e.target.value) as DetourLimitKm)}
-          className="min-h-10 rounded-lg border border-stone-300 bg-(--surface) px-2 text-base disabled:opacity-50 md:min-h-0 md:py-0.5 md:text-sm dark:border-stone-700"
+          className="min-h-11 rounded-lg border border-stone-300 bg-(--surface) px-2 text-base disabled:opacity-50 md:min-h-0 md:py-0.5 md:text-sm dark:border-stone-700"
         >
           {DETOUR_LIMITS_KM.map((km) => (
             <option key={km} value={km}>

@@ -89,7 +89,7 @@ export function PlainWordsBox({ near }: { near: LngLat }) {
                   setText(ex);
                   void plan(undefined, ex);
                 }}
-                className="min-h-9 rounded-full bg-stone-100 px-3 text-left text-xs dark:bg-stone-800"
+                className="min-h-11 rounded-full bg-stone-100 px-3 text-left text-xs md:min-h-9 dark:bg-stone-800"
               >
                 {ex}
               </button>

@@ -17,7 +17,7 @@ export function VehicleToggle({ value, onChange, name = "vehicle" }: Props) {
       {VEHICLES.map((v) => (
         <label
           key={v}
-          className={`has-[:focus-visible]:ring-brand inline-flex min-h-9 cursor-pointer items-center rounded-full px-4 font-bold capitalize transition-colors has-[:focus-visible]:ring-2 ${
+          className={`has-[:focus-visible]:ring-brand inline-flex min-h-11 cursor-pointer items-center rounded-full px-4 font-bold capitalize transition-colors has-[:focus-visible]:ring-2 md:min-h-9 ${
             value === v
               ? "bg-brand text-white shadow-sm"
               : "text-stone-600 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white"

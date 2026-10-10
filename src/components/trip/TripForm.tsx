@@ -277,7 +277,7 @@ export function TripForm(props: Props) {
           <select
             value={props.corridorKm}
             onChange={(e) => props.onCorridorChange(Number(e.target.value) as CorridorKm)}
-            className="min-h-10 rounded-lg border border-stone-300 bg-(--surface) px-2 text-base md:text-sm dark:border-stone-700"
+            className="min-h-11 rounded-lg border border-stone-300 bg-(--surface) px-2 text-base md:min-h-10 md:text-sm dark:border-stone-700"
           >
             {CORRIDOR_KM.map((km) => (
               <option key={km} value={km}>

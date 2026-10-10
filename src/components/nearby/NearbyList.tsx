@@ -8,7 +8,7 @@ import type { Vehicle } from "@/lib/trip";
 import { NearbyRow, nearbyRowId } from "./NearbyRow";
 
 const chip =
-  "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
+  "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
 const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
 const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 

@@ -710,7 +710,7 @@ export default function RidePreview(props: RidePreviewProps) {
                   type="button"
                   aria-pressed={speed === s}
                   onClick={() => setSpeed(s)}
-                  className={`tabular min-h-9 min-w-10 rounded-lg px-2 font-mono text-sm ${
+                  className={`tabular min-h-11 min-w-11 rounded-lg px-2 font-mono text-sm md:min-h-9 md:min-w-10 ${
                     speed === s ? "bg-stone-900 font-bold text-white" : ""
                   }`}
                 >
@@ -749,7 +749,7 @@ export default function RidePreview(props: RidePreviewProps) {
               <button
                 type="button"
                 onClick={cancelRecording}
-                className="min-h-9 rounded-lg px-3 font-bold underline"
+                className="min-h-11 rounded-lg px-3 font-bold underline md:min-h-9"
               >
                 Cancel
               </button>
