@@ -256,30 +256,33 @@ test("plan Bengaluru → Kalasa, then force the route via Sakleshpur", async ({ 
 
 test("a failed request offers Try again instead of a dead end", async ({ page }) => {
   await mockApis(page, []);
-  // The routing server fails once; the places list fails once too.
-  let routeCalls = 0;
+  // The routing server and then the place list are down until Try again is pressed. (A switch,
+  // not a count of calls: in development React runs each effect twice, so requests come twice.)
+  let routeDown = true;
   await page.route("**/api/route", (route) =>
-    ++routeCalls === 1
+    routeDown
       ? route.fulfill({ status: 502, json: { error: "The routing service is unavailable" } })
       : route.fallback(),
   );
   // Only the place list's request (the ride check asks for fuel stations on its own).
-  let listCalls = 0;
+  let placesDown = true;
   await page.route("**/api/places/along", (route) => {
     const body = route.request().postDataJSON() as { categories?: string[] };
-    return !body.categories && ++listCalls === 1
+    return !body.categories && placesDown
       ? route.fulfill({ status: 500, json: { error: "Could not load places" } })
       : route.fallback();
   });
   await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
 
   await expect(page.getByText("The routing service is unavailable")).toBeVisible();
+  routeDown = false;
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toHaveCount(
     2,
   );
 
   await expect(page.getByText("Could not load places")).toBeVisible();
+  placesDown = false;
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Could not load places")).toBeHidden();
 });

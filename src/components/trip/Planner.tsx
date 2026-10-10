@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,10 +17,6 @@ import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/Bottom
 import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
 import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
-import { StoryShare } from "@/components/ride/StoryShare";
-import { DaySplit } from "@/components/route/DaySplit";
-import { RouteProfile } from "@/components/route/RouteProfile";
-import { SafetyStops } from "@/components/route/SafetyStops";
 import { useDayPlan } from "@/components/route/useDayPlan";
 import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
@@ -47,14 +44,25 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
-import { PlainWordsBox } from "./PlainWordsBox";
 import { PlannerHeader } from "./PlannerHeader";
-import { RideCheck } from "./RideCheck";
 import { RoadStrip } from "./RoadStrip";
 import { RouteCards } from "./RouteCards";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { TripSaveBar } from "./TripSaveBar";
+
+// Panels that show only once a route is on screen (or only with the AI key) load then, not with
+// the planner: the chart, the day split, safety stops, the ride check and the story poster.
+const RouteProfile = dynamic(() =>
+  import("@/components/route/RouteProfile").then((m) => m.RouteProfile),
+);
+const DaySplit = dynamic(() => import("@/components/route/DaySplit").then((m) => m.DaySplit));
+const SafetyStops = dynamic(() =>
+  import("@/components/route/SafetyStops").then((m) => m.SafetyStops),
+);
+const RideCheck = dynamic(() => import("./RideCheck").then((m) => m.RideCheck));
+const StoryShare = dynamic(() => import("@/components/ride/StoryShare").then((m) => m.StoryShare));
+const PlainWordsBox = dynamic(() => import("./PlainWordsBox").then((m) => m.PlainWordsBox));
 
 /** Height of the header floating over the map on phones, kept clear when framing the route. */
 const FLOATING_HEADER_PX = 72;
