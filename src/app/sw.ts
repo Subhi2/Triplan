@@ -17,6 +17,10 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   // The first matching rule wins: our API and Google are never stored (src/lib/swCache.ts).
+  // A page that cannot load offline (and is not cached) shows /~offline instead of an error.
+  fallbacks: {
+    entries: [{ url: "/~offline", matcher: ({ request }) => request.destination === "document" }],
+  },
   runtimeCaching: [
     {
       matcher: ({ url, sameOrigin }) => isNeverCached(url, sameOrigin),

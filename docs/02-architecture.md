@@ -226,7 +226,7 @@ The `/nearby` screen lists well-known places the rider can reach from one point 
 
 1. **Candidates** (`places_near_point`, migration 0012): verified places within a generous straight-line radius (the time at 60 km/h, bikes 10 % slower, at most 250 km), most worthwhile first. Priority is the same as for the corridor: category weight, +1 when curated, +0.5 with a Wikidata link. At most 400 rows.
 2. **Fame**: `priority + rating / 5 + 0.3 if trending` (`fameScore` in `src/lib/nearby.ts`). Google ratings are never used: they may not be stored.
-3. **Road times**: `pickCandidates` keeps the best 99 spread over four distance rings (so a half-day search does not spend every slot at the edge), and **one** OSRM `table` request (`/table/v1/driving/{origin;d1;...}?sources=0&annotations=duration,distance`) gives road km and time to each. The public server allows 100 coordinates per table request, origin included. The request shares the 1 request/s throttle with routing and has a 6 s timeout (the service worker falls back to its cache for `/api/*` after 10 s). Places over the time, or with no road, are dropped; the rest are ordered by ride time.
+3. **Road times**: `pickCandidates` keeps the best 99 spread over four distance rings (so a half-day search does not spend every slot at the edge), and **one** OSRM `table` request (`/table/v1/driving/{origin;d1;...}?sources=0&annotations=duration,distance`) gives road km and time to each. The public server allows 100 coordinates per table request, origin included. The request shares the 1 request/s throttle with routing and has a 6 s timeout, so the list never waits long for road times. Places over the time, or with no road, are dropped; the rest are ordered by ride time.
 4. **Fallback**: if OSRM fails, places within a straight-line guess (35 km/h) are shown by distance, and the response says `roadTimes: "straight"` so the screen can say so.
 5. **Ride mode** (`mode=ride`, "Ahead of you"): everything worthwhile within 35 km, straight line, no OSRM. The phone filters to a cone around the heading as the rider moves and asks again at most every 2 km and 60 s.
 
@@ -394,6 +394,8 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - Places along route: no cache needed at MVP scale; add one keyed on (route hash, corridor, categories) if needed.
 - Next.js: place detail pages are statically generated with revalidation (ISR, 1 hour).
 - Google: nothing is cached except `place.google_place_id` (see "Google Maps Platform").
+
+- **Service worker** (`src/app/sw.ts`, Serwist): pages, scripts, styles, fonts and open map tiles are cached by Serwist's default rules. Our `/api/` answers and anything from Google's hosts are network only, never stored: Google content may not be cached (Maps ToS 3.2.3(b)), and `/api/places/near` carries the rider's position (`src/lib/swCache.ts`, G4). A page that cannot load with no connection and is not cached shows `/~offline`, which is precached. It says what still works and suggests GPX or Google Maps before riding out of signal.
 
 ## Auth and security
 
