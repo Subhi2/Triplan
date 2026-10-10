@@ -56,6 +56,10 @@ async function mockRouting(page: Page) {
 async function placeRows(page: Page) {
   const list = page.getByRole("list", { name: "Places along the route" });
   await expect(list.getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+  // A list that reloads (a wider corridor) stays on screen, dimmed and aria-busy, until it is done.
+  await expect(page.locator("[aria-busy=true]", { has: list })).toHaveCount(0, {
+    timeout: 30_000,
+  });
   // Each row carries its facts as data attributes (PlaceRow), independent of the layout.
   const rows = await list
     .locator(":scope > li")
@@ -69,7 +73,8 @@ async function placeRows(page: Page) {
 
 async function setCorridor(page: Page, km: string) {
   const list = page.getByRole("list", { name: "Places along the route" });
-  const before = await list.innerText();
+  // textContent, which toHaveText compares (innerText differs in whitespace and always "changed").
+  const before = (await list.textContent()) ?? "";
   if (await page.getByRole("button", { name: "Edit trip" }).isVisible()) {
     await page.getByRole("button", { name: "Edit trip" }).click();
   }
