@@ -723,10 +723,17 @@ test("on phones the map comes first, then a one-line header and the sheet", asyn
   );
   for (const target of [
     page.getByRole("button", { name: "Edit trip" }),
-    page.getByRole("link", { name: "Trips" }),
+    page.getByRole("button", { name: "More" }),
   ]) {
     expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
+  // The other screens stay reachable with a trip loaded.
+  await page.getByRole("button", { name: "More" }).click();
+  for (const name of ["Famous rides", "Your trips", "About"]) {
+    await expect(page.getByRole("link", { name })).toBeVisible();
+  }
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("link", { name: "Famous rides" })).toBeHidden();
 });
 
 const pump = (name: string, kmFromStart: number): PlaceAlong => ({

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
 import { DeviceTrips } from "@/components/trip/DeviceTrips";
 import { SITE_NAME } from "@/lib/site";
@@ -17,7 +18,9 @@ export default function TripsPage() {
       <SiteNav current="/trips" />
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold">Your trips</h1>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+            Your trips
+          </h1>
           <p className="text-sm text-stone-600 dark:text-stone-400">
             Trips saved or opened on this device. Share a trip by its link.
           </p>
@@ -30,6 +33,7 @@ export default function TripsPage() {
         </Link>
       </header>
       <DeviceTrips />
+      <SiteFooter />
     </main>
   );
 }

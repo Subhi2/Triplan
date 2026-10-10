@@ -7,6 +7,7 @@ import { useLocate } from "@/components/geo/useLocate";
 import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
 import type { MapFrame, MapStop } from "@/components/map/types";
 import { PlacePanel } from "@/components/place/PlacePanel";
+import { SiteMenu } from "@/components/site/SiteMenu";
 import type { MapBias } from "@/components/trip/StopInput";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
@@ -420,12 +421,25 @@ export function Nearby() {
               )}
             </div>
           </div>
-          <Link
-            href="/trips"
-            className="text-brand-dark inline-flex min-h-11 shrink-0 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
-          >
-            {floatingHeader ? "Trips" : "Your trips"}
-          </Link>
+          {floatingHeader ? (
+            <SiteMenu className="shrink-0" />
+          ) : (
+            <nav aria-label="Main" className="flex shrink-0 items-center">
+              {[
+                { href: "/rides", label: "Rides" },
+                { href: "/trips", label: "Trips" },
+                { href: "/about", label: "About" },
+              ].map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          )}
         </header>
         {isDesktop && <div className="mt-3">{panel}</div>}
       </aside>
