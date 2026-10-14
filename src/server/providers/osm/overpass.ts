@@ -86,7 +86,7 @@ export function buildPlacesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
 
 /**
  * Tag filters for service points (docs/02, "Safety stops"): hospitals, police, ATMs, tyre and
- * repair shops and stays, kept apart from places (no pages) in service_point.
+ * repair shops, stays and toll booths, kept apart from places (no pages) in service_point.
  */
 const SERVICE_FILTERS = [
   '["amenity"="hospital"]',
@@ -96,6 +96,7 @@ const SERVICE_FILTERS = [
   '["amenity"="bank"]["atm"="yes"]',
   '["shop"~"^(tyres|motorcycle_repair|car_repair|motorcycle)$"]',
   '["tourism"~"^(hotel|guest_house|hostel|motel)$"]',
+  '["barrier"="toll_booth"]',
 ];
 
 export function buildServicesQuery({ areaIso, bbox }: OsmPlacesRequest): string {

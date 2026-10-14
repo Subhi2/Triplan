@@ -679,6 +679,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           }
           breaks={breakPlan}
           breaksError={breakPlaces.status === "error"}
+          tolls={safety.status === "ok" ? safety.summary.tolls : null}
+          tollsError={safety.status === "error"}
           pickedIds={pickedIds}
           onBreakToggle={(place) => setPlacePicked(place, !pickedIds.has(place.id))}
         />

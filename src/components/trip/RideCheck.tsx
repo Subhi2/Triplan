@@ -21,8 +21,18 @@ import {
 } from "@/lib/rideCheck";
 import type { PlaceAlong } from "@/lib/places";
 import { checkRules, closedHours, SPARE_WARN_MIN, type RuleCheck } from "@/lib/roadRules";
-import type { Gap } from "@/lib/safety";
+import type { Gap, TollPlaza } from "@/lib/safety";
 import type { RouteOption, Vehicle } from "@/lib/trip";
+import {
+  FASTAG_PASS,
+  formatRupees,
+  FUEL_PRICE_LIMITS,
+  fuelCost,
+  fuelPriceKey,
+  MILEAGE_LIMITS,
+  mileageKey,
+  parseWithin,
+} from "@/lib/tripCost";
 import { summarizeWeather, type WeatherPoint } from "@/lib/weather";
 import { useWeatherAlong } from "./useWeatherAlong";
 
@@ -48,6 +58,9 @@ interface Props {
   breaksError?: boolean;
   pickedIds?: ReadonlySet<string>;
   onBreakToggle?: (place: PlaceAlong) => void;
+  /** Toll plazas on the route; null while they load. */
+  tolls?: TollPlaza[] | null;
+  tollsError?: boolean;
 }
 
 /** A stretch without a hospital longer than these is worth knowing about (km). */
@@ -65,6 +78,14 @@ function readRange(vehicle: Vehicle): number {
     // Storage blocked (private window): use the default.
   }
   return DEFAULT_RANGE_KM[vehicle];
+}
+
+function readText(key: string): string {
+  try {
+    return localStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
 }
 
 const time = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
@@ -210,6 +231,8 @@ export function RideCheck({
   breaksError = false,
   pickedIds,
   onBreakToggle,
+  tolls = null,
+  tollsError = false,
 }: Props) {
   const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
   const [rangeText, setRangeText] = useState(String(DEFAULT_RANGE_KM[vehicle]));
@@ -231,6 +254,25 @@ export function RideCheck({
       }
     }
   }
+
+  // Mileage and fuel price as the rider typed them, remembered per vehicle.
+  const [mileageText, setMileageText] = useState("");
+  const [priceText, setPriceText] = useState("");
+  useEffect(() => {
+    setMileageText(readText(mileageKey(vehicle)));
+    setPriceText(readText(fuelPriceKey(vehicle)));
+  }, [vehicle]);
+  function changeCostInput(key: string, text: string, set: (t: string) => void) {
+    set(text);
+    try {
+      localStorage.setItem(key, text);
+    } catch {
+      // Not remembered; still used for this trip.
+    }
+  }
+  const mileage = parseWithin(mileageText, MILEAGE_LIMITS);
+  const fuelPrice = parseWithin(priceText, FUEL_PRICE_LIMITS);
+  const cost = mileage && fuelPrice ? fuelCost(route.distanceKm, mileage, fuelPrice) : null;
 
   const fuel = usePlacesAlong(route, FUEL_CORRIDOR_KM, FUEL_CATEGORIES);
   const gap = useMemo(
@@ -474,6 +516,99 @@ export function RideCheck({
               <p className="text-xs text-stone-600 dark:text-stone-400">
                 {stationCount} fuel station{stationCount === 1 ? "" : "s"} within {FUEL_CORRIDOR_KM}{" "}
                 km of the route, from OpenStreetMap; some may be missing or closed.
+              </p>
+            </Check>
+          )}
+
+          <Check
+            tone={cost ? "ok" : "muted"}
+            title={
+              cost
+                ? `Fuel cost: about ${formatRupees(cost.rupees)} for ${Math.round(route.distanceKm)} km`
+                : "Fuel cost"
+            }
+          >
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <label className="space-y-1">
+                <span className="block text-xs text-stone-600 dark:text-stone-400">
+                  Mileage (km per litre)
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={MILEAGE_LIMITS.min}
+                  max={MILEAGE_LIMITS.max}
+                  step="any"
+                  value={mileageText}
+                  onChange={(e) =>
+                    changeCostInput(mileageKey(vehicle), e.target.value, setMileageText)
+                  }
+                  className={inputClass}
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="block text-xs text-stone-600 dark:text-stone-400">
+                  Fuel price (₹ per litre)
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={FUEL_PRICE_LIMITS.min}
+                  max={FUEL_PRICE_LIMITS.max}
+                  step="any"
+                  value={priceText}
+                  onChange={(e) =>
+                    changeCostInput(fuelPriceKey(vehicle), e.target.value, setPriceText)
+                  }
+                  className={inputClass}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-stone-600 dark:text-stone-400">
+              {cost
+                ? `${cost.litres} litres, one way. Remembered on this device for your ${vehicle}.`
+                : "Type your mileage and today's fuel price to work out the cost, one way."}
+            </p>
+          </Check>
+
+          {vehicle === "bike" ? (
+            <Check tone="ok" title="No tolls: two-wheelers ride national highways free">
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                NHAI confirmed in June 2025 that two-wheelers stay exempt from highway tolls.
+              </p>
+            </Check>
+          ) : tollsError ? (
+            <Check tone="muted" title="Tolls">
+              <p className="text-stone-600 dark:text-stone-400">Could not check toll plazas.</p>
+            </Check>
+          ) : tolls === null ? (
+            <Check tone="muted" title="Tolls">
+              <p className="text-stone-600 dark:text-stone-400">Checking toll plazas…</p>
+            </Check>
+          ) : (
+            <Check
+              tone={tolls.length > 0 ? "ok" : "muted"}
+              title={
+                tolls.length === 0
+                  ? "Tolls: no toll plazas mapped on the route"
+                  : `Tolls: ${tolls.length} toll plaza${tolls.length === 1 ? "" : "s"} on the route`
+              }
+            >
+              {tolls.length > 0 && (
+                <ol aria-label="Toll plazas on the route" className="space-y-0.5 text-xs">
+                  {tolls.map((t) => (
+                    <li key={t.id}>
+                      <span className="tabular font-mono">km {Math.round(t.kmFromStart)}</span> ·{" "}
+                      {t.name ?? "Toll plaza"}
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                Driving often? The FASTag annual pass is{" "}
+                {formatRupees(FASTAG_PASS.rupees)} for {FASTAG_PASS.crossings} national-highway
+                crossings (private cars). Amounts differ by plaza and change every April, so we do
+                not show them. Plazas from OpenStreetMap; some may be missing.
               </p>
             </Check>
           )}

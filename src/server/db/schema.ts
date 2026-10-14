@@ -351,7 +351,7 @@ export const servicePoint = pgTable(
   "service_point",
   {
     osmId: text("osm_id").primaryKey(), // "node/123", "way/456"
-    kind: text("kind").notNull(), // hospital | police | atm | tyre | repair | stay
+    kind: text("kind").notNull(), // hospital | police | atm | tyre | repair | stay | toll
     name: text("name"),
     phone: text("phone"),
     region: text("region").notNull(), // the state it was imported with
@@ -363,7 +363,7 @@ export const servicePoint = pgTable(
     index("service_point_region_idx").on(t.region),
     check(
       "service_point_kind_check",
-      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay')`,
+      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay', 'toll')`,
     ),
   ],
 );

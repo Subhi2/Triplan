@@ -3,7 +3,8 @@ import type { LngLat } from "./geo";
 import { lineStringSchema, ROUTE_ID_PATTERN } from "./places";
 
 // Safety stops along a route (docs/02-architecture.md, "Safety stops"): hospitals, police, ATMs,
-// puncture and repair shops from the service_point table. Pure helpers shared by the API and UI.
+// puncture and repair shops from the service_point table, and the toll plazas on the road (G5).
+// Pure helpers shared by the API and UI.
 
 export const SAFETY_KINDS = ["hospital", "police", "atm", "tyre", "repair"] as const;
 export type SafetyKind = (typeof SAFETY_KINDS)[number];
@@ -38,6 +39,32 @@ export interface Gap {
   km: number;
 }
 
+/** Toll booths this close to the route (straight line) are on it. */
+export const TOLL_CORRIDOR_KM = 0.2;
+/** Booths closer than this along the road are one plaza (one booth per carriageway or lane). */
+const ONE_PLAZA_KM = 1;
+
+export interface TollPlaza {
+  id: string; // OSM id of its first booth
+  name: string | null;
+  location: LngLat;
+  kmFromStart: number;
+}
+
+/** Toll booths on the road as plazas, in km order: booths within 1 km of each other are one. */
+export function tollPlazas(booths: TollPlaza[]): TollPlaza[] {
+  const plazas: TollPlaza[] = [];
+  for (const b of [...booths].sort((x, y) => x.kmFromStart - y.kmFromStart)) {
+    const last = plazas.at(-1);
+    if (last && b.kmFromStart - last.kmFromStart < ONE_PLAZA_KM) {
+      if (!last.name && b.name) last.name = b.name;
+      continue;
+    }
+    plazas.push({ ...b });
+  }
+  return plazas;
+}
+
 export interface SafetySummary {
   totalKm: number;
   counts: Record<SafetyKind, number>;
@@ -47,6 +74,8 @@ export interface SafetySummary {
   longestGap: Record<SafetyKind, Gap>;
   /** A thinned set to list and pin: the nearest to the road per stretch. */
   points: SafetyPoint[];
+  /** Toll plazas on the route (within 200 m), for cars; two-wheelers pay no NH tolls. */
+  tolls: TollPlaza[];
 }
 
 /** The longest stretch of road between consecutive points (km), from 0 to `totalKm`. */
@@ -76,7 +105,11 @@ export function thinByStretch(
     .sort((a, b) => a.kmFromStart - b.kmFromStart);
 }
 
-export function summariseSafety(points: SafetyPoint[], totalKm: number): SafetySummary {
+export function summariseSafety(
+  points: SafetyPoint[],
+  totalKm: number,
+  tolls: TollPlaza[] = [],
+): SafetySummary {
   const counts = {} as Record<SafetyKind, number>;
   const perFiftyKm = {} as Record<SafetyKind, number>;
   const gaps = {} as Record<SafetyKind, Gap>;
@@ -86,7 +119,14 @@ export function summariseSafety(points: SafetyPoint[], totalKm: number): SafetyS
     perFiftyKm[kind] = totalKm > 0 ? Math.round((kms.length / totalKm) * 500) / 10 : 0;
     gaps[kind] = longestGap(kms, totalKm);
   }
-  return { totalKm, counts, perFiftyKm, longestGap: gaps, points: thinByStretch(points) };
+  return {
+    totalKm,
+    counts,
+    perFiftyKm,
+    longestGap: gaps,
+    points: thinByStretch(points),
+    tolls: tollPlazas(tolls),
+  };
 }
 
 /** Body of POST /api/services/along. */

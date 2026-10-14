@@ -4,7 +4,15 @@ import type { OsmElement } from "../providers/osm";
 // Service points from OpenStreetMap (docs/02, "Safety stops"): what each element is, its name and
 // phone. Pure, so it is easy to test against real tags.
 
-export const SERVICE_KINDS = ["hospital", "police", "atm", "tyre", "repair", "stay"] as const;
+export const SERVICE_KINDS = [
+  "hospital",
+  "police",
+  "atm",
+  "tyre",
+  "repair",
+  "stay",
+  "toll",
+] as const;
 export type ServiceKind = (typeof SERVICE_KINDS)[number];
 
 export interface ServicePointCandidate {
@@ -56,6 +64,7 @@ function kindOf(tags: Record<string, string>): ServiceKind | null {
     return TYRE_WORDS.test(`${tags.name ?? ""} ${tags.description ?? ""}`) ? "tyre" : "repair";
   }
   if (["hotel", "guest_house", "hostel", "motel"].includes(tags.tourism ?? "")) return "stay";
+  if (tags.barrier === "toll_booth") return "toll";
   return null;
 }
 

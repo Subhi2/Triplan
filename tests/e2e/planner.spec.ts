@@ -93,6 +93,14 @@ const SAFETY = {
       detourKm: 1.2,
     },
   ],
+  tolls: [
+    {
+      id: "node/10",
+      name: "Nelamangala Toll Plaza",
+      location: [77.39, 13.08],
+      kmFromStart: 31.5,
+    },
+  ],
 };
 
 /** Bengaluru → Kalasa via Sakleshpur over two days, a night in Hassan. */
@@ -1092,6 +1100,47 @@ test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) 
   await expect(cup).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
 });
+
+for (const vehicle of ["bike", "car"] as const) {
+  test(`tolls by ${vehicle}, and the fuel cost from the rider's mileage and price`, async ({
+    page,
+  }) => {
+    await mockApis(page, []);
+    await page.goto(`/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234&v=${vehicle}`);
+    await page
+      .getByRole("list", { name: "Route options" })
+      .getByRole("button")
+      .filter({ hasText: "via Hassan, Sakleshpur" })
+      .click();
+    const toggle = page.getByRole("button", { name: /^Ride check/ });
+    if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+    const check = page.getByRole("region", { name: "Ride check" });
+
+    if (vehicle === "bike") {
+      await expect(check).toContainText("No tolls: two-wheelers ride national highways free");
+      await expect(check.getByRole("list", { name: "Toll plazas on the route" })).toHaveCount(0);
+    } else {
+      await expect(check).toContainText("Tolls: 1 toll plaza on the route");
+      await expect(check.getByRole("list", { name: "Toll plazas on the route" })).toContainText(
+        "km 32 · Nelamangala Toll Plaza",
+      );
+      await expect(check).toContainText("FASTag annual pass is ₹3,000 for 200");
+    }
+
+    await check.getByLabel("Mileage (km per litre)").fill("35");
+    await check.getByLabel("Fuel price (₹ per litre)").fill("103");
+    await expect(check).toContainText(/Fuel cost: about ₹9\d0 for 3\d\d km/);
+    // Remembered for this vehicle on the next visit.
+    await page.reload();
+    await page
+      .getByRole("list", { name: "Route options" })
+      .getByRole("button")
+      .filter({ hasText: "via Hassan, Sakleshpur" })
+      .click();
+    if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+    await expect(check.getByLabel("Mileage (km per litre)")).toHaveValue("35");
+  });
+}
 
 test("download the trip as a GPX file with the route, stops and places", async ({ page }) => {
   await mockApis(page, []);

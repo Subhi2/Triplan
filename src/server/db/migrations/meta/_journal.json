@@ -148,6 +148,13 @@
       "when": 1791976001260,
       "tag": "0020_road_rule",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791979143871,
+      "tag": "0021_service_toll",
+      "breakpoints": true
     }
   ]
 }
