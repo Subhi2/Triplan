@@ -36,6 +36,10 @@ async function mockRouting(page: Page) {
   await page.route("**/api/route/alerts", (route) =>
     route.fulfill({ json: { alerts: [], partial: false } }),
   );
+  // No road rules: these tests never read the database for them.
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [], timeline: null } }),
+  );
   await page.route("**/api/route", (route) => {
     const { stops } = route.request().postDataJSON() as { stops: { label: string }[] };
     const vias = stops.slice(1, -1).map((s) => s.label);

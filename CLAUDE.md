@@ -119,7 +119,7 @@ ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road r
 - The data snapshot (`data/snapshot`) never includes trips, reviews, accounts, usage, caches, users' photos or Google ids (`src/lib/snapshot.ts`). Refresh it with `pnpm db:export-snapshot` after imports.
 - No link to the code repository anywhere in the app (footer, planner, About, metadata); the README is where the repository is. `tests/unit/no-repo-link.test.ts` checks it.
 - Never use Nominatim for search-as-you-type (its usage policy forbids it); suggestions come from our own places and Photon. Photon's public server asks for fair use: keep suggestions debounced (300 ms), cached, and for 2+ characters only.
-- Every road rule shows its official link and the date it was checked. Add or change a rule only after checking it at its official source; news and blogs disagree on hours (G5).
+- Every road rule shows its link and the date it was checked: the authority's own page where there is one, else the newest reliable report, named in `source`. Add or change a rule only after checking it there; reports disagree on hours (G5).
 - Ride-together positions travel only through the Realtime channel: never stored, logged or sent to our server, and only after a tap on "Share my position" (G5).
 - A rider's GPX file is read in the browser; only the line leaves the phone, with 500 m cut from each end (G5).
 - Offline packs keep to OpenFreeMap's offline rules: at most 3,000 tiles or 50 MB per download, 4 requests at a time (G5). The service worker still never stores `/api/` answers; the page writes packs.

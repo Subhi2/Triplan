@@ -212,7 +212,7 @@ Decided 2026-10-14 after web research (`07-growth-plan.md`, "G5" and "Research b
 4. **Tolls and trip cost.** Service kind `toll` from `barrier=toll_booth` (`classifyService`). Migration 0021 widens the `service_point.kind` check. Then `pnpm db:import-services -- --region=all --kinds=toll` and a fresh snapshot. By bike: "No tolls: two-wheelers ride national highways free". By car: the toll plazas on the route, and the FASTag annual pass (₹3,000 for 200 NH and NE crossings). Cost: km ÷ mileage × fuel price. The rider types both and they are remembered per vehicle in `localStorage`; we publish no prices.
 5. **Helplines.** 1033 (NHAI) when the route has national-highway km, and 112 always, at the top of "Safety on the way".
 
-**Done when:** a recorded SACHET answer with a Chikkamagaluru outline shows its alert on Bengaluru → Kalasa and not on Pune → Goa; Bengaluru → Ooty through Gundlupet, leaving at 5 pm, says the Bandipur road is closed when the rider gets there and gives the latest start that clears it; Bengaluru → Kalasa suggests a break near each 2 hours; the trip shows "No tolls" by bike and the NH75 plazas by car; 1033 is listed. Then stop for the owner's check.
+**Done when:** a recorded SACHET answer with a Chikkamagaluru outline shows its alert on Bengaluru → Kalasa and not on Pune → Goa; Bengaluru → Ooty through Gundlupet, leaving at 6 pm, says the Bandipur road is closed when the rider gets there and gives the latest start that clears it (leaving at 5 pm gets through with minutes to spare, which is a warning); Bengaluru → Kalasa suggests a break near each 2 hours; the trip shows "No tolls" by bike and the NH75 plazas by car; 1033 is listed. Then stop for the owner's check.
 
 **B · Smart picks and routes**
 

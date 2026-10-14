@@ -19,6 +19,7 @@ import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
 import { useDayPlan } from "@/components/route/useDayPlan";
 import { useRouteAlerts } from "@/components/route/useRouteAlerts";
+import { useRouteRules } from "@/components/route/useRouteRules";
 import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { RetryAlert } from "@/components/ui/RetryAlert";
@@ -253,6 +254,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       : undefined;
   // Official alerts on the selected route, kept to those in force while the rider is out.
   const alerts = useRouteAlerts(selectedRoute);
+  // Night bans, permits, e-passes and fees on the selected route.
+  const rules = useRouteRules(selectedRoute);
   const rideAlerts = useMemo(
     () =>
       alerts.status === "ok" && selectedRoute
@@ -650,6 +653,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           departure={departure}
           onDepartureChange={setDeparture}
           alerts={alerts}
+          rules={rules}
+          days={dayPlan?.legs.map((l) => ({ fromKm: l.fromKm, toKm: l.toKm }))}
           hospitalGap={
             safety.status === "ok" && safety.summary.counts.hospital > 0
               ? safety.summary.longestGap.hospital

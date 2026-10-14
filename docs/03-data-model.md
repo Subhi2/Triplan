@@ -290,11 +290,12 @@ CREATE TABLE road_rule (
   kind        text NOT NULL CHECK (kind IN ('night_ban','permit','epass','fee')),
   title       text NOT NULL,
   geom        geography(Geometry, 4326) NOT NULL,  -- a LineString along the road, or a (Multi)Polygon area
-  closed_from time,                                -- night bans, local time; may be later than closed_to
-  closed_to   time,
+  closed_from text,                                -- night bans: "21:00" India time; may be later than closed_to
+  closed_to   text,
   vehicles    vehicle[] NOT NULL DEFAULT '{}',     -- empty = every vehicle
   months      smallint[] NOT NULL DEFAULT '{}',    -- empty = all year
-  link        text NOT NULL,                       -- the official source
+  link        text NOT NULL,                       -- the authority's page, else the report checked against
+  source      text,                                -- who says so, when the link is not the authority's page
   checked_on  date NOT NULL,                       -- when we last checked it there
   note        text,
   seeded_at   timestamptz NOT NULL DEFAULT now()
@@ -342,7 +343,7 @@ Also add:
 - The `places_along_route` function from `02-architecture.md`.
 - `services_along_route(geojson, corridor_m, kinds text[] = NULL)` (migration 0015): the service points within `corridor_m` of the route, with `km_from_start` and `detour_m` worked out as in `places_along_route`, in km order, at most 4000 (the nearest to the road kept).
 - `districts_along_route(geojson)` (migration 0019, G5): the districts the route passes through (`lgd_code`, `name`, `names`, `region`) with `km_from_start` where it first enters each, in km order.
-- `rules_along_route(geojson, corridor_m = 300)` (migration 0020, G5): road rules whose line or area comes within `corridor_m` of the route, with `km_from` and `km_to` (where the route meets the rule and leaves it), in km order.
+- `rules_along_route(geojson, corridor_m = 150)` (migration 0020, G5): road rules the route runs along for 1 km or more (roads) or goes 100 m or more into (areas), with `km_from` and `km_to` (where the route meets the rule and leaves it), in km order.
 - `reports_along_route(geojson, corridor_m = 300)` (G5, step 14): approved road reports that have not expired, within `corridor_m` of the route, with `km_from_start`.
 - `places_near_point(origin_lng, origin_lat, radius_m, categories text[] = NULL, lim = 400)` (migration 0012), for the Near me screen. Verified places within `radius_m` (straight line) of the point, with the same columns as `places_along_route` except `distance_m` and `priority` in place of `km_from_start` and `detour_m`. `priority` is the category weight, +1 when curated (not OSM only) and +0.5 with a Wikidata link. Results are ordered by priority, then rating, then distance, and capped at `lim` (at most 1000). `categories` NULL means every category except towns. Inputs are named `origin_*` because the returned `lng`/`lat` columns are OUT parameters.
 

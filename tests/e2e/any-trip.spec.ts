@@ -48,6 +48,10 @@ async function mockRouting(page: Page, trip: Trip) {
   await page.route("**/api/route/alerts", (route) =>
     route.fulfill({ json: { alerts: [], partial: false } }),
   );
+  // No road rules: these tests never read the database for them.
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [], timeline: null } }),
+  );
   const routes: RouteOption[] = routeFixture(trip.fixture, "bike").map((r, i) => ({
     id: `${trip.fixture}-${i}`, // not a cache id, so the client sends the geometry
     geometry: r.geometry,

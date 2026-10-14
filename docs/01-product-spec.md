@@ -95,7 +95,7 @@ User stories:
 Chosen after web research; the reasons and sources are in `07-growth-plan.md` ("Research behind G5").
 
 25. **Alerts on the route**: official warnings (heavy rain, thunderstorm, landslide, flood, cyclone) whose area the route crosses, with who issued them and until when.
-26. **Road rules and permits**: night bans, e-passes, permits and fees on the road, checked against when the rider gets there ("Bandipur forest road closed 9 pm–6 am: you get there at 8:40 pm. Leave by 4:10 pm"). Each shows its official link and the date we checked it.
+26. **Road rules and permits**: night bans, e-passes, permits and fees on the road, checked against when the rider gets there ("Bandipur and Mudumalai forest road (NH181) is closed when you get there, about 9:15 pm. Start by 5:15 pm to get through"). Each shows its link (the authority's page, or the report we checked it against) and the date we checked it.
 27. **Break planner**: a tea, food or fuel stop near every 2 hours of riding, away from the 2–4 pm dip where possible.
 28. **Tolls and trip cost**: no tolls by bike; by car, the toll plazas on the route and the FASTag annual pass. The fuel cost comes from the mileage and fuel price the rider types.
 29. **Helplines**: 1033 (national highways) and 112 in "Safety on the way".
@@ -187,7 +187,7 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 ## Acceptance criteria for G5
 
 - An alert whose area the route crosses shows on the route card with its issuer and end time. An alert elsewhere does not show, and neither does an expired one. When the alert feeds cannot be read, the planner works as before.
-- Bengaluru → Ooty through Gundlupet, leaving at 5 pm, says the Bandipur forest road is closed when the rider gets there and gives the latest start that clears it. Every rule shown has its official link and checked date.
+- Bengaluru → Ooty through Gundlupet, leaving at 6 pm, says the Bandipur forest road is closed when the rider gets there and gives the latest start that clears it; leaving at 5 pm warns that the margin is small. Every rule shown has its link (the authority's page, or the report it was checked against, named) and checked date.
 - Bengaluru → Kalasa suggests a break near each 2 hours of riding, at stops within 1 km of the road.
 - By bike the trip says there are no tolls; by car it lists the toll plazas on the route.
 - "2 h for stops" on Bengaluru → Kalasa via Sakleshpur ticks Manjarabad Fort, and the picked places' detours and visits add up to 2 hours or less.

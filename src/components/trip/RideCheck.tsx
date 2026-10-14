@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import type { AlertsState } from "@/components/route/useRouteAlerts";
+import type { RulesState } from "@/components/route/useRouteRules";
 import { alertLine, alertsForRide, alertTone } from "@/lib/alerts";
 import { formatDuration } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
+import { routeTimeline } from "@/lib/multiDay";
 import {
   DEFAULT_RANGE_KM,
   defaultDeparture,
@@ -16,6 +18,7 @@ import {
   planDaylight,
   RANGE_LIMITS_KM,
 } from "@/lib/rideCheck";
+import { checkRules, closedHours, SPARE_WARN_MIN, type RuleCheck } from "@/lib/roadRules";
 import type { Gap } from "@/lib/safety";
 import type { RouteOption, Vehicle } from "@/lib/trip";
 import { summarizeWeather, type WeatherPoint } from "@/lib/weather";
@@ -33,6 +36,10 @@ interface Props {
   hospitalGap?: Gap | null;
   /** Official alerts on the route (all current ones; the ride check keeps those for the ride). */
   alerts?: AlertsState;
+  /** Night bans, permits, e-passes and fees on the route, with the route's timeline. */
+  rules?: RulesState;
+  /** With a multi-day split, each day's km: a day starts at the same time of day as the first. */
+  days?: { fromKm: number; toKm: number }[];
 }
 
 /** A stretch without a hospital longer than these is worth knowing about (km). */
@@ -59,6 +66,17 @@ const dayAndTime = new Intl.DateTimeFormat(undefined, {
   minute: "2-digit",
 });
 const short = (label: string) => label.split(",")[0]!.trim();
+const checkedDate = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "Asia/Kolkata",
+});
+const NEEDS: Record<"permit" | "epass" | "fee", string> = {
+  permit: "Permit needed",
+  epass: "E-pass needed",
+  fee: "Fee to pay",
+};
 
 type Tone = "ok" | "warn" | "bad" | "muted";
 const DOT: Record<Tone, string> = {
@@ -102,6 +120,68 @@ function pointWeather(p: WeatherPoint): string {
     .join(" · ");
 }
 
+/** One road rule the ride meets: a night ban against the time the rider gets there, or a permit. */
+function RoadRuleLine({
+  check: { rule, verdict },
+  departAt,
+}: {
+  check: RuleCheck;
+  departAt: Date;
+}) {
+  const when = (d: Date) =>
+    d.toDateString() === departAt.toDateString() ? time.format(d) : dayAndTime.format(d);
+  const hours =
+    rule.closedFrom && rule.closedTo ? closedHours(rule.closedFrom, rule.closedTo) : null;
+  const credit = (
+    <p className="text-xs text-stone-600 dark:text-stone-400">
+      {rule.note && <>{rule.note} </>}
+      <a href={rule.link} target="_blank" rel="noopener noreferrer" className="underline">
+        {rule.source ?? new URL(rule.link).hostname}
+      </a>{" "}
+      · checked {checkedDate.format(new Date(`${rule.checkedOn}T12:00:00Z`))}
+    </p>
+  );
+  if (verdict.state === "closed") {
+    return (
+      <Check
+        tone="bad"
+        title={`${rule.title} is closed when you get there, about ${when(verdict.enterAt)}`}
+      >
+        <p>
+          Closed {hours}. Start by {when(verdict.leaveBy)} to get through before it closes, or after{" "}
+          {when(verdict.leaveFrom)} to reach it once it opens.
+        </p>
+        {credit}
+      </Check>
+    );
+  }
+  if (verdict.state === "open") {
+    const tight = verdict.minutesSpare < SPARE_WARN_MIN;
+    return (
+      <Check
+        tone={tight ? "warn" : "ok"}
+        title={`${rule.title}: open when you pass, about ${when(verdict.enterAt)}`}
+      >
+        <p>
+          Closed {hours}.
+          {tight &&
+            ` You are through only ${verdict.minutesSpare} min before it closes: leave a little earlier.`}
+        </p>
+        {credit}
+      </Check>
+    );
+  }
+  return (
+    <Check tone="warn" title={rule.title}>
+      <p>
+        On your route from km {Math.round(rule.kmFrom)}, about {when(verdict.enterAt)}.{" "}
+        {verdict.what === "fee" ? "Pay" : "Apply"} before you go.
+      </p>
+      {credit}
+    </Check>
+  );
+}
+
 /**
  * Before you ride: the longest stretch without a fuel station against the vehicle's range, the
  * arrival time against sunset (docs/07, G1.3), the weather on the way (G1.5) and official alerts
@@ -116,6 +196,8 @@ export function RideCheck({
   onDepartureChange,
   hospitalGap = null,
   alerts = { status: "idle" },
+  rules = { status: "idle" },
+  days,
 }: Props) {
   const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
   const [rangeText, setRangeText] = useState(String(DEFAULT_RANGE_KM[vehicle]));
@@ -221,6 +303,22 @@ export function RideCheck({
 
   const rideAlerts =
     alerts.status === "ok" ? alertsForRide(alerts.alerts, departAt, route.durationMin) : [];
+
+  // Road rules against this start time: the server's timeline when it has the route, else time
+  // in proportion to distance.
+  const ruleTimeline = useMemo(
+    () =>
+      rules.status === "ok" && rules.timeline
+        ? rules.timeline
+        : routeTimeline(undefined, route.distanceKm, route.durationMin),
+    [rules, route.distanceKm, route.durationMin],
+  );
+  const ruleChecks =
+    rules.status === "ok" && departAt
+      ? checkRules(rules.rules, vehicle, { departAt, timeline: ruleTimeline, days })
+      : [];
+  const closedRule = ruleChecks.find((c) => c.verdict.state === "closed");
+  const neededRule = ruleChecks.find((c) => c.verdict.state === "needs");
   const alertsTone: Tone = rideAlerts[0] ? alertTone(rideAlerts[0].severity) : "ok";
 
   // Open on wide screens; on phones a one-line summary keeps the place list in view.
@@ -252,6 +350,19 @@ export function RideCheck({
                     className={`h-2 w-2 shrink-0 rounded-full ${DOT[alertsTone]}`}
                   />
                   {rideAlerts.length === 1 ? "1 alert" : `${rideAlerts.length} alerts`}
+                </span>
+              )}
+              {(closedRule || neededRule) && (
+                <span className="inline-flex items-center gap-1 font-bold text-stone-800 dark:text-stone-200">
+                  <span
+                    aria-hidden
+                    className={`h-2 w-2 shrink-0 rounded-full ${DOT[closedRule ? "bad" : "warn"]}`}
+                  />
+                  {closedRule
+                    ? "Closed at night"
+                    : neededRule!.verdict.state === "needs"
+                      ? NEEDS[neededRule!.verdict.what]
+                      : null}
                 </span>
               )}
               <span className="inline-flex items-center gap-1">
@@ -389,6 +500,9 @@ export function RideCheck({
               )}
             </Check>
           )}
+
+          {departAt &&
+            ruleChecks.map((c) => <RoadRuleLine key={c.rule.slug} check={c} departAt={departAt} />)}
 
           {(weather.status === "loading" || weather.status === "idle") && (
             <Check tone="muted" title="Weather">

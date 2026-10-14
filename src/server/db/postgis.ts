@@ -88,3 +88,8 @@ export const geographyLine = customType<{ data: LineString; driverData: string }
 export const geographyArea = customType<{ data: string; driverData: string }>({
   dataType: () => "geography(MultiPolygon, 4326)",
 });
+
+/** A line or an area (road rules): written and read only in SQL, like geographyArea. */
+export const geographyAny = customType<{ data: string; driverData: string }>({
+  dataType: () => "geography(Geometry, 4326)",
+});

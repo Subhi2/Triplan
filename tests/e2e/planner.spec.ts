@@ -183,6 +183,10 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
   await page.route("**/api/route/alerts", (route) =>
     route.fulfill({ json: { alerts: [], partial: false } }),
   );
+  // No road rules: these tests never read the database for them.
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [], timeline: null } }),
+  );
   // No terrain tiles for the 3D preview: it carries on with a flat map.
   await page.route("https://s3.amazonaws.com/elevation-tiles-prod/**", (route) =>
     route.fulfill({ status: 404, body: "" }),
@@ -971,6 +975,70 @@ test("official alerts in force during the ride show under the routes and in the 
     .fill(`${later.getFullYear()}-${pad(later.getMonth() + 1)}-${pad(later.getDate())}T06:00`);
   await expect(banner).toHaveCount(0);
   await expect(check).toContainText("Official alerts: none on the way while you ride");
+});
+
+test("a night ban on the road is checked against the start time, and permits are listed", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route/rules");
+  const rule = {
+    slug: "forest-night",
+    kind: "night_ban",
+    title: "Forest road",
+    kmFrom: 200,
+    kmTo: 240,
+    closedFrom: "21:00",
+    closedTo: "06:00",
+    vehicles: [],
+    months: [],
+    link: "https://example.org/ban",
+    source: "A newspaper, 2025",
+    checkedOn: "2026-10-14",
+    note: null,
+  };
+  const epass = {
+    ...rule,
+    slug: "hills-epass",
+    kind: "epass",
+    title: "E-pass needed to drive into the hills",
+    closedFrom: null,
+    closedTo: null,
+    source: null,
+    link: "https://epass.example.org/",
+  };
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [rule, epass], timeline: null } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  await expect(toggle).toContainText(/Ride check/);
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await expect(toggle).toContainText(/Fuel/);
+    await toggle.click();
+  }
+  const check = page.getByRole("region", { name: "Ride check" });
+  const start = check.getByLabel("Start");
+
+  await start.fill("2026-10-03T18:00");
+  await expect(check).toContainText("Forest road is closed when you get there");
+  await expect(check).toContainText(
+    /Closed 9 pm–6 am. Start by .+ to get through before it closes/,
+  );
+  await expect(check).toContainText("A newspaper, 2025");
+  await expect(check).toContainText("checked 14 Oct 2026");
+
+  await start.fill("2026-10-03T06:00");
+  await expect(check).toContainText("Forest road: open when you pass");
+  await expect(check).toContainText("E-pass needed to drive into the hills");
+  await expect(check).toContainText("Apply before you go.");
+  await expect(check.getByRole("link", { name: "epass.example.org" })).toBeVisible();
 });
 
 test("download the trip as a GPX file with the route, stops and places", async ({ page }) => {

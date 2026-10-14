@@ -26,7 +26,7 @@ import { authUsers } from "drizzle-orm/supabase";
 import type { RouteCurvature } from "@/lib/curvature";
 import type { ElevationProfile } from "@/lib/elevation";
 import type { RoadMix } from "@/lib/trip";
-import { geographyArea, geographyLine, geographyPoint } from "./postgis";
+import { geographyAny, geographyArea, geographyLine, geographyPoint } from "./postgis";
 
 const emptyArray = sql`'{}'`;
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -393,6 +393,33 @@ export const district = pgTable(
     uniqueIndex("district_lgd_code_key").on(t.lgdCode),
     index("district_geom_gix").using("gist", t.geom),
     index("district_region_idx").on(t.region),
+  ],
+);
+
+// Road rules (G5) ---------------------------------------------------------------
+// Night bans, permits, e-passes and fees, curated in data/road-rules.json and loaded by
+// `pnpm db:seed-road-rules` (docs/02, "Road rules and permits"). Public, in the data snapshot.
+
+export const roadRule = pgTable(
+  "road_rule",
+  {
+    slug: text("slug").primaryKey(),
+    kind: text("kind").notNull(), // night_ban | permit | epass | fee
+    title: text("title").notNull(),
+    geom: geographyAny("geom").notNull(), // a line along the road, or an area
+    closedFrom: text("closed_from"), // night bans: "21:00" India time; may be later than closed_to
+    closedTo: text("closed_to"),
+    vehicles: text("vehicles").array().notNull().default(sql`'{}'::text[]`), // empty = every vehicle
+    months: smallint("months").array().notNull().default(sql`'{}'::smallint[]`), // empty = all year
+    link: text("link").notNull(),
+    source: text("source"), // who says so, when the link is not the authority's own page
+    checkedOn: date("checked_on").notNull(),
+    note: text("note"),
+    seededAt: timestamp("seeded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("road_rule_geom_gix").using("gist", t.geom),
+    check("road_rule_kind_check", sql`${t.kind} IN ('night_ban', 'permit', 'epass', 'fee')`),
   ],
 );
 
