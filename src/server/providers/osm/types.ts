@@ -22,6 +22,8 @@ export interface OsmPlacesProvider {
   fetchPlaces(request: OsmPlacesRequest): Promise<OsmElement[]>;
   /** Hospitals, police, ATMs, tyre and repair shops and stays inside the area and tile. */
   fetchServices(request: OsmPlacesRequest): Promise<OsmElement[]>;
+  /** The state's district boundaries (admin_level 5), tags and bounds only (G5, alerts). */
+  fetchDistricts(areaIso: string): Promise<OsmElement[]>;
 }
 
 /** The query timed out or ran out of memory: retry with a smaller tile. */

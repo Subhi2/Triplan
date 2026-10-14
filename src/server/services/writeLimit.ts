@@ -18,6 +18,7 @@ export const REQUEST_LIMITS = {
   nominatim: { scope: "nominatim", limit: 60, windowS: 3600 },
   googleDetails: { scope: "google", limit: 30, windowS: 3600 },
   googlePhoto: { scope: "gphoto", limit: 40, windowS: 3600 },
+  alerts: { scope: "alerts", limit: 120, windowS: 3600 },
 } as const;
 
 /** Rows for visitors not seen for this long are deleted by the daily health check. */

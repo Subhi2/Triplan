@@ -179,6 +179,10 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
   );
   // No forecast (as if the trip were too far ahead), so tests never reach MET Norway.
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
+  // No official alerts, so tests never read NDMA's SACHET.
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({ json: { alerts: [], partial: false } }),
+  );
   // No terrain tiles for the 3D preview: it carries on with a flat map.
   await page.route("https://s3.amazonaws.com/elevation-tiles-prod/**", (route) =>
     route.fulfill({ status: 404, body: "" }),
@@ -897,6 +901,76 @@ test.describe("ride check", () => {
     await expect(along.getByRole("listitem").last()).toContainText("Kalasa");
     await expect(check).toContainText("Forecast by MET Norway (CC BY 4.0)");
   });
+});
+
+test("official alerts in force during the ride show under the routes and in the ride check", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route/alerts");
+  const hours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+  const alert = (id: string, event: string, severity: string, onset: string, expires: string) => ({
+    id,
+    event,
+    headline: `${event} is likely over Chikkamagaluru district.`,
+    severity,
+    urgency: "Expected",
+    certainty: "Likely",
+    issuer: "IMD Bengaluru",
+    area: "Chikkamagaluru",
+    onset,
+    expires,
+    kmFromStart: 254.2,
+    url: "https://sachet.example/alert",
+  });
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({
+      json: {
+        alerts: [
+          alert("rain", "Heavy Rain", "Severe", hours(-1), hours(72)),
+          // Over before the ride starts (06:00 tomorrow by default): not shown.
+          alert("storm", "Thunderstorm", "Moderate", hours(-2), hours(1)),
+        ],
+        partial: false,
+      },
+    }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const banner = page.getByRole("region", { name: "Official alerts on the route" });
+  await expect(banner).toContainText("Severe alert · Heavy Rain · from km 254");
+  await expect(banner).toContainText("IMD Bengaluru");
+  await expect(banner).not.toContainText("Thunderstorm");
+  await banner.getByRole("button").click();
+  await expect(banner).toContainText("Heavy Rain is likely over Chikkamagaluru district.");
+
+  // Folded to one line on phones, with the alert counted in it.
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  await expect(toggle).toContainText(/Ride check/);
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await expect(toggle).toContainText("1 alert");
+    await toggle.click();
+  }
+  const check = page.getByRole("region", { name: "Ride check" });
+  await expect(check).toContainText("Official alert: heavy rain on the way");
+  await expect(check.getByRole("list", { name: "Official alerts while you ride" })).toContainText(
+    "Severe · Heavy Rain · from km 254",
+  );
+  await expect(check).toContainText("NDMA's SACHET");
+
+  // A start after the alert ends: nothing to show.
+  const later = new Date(Date.now() + 5 * 86_400_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  await check
+    .getByLabel("Start")
+    .fill(`${later.getFullYear()}-${pad(later.getMonth() + 1)}-${pad(later.getDate())}T06:00`);
+  await expect(banner).toHaveCount(0);
+  await expect(check).toContainText("Official alerts: none on the way while you ride");
 });
 
 test("download the trip as a GPX file with the route, stops and places", async ({ page }) => {

@@ -32,6 +32,10 @@ async function mockRouting(page: Page) {
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   // No elevation profile, so tests never read the terrain tiles.
   await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
+  // Official alerts come from NDMA's SACHET; these tests never read it.
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({ json: { alerts: [], partial: false } }),
+  );
   await page.route("**/api/route", (route) => {
     const { stops } = route.request().postDataJSON() as { stops: { label: string }[] };
     const vias = stops.slice(1, -1).map((s) => s.label);

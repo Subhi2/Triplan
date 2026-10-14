@@ -257,7 +257,7 @@ CREATE TABLE ride (
 -- and overnight stays. Kept apart from place: no pages, no sitemap, not in the place list.
 CREATE TABLE service_point (
   osm_id     text PRIMARY KEY,               -- "node/123", "way/456"
-  kind       text NOT NULL CHECK (kind IN ('hospital','police','atm','tyre','repair','stay','toll')),  -- 'toll': 0020, G5
+  kind       text NOT NULL CHECK (kind IN ('hospital','police','atm','tyre','repair','stay','toll')),  -- 'toll': 0021, G5
   name       text,
   phone      text,                           -- hospitals, police and stays only
   region     text NOT NULL,                  -- the state it was imported with
@@ -267,7 +267,22 @@ CREATE TABLE service_point (
 CREATE INDEX service_point_location_gix ON service_point USING gist (location);
 CREATE INDEX service_point_region_idx ON service_point (region);
 
--- Road rules (migration 0019, G5) -------------------------------------------------
+-- Districts (migration 0019, G5) --------------------------------------------------
+-- India's districts from OpenStreetMap (admin_level 5) with their LGD codes, for official alerts
+-- (they name districts by LGD code). `pnpm db:import-districts`. Public, read-only.
+CREATE TABLE district (
+  osm_id     text PRIMARY KEY,                     -- "relation/2020603"
+  lgd_code   integer UNIQUE,                       -- ref:LGD:district; null when OSM has none
+  name       text NOT NULL,                        -- "Chikkamagaluru"
+  names      text[] NOT NULL DEFAULT '{}',         -- every name, lower case letters: {chikkamagaluru, chikmagalur}
+  region     text NOT NULL,                        -- the state's key in OSM_REGIONS ("karnataka")
+  geom       geography(MultiPolygon, 4326) NOT NULL,  -- simplified to about 200 m
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX district_geom_gix ON district USING gist (geom);
+CREATE INDEX district_region_idx ON district (region);
+
+-- Road rules (migration 0020, G5) -------------------------------------------------
 -- Night bans, permits, e-passes and fees, curated in data/road-rules.json and loaded by
 -- `pnpm db:seed-road-rules`. Public, read-only, in the data snapshot.
 CREATE TABLE road_rule (
@@ -326,7 +341,8 @@ Also add:
 - RLS policies as described in `02-architecture.md`.
 - The `places_along_route` function from `02-architecture.md`.
 - `services_along_route(geojson, corridor_m, kinds text[] = NULL)` (migration 0015): the service points within `corridor_m` of the route, with `km_from_start` and `detour_m` worked out as in `places_along_route`, in km order, at most 4000 (the nearest to the road kept).
-- `rules_along_route(geojson, corridor_m = 300)` (migration 0019, G5): road rules whose line or area comes within `corridor_m` of the route, with `km_from` and `km_to` (where the route meets the rule and leaves it), in km order.
+- `districts_along_route(geojson)` (migration 0019, G5): the districts the route passes through (`lgd_code`, `name`, `names`, `region`) with `km_from_start` where it first enters each, in km order.
+- `rules_along_route(geojson, corridor_m = 300)` (migration 0020, G5): road rules whose line or area comes within `corridor_m` of the route, with `km_from` and `km_to` (where the route meets the rule and leaves it), in km order.
 - `reports_along_route(geojson, corridor_m = 300)` (G5, step 14): approved road reports that have not expired, within `corridor_m` of the route, with `km_from_start`.
 - `places_near_point(origin_lng, origin_lat, radius_m, categories text[] = NULL, lim = 400)` (migration 0012), for the Near me screen. Verified places within `radius_m` (straight line) of the point, with the same columns as `places_along_route` except `distance_m` and `priority` in place of `km_from_start` and `detour_m`. `priority` is the category weight, +1 when curated (not OSM only) and +0.5 with a Wikidata link. Results are ordered by priority, then rating, then distance, and capped at `lim` (at most 1000). `categories` NULL means every category except towns. Inputs are named `origin_*` because the returned `lng`/`lat` columns are OUT parameters.
 

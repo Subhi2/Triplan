@@ -44,6 +44,10 @@ async function mockRouting(page: Page, trip: Trip) {
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   // No elevation profile, so tests never read the terrain tiles.
   await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
+  // Official alerts come from NDMA's SACHET; these tests never read it.
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({ json: { alerts: [], partial: false } }),
+  );
   const routes: RouteOption[] = routeFixture(trip.fixture, "bike").map((r, i) => ({
     id: `${trip.fixture}-${i}`, // not a cache id, so the client sends the geometry
     geometry: r.geometry,

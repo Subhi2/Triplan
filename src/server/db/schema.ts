@@ -368,6 +368,34 @@ export const servicePoint = pgTable(
   ],
 );
 
+// Districts (G5) ----------------------------------------------------------------
+// India's districts from OpenStreetMap (admin_level 5) with their LGD codes: official alerts name
+// the districts they cover by LGD code (docs/02, "Alerts on the route"). Imported with
+// `pnpm db:import-districts`; public and in the data snapshot.
+
+export const district = pgTable(
+  "district",
+  {
+    osmId: text("osm_id").primaryKey(), // "relation/2020603"
+    lgdCode: integer("lgd_code"), // ref:LGD:district; null when OSM has none
+    name: text("name").notNull(),
+    // Every name it goes by, lower case letters only ("chikkamagaluru", "chikmagalur"), to match
+    // alerts that name a district instead of giving its code.
+    names: text("names")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    region: text("region").notNull(), // the state's key in OSM_REGIONS ("karnataka")
+    geom: geographyArea("geom").notNull(), // simplified to about 200 m
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("district_lgd_code_key").on(t.lgdCode),
+    index("district_geom_gix").using("gist", t.geom),
+    index("district_region_idx").on(t.region),
+  ],
+);
+
 // Usage counters ----------------------------------------------------------------
 // Counts per UTC day: routes planned, AI requests and tokens (src/server/services/usage.ts).
 // Nothing about who: no visitor keys, no addresses.

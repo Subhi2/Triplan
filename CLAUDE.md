@@ -51,6 +51,7 @@ pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptio
 pnpm db:link-wikidata                          # link places to Wikidata by name and distance (--dry-run)
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json
+pnpm db:import-districts                       # India's districts with LGD codes, for official alerts (G5)
 pnpm db:seed-road-rules                        # night bans, permits, e-passes and fees in data/road-rules.json (G5)
 pnpm db:import-open-places -- --region=<key|all>   # food, fuel and stays from Overture Places (G5)
 pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)
@@ -100,7 +101,7 @@ INSTAGRAM_ACCESS_TOKEN=           # phase 7, needs Meta app review
 INSTAGRAM_BUSINESS_ACCOUNT_ID=    # phase 7
 ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction; G5 review pre-screen
 ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
-SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website/rss   # alerts on the route (G5)
+SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website   # alerts on the route: feeds in rss/, CAP messages and their areas (G5)
 VALHALLA_BASE_URL=                # the Scenic route option (G5); empty = off. Public FOSSGIS server only after announcing the app
 ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road reports (G5); empty = closed
 ```

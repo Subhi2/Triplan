@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
+import type { AlertsState } from "@/components/route/useRouteAlerts";
+import { alertLine, alertsForRide, alertTone } from "@/lib/alerts";
 import { formatDuration } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
 import {
@@ -29,6 +31,8 @@ interface Props {
   onDepartureChange: (value: string) => void;
   /** The longest stretch without a hospital near the road, once safety stops have loaded. */
   hospitalGap?: Gap | null;
+  /** Official alerts on the route (all current ones; the ride check keeps those for the ride). */
+  alerts?: AlertsState;
 }
 
 /** A stretch without a hospital longer than these is worth knowing about (km). */
@@ -100,7 +104,8 @@ function pointWeather(p: WeatherPoint): string {
 
 /**
  * Before you ride: the longest stretch without a fuel station against the vehicle's range, the
- * arrival time against sunset (docs/07, G1.3) and the weather on the way (G1.5).
+ * arrival time against sunset (docs/07, G1.3), the weather on the way (G1.5) and official alerts
+ * in force while you ride (G5).
  */
 export function RideCheck({
   route,
@@ -110,6 +115,7 @@ export function RideCheck({
   departure,
   onDepartureChange,
   hospitalGap = null,
+  alerts = { status: "idle" },
 }: Props) {
   const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
   const [rangeText, setRangeText] = useState(String(DEFAULT_RANGE_KM[vehicle]));
@@ -213,6 +219,10 @@ export function RideCheck({
           ? "Thunder"
           : RAIN_WORDS[sky.level];
 
+  const rideAlerts =
+    alerts.status === "ok" ? alertsForRide(alerts.alerts, departAt, route.durationMin) : [];
+  const alertsTone: Tone = rideAlerts[0] ? alertTone(rideAlerts[0].severity) : "ok";
+
   // Open on wide screens; on phones a one-line summary keeps the place list in view.
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(window.matchMedia("(min-width: 768px)").matches), []);
@@ -232,16 +242,27 @@ export function RideCheck({
         >
           <span>Ride check</span>
           {!open && (
-            <span className="flex min-w-0 flex-1 items-center gap-3 text-xs font-normal text-stone-600 dark:text-stone-400">
+            // Wraps instead of cutting words off: with an alert there are four items, too many
+            // for one line at 375 px. The alert count leads.
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5 py-1 text-xs font-normal whitespace-nowrap text-stone-600 dark:text-stone-400">
+              {rideAlerts.length > 0 && (
+                <span className="inline-flex items-center gap-1 font-bold text-stone-800 dark:text-stone-200">
+                  <span
+                    aria-hidden
+                    className={`h-2 w-2 shrink-0 rounded-full ${DOT[alertsTone]}`}
+                  />
+                  {rideAlerts.length === 1 ? "1 alert" : `${rideAlerts.length} alerts`}
+                </span>
+              )}
               <span className="inline-flex items-center gap-1">
                 <span aria-hidden className={`h-2 w-2 rounded-full ${DOT[fuelTone]}`} />
                 {gap ? `Fuel gap ${Math.round(gap.km)} km` : "Fuel"}
               </span>
-              <span className="inline-flex items-center gap-1 truncate">
+              <span className="inline-flex items-center gap-1">
                 <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT[dayTone]}`} />
                 {daylight ? `Arrive ${fmtArrive(daylight.arriveAt)}` : "Daylight"}
               </span>
-              <span className="inline-flex items-center gap-1 truncate">
+              <span className="inline-flex items-center gap-1">
                 <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT[skyTone]}`} />
                 {skyShort}
               </span>
@@ -411,6 +432,58 @@ export function RideCheck({
                   MET Norway
                 </a>{" "}
                 (CC BY 4.0), for the time you reach each point.
+              </p>
+            </Check>
+          )}
+
+          {(alerts.status === "loading" || alerts.status === "error") && (
+            <Check tone="muted" title="Official alerts">
+              <p className="text-stone-600 dark:text-stone-400">
+                {alerts.status === "loading"
+                  ? "Checking official alerts…"
+                  : "Could not load official alerts."}
+              </p>
+            </Check>
+          )}
+          {alerts.status === "ok" && (
+            <Check
+              tone={alertsTone}
+              title={
+                rideAlerts.length === 0
+                  ? "Official alerts: none on the way while you ride"
+                  : rideAlerts.length === 1
+                    ? `Official alert: ${rideAlerts[0]!.event.toLowerCase()} on the way`
+                    : `Official alerts: ${rideAlerts.length} on the way`
+              }
+            >
+              {rideAlerts.length > 0 && (
+                <ol
+                  aria-label="Official alerts while you ride"
+                  className="mt-1 space-y-0.5 text-xs"
+                >
+                  {rideAlerts.map((a) => (
+                    <li key={a.id}>
+                      <span className="font-medium">{a.severity}</span> · {alertLine(a)}
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {alerts.partial && (
+                <p className="text-xs text-stone-600 dark:text-stone-400">
+                  Some alerts could not be checked yet: look again in a few minutes.
+                </p>
+              )}
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                From{" "}
+                <a
+                  href="https://sachet.ndma.gov.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  NDMA&apos;s SACHET
+                </a>
+                : IMD, state disaster authorities and CWC, for the hours you are on the road.
               </p>
             </Check>
           )}

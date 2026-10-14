@@ -112,6 +112,21 @@ export function buildServicesQuery({ areaIso, bbox }: OsmPlacesRequest): string 
   ].join("\n");
 }
 
+/**
+ * A state's districts (docs/02, "Alerts on the route"): the boundary relations at admin_level 5,
+ * with tags (name, ref:LGD:district) and bounds only. Their outlines come from Nominatim, already
+ * simplified, instead of thousands of member ways from Overpass.
+ */
+export function buildDistrictsQuery(areaIso: string): string {
+  return [
+    `[out:json][timeout:${QUERY_TIMEOUT_S}];`,
+    `area["ISO3166-2"="${areaIso}"]["admin_level"="4"]->.region;`,
+    ".region out ids;",
+    'rel["boundary"="administrative"]["admin_level"="5"](area.region);',
+    "out tags bb qt;",
+  ].join("\n");
+}
+
 const boundsSchema = z.object({
   minlat: z.number(),
   minlon: z.number(),
@@ -292,6 +307,7 @@ export function createOverpassProvider(urls: string[], userAgent: string): OsmPl
   return {
     fetchPlaces: (request) => run(buildPlacesQuery(request), request.areaIso),
     fetchServices: (request) => run(buildServicesQuery(request), request.areaIso),
+    fetchDistricts: (areaIso) => run(buildDistrictsQuery(areaIso), areaIso),
   };
 }
 

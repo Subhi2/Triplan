@@ -49,6 +49,34 @@ export const weatherDbCache: JsonCache = {
   set: (key, value) => geocodeDbCache.set(key, value),
 };
 
+/**
+ * geocode_cache read with a shorter life than its 30 days, for answers that change: SACHET alert
+ * feeds (10 minutes), alert messages and areas (7 days).
+ */
+export function geocodeTtlCache(ttlMs: number): JsonCache {
+  return {
+    async get(key) {
+      const [row] = await getDb()
+        .select({ response: geocodeCache.response })
+        .from(geocodeCache)
+        .where(and(eq(geocodeCache.query, key), gt(geocodeCache.createdAt, since(ttlMs))));
+      return row?.response;
+    },
+    set: (key, value) => geocodeDbCache.set(key, value),
+  };
+}
+
+/** Deletes cached SACHET feeds, alerts and areas older than 8 days. Returns how many. */
+export async function forgetOldAlerts(): Promise<number> {
+  const rows = await getDb().execute(sql`
+    DELETE FROM geocode_cache WHERE query IN (
+      SELECT query FROM geocode_cache
+      WHERE query LIKE 'sachet:%' AND created_at < now() - interval '8 days'
+      LIMIT ${PRUNE_BATCH})
+    RETURNING query`);
+  return rows.length;
+}
+
 /** Deletes cached forecasts older than a day. Returns how many were deleted. */
 export async function forgetOldForecasts(): Promise<number> {
   const rows = await getDb().execute(sql`

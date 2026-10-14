@@ -35,6 +35,9 @@ export default defineConfig({
       GOOGLE_MAPS_API_KEY: "",
       // No AI key: "plan in plain words" stays hidden and nothing calls the model.
       ANTHROPIC_API_KEY: "",
+      // SACHET points nowhere: the alert feeds are not read from tests (the ride check says it
+      // could not load them, and the planner carries on).
+      SACHET_BASE_URL: "http://127.0.0.1:9/cap_public_website",
       // Feature counts are not written to the database from tests.
       USAGE_EVENTS_OFF: "1",
     },

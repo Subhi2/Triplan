@@ -18,17 +18,19 @@ import { DynamicRidePreview } from "@/components/ride/DynamicRidePreview";
 import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
 import { useDayPlan } from "@/components/route/useDayPlan";
+import { useRouteAlerts } from "@/components/route/useRouteAlerts";
 import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { RetryAlert } from "@/components/ui/RetryAlert";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
+import { alertsForRide } from "@/lib/alerts";
 import { categoryStyle } from "@/lib/categories";
 import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 import { DEFAULT_RIDE_HOURS, suggestDays, type RideHours } from "@/lib/multiDay";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
-import { defaultDeparture } from "@/lib/rideCheck";
+import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
 import type { RideSummary } from "@/lib/rides";
 import { tripHeadline } from "@/lib/site";
@@ -59,6 +61,9 @@ const RouteProfile = dynamic(() =>
 const DaySplit = dynamic(() => import("@/components/route/DaySplit").then((m) => m.DaySplit));
 const SafetyStops = dynamic(() =>
   import("@/components/route/SafetyStops").then((m) => m.SafetyStops),
+);
+const RouteAlerts = dynamic(() =>
+  import("@/components/route/RouteAlerts").then((m) => m.RouteAlerts),
 );
 const RideCheck = dynamic(() => import("./RideCheck").then((m) => m.RideCheck));
 const StoryShare = dynamic(() => import("@/components/ride/StoryShare").then((m) => m.StoryShare));
@@ -246,6 +251,15 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     safety.status === "ok" && safetyKind
       ? safety.summary.points.filter((p) => p.kind === safetyKind)
       : undefined;
+  // Official alerts on the selected route, kept to those in force while the rider is out.
+  const alerts = useRouteAlerts(selectedRoute);
+  const rideAlerts = useMemo(
+    () =>
+      alerts.status === "ok" && selectedRoute
+        ? alertsForRide(alerts.alerts, fromDateTimeLocal(departure), selectedRoute.durationMin)
+        : [],
+    [alerts, departure, selectedRoute],
+  );
   const hoursPerDay = rideHours ?? DEFAULT_RIDE_HOURS[vehicle];
   const suggestedDays = selectedRoute ? suggestDays(selectedRoute.durationMin, hoursPerDay) : 1;
   const days = dayCount ?? suggestedDays;
@@ -582,6 +596,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           </>
         )}
       </section>
+      {selectedRoute && rideAlerts.length > 0 && <RouteAlerts alerts={rideAlerts} />}
       {selectedRoute && (
         <RouteProfile
           key={selectedRoute.id}
@@ -634,6 +649,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           to={{ label: last.label, location: last.location }}
           departure={departure}
           onDepartureChange={setDeparture}
+          alerts={alerts}
           hospitalGap={
             safety.status === "ok" && safety.summary.counts.hospital > 0
               ? safety.summary.longestGap.hospital
