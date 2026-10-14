@@ -25,11 +25,12 @@ import { useRouteProfiles } from "@/components/route/useRouteProfiles";
 import { RetryAlert } from "@/components/ui/RetryAlert";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { alertsForRide } from "@/lib/alerts";
+import { planBreaks } from "@/lib/breaks";
 import { categoryStyle } from "@/lib/categories";
 import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
-import { DEFAULT_RIDE_HOURS, suggestDays, type RideHours } from "@/lib/multiDay";
+import { DEFAULT_RIDE_HOURS, routeTimeline, suggestDays, type RideHours } from "@/lib/multiDay";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
@@ -256,6 +257,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const alerts = useRouteAlerts(selectedRoute);
   // Night bans, permits, e-passes and fees on the selected route.
   const rules = useRouteRules(selectedRoute);
+  // Food, coffee and fuel within 2 km; the break planner keeps those within 1 km.
+  const breakPlaces = usePlacesAlong(selectedRoute, 2, ["coffee", "food", "fuel"]);
   const rideAlerts = useMemo(
     () =>
       alerts.status === "ok" && selectedRoute
@@ -272,6 +275,20 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       ? dayState.plan
       : null;
   const nights = dayPlan ? dayPlan.legs.slice(0, -1).map((l) => l.end) : [];
+  const breakPlan = useMemo(() => {
+    if (!selectedRoute || breakPlaces.status !== "ok") return null;
+    const departAt = fromDateTimeLocal(departure);
+    if (!departAt) return null;
+    const timeline =
+      rules.status === "ok" && rules.timeline
+        ? rules.timeline
+        : routeTimeline(undefined, selectedRoute.distanceKm, selectedRoute.durationMin);
+    return planBreaks(breakPlaces.places, {
+      departAt,
+      timeline,
+      days: dayPlan?.legs.map((l) => ({ fromKm: l.fromKm, toKm: l.toKm })),
+    });
+  }, [selectedRoute, breakPlaces, departure, rules, dayPlan]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const closePreview = useCallback(() => setPreviewOpen(false), []);
   const mapCursor =
@@ -660,6 +677,10 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
               ? safety.summary.longestGap.hospital
               : null
           }
+          breaks={breakPlan}
+          breaksError={breakPlaces.status === "error"}
+          pickedIds={pickedIds}
+          onBreakToggle={(place) => setPlacePicked(place, !pickedIds.has(place.id))}
         />
       )}
     </div>
@@ -682,6 +703,9 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           activePlaceId={activePlaceId}
           hoverPlaceId={hoverPlaceId}
           nights={nights.map((n) => ({ km: n.kmFromStart, name: n.name }))}
+          breaks={breakPlan?.stops ?? []}
+          pickedIds={pickedIds}
+          onBreakToggle={(place) => setPlacePicked(place, !pickedIds.has(place.id))}
         />
         <SafetyStops
           state={safety}

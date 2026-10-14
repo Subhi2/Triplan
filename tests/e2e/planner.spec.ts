@@ -1041,6 +1041,58 @@ test("a night ban on the road is checked against the start time, and permits are
   await expect(check.getByRole("link", { name: "epass.example.org" })).toBeVisible();
 });
 
+test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/places/along");
+  const cafe = {
+    id: "place/ghat-cafe",
+    slug: "ghat-cafe",
+    name: "Ghat Cafe",
+    category: "coffee",
+    location: [75.7, 13.0],
+    kmFromStart: 135,
+    detourKm: 0.2,
+    rating: null,
+    ratingCount: 0,
+    bestMonths: [],
+    bestMonthsEstimated: false,
+    thumbUrl: null,
+    trending: false,
+    notable: false,
+  };
+  const dhaba = {
+    ...cafe,
+    id: "place/highway-dhaba",
+    slug: "highway-dhaba",
+    name: "Highway Dhaba",
+    category: "food",
+    kmFromStart: 245,
+  };
+  await page.route("**/api/places/along", (route) => {
+    const body = route.request().postDataJSON() as { categories?: string[] };
+    const places = body.categories?.includes("coffee") ? [cafe, dhaba] : [];
+    return route.fulfill({ json: { places } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  const breaks = check.getByRole("list", { name: "Suggested breaks" });
+  await expect(breaks).toContainText("Ghat Cafe");
+  await expect(breaks).toContainText("Highway Dhaba");
+
+  const cup = page.getByRole("button", { name: "Break at Ghat Cafe, km 135" });
+  await cup.click();
+  await expect(cup).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
+});
+
 test("download the trip as a GPX file with the route, stops and places", async ({ page }) => {
   await mockApis(page, []);
   await mockPlace(page);

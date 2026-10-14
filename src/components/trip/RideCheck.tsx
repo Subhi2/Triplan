@@ -5,6 +5,7 @@ import { usePlacesAlong } from "@/components/place/usePlacesAlong";
 import type { AlertsState } from "@/components/route/useRouteAlerts";
 import type { RulesState } from "@/components/route/useRouteRules";
 import { alertLine, alertsForRide, alertTone } from "@/lib/alerts";
+import type { BreakPlan } from "@/lib/breaks";
 import { formatDuration } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
 import { routeTimeline } from "@/lib/multiDay";
@@ -18,6 +19,7 @@ import {
   planDaylight,
   RANGE_LIMITS_KM,
 } from "@/lib/rideCheck";
+import type { PlaceAlong } from "@/lib/places";
 import { checkRules, closedHours, SPARE_WARN_MIN, type RuleCheck } from "@/lib/roadRules";
 import type { Gap } from "@/lib/safety";
 import type { RouteOption, Vehicle } from "@/lib/trip";
@@ -40,6 +42,12 @@ interface Props {
   rules?: RulesState;
   /** With a multi-day split, each day's km: a day starts at the same time of day as the first. */
   days?: { fromKm: number; toKm: number }[];
+  /** Suggested breaks. Null while the food, coffee and fuel stops are still loading. */
+  breaks?: BreakPlan<PlaceAlong> | null;
+  /** The break stops could not be loaded. */
+  breaksError?: boolean;
+  pickedIds?: ReadonlySet<string>;
+  onBreakToggle?: (place: PlaceAlong) => void;
 }
 
 /** A stretch without a hospital longer than these is worth knowing about (km). */
@@ -198,6 +206,10 @@ export function RideCheck({
   alerts = { status: "idle" },
   rules = { status: "idle" },
   days,
+  breaks = null,
+  breaksError = false,
+  pickedIds,
+  onBreakToggle,
 }: Props) {
   const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
   const [rangeText, setRangeText] = useState(String(DEFAULT_RANGE_KM[vehicle]));
@@ -498,6 +510,56 @@ export function RideCheck({
               {daylight.longDay && daylight.verdict === "day" && (
                 <p>That is over 10 hours on the road: think about a night stop on the way.</p>
               )}
+            </Check>
+          )}
+
+          {breaksError && (
+            <Check tone="muted" title="Breaks">
+              <p className="text-stone-600 dark:text-stone-400">Could not look for break stops.</p>
+            </Check>
+          )}
+          {!breaksError && breaks === null && (
+            <Check tone="muted" title="Breaks">
+              <p className="text-stone-600 dark:text-stone-400">Looking for a stop every 2 hours…</p>
+            </Check>
+          )}
+          {breaks && breaks.marks.length > 0 && (
+            <Check
+              tone={breaks.stops.length > 0 ? "ok" : "warn"}
+              title={
+                breaks.stops.length > 0
+                  ? `Breaks: ${breaks.stops.length} stop${breaks.stops.length === 1 ? "" : "s"} along the way`
+                  : "Breaks: no food, coffee or fuel near the 2-hour marks"
+              }
+            >
+              {breaks.stops.length > 0 && (
+                <ul aria-label="Suggested breaks" className="space-y-1">
+                  {breaks.stops.map((b) => {
+                    const on = pickedIds?.has(b.place.id) ?? false;
+                    return (
+                      <li key={b.place.id}>
+                        <button
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => onBreakToggle?.(b.place)}
+                          className="min-h-11 w-full rounded-md px-1 text-left md:min-h-9"
+                        >
+                          <span className="font-medium">{b.place.name}</span>
+                          <span className="text-stone-600 dark:text-stone-400">
+                            {" "}
+                            · km {Math.round(b.place.kmFromStart)} · about {time.format(b.arriveAt)}
+                            {on ? " · ticked" : ""}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                A stop within 1 km of the road, near every 2 hours of riding, outside 2–4 pm where
+                there is a choice. A tap ticks it for the trip.
+              </p>
             </Check>
           )}
 
