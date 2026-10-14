@@ -8,6 +8,7 @@ Find places that riders post about on YouTube and Instagram before they appear o
 - **Link and embed, never re-host.** Store the post URL, creator, caption and our own extracted facts. Show videos with the official embed players. Credit the creator on the place page.
 - **Human in the loop.** Nothing discovered goes live without admin approval. Many "hidden" spots are on private land, in forest reserves, or unsafe in monsoon; the reviewer sets `permit_needed`, `avoid_months` and notes, or rejects.
 - **Respect takedown requests** from creators and landowners (admin can hide a place and its linked posts).
+- **Refresh or delete YouTube data within 30 days.** YouTube's [developer policies](https://developers.google.com/youtube/terms/developer-policies-guide) do not allow keeping API data longer without refreshing it. Keep the video id, the link to the place and our own extracted facts. The nightly job refreshes the title, description and counts of posts older than 30 days with `videos.list` (1 unit per 50 ids), or clears them when the video is gone. `trending_score` uses only counts fetched in the last 30 days.
 
 ## Sources
 

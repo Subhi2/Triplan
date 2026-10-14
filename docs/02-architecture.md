@@ -28,6 +28,7 @@ src/
     place/[slug]/page.tsx       # place page (ISR, 1 hour)
     trips/page.tsx              # the trips saved or opened on this device
     trips/[id]/page.tsx         # the planner opened with a saved trip (its share link)
+    ride/[room]/page.tsx        # Ride together: the group's live map (G5)
     place/[slug]/opengraph-image.tsx, trips/[id]/opengraph-image.tsx   # share cards
     og/plan/route.tsx           # share card of an unsaved planner link
     sitemap.ts, robots.ts
@@ -35,6 +36,9 @@ src/
     api/
       geocode/route.ts          # GET ?q=
       route/route.ts            # POST trip -> routes
+      route/alerts/route.ts     # POST {routeId | geometry} -> official alerts on the route (G5)
+      route/upload/route.ts     # POST {geometry} -> route id for a rider's own GPX (G5)
+      reports/route.ts          # road reports (G5)
       places/along/route.ts     # POST {routeId | geometry, corridorKm, categories}
       places/near/route.ts      # GET ?lng&lat&within&vehicle&categories&mode -> NearbyResponse
       places/[slug]/route.ts    # GET -> PlaceDetail
@@ -52,7 +56,8 @@ src/
     db/                         # drizzle schema, client, migrations
     og/                         # share card layouts and their bundled fonts
     providers/
-      routing/                  # RoutingProvider interface, osrm.ts, google.ts (later)
+      routing/                  # RoutingProvider interface, osrm.ts, valhalla.ts (scenic option, G5)
+      alerts/                   # AlertsProvider, sachet.ts (NDMA CAP feeds, G5)
       geocoding/                # GeocodingProvider, photon.ts (suggestions), nominatim.ts (Enter)
       google/                   # places.ts (Places API New), budget.ts (daily call budget)
       social/                   # youtube.ts, instagram.ts
@@ -101,6 +106,13 @@ export interface RouteResult {
 - OSRM often finds fewer than 3 routes (Bengaluru → Samse: 2). `src/server/services/altRoutes.ts` tops them up by routing through a town: candidate towns lie on the way (start → town → end at most 15% longer in a straight line, 20–85% of the way along) and at least 8 km from every route found so far, most on-the-way first. A new route is kept if it is at most 20% longer and 15% slower than the best one and shares at most 80% of its length with an existing one. At most 3 towns are tried per search (one OSRM request each, cached like any route).
 - The public demo server only has the car profile and is for light use. Use `driving` for both bike and car and scale duration by 1.1 for bikes. Self-host OSRM with the India extract from Geofabrik before launch.
 - Cache route responses in a `route_cache` table keyed by a hash of (waypoints rounded to 5 decimals, profile, alternatives) for 7 days. The key carries a version (`route:v2`), bumped whenever `RouteResult` changes.
+
+### Valhalla (the Scenic option, G5)
+
+- One more route option that keeps off highways: `POST {VALHALLA_BASE_URL}/route` with `costing: "motorcycle"` and `costing_options.motorcycle.use_highways: 0.2` for a bike (0 avoids highways, 1 prefers them, default 0.5), or `costing: "auto"` with `use_highways: 0.3` for a car. `use_trails` stays 0 (no tracks or bad surfaces).
+- `valhalla.ts` implements `RoutingProvider` and maps the answer to `RouteResult`: the shape (polyline6) to the geometry, each maneuver's street names to `roads[]` refs for the road mix, and the time to `durationS` (no 1.1 scaling: the motorcycle costing has its own speeds).
+- The public FOSSGIS server allows 1 request a second per user and asks apps to send `X-Client-Id` and to announce themselves on Valhalla's GitHub Discussions. Requests share the routing throttle and are cached like OSRM's under `valhalla:v1:` keys. Self-host Valhalla with the India extract before launch.
+- `routeService` asks for it once per search, after OSRM, and keeps it only when it shares under 80% of its length with the routes already found. Empty `VALHALLA_BASE_URL` turns it off.
 
 ### Road mix on route cards
 
@@ -387,6 +399,8 @@ Most riders plan on a phone, so the layout below 768 px is designed for it, and 
 Default list order is by km. Also compute a `score` for "top picks" badges:
 `score = bayesian_rating * log(1 + review_count) * category_weight - detour_km * 0.05 + trending_boost`.
 
+G5 adds "Best stops for my time" (an orienteering pick within a time budget) and Popular ↔ Offbeat (re-ranking within each 10 km stretch). The Bayesian rating uses the category's mean as its prior, with a weight of 5 reviews.
+
 ## Caching
 
 - Route responses: DB cache, 7 days. OSRM table answers (Near me) share the table under `table:v1:` keys.
@@ -394,12 +408,14 @@ Default list order is by km. Also compute a `score` for "top picks" badges:
 - Places along route: no cache needed at MVP scale; add one keyed on (route hash, corridor, categories) if needed.
 - Next.js: place detail pages are statically generated with revalidation (ISR, 1 hour).
 - Google: nothing is cached except `place.google_place_id` (see "Google Maps Platform").
+- Alerts (G5): SACHET feeds 10 minutes, messages 7 days, outlines until the alert expires, in `geocode_cache` under `sachet:` keys.
+- Offline packs (G5): written by the page into `pack-*` caches and IndexedDB, never by the service worker's rules.
 
 - **Service worker** (`src/app/sw.ts`, Serwist): pages, scripts, styles, fonts and open map tiles are cached by Serwist's default rules. Our `/api/` answers and anything from Google's hosts are network only, never stored: Google content may not be cached (Maps ToS 3.2.3(b)), and `/api/places/near` carries the rider's position (`src/lib/swCache.ts`, G4). A page that cannot load with no connection and is not cached shows `/~offline`, which is precached. It says what still works and suggests GPX or Google Maps before riding out of signal.
 
 ## Auth and security
 
-- No sign-in for the MVP: the app is open, and saved trips have no owner (see "Saved trips"). If accounts are added later: Supabase Auth, with server components reading the session through `@supabase/ssr`.
+- No sign-in for riders: the app is open, and saved trips have no owner (see "Saved trips"). Reviews, photos and road reports need no account either (see "Reviews, photos and road reports"). Only admins sign in: Supabase Auth, with server components reading the session through `@supabase/ssr` (G5).
 - Row Level Security on every user-writable table (`review`, `trip`, `place_submission`, `media` uploads): users can read public rows and write their own; admins (role in `profile.role`) can moderate.
 - API route handlers validate input with Zod and rate-limit writes per user (e.g. 20 reviews/day).
 - Uploaded images: max 8 MB, resized to 1600 px and 400 px thumbnails, EXIF location stripped unless the user opts in to use it as the place pin.
@@ -425,6 +441,77 @@ A route longer than a day's riding is cut into days, each night in a town on the
 - **API**: `POST /api/route/days { routeId | geometry, distanceKm, durationMin; hoursPerDay; days? }` → `{ suggestedDays, days, hoursPerDay, legs }`, each leg with its km, riding minutes and end (town, road or destination, with stays). One day needs no database. An expired route id is 404 `ROUTE_NOT_FOUND` and the browser resends the geometry and totals.
 - **Planner**: `DaySplit` under the Preview and Story buttons: a route that fits in a day shows one line with the hours a day and "Split over 2 days"; longer ones show "Over N days" with − and +, the hours a day, and a timeline of the days (km, riding time, "Night in Hosapete · 24 stays within 5 km", the stays). The road strip marks each night with a tick; the place list has a "Night in Hosapete · day 2" divider where each day starts. The URL keeps `rh` (hours a day, when not the default) and `d` (days, when not the suggested number).
 - **GPX**: with a split, one track per day ("Day 1: Pune → Hosapete", cut exactly at each night with `sliceLine`) instead of one for the route, and each night and its stays as Lodging waypoints.
+
+## Alerts on the route (G5)
+
+Official warnings from NDMA's SACHET (Common Alerting Protocol), for the area the route crosses.
+
+- **Source**: one RSS feed per state or union territory, `{SACHET_BASE_URL}/rss_<name>.xml`, where `<name>` is SACHET's own short name (`karnataka`, `tamil`, `andhra`, `west`, `uttar`, `madhya`, `himachal`, `jammu`, …, kept beside `OSM_REGIONS`). The feed says it is public domain. Each item is one alert from IMD, CWC, a state disaster authority or INCOIS. It links to a CAP 1.2 message (`FetchXMLFile?identifier=`) with the event, severity, urgency, certainty, onset, expiry, headline, the districts (LGD codes), and a "Polygon URL" parameter. That URL is a separate file (`FetchPolygonXMLFile?identifier=`) of district outlines as `lat,lon` pairs, 100–500 KB each. The feeds have no CORS, so only the server reads them.
+- **Reading** (`src/server/providers/alerts/sachet.ts`, behind `AlertsProvider`): the feeds of the states whose box meets the route's box; items from the last 3 days; their messages, English when there is a choice, with `Cancel` messages dropping the alerts they refer to; then the outlines of the alerts not yet expired. Outlines are simplified to about 200 m and flipped to [lng, lat]. Everything is validated with Zod and parsed with `fast-xml-parser` (MIT).
+- **Limits and caching**: at most 40 messages and 12 outline files per request, 4 requests at a time, 10 s timeout each, identified with `NOMINATIM_USER_AGENT`. Stored in `geocode_cache` through `softCache`: a feed for 10 minutes (`sachet:feed:`), a message for 7 days (`sachet:cap:`), outlines until the alert expires (`sachet:poly:`). A feed or file that fails is skipped; the planner never waits on alerts.
+- **On the route** (`src/lib/alerts.ts`, pure): an alert is on the route when a point of the route, resampled every 500 m, lies inside one of its outlines. Also kept: the first km where that happens, so the ride check can say "at km 182".
+- **API**: `POST /api/route/alerts { routeId | geometry }` → `{ alerts: RouteAlert[] }` (event, headline, severity, issuer, area, onset, expiry, first km, link to the message), worst severity first. An expired route id is 404 `ROUTE_NOT_FOUND`, as for the other route endpoints.
+- **Planner**: a banner on the selected route card coloured by severity (Extreme and Severe red, Moderate orange, Minor yellow), with "+N more", and a line in the ride check. Credit: "Alerts: NDMA SACHET".
+
+## Road rules and permits (G5)
+
+Rules that decide whether a rider may use a road at a time, and what they need for it.
+
+- **Data**: `data/road-rules.json`, curated by hand. Each rule has a slug, a kind (`night_ban`, `permit`, `epass`, `fee`), a title, a line along the road or an area, the hours closed (local time; a range may cross midnight), the vehicles it applies to, the months (empty = all year), the official link, `checked_on`, and a note. A rule is added only after it was checked at its official source, because news and blogs disagree on hours. `pnpm db:seed-road-rules` loads it into `road_rule` (migration 0019), upserting on slug.
+- **Search**: `rules_along_route(geojson, corridor_m)`: rules whose line or area comes within `corridor_m` (default 300 m) of the route, with the km where the route meets each.
+- **Check** (`src/lib/roadRules.ts`, pure): `checkRules(rules, timeline, departure, vehicle)` works out the time the rider reaches each rule with `minAtKm` (the multi-day timeline, breaks included). A night ban gives "closed when you get there" with the latest start that clears it, or "open". The other kinds give "permit needed", "e-pass needed" or "fee". A rule for other vehicles or other months is left out.
+- **Planner**: chips on the selected route card ("Night ban", "Permit") and lines in the ride check, each with its official link and "checked 14 Oct 2026". The famous rides' `notes` link to the same rules.
+
+## Breaks, sunset stop, tolls and helplines (G5)
+
+- **Breaks** (`src/lib/breaks.ts`): a stop near every 2 hours of riding, following road-safety advice (a break every 2 hours or 100 km). Candidates are food and coffee places and fuel stations within 1 km of the road, within 20 minutes of each mark; the nearest wins, and one outside 2–4 pm wins over one inside it. The ride check's arrival already counts 15 minutes per full 2 hours (`breakMinutes`).
+- **Sunset stop** (`src/lib/sunsetStop.ts`): in the last quarter of each day, the highest-ranked viewpoint, peak, beach or lake, with the latest start that reaches it 30 minutes before sunset (`suncalc`).
+- **Tolls**: `service_point` kind `toll` from `barrier=toll_booth` (migration 0020 widens the kind check). Two-wheelers pay no tolls on national highways (NHAI, June 2025), so a bike trip says so and lists none. A car trip lists the plazas on the route (within 200 m) and mentions the FASTag annual pass. We do not show toll amounts: they differ per plaza and change every April.
+- **Trip cost**: km ÷ mileage × fuel price, from values the rider types, remembered per vehicle in `localStorage`. We publish no fuel prices.
+- **Helplines**: 1033 (the NHAI helpline) when the route has national-highway km in its road mix, and 112 always, at the top of "Safety on the way" as `tel:` links.
+
+## Best stops for my time (G5)
+
+- **Pick** (`src/lib/pickStops.ts`, pure): the rider chooses 30 min, 1 h, 2 h or half a day for stops. Each place along the route costs its detour there and back at 40 km/h plus its visit time (`place_guide.visit_duration_min`, else the category's `visitMin`). It is worth its `placeRank`, × 1.3 when in season. This is the orienteering problem of tourist trip design; a greedy pick by worth per minute, then one pass swapping a picked place for a better unpicked one, is close enough for one road. The picks are ticked, so the GPX, Google Maps and the share link use them.
+- **Popular ↔ Offbeat**: re-ranks the default list inside each 10 km stretch of `bestAlongRoute`. A place counts as popular when it is notable, has reviews or has a photo. Mixed is today's order.
+
+## Scenic score (G5)
+
+`src/lib/scenic.ts`, pure, on every route card: scenic places (viewpoint, waterfall, peak, lake, fort, beach, pass) within 2 km of the road per 10 km, plus the ghat share of the road mix, scaled 0–10. It stands in for the scenic-beauty models in research (Quercia et al., Seresinhe et al.), which need street photos we do not have.
+
+## Ride your GPX (G5)
+
+- **Reading**: a GPX, KML or TCX file is read in the browser with `@tmcw/togeojson` (BSD-2). The longest track or route is taken (multi-segment tracks joined), 500 m is cut from each end so a home address is not shared, and it is simplified to 10 m. Files over 10 MB or lines under 2 km are refused.
+- **Upload**: `POST /api/route/upload { geometry, name? }` (`allowRequest`, 20 an hour per visitor) stores a `RouteResult` (distance from the line, time at 40 km/h unless the file has times, no road refs) in `route_cache` under the hash of the line. It answers with a route id, so places along, the profile, hairpins, the 3D replay, the video and `/og/story?route=` work unchanged. Nothing else is kept, and the cache drops it after 7 days.
+
+## Offline trip pack (G5)
+
+- **What is kept**: the corridor's map tiles at zoom 6–13 (5 km either side of the route; the top zoom drops to 12 or 11 when a route would need more than 3,000 tiles), the style, sprites and the glyph ranges it uses, in a `pack-<route id>` cache. The route, places, services, stops, ride check inputs and the trip's URL go into IndexedDB. The page writes them, not the service worker, so the rule that `/api/` answers are never cached by the service worker stays.
+- **OpenFreeMap's offline rules**: at most 3,000 tiles or 50 MB per download, 4 requests at a time, and a User-Agent naming the app. A browser cannot set a User-Agent, so this waits for OpenFreeMap's answer. The fallback is a PMTiles extract of the corridor, cut on the server with `pmtiles extract` and stored in Supabase Storage.
+- **Opening**: `sw.ts` serves tiles from any `pack-*` cache first. The planner, opened with no signal, lists the packs and draws the chosen one from IndexedDB on the MapLibre map. Google's map is never used offline (its tiles may not be stored).
+- **Also kept**: the last trip planned and the last Near me list (G4 F2), the same way.
+
+## Ride together (G5)
+
+- **Room**: `/ride/[room]`, where the room is 128 random bits (base64url), made in the browser from the planner's "Ride together" and shared to WhatsApp with the trip. The page shows the trip's route when its link carries one.
+- **Live positions**: Supabase Realtime on a public channel named after the room. Presence lists who is in, by the nickname each rider picks. Broadcast sends `{ id, lng, lat, heading, at }` every 10 s while the screen is on (Wake Lock, as in Near me's ride mode), rounded to 5 decimals (about 1 m), so riders can find each other. Anyone can drop a regroup pin, sent the same way.
+- **Follow link**: `?follow=1` opens the same map without sharing a position, for family at home.
+- **Privacy**: positions travel only through the Realtime channel. They are never written to the database or logs, and the server never sees them. "Stop sharing" ends it at once, and the page stops after 12 hours. The position is read only after the rider taps "Share my position".
+- **Limits**: Supabase's free plan allows 200 connections and 100 messages a second for the project. A room of 10 riders sends 1 message a second.
+
+## Reviews, photos and road reports (G5)
+
+- **No sign-in for riders**: each write needs an ALTCHA proof of work (the browser solves it in the background; `altcha-lib` checks it with `ALTCHA_HMAC_KEY`), passes `allowWrite` (per salted IP hash), and carries the device's token (as saved trips do). The token lets the device edit or delete its own posts, and `device_hash` keeps one review per place per device.
+- **Pre-screen**: the text goes to Claude Haiku (structured output: spam, abuse, personal data, off-topic, with a reason). The verdict is stored with the post. Flagged posts are hidden; the rest wait for an admin. Without `ANTHROPIC_API_KEY`, everything waits for an admin.
+- **Admin**: `/admin` (review, photo and report queues), behind Supabase Auth email links and `profile.role = 'admin'`. Only admins ever sign in.
+- **Photos**: Supabase Storage, at most 8 MB, resized to 1600 px and 400 px with `sharp`, EXIF removed, licence `user-granted`, credited to the nickname given.
+- **Road reports**: a kind, a point and a short note; they expire after 72 hours (closed, landslide, flooded) or 24 hours (potholes, diversion). Approved reports show on the route (`reports_along_route`) and in the ride check until they expire.
+- **Rating**: a Bayesian average, `(C × m + Σ ratings) / (C + n)` with `m` the category's mean and `C = 5`, so one 5-star review does not top the list. It feeds `placeRank`.
+
+## Open places from Overture (G5)
+
+- **Spike first** (`scripts/spike-open-places.ts`): DuckDB (`@duckdb/node-api`, MIT, dev only) reads Overture's places GeoParquet for a bounding box straight from its public bucket. It counts fuel, food, coffee and stays along two test routes against ours, and prints 50 to check by hand.
+- **Import** (`pnpm db:import-open-places -- --region=<key|all>`): places with confidence 0.7 or more in our categories. Any within 150 m of one of ours with a similar name (`pg_trgm` similarity over 0.4) is skipped. Stored as `source = 'overture'`, `status = 'verified'`, with the record's own licence (CDLA-Permissive-2.0, Apache-2.0 for Foursquare's records, CC0 for AllThePlaces). The About page lists Overture and its licences, and the snapshot manifest notes them. The snapshot stays ODbL, which these permissive licences allow.
 
 ## Plan in plain words
 

@@ -16,7 +16,7 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 | `docs/04-build-plan.md` | Phased build steps. Work through phases in order |
 | `docs/05-hidden-places.md` | YouTube / Instagram discovery pipeline and its rules |
 | `docs/06-seed-data.md` | Seed places for the Bengaluru → Kalasa demo |
-| `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, making money |
+| `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, the research behind G5, making money |
 | `docs/08-design.md` | The "Ghat Road" design: tokens, type, components, layout and motion. Follow it for any UI |
 
 ## Stack (decided)
@@ -25,7 +25,8 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 - **Maps**: **Google Maps JavaScript API** via `@vis.gl/react-google-maps` when a Google key is set; **MapLibre GL JS** via `react-map-gl/maplibre` with OpenStreetMap tiles (OpenFreeMap) otherwise (dev without a key, tests, the offline pack). Both behind the same `MapView` props.
 - **Google Maps Platform fills gaps only** (decided 2026-09-29): photos, rating and reviews for places that have none of our own, and exact Google Maps links. Our own data, OSRM, Photon and the PostGIS corridor search stay the core. See "Google Maps Platform" in `docs/02-architecture.md`.
 - **Supabase**: Postgres with **PostGIS**, Auth, Storage.
-- **Routing**: OSRM (public demo server in dev, self-hosted later) behind a `RoutingProvider` interface so Google Routes / GraphHopper can be swapped in.
+- **Routing**: OSRM (public demo server in dev, self-hosted later) behind a `RoutingProvider` interface so Google Routes / GraphHopper can be swapped in. Valhalla gives the "Scenic" option (G5), behind the same interface.
+- **Alerts**: NDMA SACHET's CAP feeds (public domain), read on the server only (G5, "Alerts on the route" in `docs/02-architecture.md`).
 - **Geocoding**: Photon (komoot, `https://photon.komoot.io/api`) for suggestions while the user types, Nominatim as the fallback when Enter is pressed, both behind the `GeocodingProvider` interface. Our own places are listed before Photon results (see "Place search" in `docs/02-architecture.md`).
 - **Drizzle ORM** for schema and queries; raw SQL for PostGIS functions.
 - **Zod** for validating every API input and external API response.
@@ -50,6 +51,8 @@ pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptio
 pnpm db:link-wikidata                          # link places to Wikidata by name and distance (--dry-run)
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json
+pnpm db:seed-road-rules                        # night bans, permits, e-passes and fees in data/road-rules.json (G5)
+pnpm db:import-open-places -- --region=<key|all>   # food, fuel and stays from Overture Places (G5)
 pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)
 pnpm db:export-snapshot         # rewrite data/snapshot from the live database (read only)
 pnpm screenshots -- --base=<url>  # README screenshots into docs/media
@@ -95,8 +98,11 @@ OVERPASS_URLS=https://overpass-api.de/api/interpreter,...   # OSM imports; serve
 YOUTUBE_API_KEY=                  # phase 6
 INSTAGRAM_ACCESS_TOKEN=           # phase 7, needs Meta app review
 INSTAGRAM_BUSINESS_ACCOUNT_ID=    # phase 7
-ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction
+ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction; G5 review pre-screen
 ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
+SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website/rss   # alerts on the route (G5)
+VALHALLA_BASE_URL=                # the Scenic route option (G5); empty = off. Public FOSSGIS server only after announcing the app
+ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road reports (G5); empty = closed
 ```
 
 ## Things to avoid
@@ -112,3 +118,8 @@ ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
 - The data snapshot (`data/snapshot`) never includes trips, reviews, accounts, usage, caches, users' photos or Google ids (`src/lib/snapshot.ts`). Refresh it with `pnpm db:export-snapshot` after imports.
 - No link to the code repository anywhere in the app (footer, planner, About, metadata); the README is where the repository is. `tests/unit/no-repo-link.test.ts` checks it.
 - Never use Nominatim for search-as-you-type (its usage policy forbids it); suggestions come from our own places and Photon. Photon's public server asks for fair use: keep suggestions debounced (300 ms), cached, and for 2+ characters only.
+- Every road rule shows its official link and the date it was checked. Add or change a rule only after checking it at its official source; news and blogs disagree on hours (G5).
+- Ride-together positions travel only through the Realtime channel: never stored, logged or sent to our server, and only after a tap on "Share my position" (G5).
+- A rider's GPX file is read in the browser; only the line leaves the phone, with 500 m cut from each end (G5).
+- Offline packs keep to OpenFreeMap's offline rules: at most 3,000 tiles or 50 MB per download, 4 requests at a time (G5). The service worker still never stores `/api/` answers; the page writes packs.
+- YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).
