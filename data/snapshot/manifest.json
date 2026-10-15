@@ -1,8 +1,8 @@
 {
   "format": 1,
-  "createdAt": "2026-10-09T15:36:50.166Z",
-  "migration": "0016_place_area",
-  "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row.",
+  "createdAt": "2026-10-15T05:29:53.766Z",
+  "migration": "0021_service_toll",
+  "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url).",
   "tables": [
     {
       "name": "category",
@@ -15,9 +15,9 @@
         "parent_id",
         "weight"
       ],
-      "rows": 19,
-      "bytes": 476,
-      "sha256": "3abbd6c3b982a2c85b7115fab8763e3817cc7996dd12c4296c70008af4d7b52a"
+      "rows": 20,
+      "bytes": 500,
+      "sha256": "306544aa614e0be74c6cba24c74b2980f0311fea5d4c7a576eb4b86c403dcd40"
     },
     {
       "name": "carry_item",
@@ -61,11 +61,15 @@
         "osm_tags",
         "photos_checked_at",
         "google_place_checked_at",
-        "area"
+        "area",
+        "description_source",
+        "description_license",
+        "description_url",
+        "description_checked_at"
       ],
-      "rows": 93033,
-      "bytes": 11654190,
-      "sha256": "6c8514ace8534c5bdad20c8b1b12692aad6fea7b7037d5cb5c15d360dde230f8"
+      "rows": 96096,
+      "bytes": 12502253,
+      "sha256": "52344cf6b88a677320f68238d84b30106f8eb5561692ddd245028329f04c0193"
     },
     {
       "name": "place_guide",
@@ -152,9 +156,9 @@
         "position",
         "seeded_at"
       ],
-      "rows": 21,
-      "bytes": 1490306,
-      "sha256": "6c74e8bdaa50bf54863598dfdbbb99318a7e7fdefd724d1715ffbe8bef7d1812"
+      "rows": 27,
+      "bytes": 1842972,
+      "sha256": "a333b9fe02ca85beba663e630705bde0b25d18231d837e489180d9f0f57c619e"
     },
     {
       "name": "service_point",
@@ -171,6 +175,44 @@
       "rows": 113989,
       "bytes": 4028498,
       "sha256": "32a3a0efde42beee2d19fe73de46fc5f3e92fe3a1cff3610ae0a2a9acffb79b6"
+    },
+    {
+      "name": "district",
+      "file": "district.ndjson.gz",
+      "columns": [
+        "osm_id",
+        "lgd_code",
+        "name",
+        "names",
+        "region",
+        "geom",
+        "updated_at"
+      ],
+      "rows": 767,
+      "bytes": 3372442,
+      "sha256": "56629753b6815a4909732fbbd93fceabbc1529b9a37e6faaf1d9473382a1a97b"
+    },
+    {
+      "name": "road_rule",
+      "file": "road_rule.ndjson.gz",
+      "columns": [
+        "slug",
+        "kind",
+        "title",
+        "geom",
+        "closed_from",
+        "closed_to",
+        "vehicles",
+        "months",
+        "link",
+        "source",
+        "checked_on",
+        "note",
+        "seeded_at"
+      ],
+      "rows": 10,
+      "bytes": 140474,
+      "sha256": "aaac0efa35a9cbdaaa43b75f7c62906347c3cf6aab20b94768c63576480ad66b"
     }
   ]
 }

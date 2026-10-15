@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 // The data snapshot (docs/02-architecture.md, "One-command data setup"): our public tables as
-// gzipped JSON lines with a manifest, so a fresh clone gets every place, photo credit, famous ride and
-// service point with `pnpm db:setup` instead of hours of throttled imports.
+// gzipped JSON lines with a manifest, so a fresh clone gets every place, photo credit, famous ride,
+// service point, district and road rule with `pnpm db:setup` instead of hours of throttled imports.
 
 export const SNAPSHOT_FORMAT = 1;
 
@@ -16,6 +16,8 @@ export const SNAPSHOT_TABLES = [
   "media",
   "ride",
   "service_point",
+  "district",
+  "road_rule",
 ] as const;
 export type SnapshotTable = (typeof SNAPSHOT_TABLES)[number];
 
@@ -53,6 +55,8 @@ const SNAPSHOT_ORDER: Record<SnapshotTable, string> = {
   media: "id",
   ride: "position, slug",
   service_point: "osm_id",
+  district: "osm_id",
+  road_rule: "slug",
 };
 
 /** Serial ids whose sequences are moved past the loaded rows. */
