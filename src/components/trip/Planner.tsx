@@ -37,6 +37,7 @@ import {
   bestAlongRoute,
   STRETCH_KM,
   type ListMix,
+  ROUTE_ID_PATTERN,
   type PlaceAlong,
 } from "@/lib/places";
 import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
@@ -57,6 +58,7 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { GoogleMapsBar } from "./GoogleMapsBar";
+import { OpenRideFile } from "./OpenRideFile";
 import { PlannerHeader } from "./PlannerHeader";
 import { RoadStrip } from "./RoadStrip";
 import { RouteCards } from "./RouteCards";
@@ -149,6 +151,15 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const [dayCount, setDayCount] = useState<number | null>(initial.days);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [routeState, setRouteState] = useState<RouteState>({ status: "idle" });
+  // A ride opened from a GPX, KML or TCX file: it stands in for routing while the stops are still
+  // its two ends (changing the vehicle keeps it; changing a stop routes as usual).
+  const [uploaded, setUploaded] = useState<{ route: RouteOption; stopsKey: string } | null>(null);
+  // A reload or shared link of an opened ride (?gpx=<route id>), loaded once.
+  const [gpxPending, setGpxPending] = useState<string | null>(() => {
+    const id = searchParams.get("gpx");
+    return id && ROUTE_ID_PATTERN.test(id) ? id : null;
+  });
+  const [gpxExpired, setGpxExpired] = useState(false);
   // Bumped by "Try again" after a routing error.
   const [routeAttempt, setRouteAttempt] = useState(0);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
@@ -187,11 +198,51 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     rideHours,
     days: dayCount,
   });
+  const stopsKey = JSON.stringify(stops.map((s) => s.location));
+  const rideOpen = uploaded !== null && uploaded.stopsKey === stopsKey;
+  const fullQuery = rideOpen ? `${query}&gpx=${uploaded.route.id}` : query;
   useEffect(() => {
-    if (window.location.search !== `?${query}`) {
-      window.history.replaceState(null, "", `?${query}`);
+    if (window.location.search !== `?${fullQuery}`) {
+      window.history.replaceState(null, "", `?${fullQuery}`);
     }
-  }, [query]);
+  }, [fullQuery]);
+
+  const stopsKeyRef = useRef(stopsKey);
+  stopsKeyRef.current = stopsKey;
+  useEffect(() => {
+    if (!gpxPending) return;
+    const ctrl = new AbortController();
+    fetch(`/api/route/upload?id=${gpxPending}`, { signal: ctrl.signal })
+      .then(async (res) => {
+        const data = (await res.json().catch(() => ({}))) as { route?: RouteOption };
+        if (data.route) setUploaded({ route: data.route, stopsKey: stopsKeyRef.current });
+        else setGpxExpired(true);
+      })
+      .catch(() => {
+        if (!ctrl.signal.aborted) setGpxExpired(true);
+      })
+      .finally(() => {
+        if (!ctrl.signal.aborted) setGpxPending(null);
+      });
+    return () => ctrl.abort();
+  }, [gpxPending]);
+
+  function openRide(route: RouteOption, name: string | null) {
+    const coords = route.geometry.coordinates as LngLat[];
+    const label = name ?? "your ride";
+    const next = [
+      draft({ label: `Start of ${label}`, location: coords[0]! }),
+      draft({ label: `End of ${label}`, location: coords.at(-1)! }),
+    ];
+    setUploaded({
+      route: name ? { ...route, viaLabel: name } : route,
+      stopsKey: JSON.stringify(next.map((s) => s.location)),
+    });
+    setGpxExpired(false);
+    setStops(next);
+    setPicked([]);
+    trackEvent("gpx_opened");
+  }
 
   // Route whenever start and destination are set. Unresolved via stops are skipped.
   const routeBody = useMemo(
@@ -210,6 +261,16 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   );
 
   useEffect(() => {
+    if (gpxPending) {
+      setRouteState({ status: "loading" });
+      return;
+    }
+    if (rideOpen) {
+      setRouteState({ status: "ok", routes: [uploaded.route] });
+      setSelectedRouteId(uploaded.route.id);
+      setActivePlaceId(null);
+      return;
+    }
     if (!routeBody) {
       setRouteState({ status: "idle" });
       return;
@@ -239,7 +300,9 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
         });
       });
     return () => ctrl.abort();
-  }, [routeBody, routeAttempt]);
+    // uploaded is read only when rideOpen says it matches the stops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeBody, routeAttempt, rideOpen, gpxPending]);
 
   const routes = routeState.status === "ok" ? routeState.routes : [];
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
@@ -923,6 +986,15 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
               onVehicleChange={setVehicle}
               onCorridorChange={setCorridorKm}
             />
+            <div className="mt-3">
+              <OpenRideFile onOpened={openRide} />
+            </div>
+            {gpxExpired && (
+              <p role="status" className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                That opened ride has expired (rides are kept for 7 days), so this is the route
+                between its ends. Open the file again to see the ride itself.
+              </p>
+            )}
           </div>
         ) : null}
 

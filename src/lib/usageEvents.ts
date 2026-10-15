@@ -14,6 +14,7 @@ export const USAGE_EVENTS = [
   "plain_words",
   "near_me",
   "stops_picked",
+  "gpx_opened",
 ] as const;
 
 export type UsageEvent = (typeof USAGE_EVENTS)[number];

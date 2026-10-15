@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RouteInput, RoutingProvider } from "@/server/providers/routing";
-import { getRouteGeometry, getRoutes, type RouteServiceDeps } from "@/server/services/routeService";
+import {
+  getRouteGeometry,
+  getRoutes,
+  getUploadedRoute,
+  saveUploadedRoute,
+  uploadCacheKey,
+  UPLOAD_KMH,
+  type RouteServiceDeps,
+} from "@/server/services/routeService";
 import type { CandidateTown } from "@/server/services/altRoutes";
 import type { TownOnRoute } from "@/server/services/viaLabel";
 import { routeFixture } from "../helpers/fixtures";
@@ -184,5 +192,49 @@ describe("getRouteGeometry", () => {
     expect(await getRouteGeometry(second!.id, cache)).toEqual(routes[1]!.geometry);
     expect(await getRouteGeometry(second!.id.replace(/-1$/, "-2"), cache)).toBeNull();
     expect(await getRouteGeometry("not-an-id", cache)).toBeNull();
+  });
+});
+
+describe("uploaded rides", () => {
+  const coords: [number, number][] = Array.from({ length: 101 }, (_, i) => [
+    75.5 + Math.sin(i / 5) * 0.01,
+    13 + i * 0.0009,
+  ]);
+  const geometry = { type: "LineString" as const, coordinates: coords };
+
+  function memoryCache() {
+    const store = new Map<string, unknown>();
+    return {
+      store,
+      get: async (k: string) => store.get(k),
+      set: async (k: string, v: unknown) => void store.set(k, v),
+    };
+  }
+
+  it("keeps only the line, under a hash of it, timed at 40 km/h without the file's times", async () => {
+    const cache = memoryCache();
+    const d = {
+      ...deps("bengaluru-kalasa", [[t("Mudigere", 5)]]),
+      scenicAlong: vi.fn(async () => ({ viewpoint: 2 })),
+    };
+    const route = await saveUploadedRoute(geometry, null, d, cache);
+
+    expect(route.id).toMatch(/^[0-9a-f]{32}-0$/);
+    expect(route.viaLabel).toBe("Your ride");
+    expect(route.towns).toEqual(["Mudigere"]);
+    expect(route.roadMix).toBeNull(); // no road numbers in a file
+    expect(route.scenic?.sights).toBe(2);
+    expect(route.durationMin).toBe(Math.round((route.distanceKm / UPLOAD_KMH) * 60));
+    expect(d.routing.route).not.toHaveBeenCalled();
+    // One entry: the routing result with the line, nothing else.
+    expect([...cache.store.keys()]).toEqual([uploadCacheKey(geometry)]);
+    const [stored] = cache.store.values() as Iterable<{ geometry: unknown; legs: unknown[] }[]>;
+    expect(Object.keys(stored![0]!).sort()).toEqual(["distanceM", "durationS", "geometry", "legs"]);
+
+    // The same ride again gets the same id, and the id reads it back.
+    expect((await saveUploadedRoute(geometry, 3600, d, cache)).id).toBe(route.id);
+    const back = await getUploadedRoute(route.id, d, cache);
+    expect(back?.durationMin).toBe(60);
+    expect(await getUploadedRoute(route.id.replace(/^./, "f"), d, cache)).toBeNull();
   });
 });

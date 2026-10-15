@@ -1233,6 +1233,65 @@ test("every route card has a scenic score, and the most scenic slower one is lab
   await expect(chik.getByText("Scenic", { exact: true })).toHaveCount(0);
 });
 
+test("open a GPX ride: only the line is sent, without its ends, and a reload keeps it", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  // A 12 km ride north from 13.00° N; its first and last 500 m must stay on the phone.
+  const points = Array.from({ length: 121 }, (_, i) => [
+    75.5 + Math.sin(i / 8) * 0.004,
+    13 + i * 0.0009,
+  ]);
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>Charmadi morning</name><trkseg>
+${points.map(([lng, lat]) => `    <trkpt lat="${lat!.toFixed(6)}" lon="${lng!.toFixed(6)}"></trkpt>`).join("\n")}
+  </trkseg></trk>
+</gpx>`;
+  const [, sak] = options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"]);
+  const ride = { ...sak!, id: `${"a".repeat(32)}-0`, viaLabel: "Your ride", roadMix: null };
+  const uploads: { geometry: { coordinates: [number, number][] } }[] = [];
+  const reads: string[] = [];
+  await page.route("**/api/route/upload**", (route) => {
+    if (route.request().method() === "POST") {
+      uploads.push(route.request().postDataJSON());
+      return route.fulfill({ json: { route: ride } });
+    }
+    reads.push(route.request().url());
+    return route.fulfill({ json: { route: ride } });
+  });
+  const routing: unknown[] = [];
+  page.on("request", (r) => {
+    if (r.url().endsWith("/api/route") && r.method() === "POST") routing.push(r.url());
+  });
+  await page.goto("/");
+
+  await page.getByTestId("ride-file").setInputFiles({
+    name: "charmadi.gpx",
+    mimeType: "application/gpx+xml",
+    buffer: Buffer.from(gpx),
+  });
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText("Charmadi morning");
+  expect(routing).toHaveLength(0); // the ride stands in for routing
+
+  // No point within 500 m of either end left the phone.
+  const sent = uploads[0]!.geometry.coordinates;
+  const metres = ([a, b]: number[], [c, d]: number[]) =>
+    Math.hypot((a! - c!) * 111_320 * Math.cos((b! * Math.PI) / 180), (b! - d!) * 110_574);
+  for (const p of sent) {
+    expect(metres(p, points[0]!)).toBeGreaterThan(490);
+    expect(metres(p, points.at(-1)!)).toBeGreaterThan(490);
+  }
+  await expect(page).toHaveURL(/gpx=a{32}-0/);
+
+  // A reload asks for the ride by its id instead of routing between its ends.
+  await page.reload();
+  await expect(cards.first()).toContainText("Your ride");
+  expect(reads.at(-1)).toContain(`id=${"a".repeat(32)}-0`);
+});
+
 test("a sunset stop near the end of the ride, with the time to leave by", async ({ page }) => {
   await mockApis(page, []);
   const view: PlaceAlong = {

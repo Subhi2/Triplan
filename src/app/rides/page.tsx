@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { RideBrowser } from "@/components/ride/RideBrowser";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -28,6 +29,13 @@ export default async function RidesPage() {
           Roads riders talk about: ghats with numbered hairpins, high passes, coasts and deserts.
           Each comes with its route, its climbs, the best months to ride and the places worth
           stopping for, ready to open in the planner.
+        </p>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          Rode one of your own?{" "}
+          <Link href="/" className="text-brand-dark font-bold hover:underline dark:text-teal-300">
+            Open its GPX in the planner
+          </Link>{" "}
+          to see its hairpins, climbs and the places you passed.
         </p>
       </header>
       {rides.length === 0 ? (

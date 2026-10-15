@@ -32,6 +32,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.57.4
         version: 2.117.2
+      '@tmcw/togeojson':
+        specifier: 7.1.2
+        version: 7.1.2
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(next@15.5.26(@playwright/test@1.63.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
@@ -1310,6 +1313,9 @@ packages:
 
   '@tailwindcss/postcss@4.3.3':
     resolution: {integrity: sha512-JTSZZGQi1AyKirbLN3azmjVzef92tcX7h+iSqPdaeStyFpGpDlKvvpxeOE8njhbUanbRwr3z8DyzhICWnMtQeg==}
+
+  '@tmcw/togeojson@7.1.2':
+    resolution: {integrity: sha512-QKnFs9DAuqqBVj4d6c69tV1Dj2TspSBTqffivoN0YoBCVdP/JY1+WaYCJbzU49RkoU5NOSOJ3jtFHCdEUVh21A==}
 
   '@tybys/wasm-util@0.10.4':
     resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
@@ -4287,6 +4293,8 @@ snapshots:
       '@tailwindcss/oxide': 4.3.3
       postcss: 8.5.28
       tailwindcss: 4.3.3
+
+  '@tmcw/togeojson@7.1.2': {}
 
   '@tybys/wasm-util@0.10.4':
     dependencies:

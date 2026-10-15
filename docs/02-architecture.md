@@ -492,7 +492,8 @@ Rules that decide whether a rider may use a road at a time, and what they need f
 ## Ride your GPX (G5)
 
 - **Reading**: a GPX, KML or TCX file is read in the browser with `@tmcw/togeojson` (BSD-2). The longest track or route is taken (multi-segment tracks joined), 500 m is cut from each end so a home address is not shared, and it is simplified to 10 m. Files over 10 MB or lines under 2 km are refused.
-- **Upload**: `POST /api/route/upload { geometry, name? }` (`allowRequest`, 20 an hour per visitor) stores a `RouteResult` (distance from the line, time at 40 km/h unless the file has times, no road refs) in `route_cache` under the hash of the line. It answers with a route id, so places along, the profile, hairpins, the 3D replay, the video and `/og/story?route=` work unchanged. Nothing else is kept, and the cache drops it after 7 days.
+- **Upload**: `POST /api/route/upload { geometry, durationS? }` (`allowRequest`, 20 an hour per visitor) stores a `RouteResult` (distance from the line, time from the file's times for the part kept, else 40 km/h; no road refs, so no road mix) in `route_cache` under the hash of the line (`saveUploadedRoute`). It answers with a `RouteOption` (towns, hairpins, scenic score, labelled "Your ride"), so places along, the profile, the 3D replay, the video and `/og/story?route=` work unchanged. The track's name stays in the browser. Nothing else is kept, and the cache drops it after 7 days.
+- **In the planner**: "Open a GPX, KML or TCX ride" under the trip form (and a pointer on `/rides`). The stops become the line's two ends and the ride stands in for routing until a stop changes; the vehicle can change. The address carries `gpx=<route id>`, and `GET /api/route/upload?id=` rebuilds the card on a reload or a shared link; once expired, the planner says so and routes between the ends. Counted as `gpx_opened`.
 
 ## Offline trip pack (G5)
 
