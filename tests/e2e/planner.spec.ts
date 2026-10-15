@@ -1210,6 +1210,41 @@ test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) 
   await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
 });
 
+test("a sunset stop near the end of the ride, with the time to leave by", async ({ page }) => {
+  await mockApis(page, []);
+  const view: PlaceAlong = {
+    ...FORT,
+    id: "view-id",
+    slug: "kanive-viewpoint",
+    name: "Kanive Viewpoint",
+    category: "viewpoint",
+    location: [75.4, 13.2],
+    kmFromStart: 300,
+    detourKm: 2.6,
+    notable: false,
+  };
+  await page.route("**/api/places/along", (route) =>
+    route.fulfill({ json: { places: [FORT, view] } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  await expect(check).toContainText("Sunset stop: Kanive Viewpoint");
+  const stop = check.getByRole("list", { name: "Sunset stops" }).getByRole("button");
+  await expect(stop).toContainText(/km 300 · sunset \d{1,2}:\d{2}/);
+  await expect(stop).toContainText(/Leave by \d{1,2}:\d{2}/);
+  await stop.click();
+  await expect(stop).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
+});
+
 for (const vehicle of ["bike", "car"] as const) {
   test(`tolls by ${vehicle}, and the fuel cost from the rider's mileage and price`, async ({
     page,

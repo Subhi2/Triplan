@@ -43,6 +43,7 @@ import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
 import type { RideSummary } from "@/lib/rides";
 import { tripHeadline } from "@/lib/site";
+import { planSunsetStops } from "@/lib/sunset";
 import { trackEvent } from "@/lib/track";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
@@ -286,20 +287,25 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       ? dayState.plan
       : null;
   const nights = dayPlan ? dayPlan.legs.slice(0, -1).map((l) => l.end) : [];
-  const breakPlan = useMemo(() => {
-    if (!selectedRoute || breakPlaces.status !== "ok") return null;
+  // When the rider is where: the start time, the route's timeline and the day split.
+  const rideTiming = useMemo(() => {
     const departAt = fromDateTimeLocal(departure);
-    if (!departAt) return null;
+    if (!selectedRoute || !departAt) return null;
     const timeline =
       rules.status === "ok" && rules.timeline
         ? rules.timeline
         : routeTimeline(undefined, selectedRoute.distanceKm, selectedRoute.durationMin);
-    return planBreaks(breakPlaces.places, {
+    return {
       departAt,
       timeline,
       days: dayPlan?.legs.map((l) => ({ fromKm: l.fromKm, toKm: l.toKm })),
-    });
-  }, [selectedRoute, breakPlaces, departure, rules, dayPlan]);
+    };
+  }, [selectedRoute, departure, rules, dayPlan]);
+  const breakPlan = useMemo(
+    () =>
+      rideTiming && breakPlaces.status === "ok" ? planBreaks(breakPlaces.places, rideTiming) : null,
+    [rideTiming, breakPlaces],
+  );
   const [previewOpen, setPreviewOpen] = useState(false);
   const closePreview = useCallback(() => setPreviewOpen(false), []);
   const mapCursor =
@@ -344,6 +350,12 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       filterRank: categories.length + (maxDetourKm === null ? 0 : 1),
     },
     routes.map((r) => r.id).join(","),
+  );
+  // A viewpoint, peak, beach or lake to end each day at, before sunset.
+  const sunsets = useMemo(
+    () =>
+      rideTiming && placesState.status === "ok" ? planSunsetStops(allPlaces, rideTiming) : null,
+    [rideTiming, placesState.status, allPlaces],
   );
   const hiddenCount =
     categories.length === 0
@@ -726,6 +738,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           }
           breaks={breakPlan}
           breaksError={breakPlaces.status === "error"}
+          sunsets={sunsets}
           tolls={safety.status === "ok" ? safety.summary.tolls : null}
           tollsError={safety.status === "error"}
           pickedIds={pickedIds}

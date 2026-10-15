@@ -33,6 +33,7 @@ import {
   mileageKey,
   parseWithin,
 } from "@/lib/tripCost";
+import type { SunsetStop } from "@/lib/sunset";
 import { summarizeWeather, type WeatherPoint } from "@/lib/weather";
 import { useWeatherAlong } from "./useWeatherAlong";
 
@@ -56,7 +57,10 @@ interface Props {
   breaks?: BreakPlan<PlaceAlong> | null;
   /** The break stops could not be loaded. */
   breaksError?: boolean;
+  /** A viewpoint, peak, beach or lake to end each day at; null while places load. */
+  sunsets?: SunsetStop[] | null;
   pickedIds?: ReadonlySet<string>;
+  /** Ticks or unticks a suggested break or sunset stop. */
   onBreakToggle?: (place: PlaceAlong) => void;
   /** Toll plazas on the route; null while they load. */
   tolls?: TollPlaza[] | null;
@@ -229,6 +233,7 @@ export function RideCheck({
   days,
   breaks = null,
   breaksError = false,
+  sunsets = null,
   pickedIds,
   onBreakToggle,
   tolls = null,
@@ -605,10 +610,10 @@ export function RideCheck({
                 </ol>
               )}
               <p className="text-xs text-stone-600 dark:text-stone-400">
-                Driving often? The FASTag annual pass is{" "}
-                {formatRupees(FASTAG_PASS.rupees)} for {FASTAG_PASS.crossings} national-highway
-                crossings (private cars). Amounts differ by plaza and change every April, so we do
-                not show them. Plazas from OpenStreetMap; some may be missing.
+                Driving often? The FASTag annual pass is {formatRupees(FASTAG_PASS.rupees)} for{" "}
+                {FASTAG_PASS.crossings} national-highway crossings (private cars). Amounts differ by
+                plaza and change every April, so we do not show them. Plazas from OpenStreetMap;
+                some may be missing.
               </p>
             </Check>
           )}
@@ -655,7 +660,9 @@ export function RideCheck({
           )}
           {!breaksError && breaks === null && (
             <Check tone="muted" title="Breaks">
-              <p className="text-stone-600 dark:text-stone-400">Looking for a stop every 2 hours…</p>
+              <p className="text-stone-600 dark:text-stone-400">
+                Looking for a stop every 2 hours…
+              </p>
             </Check>
           )}
           {breaks && breaks.marks.length > 0 && (
@@ -694,6 +701,51 @@ export function RideCheck({
               <p className="text-xs text-stone-600 dark:text-stone-400">
                 A stop within 1 km of the road, near every 2 hours of riding, outside 2–4 pm where
                 there is a choice. A tap ticks it for the trip.
+              </p>
+            </Check>
+          )}
+
+          {sunsets && sunsets.length > 0 && (
+            <Check
+              tone="ok"
+              title={
+                sunsets.length === 1
+                  ? `Sunset stop: ${sunsets[0]!.place.name}`
+                  : `Sunset stops: one for each of ${sunsets.length} days`
+              }
+            >
+              <ul aria-label="Sunset stops" className="space-y-1">
+                {sunsets.map((s) => {
+                  const on = pickedIds?.has(s.place.id) ?? false;
+                  const early = s.sunset.getTime() - s.arriveAt.getTime() >= 30 * 60_000;
+                  return (
+                    <li key={s.place.id}>
+                      <button
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => onBreakToggle?.(s.place)}
+                        className="min-h-11 w-full rounded-md px-1 text-left md:min-h-9"
+                      >
+                        <span className="font-medium">
+                          {sunsets.length > 1 && `Day ${s.day + 1}: `}
+                          {s.place.name}
+                        </span>
+                        <span className="text-stone-600 dark:text-stone-400">
+                          {" "}
+                          · km {Math.round(s.place.kmFromStart)} · sunset {time.format(s.sunset)} ·
+                          you get there about {time.format(s.arriveAt)}
+                          {early ? "" : " (late)"}. Leave by {time.format(s.leaveBy)} to be there 30
+                          min before sunset
+                          {on ? " · ticked" : ""}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                The best viewpoint, peak, beach or lake in the last quarter of the day, within 5 km
+                of the road. A tap ticks it for the trip.
               </p>
             </Check>
           )}
