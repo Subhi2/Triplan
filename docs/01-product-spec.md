@@ -100,7 +100,7 @@ Chosen after web research; the reasons and sources are in `07-growth-plan.md` ("
 28. **Tolls and trip cost**: no tolls by bike; by car, the toll plazas on the route and the FASTag annual pass. The fuel cost comes from the mileage and fuel price the rider types.
 29. **Helplines**: 1033 (national highways) and 112 in "Safety on the way".
 30. **Best stops for my time**: "I have 2 hours for stops" ticks the most worthwhile places that fit in that time.
-31. **Popular ↔ Offbeat**: the famous stops first, or the lesser-known ones.
+31. **Popular ↔ Offbeat**: only the well-known stops, or only the lesser-known ones.
 32. **Sunset stop**: a viewpoint near the end of the day, with the time to leave to see the sunset there.
 33. **Scenic score**: a scenic score on every route card, and the "Scenic" label on the most scenic of the routes found when it is not the fastest.
 34. **Ride your GPX**: open a GPX, KML or TCX file of a ride (Strava, Garmin, the Royal Enfield app) to see its hairpins, climbs, the places passed, a 3D replay and a story poster.

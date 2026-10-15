@@ -32,7 +32,13 @@ import { googleMapsTripUrl, MAX_GOOGLE_WAYPOINTS } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 import { DEFAULT_RIDE_HOURS, routeTimeline, suggestDays, type RideHours } from "@/lib/multiDay";
 import { isSight, pickStops, type StopBudgetMin } from "@/lib/pickStops";
-import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
+import {
+  BEST_PER_STRETCH,
+  bestAlongRoute,
+  STRETCH_KM,
+  type ListMix,
+  type PlaceAlong,
+} from "@/lib/places";
 import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
 import type { RideSummary } from "@/lib/rides";
@@ -134,6 +140,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const [corridorKm, setCorridorKm] = useState<CorridorKm>(initial.corridorKm);
   const [categories, setCategories] = useState<string[]>(initial.categories);
   const [maxDetourKm, setMaxDetourKm] = useState<DetourLimitKm | null>(initial.maxDetourKm);
+  // Popular ↔ Offbeat on the best-stops list.
+  const [mix, setMix] = useState<ListMix>("mixed");
   // The multi-day split: riding hours a day (null = the vehicle's default) and days (null = as
   // many as the route needs).
   const [rideHours, setRideHours] = useState<RideHours | null>(initial.rideHours);
@@ -323,8 +331,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
         (maxDetourKm === null || p.detourKm <= maxDetourKm),
     );
     // No category picked: the best stops only. A picked category shows every place in it.
-    return categories.length === 0 ? bestAlongRoute(matching) : matching;
-  }, [allPlaces, categories, maxDetourKm]);
+    return categories.length === 0 ? bestAlongRoute(matching, mix) : matching;
+  }, [allPlaces, categories, maxDetourKm, mix]);
   // Switching route or filter turns the list from that side (docs/08 "Motion").
   const turn = useListTurn(
     {
@@ -332,7 +340,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
         0,
         routes.findIndex((r) => r.id === selectedRouteId),
       ),
-      filterKey: `${categories.join(",")}|${maxDetourKm ?? ""}`,
+      filterKey: `${categories.join(",")}|${maxDetourKm ?? ""}|${mix}`,
       filterRank: categories.length + (maxDetourKm === null ? 0 : 1),
     },
     routes.map((r) => r.id).join(","),
@@ -788,10 +796,12 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
               <PlaceFilters
                 counts={categoryCounts}
                 bestCount={
-                  categories.length === 0 ? places.length : bestAlongRoute(allPlaces).length
+                  categories.length === 0 ? places.length : bestAlongRoute(allPlaces, mix).length
                 }
                 selected={categories}
                 maxDetourKm={maxDetourKm}
+                mix={mix}
+                onMixChange={setMix}
                 onSelectedChange={setCategories}
                 onMaxDetourChange={setMaxDetourKm}
               />

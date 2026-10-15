@@ -847,6 +847,53 @@ test("time for stops ticks the best sights that fit, and a second tap clears the
   await expect(page.getByText("2 ticked")).toBeHidden();
 });
 
+test("Popular keeps the well-known stops and Offbeat the lesser-known", async ({ page }) => {
+  await mockApis(page, []);
+  const quiet: PlaceAlong = {
+    ...FORT,
+    id: "quiet-id",
+    slug: "quiet-viewpoint",
+    name: "Quiet Viewpoint",
+    category: "viewpoint",
+    kmFromStart: 120,
+    notable: false,
+  };
+  await page.route("**/api/places/along", (route) =>
+    route.fulfill({ json: { places: [quiet, FORT] } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const list = page.getByRole("list", { name: "Places along the route" });
+  const mixes = page.getByRole("group", { name: "Popular or offbeat" });
+  await expect(mixes.getByRole("button", { name: "Mixed" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
+  await expect(list.getByRole("button", { name: /Manjarabad Fort/ })).toBeVisible();
+
+  await mixes.getByRole("button", { name: "Offbeat" }).click();
+  await expect(list.getByRole("button", { name: /Manjarabad Fort/ })).toBeHidden();
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
+
+  await mixes.getByRole("button", { name: "Popular" }).click();
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeHidden();
+  await expect(list.getByRole("button", { name: /Manjarabad Fort/ })).toBeVisible();
+
+  // A category shows every place in it, so the mix steps aside.
+  await page
+    .getByRole("group", { name: "Filter by category" })
+    .getByRole("button", { name: /Viewpoint/ })
+    .click();
+  await expect(mixes).toBeHidden();
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
+});
+
 test("on phones the map comes first, then a one-line header and the sheet", async ({
   page,
 }, testInfo) => {
