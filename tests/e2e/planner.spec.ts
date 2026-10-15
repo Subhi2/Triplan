@@ -789,6 +789,64 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   ).toHaveAttribute("href", /maps\/search\/Manjarabad%20Fort\/@12\.9173,75\.7581,17z/);
 });
 
+test("time for stops ticks the best sights that fit, and a second tap clears them", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  const temple: PlaceAlong = {
+    ...FORT,
+    id: "temple-id",
+    slug: "hasanamba-temple",
+    name: "Hasanamba Temple",
+    category: "temple",
+    location: [76.0977, 13.0049],
+    kmFromStart: 201,
+    detourKm: 0.3,
+  };
+  const trek: PlaceAlong = {
+    ...FORT,
+    id: "trek-id",
+    slug: "long-trek",
+    name: "Long Trek",
+    category: "trek",
+    kmFromStart: 300,
+    detourKm: 1,
+  };
+  await page.route("**/api/places/along", (route) =>
+    route.fulfill({ json: { places: [temple, FORT, trek] } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const times = page.getByRole("group", { name: "Time for stops" });
+  await times.getByRole("button", { name: "2 h" }).click();
+  await expect(times.getByRole("button", { name: "2 h" })).toHaveAttribute("aria-pressed", "true");
+  // The temple (31 min) and the fort (65 min) fit in 2 hours; the 2-hour trek does not.
+  await expect(
+    page.getByRole("status").filter({ hasText: "Ticked the 2 best stops" }),
+  ).toContainText("about 1 h 36 min");
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Hasanamba Temple for Google Maps" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Long Trek for Google Maps" }),
+  ).not.toBeChecked();
+  await expect(page.getByText("2 ticked")).toBeVisible();
+
+  await times.getByRole("button", { name: "2 h" }).click();
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }),
+  ).not.toBeChecked();
+  await expect(page.getByText("2 ticked")).toBeHidden();
+});
+
 test("on phones the map comes first, then a one-line header and the sheet", async ({
   page,
 }, testInfo) => {

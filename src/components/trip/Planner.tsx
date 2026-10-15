@@ -28,14 +28,16 @@ import { alertsForRide } from "@/lib/alerts";
 import { planBreaks } from "@/lib/breaks";
 import { categoryStyle } from "@/lib/categories";
 import { pointAtKm, type LngLat } from "@/lib/geo";
-import { googleMapsTripUrl } from "@/lib/googleMaps";
+import { googleMapsTripUrl, MAX_GOOGLE_WAYPOINTS } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 import { DEFAULT_RIDE_HOURS, routeTimeline, suggestDays, type RideHours } from "@/lib/multiDay";
+import { isSight, pickStops, type StopBudgetMin } from "@/lib/pickStops";
 import { BEST_PER_STRETCH, bestAlongRoute, STRETCH_KM, type PlaceAlong } from "@/lib/places";
 import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
 import type { RideSummary } from "@/lib/rides";
 import { tripHeadline } from "@/lib/site";
+import { trackEvent } from "@/lib/track";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
   MAX_VIA_STOPS,
@@ -51,6 +53,7 @@ import { GoogleMapsBar } from "./GoogleMapsBar";
 import { PlannerHeader } from "./PlannerHeader";
 import { RoadStrip } from "./RoadStrip";
 import { RouteCards } from "./RouteCards";
+import { StopPicker } from "./StopPicker";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { TripSaveBar } from "./TripSaveBar";
@@ -399,6 +402,42 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   }
 
   const pickedIds = useMemo(() => new Set(picked.map((p) => p.id)), [picked]);
+  // "Time for stops": the budget chosen on this route and what it ticked.
+  const [stopPick, setStopPick] = useState<{
+    routeId: string;
+    budget: StopBudgetMin;
+    count: number;
+    minutes: number;
+  } | null>(null);
+  const shownPick = stopPick && stopPick.routeId === selectedRouteId ? stopPick : null;
+  function pickForTime(budget: StopBudgetMin | null) {
+    if (!selectedRoute) return;
+    // The ticked breaks (food, coffee, fuel) stay; the ticked sights give way to the new pick.
+    const kept = picked.filter((p) => !isSight(p.category));
+    if (budget === null) {
+      setPicked(kept);
+      setStopPick(null);
+      return;
+    }
+    const departAt = fromDateTimeLocal(departure);
+    const pick = pickStops(
+      allPlaces.filter((p) => maxDetourKm === null || p.detourKm <= maxDetourKm),
+      budget,
+      {
+        month: departAt ? departAt.getMonth() + 1 : null,
+        maxStops: MAX_GOOGLE_WAYPOINTS - (stops.length - 2) - kept.length,
+        routeKm: selectedRoute.distanceKm,
+      },
+    );
+    setPicked([...kept, ...pick.places]);
+    setStopPick({
+      routeId: selectedRoute.id,
+      budget,
+      count: pick.places.length,
+      minutes: pick.minutes,
+    });
+    trackEvent("stops_picked");
+  }
   function setPlacePicked(place: PlaceAlong, on: boolean) {
     setPicked((prev) =>
       on
@@ -738,6 +777,13 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
             aria-busy={refreshing}
             className={`flex flex-col gap-3 transition-opacity duration-500 ${refreshing ? "refreshing" : ""}`}
           >
+            {allPlaces.length > 0 && (
+              <StopPicker
+                budget={shownPick?.budget ?? null}
+                result={shownPick}
+                onPick={pickForTime}
+              />
+            )}
             {allPlaces.length > 0 && (
               <PlaceFilters
                 counts={categoryCounts}
