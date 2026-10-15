@@ -1,3 +1,4 @@
+import type { RouteScenic } from "./scenic";
 import type { LineString } from "geojson";
 import { z } from "zod";
 import type { RouteCurvature } from "./curvature";
@@ -54,6 +55,8 @@ export interface RouteOption {
   townStops?: { name: string; location: LngLat }[];
   roadMix: RoadMix | null; // null when the routing engine does not report road numbers
   curvature: RouteCurvature | null; // hairpins and twistiness, from the road's shape
+  /** The scenic score, 0–10 (G5); missing on routes saved before it, null when not counted. */
+  scenic?: RouteScenic | null;
 }
 
 export interface GeocodeResult {

@@ -140,6 +140,32 @@ export async function townsAlong(geometry: LineString, withinM: number): Promise
   }));
 }
 
+/**
+ * How many verified places of each category lie within `withinM` of the route (the scenic
+ * score's sights). One query on the line simplified to 50 m, like the towns.
+ */
+export async function countsAlong(
+  geometry: LineString,
+  withinM: number,
+  categories: string[],
+): Promise<Record<string, number>> {
+  const rows = await getDb().execute<{ slug: string; n: number }>(sql`
+    WITH r AS (
+      SELECT ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(geometry)}), 4326) AS g
+    ), rl AS (
+      SELECT ST_Transform(ST_Simplify(ST_Transform(g, 3857), 50), 4326)::geography AS simple
+      FROM r
+    )
+    SELECT c.slug, count(*)::int AS n
+    FROM place p
+    JOIN category c ON c.id = p.category_id
+    CROSS JOIN rl
+    WHERE p.status = 'verified' AND c.slug = ANY(${sql.param(categories)}::text[])
+      AND ST_DWithin(p.location, rl.simple, ${Math.round(withinM)})
+    GROUP BY c.slug`);
+  return Object.fromEntries(rows.map((r) => [r.slug, Number(r.n)]));
+}
+
 interface TownBoxRawRow extends Record<string, unknown> {
   name: string;
   lng: number;

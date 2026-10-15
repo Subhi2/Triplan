@@ -1210,6 +1210,29 @@ test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) 
   await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
 });
 
+test("every route card has a scenic score, and the most scenic slower one is labelled", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route");
+  await page.route("**/api/route", (route) => {
+    const routes = options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"]);
+    // Chikkamagaluru (259 min) is the fastest; Sakleshpur scores 3 more.
+    routes[0]!.scenic = { score: 3, sights: 4 };
+    routes[1]!.scenic = { score: 6, sights: 9 };
+    return route.fulfill({ json: { routes } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  const chik = cards.filter({ hasText: "via Chikkamagaluru" });
+  const sak = cards.filter({ hasText: "via Hassan, Sakleshpur" });
+  await expect(chik).toContainText("Scenic 3/10");
+  await expect(sak).toContainText("Scenic 6/10");
+  await expect(sak.getByText("Scenic", { exact: true })).toBeVisible();
+  await expect(chik.getByText("Scenic", { exact: true })).toHaveCount(0);
+});
+
 test("a sunset stop near the end of the ride, with the time to leave by", async ({ page }) => {
   await mockApis(page, []);
   const view: PlaceAlong = {

@@ -2,6 +2,7 @@ import type { LineString } from "geojson";
 import { routeCurvature } from "@/lib/curvature";
 import { simplifyLine, type LngLat } from "@/lib/geo";
 import { ROUTE_ID_PATTERN } from "@/lib/places";
+import { SCENIC_CATEGORIES, SCENIC_WITHIN_M, scenicScore } from "@/lib/scenic";
 import type { RouteOption, TripRequest } from "@/lib/trip";
 import { routeDbCache, type JsonCache } from "../db/cache";
 import {
@@ -21,7 +22,7 @@ import {
   viaTownCandidates,
   type CandidateTown,
 } from "./altRoutes";
-import { townsAlong, townsInBox } from "./corridorService";
+import { countsAlong, townsAlong, townsInBox } from "./corridorService";
 import { roadMix } from "./roadMix";
 import { mainTowns, viaLabels, type TownOnRoute } from "./viaLabel";
 
@@ -38,6 +39,8 @@ export interface RouteServiceDeps {
   routing: RoutingProvider;
   townsAlong(geometry: LineString): Promise<TownOnRoute[]>;
   townsInBox(box: [number, number, number, number]): Promise<CandidateTown[]>;
+  /** Scenic sights near the route, per category (the scenic score); none = no score. */
+  scenicAlong?(geometry: LineString): Promise<Record<string, number>>;
 }
 
 export async function townsAlongDb(geometry: LineString): Promise<TownOnRoute[]> {
@@ -45,7 +48,12 @@ export async function townsAlongDb(geometry: LineString): Promise<TownOnRoute[]>
 }
 
 function defaultDeps(): RouteServiceDeps {
-  return { routing: getRoutingProvider(), townsAlong: townsAlongDb, townsInBox };
+  return {
+    routing: getRoutingProvider(),
+    townsAlong: townsAlongDb,
+    townsInBox,
+    scenicAlong: (geometry) => countsAlong(geometry, SCENIC_WITHIN_M, SCENIC_CATEGORIES),
+  };
 }
 
 const CACHE_KEY_PREFIX = "route:v2:";
@@ -166,7 +174,13 @@ export async function getRoutes(
       const towns = along.filter(
         (t) => t.kmFromStart > END_MARGIN_KM && t.kmFromStart < distanceKm - END_MARGIN_KM,
       );
-      return { id, result, distanceKm, towns };
+      const sights = deps.scenicAlong
+        ? await deps.scenicAlong(result.geometry).catch((err: unknown) => {
+            console.warn("Scenic sights along the route failed", err);
+            return null;
+          })
+        : null;
+      return { id, result, distanceKm, towns, sights };
     }),
   );
 
@@ -175,21 +189,33 @@ export async function getRoutes(
     trip.stops.slice(1, -1).map((s) => s.label),
   );
 
-  return routes.map((r, i) => ({
-    id: r.id,
-    // The browser gets the line simplified to about 10 m: OSRM's full line has about 13 points a
-    // km (a 1,700 km route, 17,000). Hairpins and the road mix are measured on the full line
-    // here, and route_cache keeps it for the place, profile and weather lookups by route id.
-    geometry: {
-      type: "LineString" as const,
-      coordinates: simplifyLine(r.result.geometry.coordinates as LngLat[], BROWSER_LINE_M),
-    },
-    distanceKm: r.distanceKm,
-    durationMin: Math.round(r.result.durationS / 60),
-    viaLabel: labels[i]!,
-    towns: mainTowns(r.towns).map((t) => t.name),
-    townStops: mainTowns(r.towns).map((t) => ({ name: t.name, location: t.location })),
-    roadMix: roadMix(r.result),
-    curvature: routeCurvature(r.result.geometry, waypoints),
-  }));
+  return routes.map((r, i) => {
+    const mix = roadMix(r.result);
+    const curvature = routeCurvature(r.result.geometry, waypoints);
+    return {
+      id: r.id,
+      // The browser gets the line simplified to about 10 m: OSRM's full line has about 13 points a
+      // km (a 1,700 km route, 17,000). Hairpins and the road mix are measured on the full line
+      // here, and route_cache keeps it for the place, profile and weather lookups by route id.
+      geometry: {
+        type: "LineString" as const,
+        coordinates: simplifyLine(r.result.geometry.coordinates as LngLat[], BROWSER_LINE_M),
+      },
+      distanceKm: r.distanceKm,
+      durationMin: Math.round(r.result.durationS / 60),
+      viaLabel: labels[i]!,
+      towns: mainTowns(r.towns).map((t) => t.name),
+      townStops: mainTowns(r.towns).map((t) => ({ name: t.name, location: t.location })),
+      roadMix: mix,
+      curvature,
+      scenic: r.sights
+        ? scenicScore({
+            counts: r.sights,
+            distanceKm: r.distanceKm,
+            roadMix: mix,
+            twistyKm: curvature?.twistyKm ?? 0,
+          })
+        : null,
+    };
+  });
 }

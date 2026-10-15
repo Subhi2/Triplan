@@ -481,7 +481,13 @@ Rules that decide whether a rider may use a road at a time, and what they need f
 
 ## Scenic score (G5)
 
-`src/lib/scenic.ts`, pure, on every route card: scenic places (viewpoint, waterfall, peak, lake, fort, beach, pass) within 2 km of the road per 10 km, plus the ghat share of the road mix, scaled 0–10. It stands in for the scenic-beauty models in research (Quercia et al., Seresinhe et al.), which need street photos we do not have.
+`src/lib/scenic.ts`, pure, on every route card ("Scenic 7/10"). It stands in for the scenic-beauty models in research (Quercia et al., Seresinhe et al.), which need street photos we do not have.
+
+- **Road, up to 7 points**: the larger of the ghat share of the road mix and the twisty km share; 35% or more earns all 7.
+- **Sights, up to 3 points**: places within 2 km of the road, weighted (viewpoint, waterfall, pass, beach 1; peak, fort 0.5; lake 0.1, as most mapped lakes on the plains are village tanks), per 100 km; 3 or more earns all 3.
+- Counted on the server with the routes (`countsAlong` in `corridorService`, one query per route on the line simplified to 50 m, about 80 ms for three routes) and sent as `RouteOption.scenic { score, sights }`.
+- Measured 2026-10-15: Manali → Leh 10, Bengaluru → Ooty 6–7, Bengaluru → Kalasa 4, Pune → Goa 3–4, Bengaluru → Chennai 2.
+- **The Scenic label** goes to the highest-scoring option when it is not the fastest and leads it by at least 1 point (`scenicRouteId`); often no option gets it.
 
 ## Ride your GPX (G5)
 
