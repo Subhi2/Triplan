@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  helplines,
   longestGap,
+  type SafetyPoint,
+  type SafetySummary,
   summariseSafety,
   telLink,
   thinByStretch,
-  type SafetyPoint,
-  type SafetySummary,
 } from "@/lib/safety";
 
 const point = (id: string, kind: SafetyPoint["kind"], km: number, detourKm = 0.2): SafetyPoint => ({
@@ -124,5 +125,14 @@ describe("POST /api/services/along", () => {
     vi.mocked(getRouteGeometry).mockResolvedValue(null);
     expect((await post({ routeId: `${"c".repeat(32)}-0` })).status).toBe(404);
     expect((await post({})).status).toBe(400);
+  });
+});
+
+describe("helplines", () => {
+  it("are 112 everywhere, and 1033 on a route with national highways", () => {
+    expect(helplines(0).map((h) => h.number)).toEqual(["112"]);
+    expect(helplines(42.5).map((h) => h.number)).toEqual(["112", "1033"]);
+    // No road mix: 1033 is not guessed.
+    expect(helplines(null).map((h) => h.number)).toEqual(["112"]);
   });
 });

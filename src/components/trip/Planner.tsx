@@ -711,6 +711,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
         />
         <SafetyStops
           state={safety}
+          nationalKm={selectedRoute.roadMix ? selectedRoute.roadMix.nationalM / 1000 : null}
           selected={safetyKind}
           onSelect={(kind) =>
             setSafetyPick(kind && selectedRoute ? { routeId: selectedRoute.id, kind } : null)

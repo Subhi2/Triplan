@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SAFETY_KINDS, SAFETY_STYLE, telLink, type SafetyKind } from "@/lib/safety";
+import { helplines, SAFETY_KINDS, SAFETY_STYLE, telLink, type SafetyKind } from "@/lib/safety";
 import { RetryAlert } from "@/components/ui/RetryAlert";
 import type { SafetyState } from "./useSafetyAlong";
 
@@ -10,35 +10,79 @@ interface Props {
   /** The kind whose stops are listed and pinned on the map, or null. */
   selected: SafetyKind | null;
   onSelect: (kind: SafetyKind | null) => void;
+  /** National-highway km on the route (its road mix), or null when unknown: 1033 shows with any. */
+  nationalKm: number | null;
 }
 
 /** Stops listed before "Show all". */
 const LISTED = 8;
 
+/** 112, and 1033 on national highways: always there, whatever the stops do. */
+function Helplines({ nationalKm }: { nationalKm: number | null }) {
+  return (
+    <ul className="flex flex-wrap gap-1.5" aria-label="Helplines">
+      {helplines(nationalKm).map((h) => (
+        <li key={h.number}>
+          <a
+            href={`tel:${h.number}`}
+            title={h.what}
+            className="text-brand-dark inline-flex min-h-11 items-center gap-1.5 rounded-full border border-stone-300 px-3 text-sm hover:bg-stone-100 md:min-h-9 dark:border-stone-600 dark:text-teal-300 dark:hover:bg-stone-800"
+          >
+            <span className="tabular font-mono font-bold">{h.number}</span>
+            <span>{h.name}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
- * "Safety on the way": how many hospitals, police stations, ATMs, puncture and repair shops are
- * near the road, per 50 km. A tap on a kind lists them (with tap to call) and pins them on the map.
+ * "Safety on the way": the helplines, then how many hospitals, police stations, ATMs, puncture
+ * and repair shops are near the road, per 50 km. A tap on a kind lists them (with tap to call)
+ * and pins them on the map.
  */
-export function SafetyStops({ state, selected, onSelect }: Props) {
+export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
   const [showAll, setShowAll] = useState(false);
   if (state.status === "idle") return null;
-  if (state.status === "error") {
-    return <RetryAlert quiet message="Could not load safety stops." onRetry={state.retry} />;
-  }
-  if (state.status === "loading") {
-    return <div aria-hidden className="shimmer h-10 rounded-xl" />;
+  const heading = (
+    <h3 id="safety-heading" className="font-display text-[17px] font-bold tracking-tight">
+      Safety on the way
+    </h3>
+  );
+  if (state.status !== "ok") {
+    return (
+      <section aria-labelledby="safety-heading" className="flex flex-col gap-2">
+        {heading}
+        <Helplines nationalKm={nationalKm} />
+        {state.status === "error" ? (
+          <RetryAlert quiet message="Could not load safety stops." onRetry={state.retry} />
+        ) : (
+          <div aria-hidden className="shimmer h-10 rounded-xl" />
+        )}
+      </section>
+    );
   }
   const { summary } = state;
   const total = SAFETY_KINDS.reduce((n, k) => n + summary.counts[k], 0);
-  if (total === 0) return null;
+  if (total === 0) {
+    return (
+      <section aria-labelledby="safety-heading" className="flex flex-col gap-2">
+        {heading}
+        <Helplines nationalKm={nationalKm} />
+        <p className="text-xs text-stone-600 dark:text-stone-400">
+          No hospitals, police, ATMs or repair shops are mapped within 3 km of this road.
+        </p>
+      </section>
+    );
+  }
   const points = selected ? summary.points.filter((p) => p.kind === selected) : [];
   const shown = showAll ? points : points.slice(0, LISTED);
 
   return (
     <section aria-labelledby="safety-heading" className="flex flex-col gap-2">
-      <h3 id="safety-heading" className="font-display text-[17px] font-bold tracking-tight">
-        Safety on the way
-      </h3>
+      {heading}
+      <Helplines nationalKm={nationalKm} />
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Kinds of safety stop">
         {SAFETY_KINDS.filter((k) => summary.counts[k] > 0).map((k) => {
           const on = selected === k;

@@ -474,7 +474,7 @@ Rules that decide whether a rider may use a road at a time, and what they need f
 - **Sunset stop** (`src/lib/sunsetStop.ts`): in the last quarter of each day, the highest-ranked viewpoint, peak, beach or lake, with the latest start that reaches it 30 minutes before sunset (`suncalc`).
 - **Tolls**: `service_point` kind `toll` from `barrier=toll_booth` (migration 0021 widens the kind check). Two-wheelers pay no tolls on national highways (NHAI, June 2025), so a bike trip says so and lists none. A car trip lists the plazas on the route (within 200 m) and mentions the FASTag annual pass. We do not show toll amounts: they differ per plaza and change every April.
 - **Trip cost**: km ÷ mileage × fuel price, from values the rider types, remembered per vehicle in `localStorage`. We publish no fuel prices.
-- **Helplines**: 1033 (the NHAI helpline) when the route has national-highway km in its road mix, and 112 always, at the top of "Safety on the way" as `tel:` links.
+- **Helplines**: 1033 (the NHAI helpline) when the route has national-highway km in its road mix, and 112 always, at the top of "Safety on the way" as `tel:` links (`helplines` in `src/lib/safety.ts`). They show while the stops load, when they fail, and on a road with no stops mapped. With no road mix, 1033 is left out rather than guessed.
 
 ## Best stops for my time (G5)
 

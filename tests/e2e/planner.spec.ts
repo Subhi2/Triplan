@@ -433,6 +433,10 @@ test("safety stops along the road, with call links and the hospital gap", async 
   await page.goto(
     "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
   );
+  // The helplines lead: 112 everywhere, 1033 because the road is NH75.
+  const lines = page.getByRole("list", { name: "Helplines" });
+  await expect(lines.getByRole("link", { name: /112/ })).toHaveAttribute("href", "tel:112");
+  await expect(lines.getByRole("link", { name: /1033/ })).toHaveAttribute("href", "tel:1033");
   const kinds = page.getByRole("group", { name: "Kinds of safety stop" });
   await expect(kinds).toContainText("2 hospitals");
   await expect(kinds).toContainText("1 ATM");

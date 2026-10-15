@@ -137,6 +137,33 @@ export const safetyRequestSchema = z
   })
   .refine((b) => b.routeId || b.geometry, { message: "Send routeId or geometry" });
 
+export interface Helpline {
+  number: string;
+  name: string;
+  /** What it is for, in a few words. */
+  what: string;
+}
+
+/**
+ * Numbers to call from the road (docs/02, "Breaks, sunset stop, tolls and helplines"): 112
+ * everywhere in India; 1033, NHAI's helpline, when the route uses national highways. With no
+ * road mix (the routing engine gave no road numbers) 1033 is left out rather than guessed.
+ */
+export function helplines(nationalKm: number | null): Helpline[] {
+  return [
+    { number: "112", name: "Emergency", what: "police, fire and ambulance" },
+    ...(nationalKm !== null && nationalKm > 0
+      ? [
+          {
+            number: "1033",
+            name: "Highway helpline",
+            what: "accidents and breakdowns on national highways",
+          },
+        ]
+      : []),
+  ];
+}
+
 /** A tel: link for a phone number as mapped ("+91 8173 244 444" -> "tel:+918173244444"). */
 export function telLink(phone: string): string | null {
   const digits = phone.replace(/[^\d+]/g, "");
