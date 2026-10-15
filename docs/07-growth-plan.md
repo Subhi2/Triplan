@@ -27,6 +27,19 @@ Our edge: the corridor search (places on *this* road, in km order), India-wide o
 3. **Utility → return visit.** Riders come back before each ride if the app answers "Will I run out of fuel? Will I reach before dark? Will it rain on the ghat?". Installing to the home screen (already a PWA) and GPX export put it into their ride routine.
 4. **Contribute → better data → more search traffic** (Phase 5): reviews and photos from riders who used the app.
 
+## How we choose features
+
+Decided by the owner 2026-10-15: build only features that no one else can take away later. Every feature's data and services are checked before it enters the plan (the same rule is in `CLAUDE.md`, "Choosing new features").
+
+| Passes | Fails |
+|---|---|
+| Our own data | Needs someone's approval or an answer first (app reviews, "email them and ask") |
+| Open data under a published licence that allows commercial use, downloaded and stored by us (ODbL, CC0, CC BY, Apache-2.0, CDLA-Permissive) | Terms missing, unclear or non-commercial |
+| Open-source software we can run on our own server | Works only on someone else's free public server, with no way to run it ourselves |
+| Paid services we already use and could swap (Supabase, Vercel, Anthropic, Google behind its budget), when the feature switches off cleanly without them | |
+
+What changed when the rule was made: G5's scenic route no longer uses Valhalla's public server, the offline pack uses our own map file instead of OpenFreeMap downloads, and Mapillary is out. SACHET alerts pass: every feed states it is public domain. Phases 6 (YouTube API) and 7 (Instagram, Meta app review) are checked against the rule before either starts.
+
 ## Feature list, by priority
 
 **G1 · Now: no API keys, no cost, no product decision needed.** Built in the Growth phase of `04`.
@@ -45,7 +58,7 @@ Our edge: the corridor search (places on *this* road, in km order), India-wide o
 |---|---|---|
 | G2.1 | Safety stops along the route: hospitals, police, puncture and bike repair shops, ATMs, toilets (filter chips; count per 50 km) | OSM tags `amenity=hospital|police|atm|toilets`, `shop=motorcycle_repair|tyres|car_repair` through the existing Overpass import |
 | G2.2 | Elevation profile and ghat climbs on each route card ("climbs 900 m in 18 km at Charmadi") | Mapterhorn terrain tiles (Copernicus DEM, code BSD-3) or AWS Terrain Tiles (open data), read server-side; `maplibre-contour` (BSD-3) and MapLibre hillshade for the map |
-| G2.3 | "Scenic / back roads" route option (avoids highways) | Valhalla (MIT) `motorcycle` costing with `use_highways` near 0 and `use_trails`. Public FOSSGIS server: 1 request per second per user, send `X-Client-Id`, announce the app in Valhalla's GitHub Discussions; self-host before launch. GraphHopper (Apache-2.0) with a curvature custom model is the self-hosted alternative for "twisty roads" |
+| G2.3 | "Scenic / back roads" route option (avoids highways) | Valhalla (MIT) `motorcycle` costing with `use_highways` near 0, or GraphHopper (Apache-2.0) with a curvature custom model, on our own server only (never a public server; see "How we choose features"). G5 gives the scenic score and the "Scenic" label among the routes we already find |
 | G2.4 | Popular route pages (`/routes/bengaluru-to-kalasa`): top places, route options, best months; generated from saved trips | Existing corridor search, ISR |
 | G2.5 | Multi-day planner: split by riding hours per day, suggest overnight towns and stays near the split | Stay places from OSM (1,100+ imported) |
 | G2.6 | Offline trip pack: route, places and map tiles for the corridor saved on the phone | Serwist (already used, MIT), PMTiles (BSD-3), `maplibre-offline-pmtiles`. Uses the MapLibre view: Google's map tiles cannot be saved offline |
@@ -72,7 +85,7 @@ Status (2026-10-02): G2.1, G2.2, G2.4, G2.5 and G2.8 are built in "Growth G3 · 
 
 | Group | Feature | Why it sells | Tools and data (licence) |
 |---|---|---|---|
-| A · Ride day | Alerts on the route | "Is there a red alert on the ghat today?" answered with official warnings, not rumours | NDMA SACHET CAP 1.2 feeds (IMD, NDMA, state disaster authorities, INCOIS), read on the server and cached 10 minutes. No published terms: confirm reuse with NDMA before launch |
+| A · Ride day | Alerts on the route | "Is there a red alert on the ghat today?" answered with official warnings, not rumours | NDMA SACHET CAP 1.2 feeds (IMD, NDMA, state disaster authorities, INCOIS), read on the server and cached 10 minutes. Each feed states `<copyright>public domain</copyright>`; district outlines are our own, from OpenStreetMap |
 | A | Road rules and permits | Night bans, e-passes and permits catch riders out; no map app checks them against the arrival time | Our own list (`data/road-rules.json`); each rule has its official link and the date it was checked |
 | A | Break planner | Road-safety bodies advise a break every 2 hours or 100 km, and warn of a dip at 2–4 pm | Our places and service points along the route |
 | A | Tolls and trip cost | Bikes pay no national-highway tolls; car drivers ask what the trip costs | OSM `barrier=toll_booth` (ODbL); NHAI's June 2025 statement that two-wheelers stay exempt; the FASTag annual pass (₹3,000 for 200 NH and NE crossings, private cars) |
@@ -80,9 +93,9 @@ Status (2026-10-02): G2.1, G2.2, G2.4, G2.5 and G2.8 are built in "Growth G3 · 
 | B · Smart picks | Best stops for my time | Hundreds of places on a route are too many for a newcomer; the app picks the most worthwhile that fit the time | Tourist trip design (orienteering) heuristics over our own ranking |
 | B | Popular ↔ Offbeat | Some riders want the famous stops, others the ones few people visit | Re-ranking toward the long tail, as in popularity-bias research |
 | B | Sunset stop | End the day at a viewpoint at the right time | `suncalc` (BSD-2) |
-| B | Scenic route option and scenic score | Riders choose a road for the ride, not the time | Valhalla (MIT), `motorcycle` costing with a low `use_highways`; the public FOSSGIS server (1 request a second, announce the app on Valhalla's GitHub Discussions), self-hosted before launch |
+| B | Scenic score and the "Scenic" label | Riders choose a road for the ride, not the time | Our places and road mix only; the label goes to the most scenic of the routes OSRM already gives. (Valhalla's public server dropped 2026-10-15) |
 | C · Ride together | Ride your GPX | A ride from Strava, Garmin or the Royal Enfield app becomes hairpins, a profile, the places passed, a 3D replay and a poster | `@tmcw/togeojson` (BSD-2), in the browser |
-| C | Offline trip pack | Ghats and Ladakh have no signal | OpenFreeMap tiles within its offline rules (3,000 tiles or 50 MB per download, 4 at a time); a PMTiles (BSD-3) extract as the fallback |
+| C | Offline trip pack | Ghats and Ladakh have no signal | Our own PMTiles (BSD-3) file of India, cut from a Protomaps build of OpenStreetMap (ODbL) and stored by us; at most 3,000 tiles or 50 MB a pack. (OpenFreeMap downloads dropped 2026-10-15) |
 | C | Ride together | Groups split up on ghats; REVER's LiveRIDE shows riders want a live map | Supabase Realtime Broadcast and Presence (free plan: 200 connections, 100 messages a second); positions never stored |
 | D · Riders' content | More food, fuel and stays | The fuel gap and the break planner are only as good as the pumps and cafes we know | Overture Places (CDLA-Permissive-2.0; Apache-2.0 for its Foursquare records; CC0 for AllThePlaces), after a quality check against OSM |
 | D | Reviews, photos and road reports without sign-in | First-hand, fresh data; a road report says what no map knows ("landslide at km 23, one lane open") | ALTCHA (MIT; proof of work, no key or cookies) with per-visitor limits, a Claude Haiku pre-screen and an admin queue. Only admins sign in |
@@ -95,9 +108,10 @@ This settles the question G4 left open, how to stop spam without sign-in: proof 
 - Hidden places from YouTube (Phase 6). YouTube's developer policies require API data to be refreshed or deleted within 30 days: keep the video id and our own extracted facts (see `05-hidden-places.md`).
 - Google fills the gaps (decided 2026-09-29, step list in `04` "Growth G1-Google"): Google map, exact Google Maps links, and Google photos and reviews for places with none of our own, within Google's free monthly usage.
 - Landslide nowcast from NASA's LHASA (daily, 1 km rasters; needs raster processing).
-- Photos of the road itself: Mapillary (CC BY-SA images; commercial API terms unclear) or Panoramax (MIT, open images; little coverage in India yet).
+- Photos of the road itself: Panoramax (MIT software we could run ourselves, open images; little coverage in India yet). Mapillary is left out: its commercial API terms are unclear.
+- An off-highway "Scenic" route and twisty-road routing: Valhalla or GraphHopper on our own server (with self-hosted OSRM, Phase 8). Costs a server; no public routing servers.
 - Stretches without phone signal from OpenCelliD cell towers (CC BY-SA 4.0, share-alike). Ookla's open data is non-commercial, so it cannot be used.
-- "Avoid this area": draw it on the map (terra-draw, MIT) and route around it with Valhalla's `exclude_polygons`.
+- "Avoid this area": draw it on the map (terra-draw, MIT) and route around it with Valhalla's `exclude_polygons`, once Valhalla runs on our own server.
 - "Ask this route": questions answered only from the places, rules and services on the route, never invented.
 - "Seen in films": filming locations from Wikidata (set-jetting is a 2026 travel trend in Expedia's Unpack '26).
 - Languages (G2.7).
@@ -127,7 +141,7 @@ Web research of 2026-10-14. What we read, and what each finding changed.
 **Open data and open-source projects**
 - [SACHET's CAP feeds](https://thejeshgn.com/2025/05/28/common-alerting-protocol-cap-in-the-indian-context/): one RSS feed for India and one per state, each item a CAP 1.2 message with district polygons in lat,lon order, no CORS. IMD also runs a keyed [API portal](https://api.imd.gov.in/).
 - [Valhalla](https://valhalla.github.io/valhalla/api/route/api-reference/) (MIT): `motorcycle` costing with `use_highways` (0–1, default 0.5) and `use_trails` (0–1, default 0), plus `use_tolls`, `exclude_polygons` and `alternates`. [GraphHopper](https://discuss.graphhopper.com/t/help-on-curvature-settings-in-custom-model/9885) (Apache-2.0) has a curvature value for custom models and round trips, the self-hosted alternative.
-- [OpenFreeMap](https://openfreemap.org/): offline downloads up to 3,000 tiles or 50 MB each, at most 4 requests at a time, with a User-Agent naming the app (a browser cannot set one: ask them). [PMTiles](https://til.simonwillison.net/gis/pmtiles) extracts a region by its box.
+- [OpenFreeMap](https://openfreemap.org/): offline downloads up to 3,000 tiles or 50 MB each, at most 4 requests at a time, with a User-Agent naming the app, which a browser cannot set. [PMTiles](https://til.simonwillison.net/gis/pmtiles) extracts a region by its box, so we keep our own file instead.
 - [Supabase Realtime limits](https://supabase.com/docs/guides/realtime/limits); [Traccar](https://github.com/traccar/traccar-client) (Apache-2.0) as a reference for live tracking.
 - [togeojson](https://npmjs.com/package/@tmcw/togeojson) (BSD-2), [terra-draw](https://classic.yarnpkg.com/en/package/terra-draw) (MIT), [ALTCHA](https://altcha.org/open-source-captcha/) (MIT), [VROOM](https://pypi.org/project/pyvroom) (route optimisation, not needed while stops keep their km order), [opening_hours.js](https://github.com/opening-hours/opening_hours.js) (LGPL-3.0; India's holidays not built in).
 - [Overture Places](https://docs.overturemaps.org/guides/places): 64 million+ places with a confidence score each; the licence follows the source. Foursquare's own [open places](https://foursquare.com/resources/blog/data/evolving-fsq-open-source-places/) now need a portal token, and Overture already carries them.
@@ -137,9 +151,12 @@ Web research of 2026-10-14. What we read, and what each finding changed.
 
 **Checked and left out**
 - Ookla's open speed data: CC BY-NC-SA, not for commercial use.
+- Valhalla's public FOSSGIS server for the scenic route: a free volunteer server that asks apps to announce themselves and can throttle them. Only a Valhalla on our own server (2026-10-15).
+- Offline packs downloaded from OpenFreeMap: their rules need a User-Agent a browser cannot send, so it would need their permission. Our own PMTiles file instead (2026-10-15).
+- [Mapillary](https://help.mapillary.com/hc/en-us/articles/115001770409-CC-BY-SA-license-for-open-data): commercial API terms unclear.
 - Open Charge Map: licence per record and little data for India; OSM's `amenity=charging_station` instead, when EV range checks come.
 - MoRTH accident black spots: published as highway and km-stone lists, [no coordinates](https://visionias.in/current-affairs/upsc-daily-news-summary/article/2025-11-03/the-indian-express/polity-and-governance/govt-to-release-nh-black-spot-data-based-on-real-time-e-dar) yet.
-- [NASA LHASA](https://registry.opendata.aws/nasa-landslide-project/), [Mapillary](https://help.mapillary.com/hc/en-us/articles/115001770409-CC-BY-SA-license-for-open-data), [Panoramax](https://docs.panoramax.fr/federated-catalog/), [OpenCelliD](https://en.wikipedia.org/wiki/OpenCelliD): see "Later".
+- [NASA LHASA](https://registry.opendata.aws/nasa-landslide-project/), [Panoramax](https://docs.panoramax.fr/federated-catalog/), [OpenCelliD](https://en.wikipedia.org/wiki/OpenCelliD): see "Later".
 
 ## Making money
 

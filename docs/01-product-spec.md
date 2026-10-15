@@ -102,7 +102,7 @@ Chosen after web research; the reasons and sources are in `07-growth-plan.md` ("
 30. **Best stops for my time**: "I have 2 hours for stops" ticks the most worthwhile places that fit in that time.
 31. **Popular ↔ Offbeat**: the famous stops first, or the lesser-known ones.
 32. **Sunset stop**: a viewpoint near the end of the day, with the time to leave to see the sunset there.
-33. **Scenic route**: a route option that keeps off highways, and a scenic score on every route card.
+33. **Scenic score**: a scenic score on every route card, and the "Scenic" label on the most scenic of the routes found when it is not the fastest.
 34. **Ride your GPX**: open a GPX, KML or TCX file of a ride (Strava, Garmin, the Royal Enfield app) to see its hairpins, climbs, the places passed, a 3D replay and a story poster.
 35. **Offline trip pack**: a trip's map, route, places and safety stops saved on the phone, for roads with no signal.
 36. **Ride together**: a link for the group to see each other on the map while riding, with a regroup pin, and a follow link for family.
@@ -191,9 +191,9 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 - Bengaluru → Kalasa suggests a break near each 2 hours of riding, at stops within 1 km of the road.
 - By bike the trip says there are no tolls; by car it lists the toll plazas on the route.
 - "2 h for stops" on Bengaluru → Kalasa via Sakleshpur ticks Manjarabad Fort, and the picked places' detours and visits add up to 2 hours or less.
-- The Scenic option, when shown, has a smaller national-highway share than the fastest route.
+- Every route card has a scenic score, and a slower route that scores at least 1 point more than the fastest is labelled "Scenic".
 - A GPX of a ride opens with its hairpins, profile and the places passed, and no point within 500 m of its ends leaves the phone.
-- A saved pack opens the trip, with its map, in airplane mode, and stays within OpenFreeMap's offline limits.
+- A saved pack opens the trip, with its map, in airplane mode. Its tiles come only from our own map file, at most 3,000 tiles or 50 MB a pack.
 - Two phones in one room see each other, and no position is stored.
 - A review or road report without an account needs the proof of work, passes the pre-screen and shows after an admin approves it. A road report disappears when it expires.
 - Works at 375 px width with 44 px touch targets.

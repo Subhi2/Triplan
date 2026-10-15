@@ -22,11 +22,11 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 ## Stack (decided)
 
 - **Next.js 15 (App Router) + TypeScript**, deployed as a PWA. Tailwind CSS for styling.
-- **Maps**: **Google Maps JavaScript API** via `@vis.gl/react-google-maps` when a Google key is set; **MapLibre GL JS** via `react-map-gl/maplibre` with OpenStreetMap tiles (OpenFreeMap) otherwise (dev without a key, tests, the offline pack). Both behind the same `MapView` props.
+- **Maps**: **Google Maps JavaScript API** via `@vis.gl/react-google-maps` when a Google key is set; **MapLibre GL JS** via `react-map-gl/maplibre` with OpenStreetMap tiles (OpenFreeMap) otherwise (dev without a key, tests). Both behind the same `MapView` props. The offline pack reads our own PMTiles file of India (G5), never a public tile server.
 - **Google Maps Platform fills gaps only** (decided 2026-09-29): photos, rating and reviews for places that have none of our own, and exact Google Maps links. Our own data, OSRM, Photon and the PostGIS corridor search stay the core. See "Google Maps Platform" in `docs/02-architecture.md`.
 - **Supabase**: Postgres with **PostGIS**, Auth, Storage.
-- **Routing**: OSRM (public demo server in dev, self-hosted later) behind a `RoutingProvider` interface so Google Routes / GraphHopper can be swapped in. Valhalla gives the "Scenic" option (G5), behind the same interface.
-- **Alerts**: NDMA SACHET's CAP feeds (public domain), read on the server only (G5, "Alerts on the route" in `docs/02-architecture.md`).
+- **Routing**: OSRM (public demo server in dev, self-hosted later) behind a `RoutingProvider` interface so Google Routes / GraphHopper can be swapped in. The "Scenic" label picks among the routes OSRM already gives, by our scenic score (G5); an off-highway router (Valhalla) comes only when we run it on our own server.
+- **Alerts**: NDMA SACHET's CAP feeds (each feed states `<copyright>public domain</copyright>`), read on the server only (G5, "Alerts on the route" in `docs/02-architecture.md`). District outlines are our own, from OpenStreetMap.
 - **Geocoding**: Photon (komoot, `https://photon.komoot.io/api`) for suggestions while the user types, Nominatim as the fallback when Enter is pressed, both behind the `GeocodingProvider` interface. Our own places are listed before Photon results (see "Place search" in `docs/02-architecture.md`).
 - **Drizzle ORM** for schema and queries; raw SQL for PostGIS functions.
 - **Zod** for validating every API input and external API response.
@@ -54,6 +54,7 @@ pnpm db:seed-rides    # route and store the famous rides in data/rides.json
 pnpm db:import-districts                       # India's districts with LGD codes, for official alerts (G5)
 pnpm db:seed-road-rules                        # night bans, permits, e-passes and fees in data/road-rules.json (G5)
 pnpm db:import-open-places -- --region=<key|all>   # food, fuel and stays from Overture Places (G5)
+pnpm tiles:extract              # our own PMTiles file of India for offline packs (G5)
 pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)
 pnpm db:export-snapshot         # rewrite data/snapshot from the live database (read only)
 pnpm screenshots -- --base=<url>  # README screenshots into docs/media
@@ -75,6 +76,15 @@ Add these scripts to `package.json` as the phases introduce them.
 - Secrets live in `.env.local` (never committed). Keep `.env.example` up to date.
 - Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`). GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and unit tests on every push; it cannot build (the ISR pages need the database).
 - Small commits, one feature per commit, message in imperative mood.
+
+## Choosing new features
+
+Decided 2026-10-15: build only features that no one else can take away later. Whenever new features are researched, suggested or planned, check every data source and service each one needs against this list, and say in the plan how each passes.
+
+- **Allowed**: our own data; open data under a published licence that allows commercial use, downloaded and stored by us (OpenStreetMap/ODbL, CC0, CC BY, Apache-2.0, CDLA-Permissive); open-source software we can run on our own server; paid services we already use and could swap (Supabase, Vercel, Anthropic, Google behind its provider and budget), when the feature switches off cleanly without them.
+- **Avoid**: anything that needs someone's approval or an answer first (app reviews, "email them and ask"); terms that are missing, unclear or non-commercial; anything that only works on someone else's free public server with no way to run it ourselves.
+- Features that fail go to "Checked and left out" in `docs/07-growth-plan.md` with the reason, not into the build plan.
+- The core already uses free public servers (OSRM, Nominatim, Photon, OpenFreeMap). They are all open source and get self-hosted before launch (Phase 8). New features add no new dependence on public servers.
 
 ## Environment variables
 
@@ -102,7 +112,7 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID=    # phase 7
 ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction; G5 review pre-screen
 ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
 SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website   # alerts on the route: feeds in rss/, CAP messages and their areas (G5)
-VALHALLA_BASE_URL=                # the Scenic route option (G5); empty = off. Public FOSSGIS server only after announcing the app
+NEXT_PUBLIC_OFFLINE_TILES_URL=    # our own PMTiles file of India for offline packs (G5); empty = no "Save for offline"
 ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road reports (G5); empty = closed
 ```
 
@@ -122,5 +132,5 @@ ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road r
 - Every road rule shows its link and the date it was checked: the authority's own page where there is one, else the newest reliable report, named in `source`. Add or change a rule only after checking it there; reports disagree on hours (G5).
 - Ride-together positions travel only through the Realtime channel: never stored, logged or sent to our server, and only after a tap on "Share my position" (G5).
 - A rider's GPX file is read in the browser; only the line leaves the phone, with 500 m cut from each end (G5).
-- Offline packs keep to OpenFreeMap's offline rules: at most 3,000 tiles or 50 MB per download, 4 requests at a time (G5). The service worker still never stores `/api/` answers; the page writes packs.
+- Offline packs take tiles only from our own PMTiles file (`NEXT_PUBLIC_OFFLINE_TILES_URL`), never from OpenFreeMap or another public tile server: at most 3,000 tiles or 50 MB per pack, 4 requests at a time (G5). The service worker still never stores `/api/` answers; the page writes packs.
 - YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).

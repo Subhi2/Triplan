@@ -56,7 +56,7 @@ src/
     db/                         # drizzle schema, client, migrations
     og/                         # share card layouts and their bundled fonts
     providers/
-      routing/                  # RoutingProvider interface, osrm.ts, valhalla.ts (scenic option, G5)
+      routing/                  # RoutingProvider interface, osrm.ts
       alerts/                   # AlertsProvider, sachet.ts (NDMA CAP feeds, G5)
       geocoding/                # GeocodingProvider, photon.ts (suggestions), nominatim.ts (Enter)
       google/                   # places.ts (Places API New), budget.ts (daily call budget)
@@ -107,12 +107,10 @@ export interface RouteResult {
 - The public demo server only has the car profile and is for light use. Use `driving` for both bike and car and scale duration by 1.1 for bikes. Self-host OSRM with the India extract from Geofabrik before launch.
 - Cache route responses in a `route_cache` table keyed by a hash of (waypoints rounded to 5 decimals, profile, alternatives) for 7 days. The key carries a version (`route:v2`), bumped whenever `RouteResult` changes.
 
-### Valhalla (the Scenic option, G5)
+### The Scenic label (G5)
 
-- One more route option that keeps off highways: `POST {VALHALLA_BASE_URL}/route` with `costing: "motorcycle"` and `costing_options.motorcycle.use_highways: 0.2` for a bike (0 avoids highways, 1 prefers them, default 0.5), or `costing: "auto"` with `use_highways: 0.3` for a car. `use_trails` stays 0 (no tracks or bad surfaces).
-- `valhalla.ts` implements `RoutingProvider` and maps the answer to `RouteResult`: the shape (polyline6) to the geometry, each maneuver's street names to `roads[]` refs for the road mix, and the time to `durationS` (no 1.1 scaling: the motorcycle costing has its own speeds).
-- The public FOSSGIS server allows 1 request a second per user and asks apps to send `X-Client-Id` and to announce themselves on Valhalla's GitHub Discussions. Requests share the routing throttle and are cached like OSRM's under `valhalla:v1:` keys. Self-host Valhalla with the India extract before launch.
-- `routeService` asks for it once per search, after OSRM, and keeps it only when it shares under 80% of its length with the routes already found. Empty `VALHALLA_BASE_URL` turns it off.
+- No extra router: among the routes OSRM and `altRoutes` find, the one with the highest scenic score ("Scenic score" below) is labelled "Scenic" when it is not the fastest and scores at least 1 point more.
+- An off-highway route (Valhalla's `motorcycle` costing with a low `use_highways`) needs a Valhalla we run on our own server, next to self-hosted OSRM (Phase 8). Valhalla's public FOSSGIS server is not used ("Choosing new features" in `CLAUDE.md`).
 
 ### Road mix on route cards
 
@@ -493,7 +491,7 @@ Rules that decide whether a rider may use a road at a time, and what they need f
 ## Offline trip pack (G5)
 
 - **What is kept**: the corridor's map tiles at zoom 6–13 (5 km either side of the route; the top zoom drops to 12 or 11 when a route would need more than 3,000 tiles), the style, sprites and the glyph ranges it uses, in a `pack-<route id>` cache. The route, places, services, stops, ride check inputs and the trip's URL go into IndexedDB. The page writes them, not the service worker, so the rule that `/api/` answers are never cached by the service worker stays.
-- **OpenFreeMap's offline rules**: at most 3,000 tiles or 50 MB per download, 4 requests at a time, and a User-Agent naming the app. A browser cannot set a User-Agent, so this waits for OpenFreeMap's answer. The fallback is a PMTiles extract of the corridor, cut on the server with `pmtiles extract` and stored in Supabase Storage.
+- **Our own map file**: one PMTiles file of India at zoom 0–13, cut from a Protomaps daily build (OpenStreetMap data, ODbL) by `pnpm tiles:extract` with the `pmtiles` CLI (BSD-3), or built with Planetiler (Apache-2.0) if those builds stop. It sits on storage that serves HTTP range requests (Cloudflare R2 or Supabase Storage) at `NEXT_PUBLIC_OFFLINE_TILES_URL`. The page reads the corridor's tiles from it with `pmtiles` (BSD-3), at most 3,000 tiles or 50 MB a pack, 4 requests at a time. The style is Protomaps' basemap style (`@protomaps/basemaps`, BSD-3), with fonts and sprites from our own `public/`. Packs never download from OpenFreeMap or another public tile server. The same file can later replace OpenFreeMap for the online map too (Phase 8).
 - **Opening**: `sw.ts` serves tiles from any `pack-*` cache first. The planner, opened with no signal, lists the packs and draws the chosen one from IndexedDB on the MapLibre map. Google's map is never used offline (its tiles may not be stored).
 - **Also kept**: the last trip planned and the last Near me list (G4 F2), the same way.
 
