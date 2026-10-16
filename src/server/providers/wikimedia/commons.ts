@@ -199,8 +199,49 @@ export function parseImageInfo(data: z.infer<typeof imageInfoSchema>): Map<strin
   return images;
 }
 
-export function createWikimediaProvider(userAgent: string): WikimediaProvider {
+/** Tries per SPARQL query: the query service sometimes cuts an answer short or is busy. */
+const SPARQL_TRIES = 3;
+
+export function createWikimediaProvider(
+  userAgent: string,
+  { retryWaitMs = 10_000 }: { retryWaitMs?: number } = {},
+): WikimediaProvider {
   const headers = { "User-Agent": userAgent, Accept: "application/json" };
+
+  /**
+   * Runs a SPARQL query. A query that runs out of time can still answer HTTP 200 with the JSON cut
+   * off, so a body that does not parse, a busy answer (429, 5xx) or a dropped connection is tried
+   * again, waiting longer each time.
+   */
+  async function sparql<T>(schema: z.ZodType<T>, query: string, timeoutMs: number): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const { status, data } = await fetchJson(
+          "wikidata",
+          SPARQL_URL,
+          schema,
+          {
+            method: "POST",
+            headers: {
+              ...headers,
+              Accept: "application/sparql-results+json",
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({ query }).toString(),
+          },
+          timeoutMs,
+        );
+        if (status !== 200) throw new ProviderError(`Wikidata HTTP ${status}`, "wikidata", status);
+        return data;
+      } catch (err) {
+        const status = err instanceof ProviderError ? err.status : undefined;
+        const passing = status === undefined || status === 200 || status === 429 || status >= 500;
+        if (!(err instanceof ProviderError) || !passing || attempt >= SPARQL_TRIES) throw err;
+        await new Promise((resolve) => setTimeout(resolve, retryWaitMs * attempt));
+      }
+    }
+  }
+
   return {
     async items(wikidataIds) {
       const ids = wikidataIds.filter((id) => WIKIDATA_ID.test(id));
@@ -215,23 +256,7 @@ export function createWikimediaProvider(userAgent: string): WikimediaProvider {
         "OPTIONAL { ?article schema:about ?item; schema:isPartOf <https://en.wikipedia.org/> } " +
         'OPTIONAL { ?item schema:description ?desc FILTER(lang(?desc) = "en") } ' +
         "BIND(EXISTS { ?item wdt:P31 wd:Q5 } AS ?human) }";
-      const { status, data } = await fetchJson(
-        "wikidata",
-        SPARQL_URL,
-        sparqlSchema,
-        {
-          method: "POST",
-          headers: {
-            ...headers,
-            Accept: "application/sparql-results+json",
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({ query }).toString(),
-        },
-        60_000,
-      );
-      if (status !== 200) throw new ProviderError(`Wikidata HTTP ${status}`, "wikidata", status);
-      return parseItems(data);
+      return parseItems(await sparql(sparqlSchema, query, 60_000));
     },
 
     async itemsInBox([west, south, east, north]) {
@@ -241,23 +266,7 @@ export function createWikimediaProvider(userAgent: string): WikimediaProvider {
         `bd:serviceParam wikibase:cornerNorthEast "Point(${east} ${north})"^^geo:wktLiteral . } ` +
         '?item rdfs:label ?label . FILTER(lang(?label) = "en") ' +
         "FILTER NOT EXISTS { ?item wdt:P1082 [] } FILTER NOT EXISTS { ?item wdt:P31 wd:Q5 } }";
-      const { status, data } = await fetchJson(
-        "wikidata",
-        SPARQL_URL,
-        boxSchema,
-        {
-          method: "POST",
-          headers: {
-            ...headers,
-            Accept: "application/sparql-results+json",
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({ query }).toString(),
-        },
-        90_000,
-      );
-      if (status !== 200) throw new ProviderError(`Wikidata HTTP ${status}`, "wikidata", status);
-      return parseBoxItems(data);
+      return parseBoxItems(await sparql(boxSchema, query, 90_000));
     },
 
     async imageInfo(files) {

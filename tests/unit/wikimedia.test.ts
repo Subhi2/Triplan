@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   cleanUrl,
+  createWikimediaProvider,
   htmlToText,
   imageInfoSchema,
   parseImageInfo,
@@ -208,5 +209,37 @@ describe("tidyAuthor", () => {
     )!;
     expect(long.length).toBeLessThanOrEqual(81);
     expect(long.endsWith("…")).toBe(true);
+  });
+});
+
+describe("Wikidata queries", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const answer = {
+    results: { bindings: [{ item: { value: "http://www.wikidata.org/entity/Q1" } }] },
+  };
+
+  it("asks again when an answer is cut off or the service is busy", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{"results": {"bindings": [', { status: 200 }))
+      .mockResolvedValueOnce(new Response("busy", { status: 503 }))
+      .mockResolvedValueOnce(Response.json(answer));
+    vi.stubGlobal("fetch", fetchMock);
+    const items = await createWikimediaProvider("test", { retryWaitMs: 0 }).items(["Q1"]);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(items.has("Q1")).toBe(true);
+  });
+
+  it("gives up after three tries, and at once on a bad query", async () => {
+    const cutOff = vi.fn().mockImplementation(async () => new Response("{", { status: 200 }));
+    vi.stubGlobal("fetch", cutOff);
+    const provider = createWikimediaProvider("test", { retryWaitMs: 0 });
+    await expect(provider.items(["Q1"])).rejects.toThrow("unexpected response");
+    expect(cutOff).toHaveBeenCalledTimes(3);
+
+    const badQuery = vi.fn().mockImplementation(async () => new Response("{}", { status: 400 }));
+    vi.stubGlobal("fetch", badQuery);
+    await expect(provider.items(["Q1"])).rejects.toThrow();
+    expect(badQuery).toHaveBeenCalledTimes(1);
   });
 });
