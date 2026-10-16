@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "createdAt": "2026-10-15T05:29:53.766Z",
+  "createdAt": "2026-10-16T09:15:23.234Z",
   "migration": "0021_service_toll",
   "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url).",
   "tables": [
@@ -67,9 +67,9 @@
         "description_url",
         "description_checked_at"
       ],
-      "rows": 96096,
-      "bytes": 12502253,
-      "sha256": "52344cf6b88a677320f68238d84b30106f8eb5561692ddd245028329f04c0193"
+      "rows": 99372,
+      "bytes": 13747191,
+      "sha256": "bd80799e47e3c529c1f90d9b65d43ef5c1c6e86e1b40f6c111e4029a3156cced"
     },
     {
       "name": "place_guide",
@@ -128,9 +128,9 @@
         "uploaded_by",
         "created_at"
       ],
-      "rows": 2006,
-      "bytes": 226648,
-      "sha256": "1f8a69b3c47758b4c7e7b9caf12ac86d797e24517521be572fd65c87d9138774"
+      "rows": 3036,
+      "bytes": 345873,
+      "sha256": "83e00ca473acfba0209e98c6b3911d665be7fe60458d5a7fc516a3b99b953ec9"
     },
     {
       "name": "ride",
@@ -172,9 +172,9 @@
         "location",
         "updated_at"
       ],
-      "rows": 113989,
-      "bytes": 4028498,
-      "sha256": "32a3a0efde42beee2d19fe73de46fc5f3e92fe3a1cff3610ae0a2a9acffb79b6"
+      "rows": 114489,
+      "bytes": 4046209,
+      "sha256": "b4a30cb86336b8d3b01cdb450e8a977890bbe17f0c3cd4efc0e3d58cda9e59eb"
     },
     {
       "name": "district",
@@ -188,9 +188,9 @@
         "geom",
         "updated_at"
       ],
-      "rows": 767,
-      "bytes": 3372442,
-      "sha256": "56629753b6815a4909732fbbd93fceabbc1529b9a37e6faaf1d9473382a1a97b"
+      "rows": 774,
+      "bytes": 3429683,
+      "sha256": "afe333bd8d91a2e8a0e33cd3ef1ced21a054cd030b9bd82769a7cffd41313321"
     },
     {
       "name": "road_rule",
