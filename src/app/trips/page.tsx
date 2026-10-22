@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
-import { SavedPacks } from "@/components/offline/SavedPacks";
+import { LastTrip, SavedPacks } from "@/components/offline/SavedPacks";
 import { DeviceTrips } from "@/components/trip/DeviceTrips";
 import { SITE_NAME } from "@/lib/site";
 
@@ -34,6 +34,7 @@ export default function TripsPage() {
         </Link>
       </header>
       <SavedPacks />
+      <LastTrip />
       <DeviceTrips />
       <SiteFooter />
     </main>

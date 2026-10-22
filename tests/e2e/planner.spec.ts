@@ -1350,6 +1350,39 @@ test("save a trip for offline, then open it with no signal", async ({ page }) =>
   await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
 });
 
+test("the last trip planned stays on the phone and opens with no signal", async ({ page }) => {
+  await mockApis(page, []);
+  await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [FORT] } }));
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  await expect(
+    page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ }),
+  ).toBeVisible();
+  // Kept a second after it settles.
+  await page.waitForTimeout(1500);
+
+  await page.goto("/trips");
+  const last = page.getByRole("region", { name: "Your last trip" });
+  await expect(last).toContainText("Bengaluru → Kalasa");
+  await page.route("**/api/**", (route) => route.abort());
+  await last.getByRole("link").click();
+  await expect(page.getByText("Your last trip, kept on this phone")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toContainText(
+    "via Hassan, Sakleshpur",
+  );
+  await expect(
+    page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ }),
+  ).toBeVisible();
+});
+
 test("a sunset stop near the end of the ride, with the time to leave by", async ({ page }) => {
   await mockApis(page, []);
   const view: PlaceAlong = {

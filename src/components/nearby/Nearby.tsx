@@ -53,6 +53,12 @@ type OriginSource = "gps" | "place" | "map";
  * The Near me screen: well-known places the rider can reach from where they are (or from a typed
  * place, or a spot on the map) within a time on the road. See "Nearby search" in docs/02.
  */
+const savedTime = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
 export function Nearby() {
   const searchParams = useSearchParams();
   const [initial] = useState(() => parseNearbyUrl(new URLSearchParams(searchParams.toString())));
@@ -260,6 +266,15 @@ export function Nearby() {
       {nearby.status === "error" && <RetryAlert message={nearby.message} onRetry={nearby.retry} />}
       {nearby.status === "ok" && (
         <>
+          {nearby.savedAt && (
+            <p
+              role="status"
+              className="bg-marigold-tint rounded-xl px-3 py-2 text-sm text-stone-800 dark:bg-amber-950 dark:text-amber-100"
+            >
+              No connection: these are the places from your last search, kept on this phone (
+              {savedTime.format(new Date(nearby.savedAt))}). Distances are from where you were then.
+            </p>
+          )}
           {roadTimes === "straight" && (
             <p
               role="status"

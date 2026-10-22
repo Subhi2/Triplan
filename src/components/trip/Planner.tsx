@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DynamicMapView as MapView, DynamicOfflineMapView } from "@/components/map/DynamicMapView";
-import { getPack, type SavedPack } from "@/components/offline/packStore";
+import { getPack, putLastTrip, type SavedPack } from "@/components/offline/packStore";
 import { SavePack } from "@/components/offline/SavePack";
 import type { MapStop } from "@/components/map/types";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
@@ -391,6 +391,30 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     () => (packBreakPlaces ? { status: "ok", places: packBreakPlaces } : liveBreakPlaces),
     [packBreakPlaces, liveBreakPlaces],
   );
+  // The last trip planned stays on this phone (G4 F2): with no signal, the offline page and Trips
+  // open it like a pack, without a map of its own. Written a second after it settles.
+  const lastTitle = tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])));
+  useEffect(() => {
+    if (packOpen || !selectedRoute || placesState.status !== "ok") return;
+    const places = placesState.places;
+    const timer = setTimeout(() => {
+      void putLastTrip({
+        title: lastTitle,
+        savedAt: new Date().toISOString(),
+        maxZoom: 13,
+        vehicle,
+        query,
+        stops: stops.flatMap((s) => (s.location ? [{ label: s.label, location: s.location }] : [])),
+        route: selectedRoute,
+        places,
+        breakPlaces: breakPlaces.status === "ok" ? breakPlaces.places : null,
+        safety: safety.status === "ok" ? safety.summary : null,
+      }).catch(() => undefined);
+    }, 1000);
+    return () => clearTimeout(timer);
+    // stops and query change with the trip; the route and the loaded answers decide when to write.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packOpen, selectedRoute, placesState, breakPlaces, safety]);
   const rideAlerts = useMemo(
     () =>
       alerts.status === "ok" && selectedRoute
@@ -987,8 +1011,9 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       />
       {packOpen ? (
         <p role="status" className="text-sm text-stone-600 dark:text-stone-400">
-          Opened from the copy saved on this phone. Places, safety stops and the map are as they
-          were when saved.
+          {pack.tiles > 0
+            ? "Opened from the copy saved on this phone. Places, safety stops and the map are as they were when saved."
+            : "Your last trip, kept on this phone without its map. Save a trip for offline to keep the map too."}
         </p>
       ) : (
         <SavePack

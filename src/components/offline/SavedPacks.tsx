@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { deletePack, listPacks, type SavedPack } from "./packStore";
+import { deletePack, getPack, LAST_TRIP_ID, listPacks, type SavedPack } from "./packStore";
 
 const savedOn = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
 const mb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -49,6 +49,36 @@ export function SavedPacks() {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/** "Your last trip": the last trip planned on this phone, to open with no signal (G4 F2). */
+export function LastTrip() {
+  const [trip, setTrip] = useState<SavedPack | null>(null);
+  useEffect(() => {
+    getPack(LAST_TRIP_ID)
+      .then(setTrip)
+      .catch(() => setTrip(null));
+  }, []);
+  if (!trip) return null;
+  return (
+    <section aria-labelledby="last-trip-heading" className="flex flex-col gap-1">
+      <h2 id="last-trip-heading" className="font-display text-xl font-bold tracking-tight">
+        Your last trip
+      </h2>
+      {/* A full page load: the planner reads the trip from the address once. */}
+      <a
+        href={`/?${trip.query}&pack=${LAST_TRIP_ID}`}
+        className="text-brand-dark inline-flex min-h-11 items-center font-bold hover:underline md:min-h-0 dark:text-teal-300"
+      >
+        {trip.title}
+      </a>
+      <p className="text-xs text-stone-600 dark:text-stone-400">
+        Its route, places and safety stops, kept on this phone from{" "}
+        {savedOn.format(new Date(trip.savedAt))}. The map shows only where a trip saved for offline
+        covers it.
+      </p>
     </section>
   );
 }

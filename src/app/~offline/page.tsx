@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LastTrip, SavedPacks } from "@/components/offline/SavedPacks";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SITE_NAME } from "@/lib/site";
 
@@ -24,9 +25,12 @@ export default function OfflinePage() {
         work. Routes, places along them and the weather come back once you have signal.
       </p>
       <p className="text-stone-700 dark:text-stone-300">
-        Riding into an area with no signal? Before you go, download the trip as a GPX file or open
-        it in Google Maps, which keep working offline.
+        Riding into an area with no signal? Before you go, save the trip for offline, download it as
+        a GPX file or open it in Google Maps.
       </p>
+      {/* Read from this phone: trips saved for offline and the last trip planned open here. */}
+      <SavedPacks />
+      <LastTrip />
       <Link
         href="/"
         className="bg-brand hover:bg-brand-dark inline-flex min-h-11 w-fit items-center rounded-md px-3 text-sm font-medium text-white md:min-h-0 md:py-1.5"

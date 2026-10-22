@@ -30,11 +30,20 @@ export interface SavedPack {
 
 const DB_NAME = "triplan-offline";
 const STORE = "packs";
+/** The last trip planned and the last Near me list (G4 F2), by key. */
+const RECENT = "recent";
+
+/** The last trip opens like a pack, under this id: the same data, no map of its own. */
+export const LAST_TRIP_ID = "last";
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: "id" });
+    const req = indexedDB.open(DB_NAME, 2);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(RECENT)) db.createObjectStore(RECENT);
+    };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error ?? new Error("IndexedDB failed"));
   });
@@ -43,11 +52,12 @@ function openDb(): Promise<IDBDatabase> {
 async function run<T>(
   mode: IDBTransactionMode,
   work: (store: IDBObjectStore) => IDBRequest<T>,
+  store = STORE,
 ): Promise<T> {
   const db = await openDb();
   try {
     return await new Promise<T>((resolve, reject) => {
-      const req = work(db.transaction(STORE, mode).objectStore(STORE));
+      const req = work(db.transaction(store, mode).objectStore(store));
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error ?? new Error("IndexedDB failed"));
     });
@@ -63,7 +73,21 @@ export async function listPacks(): Promise<SavedPack[]> {
 }
 
 export async function getPack(id: string): Promise<SavedPack | null> {
+  if (id === LAST_TRIP_ID) return getRecent<SavedPack>("last-trip");
   return (await run<SavedPack | undefined>("readonly", (s) => s.get(id))) ?? null;
+}
+
+/** The last trip planned, kept on the phone with no map (a pack's tiles show where they cover it). */
+export async function putLastTrip(trip: Omit<SavedPack, "id" | "bytes" | "tiles">): Promise<void> {
+  await putRecent("last-trip", { ...trip, id: LAST_TRIP_ID, bytes: 0, tiles: 0 });
+}
+
+export async function getRecent<T>(key: string): Promise<T | null> {
+  return (await run<T | undefined>("readonly", (s) => s.get(key), RECENT)) ?? null;
+}
+
+export async function putRecent(key: string, value: unknown): Promise<void> {
+  await run("readwrite", (s) => s.put(value, key), RECENT);
 }
 
 export async function putPack(pack: SavedPack): Promise<void> {
