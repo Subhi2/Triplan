@@ -1292,6 +1292,64 @@ ${points.map(([lng, lat]) => `    <trkpt lat="${lat!.toFixed(6)}" lon="${lng!.to
   expect(reads.at(-1)).toContain(`id=${"a".repeat(32)}-0`);
 });
 
+test("save a trip for offline, then open it with no signal", async ({ page }) => {
+  await mockApis(page, []);
+  await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [FORT] } }));
+  // Our own map file, answered from an 11-tile fixture with range requests, as storage does.
+  const file = await readFile("tests/fixtures/pmtiles/corridor.pmtiles");
+  await page.route("https://offline-tiles.test/**", (route) => {
+    if (!route.request().url().endsWith(".pmtiles"))
+      return route.fulfill({ status: 404, body: "" });
+    const m = /bytes=(d+)-(d+)/.exec(route.request().headers()["range"] ?? "");
+    const start = m ? Number(m[1]) : 0;
+    const end = Math.min(m ? Number(m[2]) : file.length - 1, file.length - 1);
+    return route.fulfill({
+      status: 206,
+      headers: {
+        "Content-Range": `bytes ${start}-${end}/${file.length}`,
+        "Content-Type": "application/octet-stream",
+      },
+      body: file.subarray(start, end + 1),
+    });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const offline = page.getByRole("region", { name: "Offline" });
+  await offline.getByRole("button", { name: "Save for offline" }).click();
+  await expect(offline.getByRole("status")).toContainText("Saved for offline", { timeout: 20_000 });
+  // The 11 tiles of the file that lie along the road, in the pack's own cache.
+  const kept = await page.evaluate(async () => {
+    const name = (await caches.keys()).find((n) => n.startsWith("pack-"));
+    return name ? (await (await caches.open(name)).keys()).length : 0;
+  });
+  expect(kept).toBe(11);
+
+  await page.goto("/trips");
+  const packs = page.getByRole("region", { name: "Saved for offline" });
+  await expect(packs).toContainText("Bengaluru → Kalasa");
+
+  // No signal from here on: every API call and the map file fail.
+  await page.route("**/api/**", (route) => route.abort());
+  await page.route("https://offline-tiles.test/**", (route) => route.abort());
+  await packs.getByRole("link", { name: /Bengaluru → Kalasa/ }).click();
+  await expect(page).toHaveURL(/pack=/);
+  await expect(page.getByText("Opened from the copy saved on this phone")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toContainText(
+    "via Hassan, Sakleshpur",
+  );
+  await expect(
+    page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ }),
+  ).toBeVisible();
+  await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
+});
+
 test("a sunset stop near the end of the ride, with the time to leave by", async ({ page }) => {
   await mockApis(page, []);
   const view: PlaceAlong = {

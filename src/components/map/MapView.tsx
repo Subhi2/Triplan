@@ -1,7 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { GeoJSONSource } from "maplibre-gl";
+import type { GeoJSONSource, StyleSpecification } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import Map, {
   Marker,
@@ -40,8 +40,11 @@ const INTERACTIVE_LAYERS = [
   PLACE_POINTS_LAYER,
 ];
 
-/** The MapLibre map (OpenStreetMap tiles): used when no Google key is set. */
-export function MapView(props: MapViewProps) {
+/**
+ * The MapLibre map (OpenStreetMap tiles): used when no Google key is set. `mapStyle` replaces the
+ * online style (a saved pack's map, src/components/offline/OfflineMapView.tsx).
+ */
+export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification }) {
   const { routes, stops, places, activePlaceId, bottomInset = 0, topInset = 0 } = props;
   const mapRef = useRef<MapRef>(null);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -53,17 +56,21 @@ export function MapView(props: MapViewProps) {
 
   const padding = { top: 48 + topInset, left: 48, right: 48, bottom: 48 + bottomInset };
 
-  // Frame all routes when they change; with no routes yet, the given frame or the stops.
+  // Frame all routes when they change; with no routes yet, the given frame or the stops. Also once
+  // the map has loaded: a saved pack hands over its route before the map exists.
   const frame = frameKey(routes, stops, props.frame);
-  useEffect(() => {
+  function frameMap(duration: number) {
     const map = mapRef.current;
     if (!map) return;
     const points = framePoints(routes, stops, props.frame);
     const b = bounds(points);
     if (!b) return;
     if (points.length === 1) {
-      map.flyTo({ center: points[0], zoom: 10, duration: ms(600), padding });
-    } else map.fitBounds(b, { padding, duration: ms(600), maxZoom: 12 });
+      map.flyTo({ center: points[0], zoom: 10, duration: ms(duration), padding });
+    } else map.fitBounds(b, { padding, duration: ms(duration), maxZoom: 12 });
+  }
+  useEffect(() => {
+    frameMap(600);
     // frame captures the inputs; re-running on every render would fight the user's panning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frame]);
@@ -127,7 +134,7 @@ export function MapView(props: MapViewProps) {
     <Map
       ref={mapRef}
       initialViewState={INITIAL_VIEW}
-      mapStyle={MAP_STYLE}
+      mapStyle={props.mapStyle ?? MAP_STYLE}
       attributionControl={{ compact: true }}
       style={{ width: "100%", height: "100%" }}
       interactiveLayerIds={INTERACTIVE_LAYERS}
@@ -139,6 +146,7 @@ export function MapView(props: MapViewProps) {
       }}
       onClick={(e) => void handleClick(e)}
       onLoad={(e) => {
+        frameMap(0);
         const c = e.target.getCenter();
         props.onViewChange?.([c.lng, c.lat], e.target.getZoom());
       }}

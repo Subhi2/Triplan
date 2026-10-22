@@ -40,6 +40,8 @@ export default defineConfig({
       SACHET_BASE_URL: "http://127.0.0.1:9/cap_public_website",
       // Feature counts are not written to the database from tests.
       USAGE_EVENTS_OFF: "1",
+      // The offline map file: tests answer it from tests/fixtures/pmtiles (never a real server).
+      NEXT_PUBLIC_OFFLINE_TILES_URL: "https://offline-tiles.test/india.pmtiles",
     },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,

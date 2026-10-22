@@ -4,7 +4,9 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DynamicMapView as MapView } from "@/components/map/DynamicMapView";
+import { DynamicMapView as MapView, DynamicOfflineMapView } from "@/components/map/DynamicMapView";
+import { getPack, type SavedPack } from "@/components/offline/packStore";
+import { SavePack } from "@/components/offline/SavePack";
 import type { MapStop } from "@/components/map/types";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
@@ -151,9 +153,21 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const [dayCount, setDayCount] = useState<number | null>(initial.days);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [routeState, setRouteState] = useState<RouteState>({ status: "idle" });
-  // A ride opened from a GPX, KML or TCX file: it stands in for routing while the stops are still
-  // its two ends (changing the vehicle keeps it; changing a stop routes as usual).
-  const [uploaded, setUploaded] = useState<{ route: RouteOption; stopsKey: string } | null>(null);
+  // A ride opened from a GPX, KML or TCX file, or a trip saved for offline: it stands in for
+  // routing while the stops are still the same (changing the vehicle keeps it; changing a stop
+  // routes as usual).
+  const [uploaded, setUploaded] = useState<{
+    route: RouteOption;
+    stopsKey: string;
+    kind: "gpx" | "pack";
+  } | null>(null);
+  // A trip saved for offline (?pack=<route id>), read from this phone once.
+  const [pack, setPack] = useState<SavedPack | null>(null);
+  const [packPending, setPackPending] = useState<string | null>(() => {
+    // Only looked up in this phone's own storage, so any short id will do.
+    const id = searchParams.get("pack");
+    return id && /^[\w-]{1,80}$/.test(id) ? id : null;
+  });
   // A reload or shared link of an opened ride (?gpx=<route id>), loaded once.
   const [gpxPending, setGpxPending] = useState<string | null>(() => {
     const id = searchParams.get("gpx");
@@ -200,7 +214,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   });
   const stopsKey = JSON.stringify(stops.map((s) => s.location));
   const rideOpen = uploaded !== null && uploaded.stopsKey === stopsKey;
-  const fullQuery = rideOpen ? `${query}&gpx=${uploaded.route.id}` : query;
+  const packOpen = rideOpen && uploaded.kind === "pack" && pack !== null;
+  const fullQuery = rideOpen ? `${query}&${uploaded.kind}=${uploaded.route.id}` : query;
   useEffect(() => {
     if (window.location.search !== `?${fullQuery}`) {
       window.history.replaceState(null, "", `?${fullQuery}`);
@@ -215,8 +230,9 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     fetch(`/api/route/upload?id=${gpxPending}`, { signal: ctrl.signal })
       .then(async (res) => {
         const data = (await res.json().catch(() => ({}))) as { route?: RouteOption };
-        if (data.route) setUploaded({ route: data.route, stopsKey: stopsKeyRef.current });
-        else setGpxExpired(true);
+        if (data.route) {
+          setUploaded({ route: data.route, stopsKey: stopsKeyRef.current, kind: "gpx" });
+        } else setGpxExpired(true);
       })
       .catch(() => {
         if (!ctrl.signal.aborted) setGpxExpired(true);
@@ -226,6 +242,29 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       });
     return () => ctrl.abort();
   }, [gpxPending]);
+
+  useEffect(() => {
+    if (!packPending) return;
+    let live = true;
+    getPack(packPending)
+      .then((p) => {
+        if (!live || !p) return;
+        const next = p.stops.map((s) => draft(s));
+        setPack(p);
+        setStops(next);
+        setVehicle(p.vehicle);
+        setUploaded({
+          route: p.route,
+          stopsKey: JSON.stringify(next.map((s) => s.location)),
+          kind: "pack",
+        });
+      })
+      .catch(() => undefined)
+      .finally(() => live && setPackPending(null));
+    return () => {
+      live = false;
+    };
+  }, [packPending]);
 
   function openRide(route: RouteOption, name: string | null) {
     const coords = route.geometry.coordinates as LngLat[];
@@ -237,6 +276,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     setUploaded({
       route: name ? { ...route, viaLabel: name } : route,
       stopsKey: JSON.stringify(next.map((s) => s.location)),
+      kind: "gpx",
     });
     setGpxExpired(false);
     setStops(next);
@@ -261,7 +301,7 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   );
 
   useEffect(() => {
-    if (gpxPending) {
+    if (gpxPending || packPending) {
       setRouteState({ status: "loading" });
       return;
     }
@@ -302,11 +342,17 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
     return () => ctrl.abort();
     // uploaded is read only when rideOpen says it matches the stops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeBody, routeAttempt, rideOpen, gpxPending]);
+  }, [routeBody, routeAttempt, rideOpen, gpxPending, packPending]);
 
   const routes = routeState.status === "ok" ? routeState.routes : [];
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
-  const placesState = usePlacesAlong(selectedRoute, corridorKm);
+  // With a saved pack open, its places and safety stops stand in for the network's.
+  const livePlaces = usePlacesAlong(packOpen ? null : selectedRoute, corridorKm);
+  const packPlaces = packOpen ? pack.places : null;
+  const placesState = useMemo<typeof livePlaces>(
+    () => (packPlaces ? { status: "ok", places: packPlaces } : livePlaces),
+    [packPlaces, livePlaces],
+  );
   const profiles = useRouteProfiles(routes, selectedRouteId);
   const climbM = useMemo(
     () =>
@@ -321,7 +367,9 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const [scrub, setScrub] = useState<{ routeId: string; km: number } | null>(null);
   const scrubKm = scrub && scrub.routeId === selectedRouteId ? scrub.km : null;
   // Safety stops along the selected route, and the kind picked to list and pin.
-  const safety = useSafetyAlong(selectedRoute);
+  const liveSafety = useSafetyAlong(packOpen ? null : selectedRoute);
+  const safety: typeof liveSafety =
+    packOpen && pack.safety ? { status: "ok", summary: pack.safety } : liveSafety;
   const [safetyPick, setSafetyPick] = useState<{ routeId: string; kind: SafetyKind } | null>(null);
   const safetyKind = safetyPick && safetyPick.routeId === selectedRouteId ? safetyPick.kind : null;
   const servicePins =
@@ -333,7 +381,16 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   // Night bans, permits, e-passes and fees on the selected route.
   const rules = useRouteRules(selectedRoute);
   // Food, coffee and fuel within 2 km; the break planner keeps those within 1 km.
-  const breakPlaces = usePlacesAlong(selectedRoute, 2, ["coffee", "food", "fuel"]);
+  const liveBreakPlaces = usePlacesAlong(packOpen ? null : selectedRoute, 2, [
+    "coffee",
+    "food",
+    "fuel",
+  ]);
+  const packBreakPlaces = packOpen ? pack.breakPlaces : null;
+  const breakPlaces = useMemo<typeof liveBreakPlaces>(
+    () => (packBreakPlaces ? { status: "ok", places: packBreakPlaces } : liveBreakPlaces),
+    [packBreakPlaces, liveBreakPlaces],
+  );
   const rideAlerts = useMemo(
     () =>
       alerts.status === "ok" && selectedRoute
@@ -928,6 +985,25 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
         onClear={() => setPicked([])}
         onDownloadGpx={downloadGpx}
       />
+      {packOpen ? (
+        <p role="status" className="text-sm text-stone-600 dark:text-stone-400">
+          Opened from the copy saved on this phone. Places, safety stops and the map are as they
+          were when saved.
+        </p>
+      ) : (
+        <SavePack
+          route={selectedRoute}
+          title={tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])))}
+          vehicle={vehicle}
+          query={query}
+          stops={stops.flatMap((s) =>
+            s.location ? [{ label: s.label, location: s.location }] : [],
+          )}
+          places={placesState.status === "ok" ? placesState.places : null}
+          breakPlaces={breakPlaces.status === "ok" ? breakPlaces.places : null}
+          safety={safety.status === "ok" ? safety.summary : null}
+        />
+      )}
     </div>
   );
 
@@ -941,6 +1017,22 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           {placesPanel}
         </div>
       ));
+  const mapProps = {
+    routes,
+    selectedRouteId,
+    onSelectRoute: setSelectedRouteId,
+    stops: mapStops,
+    places,
+    activePlaceId,
+    hoverPlaceId,
+    onSelectPlace: selectPlaceFromMap,
+    onHoverPlace: setHoverPlaceId,
+    onViewChange: (center: LngLat, zoom: number) => setMapBias({ center, zoom }),
+    cursor: mapCursor,
+    servicePins,
+    bottomInset: sheetInset,
+  };
+
   // Phones with a trip: the header floats over the map instead of pushing it down.
   const floatingHeader = compactHeader && !showForm;
 
@@ -1026,22 +1118,16 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
       )}
 
       <div className="relative min-h-0 flex-1">
-        <MapView
-          routes={routes}
-          selectedRouteId={selectedRouteId}
-          onSelectRoute={setSelectedRouteId}
-          stops={mapStops}
-          places={places}
-          activePlaceId={activePlaceId}
-          hoverPlaceId={hoverPlaceId}
-          onSelectPlace={selectPlaceFromMap}
-          onHoverPlace={setHoverPlaceId}
-          onViewChange={(center, zoom) => setMapBias({ center, zoom })}
-          cursor={mapCursor}
-          servicePins={servicePins}
-          bottomInset={sheetInset}
-          topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
-        />
+        {/* A saved pack draws from the tiles on this phone (MapLibre only, no Google). */}
+        {packOpen ? (
+          <DynamicOfflineMapView
+            {...mapProps}
+            topInset={floatingHeader ? FLOATING_HEADER_PX : 0}
+            maxZoom={pack.maxZoom}
+          />
+        ) : (
+          <MapView {...mapProps} topInset={floatingHeader ? FLOATING_HEADER_PX : 0} />
+        )}
       </div>
 
       {previewOpen && selectedRoute && (

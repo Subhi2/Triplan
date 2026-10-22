@@ -36,3 +36,6 @@ pnpm-debug.log*
 
 # OpenStreetMap import resume files (pnpm db:import-osm -- --resume)
 /.import-progress/
+
+# Our own offline map file and its fonts (pnpm tiles:extract); uploaded, never committed
+/data/tiles/

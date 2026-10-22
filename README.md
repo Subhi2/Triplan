@@ -107,24 +107,26 @@ cp .env.example .env.local
 
 Then fill in `.env.local`. Only the first two are required:
 
-| Variable                          | Needed  | What to put                                                                                                                          |
-| --------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`                    | **yes** | The session pooler string from step 3. On Vercel, use the transaction pooler string.                                                 |
-| `NOMINATIM_USER_AGENT`            | **yes** | Who you are, e.g. `my-triplan/0.1 (you@example.com)`. Nominatim's policy requires it; it is also sent to Photon and Overpass.        |
-| `OSRM_BASE_URL`                   | no      | The routing server. Default: the public OSRM demo server (fair use only; self-host for real traffic).                                |
-| `NOMINATIM_BASE_URL`              | no      | Default `https://nominatim.openstreetmap.org` (1 request per second, used only when Enter is pressed).                               |
-| `PHOTON_BASE_URL`                 | no      | Default `https://photon.komoot.io/api` (suggestions while typing).                                                                   |
-| `OVERPASS_URLS`                   | no      | Overpass servers for the imports, tried in order. Default: overpass-api.de, z.overpass-api.de, maps.mail.ru, kumi.systems.           |
-| `NEXT_PUBLIC_MAP_STYLE_URL`       | no      | A MapLibre style URL. Default: OpenFreeMap "liberty".                                                                                |
-| `NEXT_PUBLIC_TERRAIN_TILES_URL`   | no      | Terrarium PNG tiles `…/{z}/{x}/{y}.png` for the elevation profile and 3D terrain. Default: AWS Terrain Tiles (free, no key).         |
-| `NEXT_PUBLIC_SITE_URL`            | no      | Your public address, for share cards and the sitemap. Vercel's production address is used if empty.                                  |
-| `WRITE_LIMIT_SALT`                | no      | Any random string. It salts the hashed visitor IPs used for rate limits. Default: derived from `DATABASE_URL`.                       |
-| `CRON_SECRET`                     | no      | Any random string. Vercel Cron sends it to `/api/health`; without it the daily clean-up of old counters and cache rows is skipped.   |
-| `ANTHROPIC_API_KEY`               | no      | Turns on "plan in plain words". Empty hides the box and makes no AI calls. See [Plan in plain words](#plan-in-plain-words-optional). |
-| `ANTHROPIC_TRIP_MODEL`            | no      | The Claude model for it. Default `claude-haiku-4-5`.                                                                                 |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | no      | Turns on the Google map, and Google photos and reviews for places with none of their own. See [Google Maps](#google-maps-optional).  |
-| `NEXT_PUBLIC_GOOGLE_MAP_ID`       | no      | A Google Map ID for Advanced Markers.                                                                                                |
-| `GOOGLE_MAPS_API_KEY`             | no      | A separate server-only Google key. Empty uses the key above.                                                                         |
+| Variable                          | Needed  | What to put                                                                                                                                                                                                   |
+| --------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                    | **yes** | The session pooler string from step 3. On Vercel, use the transaction pooler string.                                                                                                                          |
+| `NOMINATIM_USER_AGENT`            | **yes** | Who you are, e.g. `my-triplan/0.1 (you@example.com)`. Nominatim's policy requires it; it is also sent to Photon and Overpass.                                                                                 |
+| `OSRM_BASE_URL`                   | no      | The routing server. Default: the public OSRM demo server (fair use only; self-host for real traffic).                                                                                                         |
+| `NOMINATIM_BASE_URL`              | no      | Default `https://nominatim.openstreetmap.org` (1 request per second, used only when Enter is pressed).                                                                                                        |
+| `PHOTON_BASE_URL`                 | no      | Default `https://photon.komoot.io/api` (suggestions while typing).                                                                                                                                            |
+| `OVERPASS_URLS`                   | no      | Overpass servers for the imports, tried in order. Default: overpass-api.de, z.overpass-api.de, maps.mail.ru, kumi.systems.                                                                                    |
+| `NEXT_PUBLIC_MAP_STYLE_URL`       | no      | A MapLibre style URL. Default: OpenFreeMap "liberty".                                                                                                                                                         |
+| `NEXT_PUBLIC_TERRAIN_TILES_URL`   | no      | Terrarium PNG tiles `…/{z}/{x}/{y}.png` for the elevation profile and 3D terrain. Default: AWS Terrain Tiles (free, no key).                                                                                  |
+| `NEXT_PUBLIC_OFFLINE_TILES_URL`   | no      | Your own PMTiles file of India for "Save for offline", made by `pnpm tiles:extract` and stored with its `fonts/` folder where range requests and CORS work (Cloudflare R2, Supabase Storage). Empty hides it. |
+| `SACHET_BASE_URL`                 | no      | NDMA's alert feeds for alerts on the route. Default `https://sachet.ndma.gov.in/cap_public_website`.                                                                                                          |
+| `NEXT_PUBLIC_SITE_URL`            | no      | Your public address, for share cards and the sitemap. Vercel's production address is used if empty.                                                                                                           |
+| `WRITE_LIMIT_SALT`                | no      | Any random string. It salts the hashed visitor IPs used for rate limits. Default: derived from `DATABASE_URL`.                                                                                                |
+| `CRON_SECRET`                     | no      | Any random string. Vercel Cron sends it to `/api/health`; without it the daily clean-up of old counters and cache rows is skipped.                                                                            |
+| `ANTHROPIC_API_KEY`               | no      | Turns on "plan in plain words". Empty hides the box and makes no AI calls. See [Plan in plain words](#plan-in-plain-words-optional).                                                                          |
+| `ANTHROPIC_TRIP_MODEL`            | no      | The Claude model for it. Default `claude-haiku-4-5`.                                                                                                                                                          |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | no      | Turns on the Google map, and Google photos and reviews for places with none of their own. See [Google Maps](#google-maps-optional).                                                                           |
+| `NEXT_PUBLIC_GOOGLE_MAP_ID`       | no      | A Google Map ID for Advanced Markers.                                                                                                                                                                         |
+| `GOOGLE_MAPS_API_KEY`             | no      | A separate server-only Google key. Empty uses the key above.                                                                                                                                                  |
 
 The `SUPABASE_*` keys and the YouTube and Instagram variables in `.env.example` are for later phases; the app does not read them yet. Never commit `.env.local`.
 

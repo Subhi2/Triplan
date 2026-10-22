@@ -15,3 +15,12 @@ export const DynamicMapView = dynamic(
     loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
   },
 );
+
+// A trip saved for offline: always MapLibre, over the tiles on this phone (no Google content).
+export const DynamicOfflineMapView = dynamic(
+  () => import("@/components/offline/OfflineMapView").then((m) => m.OfflineMapView),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
+  },
+);
