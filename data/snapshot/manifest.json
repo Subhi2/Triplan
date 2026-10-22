@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "createdAt": "2026-10-16T09:15:23.234Z",
+  "createdAt": "2026-10-22T12:08:21.697Z",
   "migration": "0021_service_toll",
   "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url).",
   "tables": [
@@ -172,9 +172,9 @@
         "location",
         "updated_at"
       ],
-      "rows": 114489,
-      "bytes": 4046209,
-      "sha256": "b4a30cb86336b8d3b01cdb450e8a977890bbe17f0c3cd4efc0e3d58cda9e59eb"
+      "rows": 116190,
+      "bytes": 4105263,
+      "sha256": "23ad20dc6e39dcc9355172af31aed718d8b0f7a2cf7f562604b0a083b18c9027"
     },
     {
       "name": "district",
