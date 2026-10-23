@@ -21,6 +21,16 @@ export interface MapFrame {
   points: LngLat[];
 }
 
+/** A rider in a ride-together room. */
+export interface MapRider {
+  id: string;
+  name: string;
+  location: LngLat;
+  me: boolean;
+  /** Not heard from for a minute. */
+  stale: boolean;
+}
+
 export interface MapStop {
   id: string;
   label: string;
@@ -54,6 +64,9 @@ export interface MapViewProps {
   cursor?: LngLat | null;
   /** Safety stops of the kind picked under "Safety on the way" (small coloured dots). */
   servicePins?: Pick<SafetyPoint, "id" | "kind" | "name" | "location">[];
+  /** Ride together: the group's riders (MapLibre map only) and the regroup pin. */
+  riders?: MapRider[];
+  regroup?: LngLat | null;
 }
 
 /** Before a trip is chosen, frame India (places are imported for every state). */

@@ -24,3 +24,12 @@ export const DynamicOfflineMapView = dynamic(
     loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
   },
 );
+
+// Ride together: always MapLibre (riders' markers are drawn there; no Google content needed).
+export const DynamicMapLibreView = dynamic(
+  () => import("@/components/map/MapView").then((m) => m.MapView),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-stone-200 dark:bg-stone-800" />,
+  },
+);

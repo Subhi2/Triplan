@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DynamicMapView as MapView, DynamicOfflineMapView } from "@/components/map/DynamicMapView";
 import { getPack, putLastTrip, type SavedPack } from "@/components/offline/packStore";
 import { SavePack } from "@/components/offline/SavePack";
+import { rideTogetherEnabled } from "@/components/ride/rideEnabled";
 import type { MapStop } from "@/components/map/types";
 import { PlaceFilters } from "@/components/place/PlaceFilters";
 import { PlaceList } from "@/components/place/PlaceList";
@@ -34,6 +35,7 @@ import { googleMapsTripUrl, MAX_GOOGLE_WAYPOINTS } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 import { DEFAULT_RIDE_HOURS, routeTimeline, suggestDays, type RideHours } from "@/lib/multiDay";
 import { isSight, pickStops, type StopBudgetMin } from "@/lib/pickStops";
+import { newRoomId, rideRoomPath } from "@/lib/rideRoom";
 import {
   BEST_PER_STRETCH,
   bestAlongRoute,
@@ -1028,6 +1030,27 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           breakPlaces={breakPlaces.status === "ok" ? breakPlaces.places : null}
           safety={safety.status === "ok" ? safety.summary : null}
         />
+      )}
+      {rideTogetherEnabled && !packOpen && (
+        <section aria-label="Ride together" className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() =>
+              window.open(
+                rideRoomPath(newRoomId(), { routeId: selectedRoute.id, title: lastTitle }),
+                "_blank",
+                "noopener",
+              )
+            }
+            className="inline-flex min-h-11 items-center self-start rounded-full border border-stone-300 px-3 text-sm font-bold hover:border-stone-500 md:min-h-9 dark:border-stone-600"
+          >
+            Ride together
+          </button>
+          <p className="text-xs text-stone-600 dark:text-stone-400">
+            A link for the group to see each other on this route while riding, and one for family to
+            follow. Positions are shared only after a tap, and never stored.
+          </p>
+        </section>
       )}
     </div>
   );

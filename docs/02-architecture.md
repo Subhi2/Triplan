@@ -505,9 +505,10 @@ Rules that decide whether a rider may use a road at a time, and what they need f
 
 ## Ride together (G5)
 
-- **Room**: `/ride/[room]`, where the room is 128 random bits (base64url), made in the browser from the planner's "Ride together" and shared to WhatsApp with the trip. The page shows the trip's route when its link carries one.
+- **Room**: `/ride/[room]`, where the room is 128 random bits (base64url, 22 characters; any other address is a 404), made in the browser from the planner's "Ride together" (a new tab) and shared to WhatsApp with the trip. The page shows the trip's route when its link carries one (`?route=<route id>`, read through `GET /api/route?id=`), on the MapLibre map, with each rider as a lettered dot. Hidden unless `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are set.
 - **Live positions**: Supabase Realtime on a public channel named after the room. Presence lists who is in, by the nickname each rider picks. Broadcast sends `{ id, lng, lat, heading, at }` every 10 s while the screen is on (Wake Lock, as in Near me's ride mode), rounded to 5 decimals (about 1 m), so riders can find each other. Anyone can drop a regroup pin, sent the same way.
-- **Follow link**: `?follow=1` opens the same map without sharing a position, for family at home.
+- **Channel** (`src/components/ride/rideChannel.ts`): Supabase Realtime on the public channel `ride:<room>`, Presence keyed by the tab's rider id, Broadcast events `pos`, `gone` (a rider stopped sharing) and `pin`. Every message from the channel comes from another rider's phone, so it is checked against the Zod schemas in `src/lib/rideRoom.ts` before it is used. Tests set `NEXT_PUBLIC_RIDE_TRANSPORT=local`, which runs the same room over the browser's BroadcastChannel and never reaches Supabase. Checked 2026-10-22 with two separate browsers on the real project: positions arrived, "Stop sharing" cleared them, no request to our server carried a position, and `realtime.messages` stayed empty.
+- **Follow link**: `?follow=1` opens the same map without sharing a position or being listed ("1 following from home"), for family at home.
 - **Privacy**: positions travel only through the Realtime channel. They are never written to the database or logs, and the server never sees them. "Stop sharing" ends it at once, and the page stops after 12 hours. The position is read only after the rider taps "Share my position".
 - **Limits**: Supabase's free plan allows 200 connections and 100 messages a second for the project. A room of 10 riders sends 1 message a second.
 

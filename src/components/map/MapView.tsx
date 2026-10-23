@@ -178,6 +178,29 @@ export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification })
           <MeDot headingDeg={props.me.headingDeg} />
         </Marker>
       )}
+      {props.riders?.map((r) => (
+        <Marker key={r.id} longitude={r.location[0]} latitude={r.location[1]} anchor="center">
+          <div
+            title={r.me ? `${r.name} (you)` : r.name}
+            data-rider={r.name}
+            className={`flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-white px-1.5 text-sm font-bold text-white shadow-md ${
+              r.me ? "bg-brand" : r.stale ? "bg-stone-400" : "bg-slate-700"
+            }`}
+          >
+            {r.name.slice(0, 1).toUpperCase()}
+          </div>
+        </Marker>
+      ))}
+      {props.regroup && (
+        <Marker longitude={props.regroup[0]} latitude={props.regroup[1]} anchor="bottom">
+          <div
+            data-regroup
+            className="bg-marigold rounded-md border-2 border-white px-2 py-0.5 text-xs font-bold text-white shadow-md"
+          >
+            Regroup
+          </div>
+        </Marker>
+      )}
       {props.cursor && (
         <Marker longitude={props.cursor[0]} latitude={props.cursor[1]} anchor="center">
           <CursorDot />

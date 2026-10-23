@@ -174,6 +174,8 @@ test("category chips and the detour toggle filter the list", async ({ page }) =>
 test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", async ({
   page,
 }, testInfo) => {
+  // Real OSRM and two database writes: slow when the whole suite runs at once.
+  test.slow();
   const title = `E2E trip ${testInfo.project.name} ${Date.now()}`;
   const db = postgres(process.env.DATABASE_URL!, { prepare: false, max: 1 });
   try {
