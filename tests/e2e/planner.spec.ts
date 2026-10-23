@@ -956,7 +956,12 @@ test.describe("ride check", () => {
       const body = route.request().postDataJSON() as { categories?: string[] };
       const places =
         body.categories?.[0] === "fuel"
-          ? [pump("Nelamangala Fuels", 20), pump("Kunigal HP", 60), pump("Hassan IOCL", 250)]
+          ? [
+              pump("Nelamangala Fuels", 20),
+              // From Overture (open_place): credited next to the count.
+              { ...pump("Kunigal HP", 60), slug: "", open: true as const },
+              pump("Hassan IOCL", 250),
+            ]
           : [];
       return route.fulfill({ json: { places } });
     });
@@ -979,7 +984,9 @@ test.describe("ride check", () => {
     // Default range for a bike is 200 km: a 190 km stretch leaves too little reserve.
     await expect(check).toContainText("Fuel: fill up before a 190 km stretch");
     await expect(check).toContainText("From Kunigal HP (km 60) to Hassan IOCL (km 250)");
-    await expect(check).toContainText("3 fuel stations within 2 km of the route");
+    await expect(check).toContainText(
+      "3 fuel stations within 2 km of the route, from OpenStreetMap and Overture Maps",
+    );
     const range = check.getByRole("spinbutton", { name: "Range on a full tank (km)" });
     await range.fill("300");
     await expect(check).toContainText("Fuel: longest stretch without a pump is 190 km");
@@ -1177,17 +1184,19 @@ test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) 
     trending: false,
     notable: false,
   };
+  // An open place (Overture): no page of its own, credited under the list.
   const dhaba = {
     ...cafe,
-    id: "place/highway-dhaba",
-    slug: "highway-dhaba",
+    id: "08f61a1b2c3d4e5f0123456789abcdef",
+    slug: "",
     name: "Highway Dhaba",
     category: "food",
     kmFromStart: 245,
+    open: true,
   };
   await page.route("**/api/places/along", (route) => {
-    const body = route.request().postDataJSON() as { categories?: string[] };
-    const places = body.categories?.includes("coffee") ? [cafe, dhaba] : [];
+    const body = route.request().postDataJSON() as { categories?: string[]; openPlaces?: boolean };
+    const places = body.categories?.includes("coffee") && body.openPlaces ? [cafe, dhaba] : [];
     return route.fulfill({ json: { places } });
   });
   await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
@@ -1203,6 +1212,7 @@ test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) 
   const breaks = check.getByRole("list", { name: "Suggested breaks" });
   await expect(breaks).toContainText("Ghat Cafe");
   await expect(breaks).toContainText("Highway Dhaba");
+  await expect(check).toContainText("Some from Overture Maps.");
 
   const cup = page.getByRole("button", { name: "Break at Ghat Cafe, km 135" });
   await cup.click();

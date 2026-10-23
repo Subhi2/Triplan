@@ -155,6 +155,13 @@
       "when": 1791979143871,
       "tag": "0021_service_toll",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792734595095,
+      "tag": "0022_open_place",
+      "breakpoints": true
     }
   ]
 }

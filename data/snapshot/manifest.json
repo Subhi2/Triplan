@@ -1,8 +1,8 @@
 {
   "format": 1,
-  "createdAt": "2026-10-22T12:08:21.697Z",
-  "migration": "0021_service_toll",
-  "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url).",
+  "createdAt": "2026-10-23T06:09:16.894Z",
+  "migration": "0022_open_place",
+  "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url). open_place rows are from Overture Places (Overture Maps Foundation, overturemaps.org) under the licence in each row (CDLA-Permissive-2.0, Apache-2.0 for Foursquare, CC0-1.0): see LICENCE.md, NOTICE-Foursquare.txt and the LICENSE-*.txt files.",
   "tables": [
     {
       "name": "category",
@@ -175,6 +175,25 @@
       "rows": 116190,
       "bytes": 4105263,
       "sha256": "23ad20dc6e39dcc9355172af31aed718d8b0f7a2cf7f562604b0a083b18c9027"
+    },
+    {
+      "name": "open_place",
+      "file": "open_place.ndjson.gz",
+      "columns": [
+        "id",
+        "name",
+        "category",
+        "location",
+        "confidence",
+        "license",
+        "datasets",
+        "region",
+        "release",
+        "updated_at"
+      ],
+      "rows": 70231,
+      "bytes": 3323453,
+      "sha256": "4b3970cc06d8885e34e163606cd922e58a0db71d468f94895776d009b3121df2"
     },
     {
       "name": "district",

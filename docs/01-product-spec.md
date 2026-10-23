@@ -106,7 +106,7 @@ Chosen after web research; the reasons and sources are in `07-growth-plan.md` ("
 34. **Ride your GPX**: open a GPX, KML or TCX file of a ride (Strava, Garmin, the Royal Enfield app) to see its hairpins, climbs, the places passed, a 3D replay and a story poster.
 35. **Offline trip pack**: a trip's map, route, places and safety stops saved on the phone, for roads with no signal.
 36. **Ride together**: a link for the group to see each other on the map while riding, with a regroup pin, and a follow link for family.
-37. **More food, fuel and stays** from Overture's open places data.
+37. **More fuel, food and coffee** for breaks and the fuel check, from Overture's open places data. They are not in the place list and have no pages.
 38. **Reviews, photos and road reports** without signing in: a rating with the month and vehicle, photos, and reports of closures, landslides, floods, potholes and diversions that expire.
 
 User stories:

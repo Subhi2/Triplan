@@ -5,8 +5,10 @@ vi.mock("@/server/services/corridorService", () => ({
   toPlaceAlong: (r: unknown) => r,
 }));
 vi.mock("@/server/services/routeService", () => ({ getRouteGeometry: vi.fn() }));
+vi.mock("@/server/services/openPlaceService", () => ({ openPlacesAlong: vi.fn() }));
 
 const { placesAlong } = await import("@/server/services/corridorService");
+const { openPlacesAlong } = await import("@/server/services/openPlaceService");
 const { getRouteGeometry } = await import("@/server/services/routeService");
 const { POST } = await import("@/app/api/places/along/route");
 const { PLACE_LIST_CATEGORIES } = await import("@/lib/categories");
@@ -32,6 +34,7 @@ function post(body: unknown) {
 describe("POST /api/places/along", () => {
   beforeEach(() => {
     vi.mocked(placesAlong).mockReset().mockResolvedValue([]);
+    vi.mocked(openPlacesAlong).mockReset().mockResolvedValue([]);
     vi.mocked(getRouteGeometry).mockReset();
   });
 
@@ -62,6 +65,33 @@ describe("POST /api/places/along", () => {
     await post({ geometry: line, corridorKm: 10, categories: ["fort"] });
     expect(getRouteGeometry).not.toHaveBeenCalled();
     expect(placesAlong).toHaveBeenCalledWith(line, 10_000, ["fort"]);
+  });
+
+  it("adds open places only when asked, marked and in km order", async () => {
+    const row = (id: string, km: number) =>
+      ({ id, kmFromStart: km }) as Awaited<ReturnType<typeof placesAlong>>[number];
+    vi.mocked(placesAlong).mockResolvedValue([row("ours-10", 10), row("ours-50", 50)]);
+    vi.mocked(openPlacesAlong).mockResolvedValue([row("open-30", 30)]);
+
+    const plain = await post({ geometry: line, corridorKm: 2, categories: ["fuel"] });
+    expect(openPlacesAlong).not.toHaveBeenCalled();
+    expect((await plain.json()).places).toHaveLength(2);
+
+    const res = await post({
+      geometry: line,
+      corridorKm: 2,
+      categories: ["fuel"],
+      openPlaces: true,
+    });
+    expect(openPlacesAlong).toHaveBeenCalledWith(line, 2_000, ["fuel"]);
+    const { places } = (await res.json()) as { places: { id: string; open?: true }[] };
+    expect(places.map((p) => p.id)).toEqual(["ours-10", "open-30", "ours-50"]);
+    expect(places.map((p) => p.open ?? false)).toEqual([false, true, false]);
+  });
+
+  it("never adds open places to the default list", async () => {
+    await post({ geometry: line, corridorKm: 5, openPlaces: true });
+    expect(openPlacesAlong).not.toHaveBeenCalled();
   });
 
   it("rejects invalid bodies with 400", async () => {

@@ -279,7 +279,7 @@ export function RideCheck({
   const fuelPrice = parseWithin(priceText, FUEL_PRICE_LIMITS);
   const cost = mileage && fuelPrice ? fuelCost(route.distanceKm, mileage, fuelPrice) : null;
 
-  const fuel = usePlacesAlong(route, FUEL_CORRIDOR_KM, FUEL_CATEGORIES);
+  const fuel = usePlacesAlong(route, FUEL_CORRIDOR_KM, FUEL_CATEGORIES, true);
   const gap = useMemo(
     () =>
       fuel.status === "ok"
@@ -302,6 +302,7 @@ export function RideCheck({
 
   const verdict = gap ? fuelVerdict(gap.km, rangeKm) : null;
   const stationCount = fuel.status === "ok" ? fuel.places.length : 0;
+  const someOpenFuel = fuel.status === "ok" && fuel.places.some((p) => p.open);
   const fuelTone: Tone = !verdict
     ? "muted"
     : verdict === "ok"
@@ -520,7 +521,14 @@ export function RideCheck({
               </p>
               <p className="text-xs text-stone-600 dark:text-stone-400">
                 {stationCount} fuel station{stationCount === 1 ? "" : "s"} within {FUEL_CORRIDOR_KM}{" "}
-                km of the route, from OpenStreetMap; some may be missing or closed.
+                km of the route, from OpenStreetMap
+                {someOpenFuel && (
+                  <>
+                    {" "}
+                    and <OvertureLink />
+                  </>
+                )}
+                ; some may be missing or closed.
               </p>
             </Check>
           )}
@@ -701,6 +709,12 @@ export function RideCheck({
               <p className="text-xs text-stone-600 dark:text-stone-400">
                 A stop within 1 km of the road, near every 2 hours of riding, outside 2–4 pm where
                 there is a choice. A tap ticks it for the trip.
+                {breaks.stops.some((b) => b.place.open) && (
+                  <>
+                    {" "}
+                    Some from <OvertureLink />.
+                  </>
+                )}
               </p>
             </Check>
           )}
@@ -853,5 +867,19 @@ export function RideCheck({
         </ul>
       </div>
     </section>
+  );
+}
+
+/** Credit for open places (docs/02, "Open places from Overture"). */
+function OvertureLink() {
+  return (
+    <a
+      href="https://overturemaps.org/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline"
+    >
+      Overture Maps
+    </a>
   );
 }

@@ -20,6 +20,8 @@ export interface PlaceAlong {
   thumbUrl: string | null;
   trending: boolean;
   notable: boolean; // curated, reviewed or linked to Wikidata
+  /** Fuel, food or coffee from Overture (open_place): no page of its own. */
+  open?: true;
 }
 
 /** Places this close to the route line count as "On route". */
@@ -46,6 +48,8 @@ export const placesAlongRequestSchema = z
       .min(1)
       .max(20)
       .optional(),
+    /** Also open places (fuel, food, coffee from Overture) in `categories`: breaks, fuel gap. */
+    openPlaces: z.boolean().optional(),
   })
   .refine((b) => b.routeId || b.geometry, { message: "Send routeId or geometry" });
 

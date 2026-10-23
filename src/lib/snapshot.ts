@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // The data snapshot (docs/02-architecture.md, "One-command data setup"): our public tables as
 // gzipped JSON lines with a manifest, so a fresh clone gets every place, photo credit, famous ride,
-// service point, district and road rule with `pnpm db:setup` instead of hours of throttled imports.
+// service point, open place, district and road rule with `pnpm db:setup` instead of hours of throttled imports.
 
 export const SNAPSHOT_FORMAT = 1;
 
@@ -16,6 +16,7 @@ export const SNAPSHOT_TABLES = [
   "media",
   "ride",
   "service_point",
+  "open_place",
   "district",
   "road_rule",
 ] as const;
@@ -55,6 +56,7 @@ const SNAPSHOT_ORDER: Record<SnapshotTable, string> = {
   media: "id",
   ride: "position, slug",
   service_point: "osm_id",
+  open_place: "id",
   district: "osm_id",
   road_rule: "slug",
 };
@@ -75,7 +77,10 @@ export const SNAPSHOT_LICENCE =
   "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap " +
   "(© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). " +
   "Photo files stay with their authors under the licence in each media row. Imported place " +
-  "descriptions keep the licence in their place row (description_license, description_url).";
+  "descriptions keep the licence in their place row (description_license, description_url). " +
+  "open_place rows are from Overture Places (Overture Maps Foundation, overturemaps.org) under " +
+  "the licence in each row (CDLA-Permissive-2.0, Apache-2.0 for Foursquare, CC0-1.0): see " +
+  "LICENCE.md, NOTICE-Foursquare.txt and the LICENSE-*.txt files.";
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
 const quote = (name: string) => {

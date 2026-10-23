@@ -20,6 +20,7 @@
     "db:import-osm": "tsx --env-file=.env.local scripts/import-osm.ts",
     "db:import-services": "tsx --env-file=.env.local scripts/import-services.ts",
     "db:import-districts": "tsx --env-file=.env.local scripts/import-districts.ts",
+    "db:import-open-places": "tsx --env-file=.env.local scripts/import-open-places.ts",
     "db:import-photos": "tsx --env-file=.env.local scripts/import-photos.ts",
     "db:import-descriptions": "tsx --env-file=.env.local scripts/import-descriptions.ts",
     "db:link-wikidata": "tsx --env-file=.env.local scripts/link-wikidata.ts",
@@ -28,6 +29,7 @@
     "db:setup": "tsx --env-file=.env.local scripts/setup-db.ts",
     "db:export-snapshot": "tsx --env-file=.env.local scripts/export-snapshot.ts",
     "rides:lookup": "tsx --env-file=.env.local scripts/ride-lookup.ts",
+    "spike:open-places": "tsx --env-file=.env.local scripts/spike-open-places.ts",
     "tiles:extract": "tsx scripts/extract-tiles.ts",
     "icons": "tsx scripts/generate-icons.ts",
     "screenshots": "tsx scripts/screenshots.ts",
@@ -63,6 +65,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@duckdb/node-api": "1.5.6-r.1",
     "@eslint/eslintrc": "^3.3.1",
     "@playwright/test": "^1.55.1",
     "@tailwindcss/postcss": "^4.1.13",

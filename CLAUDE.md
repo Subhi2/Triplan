@@ -53,7 +53,8 @@ pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/r
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json
 pnpm db:import-districts                       # India's districts with LGD codes, for official alerts (G5)
 pnpm db:seed-road-rules                        # night bans, permits, e-passes and fees in data/road-rules.json (G5)
-pnpm db:import-open-places -- --region=<key|all>   # food, fuel and stays from Overture Places (G5)
+pnpm db:import-open-places -- --region=<key|all>   # fuel, food and coffee from Overture Places into open_place (G5)
+pnpm spike:open-places          # compare Overture with our data on two test rides (read only)
 pnpm tiles:extract              # our own PMTiles file of India for offline packs (G5)
 pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)
 pnpm db:export-snapshot         # rewrite data/snapshot from the live database (read only)

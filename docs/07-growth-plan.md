@@ -97,7 +97,7 @@ Status (2026-10-02): G2.1, G2.2, G2.4, G2.5 and G2.8 are built in "Growth G3 · 
 | C · Ride together | Ride your GPX | A ride from Strava, Garmin or the Royal Enfield app becomes hairpins, a profile, the places passed, a 3D replay and a poster | `@tmcw/togeojson` (BSD-2), in the browser |
 | C | Offline trip pack | Ghats and Ladakh have no signal | Our own PMTiles (BSD-3) file of India, cut from a Protomaps build of OpenStreetMap (ODbL) and stored by us; at most 3,000 tiles or 50 MB a pack. (OpenFreeMap downloads dropped 2026-10-15) |
 | C | Ride together | Groups split up on ghats; REVER's LiveRIDE shows riders want a live map | Supabase Realtime Broadcast and Presence (free plan: 200 connections, 100 messages a second); positions never stored |
-| D · Riders' content | More food, fuel and stays | The fuel gap and the break planner are only as good as the pumps and cafes we know | Overture Places (CDLA-Permissive-2.0; Apache-2.0 for its Foursquare records; CC0 for AllThePlaces), after a quality check against OSM |
+| D · Riders' content | More fuel, food and coffee | The fuel gap and the break planner are only as good as the pumps and cafes we know | Overture Places (CDLA-Permissive-2.0; Apache-2.0 for its Foursquare records; CC0 for AllThePlaces), downloaded per release and stored by us in its own table, after a quality check against OSM |
 | D | Reviews, photos and road reports without sign-in | First-hand, fresh data; a road report says what no map knows ("landslide at km 23, one lane open") | ALTCHA (MIT; proof of work, no key or cookies) with per-visitor limits, a Claude Haiku pre-screen and an admin queue. Only admins sign in |
 
 This settles the question G4 left open, how to stop spam without sign-in: proof of work, per-visitor limits, a device token for editing one's own posts, an AI pre-screen and approval by an admin.
@@ -153,6 +153,7 @@ Web research of 2026-10-14. What we read, and what each finding changed.
 - Ookla's open speed data: CC BY-NC-SA, not for commercial use.
 - Valhalla's public FOSSGIS server for the scenic route: a free volunteer server that asks apps to announce themselves and can throttle them. Only a Valhalla on our own server (2026-10-15).
 - Offline packs downloaded from OpenFreeMap: their rules need a User-Agent a browser cannot send, so it would need their permission. Our own PMTiles file instead (2026-10-15).
+- Stays from Overture Places: in the spike, many were eateries filed as hotels, booking-site listings with their numbers, or homestays that could not be confirmed, and OpenStreetMap already gives us 27,000 stays. Fuel, food and coffee only (2026-10-23).
 - [Mapillary](https://help.mapillary.com/hc/en-us/articles/115001770409-CC-BY-SA-license-for-open-data): commercial API terms unclear.
 - Open Charge Map: licence per record and little data for India; OSM's `amenity=charging_station` instead, when EV range checks come.
 - MoRTH accident black spots: published as highway and km-stone lists, [no coordinates](https://visionias.in/current-affairs/upsc-daily-news-summary/article/2025-11-03/the-indian-express/polity-and-governance/govt-to-release-nh-black-spot-data-based-on-real-time-e-dar) yet.

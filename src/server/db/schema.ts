@@ -368,6 +368,32 @@ export const servicePoint = pgTable(
   ],
 );
 
+// Open places (G5) --------------------------------------------------------------
+// Fuel, food and coffee from Overture Places (`pnpm db:import-open-places`), for the break planner
+// and the fuel gap only: no pages, no search, not in the place list (docs/02, "Open places from
+// Overture"). Each row keeps its own licence.
+
+export const openPlace = pgTable(
+  "open_place",
+  {
+    id: text("id").primaryKey(), // Overture's GERS id, stable across releases
+    name: text("name").notNull(),
+    category: text("category").notNull(), // fuel | food | coffee
+    location: geographyPoint("location").notNull(),
+    confidence: real("confidence").notNull(),
+    license: text("license").notNull(), // "CDLA-Permissive-2.0", "Apache-2.0", "CC0-1.0"
+    datasets: text("datasets").array().notNull(), // "Foursquare", "meta", "AllThePlaces"
+    region: text("region").notNull(), // the state's key in OSM_REGIONS, from our districts
+    release: text("release").notNull(), // the Overture release it was read from
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("open_place_location_gix").using("gist", t.location),
+    index("open_place_region_idx").on(t.region),
+    check("open_place_category_check", sql`${t.category} IN ('fuel', 'food', 'coffee')`),
+  ],
+);
+
 // Districts (G5) ----------------------------------------------------------------
 // India's districts from OpenStreetMap (admin_level 5) with their LGD codes: official alerts name
 // the districts they cover by LGD code (docs/02, "Alerts on the route"). Imported with

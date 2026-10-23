@@ -382,12 +382,13 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const alerts = useRouteAlerts(selectedRoute);
   // Night bans, permits, e-passes and fees on the selected route.
   const rules = useRouteRules(selectedRoute);
-  // Food, coffee and fuel within 2 km; the break planner keeps those within 1 km.
-  const liveBreakPlaces = usePlacesAlong(packOpen ? null : selectedRoute, 2, [
-    "coffee",
-    "food",
-    "fuel",
-  ]);
+  // Food, coffee and fuel within 2 km, open places too; the break planner keeps those within 1 km.
+  const liveBreakPlaces = usePlacesAlong(
+    packOpen ? null : selectedRoute,
+    2,
+    ["coffee", "food", "fuel"],
+    true,
+  );
   const packBreakPlaces = packOpen ? pack.breakPlaces : null;
   const breakPlaces = useMemo<typeof liveBreakPlaces>(
     () => (packBreakPlaces ? { status: "ok", places: packBreakPlaces } : liveBreakPlaces),

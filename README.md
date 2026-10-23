@@ -139,7 +139,7 @@ pnpm db:setup
 This one command:
 
 1. Runs the migrations: tables, PostGIS functions, indexes and row-level security.
-2. Loads the data snapshot in `data/snapshot/`: every place (90,000+, all 36 states and union territories), place guide, photo credit, famous ride and service point (110,000+), about 24 MB.
+2. Loads the data snapshot in `data/snapshot/`: every place (90,000+, all 36 states and union territories), place guide, photo credit, famous ride, service point (110,000+) and open place (70,000 fuel stations, food and coffee stops from Overture), about 27 MB.
 
 It takes under a minute. Before writing anything it checks every file against its checksum, and it only loads into empty tables. On a database that already has places, `pnpm db:setup -- --replace --yes` empties the snapshot tables first; it refuses while there are saved trips or reviews.
 

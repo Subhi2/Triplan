@@ -34,7 +34,7 @@ CREATE TABLE place (
   state         text,
   description   text,
   status        place_status NOT NULL DEFAULT 'unverified',
-  source        text NOT NULL,             -- 'curated' | 'osm' | 'user' | 'youtube' | 'instagram' | 'overture' (G5)
+  source        text NOT NULL,             -- 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
   osm_id        text UNIQUE,               -- 'node/123' | 'way/456' | 'relation/789'; OSM import upserts on it
   google_place_id text,                    -- the only Google data we store; looked up when details first open
   google_place_checked_at timestamptz,     -- last lookup; with no id, not retried for 30 days
@@ -266,6 +266,26 @@ CREATE TABLE service_point (
 );
 CREATE INDEX service_point_location_gix ON service_point USING gist (location);
 CREATE INDEX service_point_region_idx ON service_point (region);
+
+-- Open places (migration 0022, G5) ------------------------------------------------
+-- Fuel, food and coffee from Overture Places (`pnpm db:import-open-places`), for the break
+-- planner and the fuel gap only: no pages, no search, not in the place list. Public, read-only,
+-- in the data snapshot with each row's licence.
+CREATE TABLE open_place (
+  id         text PRIMARY KEY,                     -- Overture's GERS id, stable across releases
+  name       text NOT NULL,
+  category   text NOT NULL CHECK (category IN ('fuel','food','coffee')),
+  location   geography(Point, 4326) NOT NULL,
+  confidence real NOT NULL,                        -- Overture's, 0.7 or more
+  license    text NOT NULL,                        -- 'CDLA-Permissive-2.0' | 'Apache-2.0' | 'CC0-1.0', comma-joined
+  datasets   text[] NOT NULL,                      -- {meta, Foursquare, AllThePlaces, ...}
+  region     text NOT NULL,                        -- the state's key in OSM_REGIONS, from our districts
+  release    text NOT NULL,                        -- '2026-10-21.0'
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX open_place_location_gix ON open_place USING gist (location);
+CREATE INDEX open_place_region_idx ON open_place (region);
+-- open_places_along_route(geojson, corridor_m, categories): like services_along_route.
 
 -- Districts (migration 0019, G5) --------------------------------------------------
 -- India's districts from OpenStreetMap (admin_level 5) with their LGD codes, for official alerts
