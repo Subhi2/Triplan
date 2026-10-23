@@ -43,7 +43,9 @@ export async function sendSignInLink(form: FormData) {
     const { error } =
       (await supabase?.auth.signInWithOtp({
         email: email.data,
-        options: { emailRedirectTo: `${linkOrigin(h)}/auth/callback?next=/admin` },
+        // No query string: Supabase matches it against its Redirect URLs exactly, and falls
+        // back to the Site URL otherwise. The callback goes on to /admin by default.
+        options: { emailRedirectTo: `${linkOrigin(h)}/auth/callback` },
       })) ?? {};
     if (error) console.error("Admin sign-in link failed", error.message);
   }
