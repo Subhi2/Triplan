@@ -15,6 +15,9 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
+    // Each run is a new visitor to the per-visitor write limits (30 saves and posts an hour),
+    // which runs from one machine would otherwise share. The dev server reads this header.
+    extraHTTPHeaders: { "x-forwarded-for": `e2e-${Date.now()}` },
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
@@ -44,6 +47,11 @@ export default defineConfig({
       NEXT_PUBLIC_RIDE_TRANSPORT: "local",
       // The offline map file: tests answer it from tests/fixtures/pmtiles (never a real server).
       NEXT_PUBLIC_OFFLINE_TILES_URL: "https://offline-tiles.test/india.pmtiles",
+      // Riders' posts are open with a test key; photos stay in the server's memory, never in
+      // Supabase Storage. Admins are not set, so nobody can sign in from tests.
+      ALTCHA_HMAC_KEY: "e2e-proof-of-work-key",
+      PHOTO_STORE: "memory",
+      ADMIN_EMAILS: "",
     },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,

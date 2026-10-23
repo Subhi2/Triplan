@@ -162,6 +162,13 @@
       "when": 1792734595095,
       "tag": "0022_open_place",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792735902736,
+      "tag": "0023_rider_posts",
+      "breakpoints": true
     }
   ]
 }

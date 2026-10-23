@@ -20,6 +20,8 @@ export const REQUEST_LIMITS = {
   googlePhoto: { scope: "gphoto", limit: 40, windowS: 3600 },
   alerts: { scope: "alerts", limit: 120, windowS: 3600 },
   upload: { scope: "upload", limit: 20, windowS: 3600 },
+  reports: { scope: "reports", limit: 120, windowS: 3600 },
+  pow: { scope: "pow", limit: 60, windowS: 3600 },
 } as const;
 
 /** Rows for visitors not seen for this long are deleted by the daily health check. */

@@ -9,6 +9,8 @@ const forgetOldAlerts = vi.fn();
 vi.mock("@/server/db/cache", () => ({ forgetOldCache, forgetOldForecasts, forgetOldAlerts }));
 const forgetOldVisitors = vi.fn();
 vi.mock("@/server/services/writeLimit", () => ({ forgetOldVisitors }));
+const forgetOldPosts = vi.fn();
+vi.mock("@/server/services/riderPostService", () => ({ forgetOldPosts }));
 
 const { GET } = await import("@/app/api/health/route");
 
@@ -23,6 +25,7 @@ describe("GET /api/health", () => {
     forgetOldForecasts.mockReset().mockResolvedValue(2);
     forgetOldAlerts.mockReset().mockResolvedValue(5);
     forgetOldVisitors.mockReset().mockResolvedValue(1);
+    forgetOldPosts.mockReset().mockResolvedValue({ pow: 6, reports: 7 });
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -31,7 +34,7 @@ describe("GET /api/health", () => {
     expect(await res.json()).toEqual({
       ok: true,
       places: 93_000,
-      cleaned: { visitors: 1, forecasts: 2, alerts: 5, routes: 3, geocodes: 4 },
+      cleaned: { visitors: 1, forecasts: 2, alerts: 5, routes: 3, geocodes: 4, pow: 6, reports: 7 },
     });
   });
 
@@ -43,6 +46,7 @@ describe("GET /api/health", () => {
     expect(forgetOldVisitors).not.toHaveBeenCalled();
     expect(forgetOldCache).not.toHaveBeenCalled();
     expect(forgetOldAlerts).not.toHaveBeenCalled();
+    expect(forgetOldPosts).not.toHaveBeenCalled();
   });
 
   it("never cleans up when CRON_SECRET is not set", async () => {

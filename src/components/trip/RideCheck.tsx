@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
+import { RoadReportForm } from "@/components/posts/RoadReportForm";
 import type { AlertsState } from "@/components/route/useRouteAlerts";
+import type { RoadReportsState } from "@/components/route/useRoadReports";
 import type { RulesState } from "@/components/route/useRouteRules";
 import { alertLine, alertsForRide, alertTone } from "@/lib/alerts";
 import type { BreakPlan } from "@/lib/breaks";
@@ -20,6 +22,7 @@ import {
   RANGE_LIMITS_KM,
 } from "@/lib/rideCheck";
 import type { PlaceAlong } from "@/lib/places";
+import { ROAD_REPORT_LABELS, type RoadReportAlong } from "@/lib/riderPosts";
 import { checkRules, closedHours, SPARE_WARN_MIN, type RuleCheck } from "@/lib/roadRules";
 import type { Gap, TollPlaza } from "@/lib/safety";
 import type { RouteOption, Vehicle } from "@/lib/trip";
@@ -65,6 +68,10 @@ interface Props {
   /** Toll plazas on the route; null while they load. */
   tolls?: TollPlaza[] | null;
   tollsError?: boolean;
+  /** Riders' road reports on the route, approved and in force. */
+  reports?: RoadReportsState;
+  /** Riders can post road reports (ALTCHA_HMAC_KEY is set on the server). */
+  postsOpen?: boolean;
 }
 
 /** A stretch without a hospital longer than these is worth knowing about (km). */
@@ -238,6 +245,8 @@ export function RideCheck({
   onBreakToggle,
   tolls = null,
   tollsError = false,
+  reports = { status: "idle" },
+  postsOpen = false,
 }: Props) {
   const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
   const [rangeText, setRangeText] = useState(String(DEFAULT_RANGE_KM[vehicle]));
@@ -864,9 +873,71 @@ export function RideCheck({
               </p>
             </Check>
           )}
+
+          {(postsOpen || (reports.status === "ok" && reports.reports.length > 0)) && (
+            <RoadReports reports={reports} route={postsOpen ? route : null} />
+          )}
         </ul>
       </div>
     </section>
+  );
+}
+
+/** Blockages make the line amber; potholes and diversions are worth knowing but no reason to wait. */
+const BLOCKING = new Set(["closed", "landslide", "flooded"]);
+
+const ago = (iso: string, now: number) => {
+  const h = Math.max(0, Math.round((now - Date.parse(iso)) / 3_600_000));
+  return h < 1 ? "under an hour ago" : `${h} h ago`;
+};
+
+function reportLine(r: RoadReportAlong, now: number) {
+  const by = r.nickname ? ` by ${r.nickname}` : "";
+  return `${ROAD_REPORT_LABELS[r.kind]} at km ${Math.round(r.kmFromStart)}, reported ${ago(r.createdAt, now)}${by}`;
+}
+
+/** Riders' road reports on the route, and the form to add one (docs/02, G5). */
+function RoadReports({
+  reports,
+  route,
+}: {
+  reports: RoadReportsState;
+  /** Set when riders can post: shows "Report the road". */
+  route: RouteOption | null;
+}) {
+  const [now] = useState(() => Date.now());
+  const list = reports.status === "ok" ? reports.reports : [];
+  const tone: Tone =
+    reports.status !== "ok" ? "muted" : list.some((r) => BLOCKING.has(r.kind)) ? "warn" : "ok";
+  const title =
+    reports.status === "loading"
+      ? "Road reports from riders: checking…"
+      : reports.status === "error"
+        ? "Road reports from riders: could not load"
+        : list.length === 0
+          ? "Road reports from riders: none in force"
+          : list.length === 1
+            ? `Road report: ${ROAD_REPORT_LABELS[list[0]!.kind].toLowerCase()} at km ${Math.round(list[0]!.kmFromStart)}`
+            : `Road reports: ${list.length} on the way`;
+  return (
+    <Check tone={tone} title={title}>
+      {list.length > 0 && (
+        <ol aria-label="Road reports" className="mt-1 space-y-1 text-xs">
+          {list.map((r) => (
+            <li key={r.id}>
+              <span className="font-medium">{reportLine(r, now)}</span>
+              {r.note && (
+                <span className="block text-stone-700 dark:text-stone-300">“{r.note}”</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className="text-xs text-stone-600 dark:text-stone-400">
+        From riders on this road, checked before they show; each lasts 24 to 72 hours.
+      </p>
+      {route && <RoadReportForm route={route} />}
+    </Check>
   );
 }
 

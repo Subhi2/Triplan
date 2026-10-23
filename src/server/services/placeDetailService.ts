@@ -10,6 +10,7 @@ import {
 } from "@/lib/placeDetail";
 import { TRENDING_MIN_SCORE } from "@/lib/places";
 import { getDb } from "../db";
+import { powKey } from "./proofOfWork";
 
 interface DetailRow extends Record<string, unknown> {
   id: string;
@@ -173,7 +174,8 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
       LIMIT ${MAX_VIDEOS}`),
     db.execute<ReviewRow>(sql`
       SELECT r.id, r.rating, r.body, r.visited_month, r.visited_year,
-             r.vehicle_used::text AS vehicle_used, pr.display_name AS author, r.created_at
+             r.vehicle_used::text AS vehicle_used,
+             coalesce(r.nickname, pr.display_name) AS author, r.created_at
       FROM review r LEFT JOIN profile pr ON pr.user_id = r.user_id
       WHERE r.place_id = ${row.id} AND r.status = 'verified'
       ORDER BY r.created_at DESC
@@ -198,6 +200,7 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
           elevationM: parseElevation(tags.ele),
         });
   return {
+    postsOpen: powKey() !== null,
     id: row.id,
     slug: row.slug,
     name: row.name,

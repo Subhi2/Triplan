@@ -170,6 +170,8 @@ export const media = pgTable(
     height: integer("height"),
     status: placeStatus("status").notNull().default("unverified"),
     uploadedBy: uuid("uploaded_by").references(() => authUsers.id),
+    // A rider's photo (G5): sha256 of the posting device's key, which lets that device delete it.
+    deviceHash: text("device_hash"),
     createdAt: createdAt(),
   },
   // The photo import re-runs safely: one row per place and image.
@@ -185,19 +187,27 @@ export const review = pgTable(
     placeId: uuid("place_id")
       .notNull()
       .references(() => place.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => authUsers.id),
+    // Null for riders' reviews without sign-in (G5), which carry device_hash instead.
+    userId: uuid("user_id").references(() => authUsers.id),
     rating: smallint("rating").notNull(),
     body: text("body"),
     visitedMonth: smallint("visited_month"),
     visitedYear: smallint("visited_year"),
     vehicleUsed: vehicle("vehicle_used"),
     status: placeStatus("status").notNull().default("verified"),
+    // sha256 of the posting device's key: one review per place per device, and only that device
+    // may change or delete it.
+    deviceHash: text("device_hash"),
+    nickname: text("nickname"),
+    // The AI pre-screen's verdict, model and reason; null when there was none.
+    moderation: jsonb("moderation"),
     createdAt: createdAt(),
   },
   (t) => [
     unique().on(t.placeId, t.userId),
+    uniqueIndex("review_place_device_key")
+      .on(t.placeId, t.deviceHash)
+      .where(sql`${t.deviceHash} IS NOT NULL`),
     check("review_rating_check", sql`${t.rating} BETWEEN 1 AND 5`),
     check("review_visited_month_check", sql`${t.visitedMonth} BETWEEN 1 AND 12`),
   ],
@@ -367,6 +377,41 @@ export const servicePoint = pgTable(
     ),
   ],
 );
+
+// Road reports (G5) -------------------------------------------------------------
+// Riders' reports of a closed or flooded road, a landslide, potholes or a diversion: a point and
+// a short note, shown on routes after an admin approves them, until they expire (docs/02).
+
+export const roadReport = pgTable(
+  "road_report",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(), // closed | landslide | flooded | potholes | diversion
+    location: geographyPoint("location").notNull(),
+    note: text("note").notNull().default(""),
+    nickname: text("nickname"),
+    deviceHash: text("device_hash").notNull(),
+    status: placeStatus("status").notNull().default("unverified"),
+    moderation: jsonb("moderation"),
+    createdAt: createdAt(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("road_report_location_gix").using("gist", t.location),
+    index("road_report_expires_idx").on(t.expiresAt),
+    check(
+      "road_report_kind_check",
+      sql`${t.kind} IN ('closed', 'landslide', 'flooded', 'potholes', 'diversion')`,
+    ),
+  ],
+);
+
+// Spent proofs of work (G5): one solved challenge pays for one post. Kept until the challenge
+// would have expired, then removed by the daily clean-up.
+export const powSpent = pgTable("pow_spent", {
+  signature: text("signature").primaryKey(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
 
 // Open places (G5) --------------------------------------------------------------
 // Fuel, food and coffee from Overture Places (`pnpm db:import-open-places`), for the break planner

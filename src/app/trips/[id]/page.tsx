@@ -5,6 +5,7 @@ import { Planner } from "@/components/trip/Planner";
 import { formatDuration, formatKm } from "@/lib/format";
 import { tripIdSchema } from "@/lib/savedTrip";
 import { SITE_NAME, tripHeadline } from "@/lib/site";
+import { powKey } from "@/server/services/proofOfWork";
 import { getTrip } from "@/server/services/tripService";
 
 // The saving device may update the trip at any time, so always show the latest version.
@@ -44,7 +45,7 @@ export default async function TripPage({ params }: Props) {
   return (
     // useSearchParams in Planner needs a Suspense boundary.
     <Suspense>
-      <Planner savedTrip={trip} />
+      <Planner savedTrip={trip} postsOpen={powKey() !== null} />
     </Suspense>
   );
 }

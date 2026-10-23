@@ -195,6 +195,8 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
   await page.route("**/api/route/rules", (route) =>
     route.fulfill({ json: { rules: [], timeline: null } }),
   );
+  // No riders' road reports.
+  await page.route("**/api/route/reports", (route) => route.fulfill({ json: { reports: [] } }));
   // No terrain tiles for the 3D preview: it carries on with a flat map.
   await page.route("https://s3.amazonaws.com/elevation-tiles-prod/**", (route) =>
     route.fulfill({ status: 404, body: "" }),
@@ -1163,6 +1165,77 @@ test("a night ban on the road is checked against the start time, and permits are
   await expect(check).toContainText("E-pass needed to drive into the hills");
   await expect(check).toContainText("Apply before you go.");
   await expect(check.getByRole("link", { name: "epass.example.org" })).toBeVisible();
+});
+
+test("shows riders' road reports, and sends a new one with its proof of work", async ({ page }) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route/reports");
+  await page.route("**/api/route/reports", (route) =>
+    route.fulfill({
+      json: {
+        reports: [
+          {
+            id: "r1",
+            kind: "landslide",
+            note: "One lane open near the temple",
+            nickname: "Asha",
+            location: [75.6, 13.0],
+            kmFromStart: 231.4,
+            detourKm: 0.1,
+            createdAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
+            expiresAt: new Date(Date.now() + 69 * 3_600_000).toISOString(),
+          },
+        ],
+      },
+    }),
+  );
+  // The real challenge from the server, solved in the browser; the post itself is caught here.
+  let sent: {
+    report: { kind: string; location: [number, number] };
+    pow: unknown;
+    deviceKey: string;
+  } | null = null;
+  await page.route("**/api/road-reports", (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { status: "pending" } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+
+  await expect(check).toContainText("Road report: landslide at km 231");
+  await expect(check.getByRole("list", { name: "Road reports" })).toContainText(
+    "reported 3 h ago by Asha",
+  );
+  await expect(check).toContainText("One lane open near the temple");
+
+  await check.getByRole("button", { name: "Report the road" }).click();
+  const form = check.getByRole("form", { name: "Road report" });
+  await form.getByLabel("What is wrong").selectOption("flooded");
+  await form.getByLabel("Km along this route").fill("9999");
+  await form.getByRole("button", { name: "Send report" }).click();
+  await expect(check).toContainText("Give a km between 0 and");
+  await form.getByLabel("Km along this route").fill("120");
+  await form.getByLabel("Note (optional)").fill("Water over the bridge");
+  await form.getByRole("button", { name: "Send report" }).click();
+  await expect(check).toContainText("Riders on this road see it once it has been checked.");
+  expect(sent).not.toBeNull();
+  const body = sent!;
+  expect(body.report.kind).toBe("flooded");
+  expect(body.deviceKey).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(body.pow).toMatchObject({ challenge: { signature: expect.any(String) } });
+  // Km 120 of the route, somewhere between Bengaluru and Kalasa.
+  const [lng, lat] = body.report.location;
+  expect(lng).toBeGreaterThan(75.3);
+  expect(lng).toBeLessThan(77.6);
+  expect(lat).toBeGreaterThan(12.5);
+  expect(lat).toBeLessThan(13.5);
 });
 
 test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) => {

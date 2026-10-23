@@ -6,6 +6,8 @@ import { MONTH_SHORT } from "@/lib/months";
 import { VEHICLE_LABELS, type PlaceDetail } from "@/lib/placeDetail";
 import { detourLabel } from "@/lib/places";
 import type { Vehicle } from "@/lib/trip";
+import { PhotoForm } from "../posts/PhotoForm";
+import { ReviewForm } from "../posts/ReviewForm";
 import { CarryList } from "./CarryList";
 import { FromGoogle } from "./FromGoogle";
 import { MonthStrip } from "./MonthStrip";
@@ -221,6 +223,8 @@ export function PlaceDetailView({
         )
       )}
 
+      {place.postsOpen && <PhotoForm slug={place.slug} placeName={place.name} />}
+
       <FromGoogle
         key={place.slug}
         slug={place.slug}
@@ -332,6 +336,7 @@ export function PlaceDetailView({
             ))}
           </ul>
         )}
+        {place.postsOpen && <ReviewForm slug={place.slug} placeName={place.name} />}
       </Section>
 
       {/* Nothing fills videos until the YouTube discovery (phase 6): no empty section till then. */}

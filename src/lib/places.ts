@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CATEGORIES, isCategorySlug } from "./categories";
 import type { LngLat } from "./geo";
+import { rankingRating } from "./riderPosts";
 import { CORRIDOR_KM, lngLatSchema } from "./trip";
 
 /** A place within the corridor of a route (POST /api/places/along). */
@@ -63,10 +64,13 @@ export function detourLabel(detourKm: number): string {
 export const BEST_PER_STRETCH = 5;
 export const STRETCH_KM = 10;
 
-/** How worth stopping a place is: category weight, notable, rating. */
+/**
+ * How worth stopping a place is: category weight, notable, rating. The rating is the Bayesian
+ * one (src/lib/riderPosts.ts), so a single 5-star review does not lift a place to the top.
+ */
 export function placeRank(p: PlaceAlong): number {
   const weight = isCategorySlug(p.category) ? CATEGORIES[p.category].weight : 1;
-  return weight + (p.notable ? 1 : 0) + (p.rating ?? 0) / 5;
+  return weight + (p.notable ? 1 : 0) + (rankingRating(p.rating, p.ratingCount) ?? 0) / 5;
 }
 
 /** Popular ↔ Offbeat on the default list: the well-known stops, all of them, or the lesser-known. */

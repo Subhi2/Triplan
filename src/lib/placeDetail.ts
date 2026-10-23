@@ -68,6 +68,8 @@ export interface PlaceReview {
 
 /** GET /api/places/[slug]. Route-specific fields (km, detour) come from the places list. */
 export interface PlaceDetail {
+  /** Riders can post reviews and photos here (ALTCHA_HMAC_KEY is set on the server). */
+  postsOpen?: boolean;
   id: string;
   slug: string;
   name: string;

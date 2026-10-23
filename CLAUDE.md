@@ -115,6 +115,8 @@ ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
 SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website   # alerts on the route: feeds in rss/, CAP messages and their areas (G5)
 NEXT_PUBLIC_OFFLINE_TILES_URL=    # our own PMTiles file of India for offline packs (G5); empty = no "Save for offline"
 ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road reports (G5); empty = closed
+ADMIN_EMAILS=                     # who may sign in to /admin (G5); set in the deployment, never committed
+PHOTO_STORE=                      # tests only: "memory" keeps riders' photos out of Supabase Storage
 ```
 
 ## Things to avoid

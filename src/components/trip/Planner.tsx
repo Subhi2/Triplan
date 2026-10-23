@@ -22,6 +22,7 @@ import { FamousRidesStrip } from "@/components/ride/FamousRidesStrip";
 import { PreviewButton } from "@/components/ride/PreviewButton";
 import { useDayPlan } from "@/components/route/useDayPlan";
 import { useRouteAlerts } from "@/components/route/useRouteAlerts";
+import { useRoadReports } from "@/components/route/useRoadReports";
 import { useRouteRules } from "@/components/route/useRouteRules";
 import { useSafetyAlong } from "@/components/route/useSafetyAlong";
 import { useRouteProfiles } from "@/components/route/useRouteProfiles";
@@ -113,9 +114,16 @@ interface Props {
   famousRides?: RideSummary[];
   /** Whether "plan in plain words" is switched on (the AI key is set). */
   aiEnabled?: boolean;
+  /** Riders can post road reports (ALTCHA_HMAC_KEY is set on the server). */
+  postsOpen?: boolean;
 }
 
-export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false }: Props) {
+export function Planner({
+  savedTrip = null,
+  famousRides = [],
+  aiEnabled = false,
+  postsOpen = false,
+}: Props) {
   const searchParams = useSearchParams();
   const [initial] = useState(() => {
     const fromUrl = parseTripUrl(new URLSearchParams(searchParams.toString()));
@@ -382,6 +390,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
   const alerts = useRouteAlerts(selectedRoute);
   // Night bans, permits, e-passes and fees on the selected route.
   const rules = useRouteRules(selectedRoute);
+  // Riders' road reports on the selected route (approved, in force).
+  const roadReports = useRoadReports(packOpen ? null : selectedRoute);
   // Food, coffee and fuel within 2 km, open places too; the break planner keeps those within 1 km.
   const liveBreakPlaces = usePlacesAlong(
     packOpen ? null : selectedRoute,
@@ -888,6 +898,8 @@ export function Planner({ savedTrip = null, famousRides = [], aiEnabled = false 
           sunsets={sunsets}
           tolls={safety.status === "ok" ? safety.summary.tolls : null}
           tollsError={safety.status === "error"}
+          reports={roadReports}
+          postsOpen={postsOpen && !packOpen}
           pickedIds={pickedIds}
           onBreakToggle={(place) => setPlacePicked(place, !pickedIds.has(place.id))}
         />

@@ -114,6 +114,7 @@ CREATE TABLE media (
   height      int,
   status      place_status NOT NULL DEFAULT 'unverified',
   uploaded_by uuid REFERENCES auth.users(id),
+  device_hash text,                 -- G5 (0023): a rider's photo, sha256 of the posting device's key
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX media_place_url_key ON media (place_id, url);
@@ -125,18 +126,18 @@ CREATE TABLE review (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   place_id      uuid NOT NULL REFERENCES place(id) ON DELETE CASCADE,
   user_id       uuid REFERENCES auth.users(id),      -- G5: null for riders (no accounts)
-  device_hash   text,                                -- G5: hash of the posting device's token
-  author_name   text,                                -- G5: the nickname given, shown with the review
+  device_hash   text,                                -- G5: sha256 of the posting device's key
+  nickname      text,                                -- G5: the name given, shown with the review
   rating        smallint NOT NULL CHECK (rating BETWEEN 1 AND 5),
   body          text,
   visited_month smallint CHECK (visited_month BETWEEN 1 AND 12),
   visited_year  smallint,
   vehicle_used  vehicle,
   moderation    jsonb,                               -- G5: the AI pre-screen's verdict and reason
-  status        place_status NOT NULL DEFAULT 'unverified',   -- G5: was 'verified'
+  status        place_status NOT NULL DEFAULT 'verified',     -- riders' reviews are written 'unverified'
   created_at    timestamptz NOT NULL DEFAULT now(),
   UNIQUE (place_id, user_id),
-  UNIQUE (place_id, device_hash)                     -- G5
+  UNIQUE (place_id, device_hash) WHERE device_hash IS NOT NULL   -- G5 (0023)
 );
 
 -- external_rating (Google ratings) is dropped: Google's terms forbid storing them.
@@ -322,14 +323,15 @@ CREATE TABLE road_rule (
 );
 CREATE INDEX road_rule_geom_gix ON road_rule USING gist (geom);
 
--- Road reports (G5, step 14) -------------------------------------------------------
+-- Road reports (migration 0023, G5) ----------------------------------------------
 -- A rider's report of a closure, landslide, flood, potholes or diversion. Never in the snapshot.
+-- RLS: anyone reads approved reports still in force. reports_along_route(geojson, corridor_m).
 CREATE TABLE road_report (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   kind        text NOT NULL CHECK (kind IN ('closed','landslide','flooded','potholes','diversion')),
   location    geography(Point, 4326) NOT NULL,
-  note        text,
-  author_name text,
+  note        text NOT NULL DEFAULT '',
+  nickname    text,
   device_hash text NOT NULL,
   moderation  jsonb,                               -- the AI pre-screen's verdict and reason
   status      place_status NOT NULL DEFAULT 'unverified',
@@ -338,6 +340,13 @@ CREATE TABLE road_report (
 );
 CREATE INDEX road_report_location_gix ON road_report USING gist (location);
 CREATE INDEX road_report_expires_idx ON road_report (expires_at);
+
+-- Spent proofs of work (0023): one solved challenge pays for one post. Server only (RLS on, no
+-- policies); the daily clean-up removes rows past expires_at.
+CREATE TABLE pow_spent (
+  signature  text PRIMARY KEY,
+  expires_at timestamptz NOT NULL
+);
 
 -- Usage counters (migration 0014) -----------------------------------------------
 -- Counts per UTC day: routes planned, AI requests and tokens. Server only (RLS on, no policies).
