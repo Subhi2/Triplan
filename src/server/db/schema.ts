@@ -78,7 +78,7 @@ export const place = pgTable(
     // When the description import last looked for this place (rechecked after 90 days).
     descriptionCheckedAt: timestamp("description_checked_at", { withTimezone: true }),
     status: placeStatus("status").notNull().default("unverified"),
-    source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
+    source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube'
     osmId: text("osm_id"), // "node/123", "way/456"; unique, the OSM import upserts on it
     googlePlaceId: text("google_place_id"), // the only Google data stored (Maps ToS 3.2.3(b))
     // When the Google place id was last looked up; with no id found, not retried for 30 days.
@@ -162,7 +162,7 @@ export const media = pgTable(
     kind: text("kind").notNull(), // 'image' | 'video_embed'
     url: text("url").notNull(),
     thumbUrl: text("thumb_url"),
-    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' (never 'google')
+    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' (never 'google')
     license: text("license").notNull(),
     author: text("author"),
     authorUrl: text("author_url"),
@@ -234,6 +234,7 @@ export const discoveryRegion = pgTable("discovery_region", {
   center: geographyPoint("center").notNull(),
   radiusKm: integer("radius_km").notNull().default(30),
   keywords: text("keywords").array().notNull(),
+  // Unused since Instagram was dropped (2026-10-26); kept rather than dropped on the live database.
   hashtags: text("hashtags").array().notNull().default(emptyArray),
   active: boolean("active").notNull().default(true),
   lastRunAt: timestamp("last_run_at", { withTimezone: true }),
@@ -243,7 +244,7 @@ export const socialPost = pgTable(
   "social_post",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    source: text("source").notNull(), // 'youtube' | 'instagram' | 'user_link'
+    source: text("source").notNull(), // 'youtube' | 'user_link' (a rider's pasted link)
     externalId: text("external_id").notNull(),
     url: text("url").notNull(),
     creatorName: text("creator_name"),

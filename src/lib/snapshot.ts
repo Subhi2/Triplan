@@ -43,7 +43,7 @@ export const SNAPSHOT_WHERE: Partial<Record<SnapshotTable, string>> = {
   place: PUBLIC_PLACE,
   place_guide: OF_PUBLIC_PLACE,
   place_carry: OF_PUBLIC_PLACE,
-  media: `status = 'verified' AND source IN ('wikimedia', 'youtube', 'instagram') AND ${OF_PUBLIC_PLACE}`,
+  media: `status = 'verified' AND source IN ('wikimedia', 'youtube') AND ${OF_PUBLIC_PLACE}`,
 };
 
 /** Row order in each file: stable, so a refresh with few changes has a small diff in size. */

@@ -38,7 +38,7 @@ Decided by the owner 2026-10-15: build only features that no one else can take a
 | Open-source software we can run on our own server | Works only on someone else's free public server, with no way to run it ourselves |
 | Paid services we already use and could swap (Supabase, Vercel, Anthropic, Google behind its budget), when the feature switches off cleanly without them | |
 
-What changed when the rule was made: G5's scenic route no longer uses Valhalla's public server, the offline pack uses our own map file instead of OpenFreeMap downloads, and Mapillary is out. SACHET alerts pass: every feed states it is public domain. Phases 6 (YouTube API) and 7 (Instagram, Meta app review) are checked against the rule before either starts.
+What changed when the rule was made: G5's scenic route no longer uses Valhalla's public server, the offline pack uses our own map file instead of OpenFreeMap downloads, and Mapillary is out. SACHET alerts pass: every feed states it is public domain. Phase 6 (YouTube API) is checked against the rule before it starts; phase 7 (Instagram) failed it and was dropped (2026-10-26).
 
 ## Feature list, by priority
 
@@ -153,6 +153,7 @@ Web research of 2026-10-14. What we read, and what each finding changed.
 - Ookla's open speed data: CC BY-NC-SA, not for commercial use.
 - Valhalla's public FOSSGIS server for the scenic route: a free volunteer server that asks apps to announce themselves and can throttle them. Only a Valhalla on our own server (2026-10-15).
 - Offline packs downloaded from OpenFreeMap: their rules need a User-Agent a browser cannot send, so it would need their permission. Our own PMTiles file instead (2026-10-15).
+- Instagram discovery (phase 7): its Graph API needs Meta's app review (weeks, and may be refused), reads only hashtag results (30 hashtags a week) and gives no location. Riders' pasted Instagram links stay, as plain links (2026-10-26).
 - Stays from Overture Places: in the spike, many were eateries filed as hotels, booking-site listings with their numbers, or homestays that could not be confirmed, and OpenStreetMap already gives us 27,000 stays. Fuel, food and coffee only (2026-10-23).
 - [Mapillary](https://help.mapillary.com/hc/en-us/articles/115001770409-CC-BY-SA-license-for-open-data): commercial API terms unclear.
 - Open Charge Map: licence per record and little data for India; OSM's `amenity=charging_station` instead, when EV range checks come.

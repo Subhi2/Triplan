@@ -1,6 +1,6 @@
 # Bike Travelling Guide
 
-A route explorer for bike and car travellers. The user picks a start, a destination and optional via stops (to force a specific path), and the app shows every worthwhile place along that exact route: temples, forts, viewpoints, waterfalls, treks, lakes, food and fuel. Each place has a category, rating, photos, reviews, best vehicle, best time to visit and items to carry. A discovery pipeline finds "hidden places" from YouTube and Instagram posts.
+A route explorer for bike and car travellers. The user picks a start, a destination and optional via stops (to force a specific path), and the app shows every worthwhile place along that exact route: temples, forts, viewpoints, waterfalls, treks, lakes, food and fuel. Each place has a category, rating, photos, reviews, best vehicle, best time to visit and items to carry. A discovery pipeline finds "hidden places" in YouTube videos.
 
 The app must work for **any** start, destination and via stops the user types. Bengaluru → Kalasa is only the test case used in the docs and tests; never hard-code it in app logic.
 
@@ -14,7 +14,7 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 | `docs/02-architecture.md` | Stack, folders, services, routing and corridor search |
 | `docs/03-data-model.md` | Postgres + PostGIS schema (SQL) and TypeScript types |
 | `docs/04-build-plan.md` | Phased build steps. Work through phases in order |
-| `docs/05-hidden-places.md` | YouTube / Instagram discovery pipeline and its rules |
+| `docs/05-hidden-places.md` | YouTube discovery pipeline and its rules |
 | `docs/06-seed-data.md` | Seed places for the Bengaluru → Kalasa demo |
 | `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, the research behind G5, making money |
 | `docs/08-design.md` | The "Ghat Road" design: tokens, type, components, layout and motion. Follow it for any UI |
@@ -108,8 +108,6 @@ NOMINATIM_USER_AGENT=bike-travelling-guide/0.1 (contact email)   # also sent to 
 PHOTON_BASE_URL=https://photon.komoot.io/api   # suggestions while typing
 OVERPASS_URLS=https://overpass-api.de/api/interpreter,...   # OSM imports; servers tried in order
 YOUTUBE_API_KEY=                  # phase 6
-INSTAGRAM_ACCESS_TOKEN=           # phase 7, needs Meta app review
-INSTAGRAM_BUSINESS_ACCOUNT_ID=    # phase 7
 ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction; G5 review pre-screen
 ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
 SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website   # alerts on the route: feeds in rss/, CAP messages and their areas (G5)

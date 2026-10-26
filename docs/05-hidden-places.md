@@ -1,6 +1,6 @@
 # 05 · Hidden places pipeline
 
-Find places that riders post about on YouTube and Instagram before they appear on maps, work out where they are, and add them to the map after a human checks them.
+Find places that riders post about on YouTube before they appear on maps, work out where they are, and add them to the map after a human checks them.
 
 ## Rules (non-negotiable)
 
@@ -22,14 +22,9 @@ Find places that riders post about on YouTube and Instagram before they appear o
 - Captions/transcripts are not downloadable through the API for other people's videos. Use title, description and tags only.
 - Store `external_id` = video ID. Embed with `https://www.youtube.com/embed/{id}`.
 
-### Instagram Graph API
+### Instagram (dropped 2026-10-26)
 
-- Requires: an **Instagram Business or Creator account** connected to a Facebook Page, a Meta developer app, and **app review** for the `instagram_basic` and Instagram Public Content Access feature. Plan for this to take weeks and possibly be refused.
-- Hashtag search: `GET /ig_hashtag_search?user_id={ig-user-id}&q={tag}` → hashtag ID, then `/{hashtag-id}/recent_media` (last 24 hours) and `/{hashtag-id}/top_media`.
-- Limit: **30 unique hashtags per rolling 7 days** per account. Pick them per region (e.g. `#sakleshpur`, `#chikmagalurdiaries`, `#kudremukh`, `#kalasa`).
-- Returned fields include caption, media type, permalink, timestamp, like and comment counts. **Location is not returned** for other users' media, so the place always comes from the caption.
-- Display with Instagram oEmbed (needs a Meta app token).
-- Fallback that needs no approval: users paste reel links in "Add a place" (`source = 'user_link'`); we store the link and the text they type.
+Not used. Its Graph API needs a Business account, a Meta developer app and Meta's **app review** (weeks, and may be refused), which fails the owner's rule in `07` ("How we choose features"). Riders can still paste a reel link in "Add a place" (`source = 'user_link'`): we keep the link and the text they type, and show it as a plain link (an embed would need a Meta app token).
 
 ### User submissions
 
@@ -38,10 +33,10 @@ The most reliable source of exact pins. See Phase 5.
 ## Pipeline
 
 ```
-discovery_region (name, center, radius, keywords, hashtags)
+discovery_region (name, center, radius, keywords)
       │  nightly job, per active region, within quota
       ▼
-1. FETCH     YouTube search (keywords × region) + Instagram hashtags
+1. FETCH     YouTube search (keywords × region)
              → upsert social_post (status 'new'), skip already-seen IDs
       ▼
 2. EXTRACT   LLM reads title + caption + tags → extracted JSON
@@ -58,7 +53,7 @@ discovery_region (name, center, radius, keywords, hashtags)
 5. GROUP     candidates with similar names within 3 km are grouped into one card
       ▼
 6. REVIEW    admin queue: embedded post(s), extracted fields, draggable pin
-             Approve → create place (status 'verified', source 'youtube'/'instagram')
+             Approve → create place (status 'verified', source 'youtube')
                        + place_guide from extracted hints (reviewer edits)
              Reject  → status 'rejected' with reason
       ▼
@@ -110,7 +105,7 @@ Output schema:
 
 ## Scheduling and budgets
 
-- Nightly job processes regions ordered by `last_run_at`, stopping when the YouTube quota budget (default 9,000 units) or the Instagram hashtag budget is reached.
+- Nightly job processes regions ordered by `last_run_at`, stopping when the YouTube quota budget (default 9,000 units) is reached.
 - Keep a `api_usage` table (date, provider, units) to enforce budgets across runs.
 - LLM: batch up to 50 posts per run per region; cache by post ID so re-runs never re-extract.
 

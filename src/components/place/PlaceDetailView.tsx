@@ -355,7 +355,7 @@ export function PlaceDetailView({
                 </a>
                 <span className="text-stone-600 dark:text-stone-400">
                   {" "}
-                  · {v.source === "youtube" ? "YouTube" : "Instagram"}
+                  · YouTube
                   {v.creator && ` · ${v.creator}`}
                 </span>
               </li>

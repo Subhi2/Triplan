@@ -37,7 +37,7 @@ describe("data snapshot", () => {
     expect(place).toContain("WHERE status IN ('verified', 'closed')");
     const media = exportSelect("media", ["id", "uploaded_by"]);
     expect(media).toContain('NULL AS "uploaded_by"');
-    expect(media).toContain("source IN ('wikimedia', 'youtube', 'instagram')");
+    expect(media).toContain("source IN ('wikimedia', 'youtube')");
     expect(media).not.toContain("'user'");
     expect(exportSelect("category", ["id"])).toContain("ORDER BY parent_id NULLS FIRST, id");
     expect(SNAPSHOT_TABLES).not.toContain("trip");

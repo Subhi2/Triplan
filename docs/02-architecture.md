@@ -11,8 +11,8 @@ Next.js route handlers (src/app/api/*)  ──►  src/server/services/*
              ┌──────────────────┬───────────────┼──────────────────┬──────────────────┐
              ▼                  ▼               ▼                  ▼                  ▼
       RoutingProvider   GeocodingProvider   Postgres+PostGIS   Social providers   Google Places (New)
-      (OSRM)            (Photon, Nominatim) (Supabase)         (YouTube,          gap-filling only,
-                                                                Instagram)         daily budget
+      (OSRM)            (Photon, Nominatim) (Supabase)         (YouTube)          gap-filling only,
+                                                                                   daily budget
                                                 ▲
                                    Scheduled jobs (src/jobs/*)
                                    discovery, rating refresh
@@ -60,7 +60,7 @@ src/
       alerts/                   # AlertsProvider, sachet.ts (NDMA CAP feeds, G5)
       geocoding/                # GeocodingProvider, photon.ts (suggestions), nominatim.ts (Enter)
       google/                   # places.ts (Places API New), budget.ts (daily call budget)
-      social/                   # youtube.ts, instagram.ts
+      social/                   # youtube.ts
       llm/                      # extractPlace.ts (Anthropic API)
     services/
       routeService.ts
@@ -579,4 +579,4 @@ Vercel (Hobby, free, non-commercial) runs the app; the database stays on Supabas
 - Unit: geo utils, ranking, provider response parsing (with recorded fixtures in `tests/fixtures/`), LLM extraction parsing.
 - Integration: `places_along_route` against a test DB with seed data (use the acceptance criteria in `01-product-spec.md`).
 - E2E (Playwright): search Bengaluru → Kalasa, add via Sakleshpur, open Manjarabad Fort, add it to trip.
-- Mock all external providers in tests; never hit OSRM, Nominatim, Photon, Overpass, Google, YouTube or Instagram in CI. Playwright runs without Google keys (MapLibre); the Google map and section are checked by unit tests on the provider and budget, and by hand on a preview deploy. Provider responses are recorded as fixtures (`pnpm fixtures:routes`, `pnpm fixtures:photon`), and the Playwright dev server gets an unreachable `PHOTON_BASE_URL`.
+- Mock all external providers in tests; never hit OSRM, Nominatim, Photon, Overpass, Google or YouTube in CI. Playwright runs without Google keys (MapLibre); the Google map and section are checked by unit tests on the provider and budget, and by hand on a preview deploy. Provider responses are recorded as fixtures (`pnpm fixtures:routes`, `pnpm fixtures:photon`), and the Playwright dev server gets an unreachable `PHOTON_BASE_URL`.

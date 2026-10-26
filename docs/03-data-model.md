@@ -34,7 +34,7 @@ CREATE TABLE place (
   state         text,
   description   text,
   status        place_status NOT NULL DEFAULT 'unverified',
-  source        text NOT NULL,             -- 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
+  source        text NOT NULL,             -- 'curated' | 'osm' | 'user' | 'youtube'
   osm_id        text UNIQUE,               -- 'node/123' | 'way/456' | 'relation/789'; OSM import upserts on it
   google_place_id text,                    -- the only Google data we store; looked up when details first open
   google_place_checked_at timestamptz,     -- last lookup; with no id, not retried for 30 days
@@ -106,7 +106,7 @@ CREATE TABLE media (
   kind        text NOT NULL,           -- 'image' | 'video_embed'
   url         text NOT NULL,           -- storage URL, or embed URL for videos
   thumb_url   text,
-  source      text NOT NULL,           -- 'user' | 'wikimedia' | 'youtube' | 'instagram' (never 'google': not storable)
+  source      text NOT NULL,           -- 'user' | 'wikimedia' | 'youtube' (never 'google': not storable)
   license     text NOT NULL,           -- 'CC-BY-SA-4.0', 'user-granted', 'embed-only' ...
   author      text,
   author_url  text,                    -- Wikimedia: the file's Commons page (full credit, licence)
@@ -161,14 +161,14 @@ CREATE TABLE discovery_region (
   center      geography(Point, 4326) NOT NULL,
   radius_km   int NOT NULL DEFAULT 30,
   keywords    text[] NOT NULL,        -- search phrases
-  hashtags    text[] NOT NULL DEFAULT '{}',
+  hashtags    text[] NOT NULL DEFAULT '{}',   -- unused since Instagram was dropped (2026-10-26); kept, not dropped
   active      boolean NOT NULL DEFAULT true,
   last_run_at timestamptz
 );
 
 CREATE TABLE social_post (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  source          text NOT NULL,        -- 'youtube' | 'instagram' | 'user_link'
+  source          text NOT NULL,        -- 'youtube' | 'user_link' (a rider's pasted link, YouTube or Instagram)
   external_id     text NOT NULL,
   url             text NOT NULL,
   creator_name    text,
@@ -460,7 +460,7 @@ interface PlaceDetail {
   carry: { slug: string; name: string; months: number[]; reason: string | null }[];
   media: { url: string; thumbUrl: string | null; author: string | null; authorUrl: string | null; license: string; source: string }[];
   googlePlaceId: string | null;  // Google's rating, reviews and photos come separately: GoogleGapFill
-  videos: { url: string; source: "youtube" | "instagram"; creator: string | null; title: string | null }[];
+  videos: { url: string; source: "youtube"; creator: string | null; title: string | null }[];
   reviews: { id: string; rating: number; body: string | null; visitedMonth: number | null; visitedYear: number | null;
              vehicleUsed: string | null; author: string | null; createdAt: string }[];
   osm: { id: string | null; openingHours: string | null; fee: string | null;   // from OSM tags, shown

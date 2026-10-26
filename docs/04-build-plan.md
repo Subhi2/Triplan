@@ -244,7 +244,7 @@ Steps 1, 2 and 5 are planned in Growth G5 D (step 14), without sign-in for rider
 
 1. Reviews: form (rating, month visited, vehicle, text, photos), one per user per place, rating trigger.
 2. Photo uploads to Supabase Storage with resize, EXIF strip, license = `user-granted`.
-3. "Add a place" (`/contribute`): pin on map, name, category, guide fields (optional), photos, optional YouTube/Instagram link. Creates `place` with `status = 'unverified'` and, if a link is given, a `social_post` with `source = 'user_link'`.
+3. "Add a place" (`/contribute`): pin on map, name, category, guide fields (optional), photos, optional link to a YouTube video or an Instagram post (kept as a plain link, no Meta API). Creates `place` with `status = 'unverified'` and, if a link is given, a `social_post` with `source = 'user_link'`.
 4. Duplicate check on submit: warn if a place with a similar name (`pg_trgm` similarity > 0.4) exists within 1 km.
 5. Admin area (`/admin`), gated by `profile.role`: queues for places, reviews, photos. Approve / edit / reject.
 
@@ -264,14 +264,9 @@ Follow `05-hidden-places.md`. YouTube's developer policies require API data to b
 
 **Done when:** a nightly run over the Sakleshpur region produces reviewable candidates, and approving one creates a place visible on the route.
 
-## Phase 7 · Instagram
+## Phase 7 · Instagram (dropped 2026-10-26)
 
-Only after Meta app review is approved (see `05`).
-
-1. Instagram provider using the Graph API hashtag endpoints.
-2. Hashtag budget tracking (30 unique hashtags per rolling 7 days).
-3. Same extraction → matching → review pipeline as YouTube.
-4. oEmbed for displaying reels on place pages.
+Not built. Instagram's API needs Meta's app review, which fails the owner's rule (`07`, "How we choose features"), and even approved it reads only hashtag results (30 hashtags a week) with no location. Riders can still paste an Instagram post link when they add a place: it is kept as a plain link (`source = 'user_link'`), with no Meta API call and no embed.
 
 ## Phase 8 · Polish and launch
 

@@ -130,7 +130,7 @@ Then fill in `.env.local`. Only the first two are required:
 | `NEXT_PUBLIC_GOOGLE_MAP_ID`       | no      | A Google Map ID for Advanced Markers.                                                                                                                                                                         |
 | `GOOGLE_MAPS_API_KEY`             | no      | A separate server-only Google key. Empty uses the key above.                                                                                                                                                  |
 
-`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Supabase → Project Settings → API) turn on "Ride together": rooms use Supabase Realtime's public channels, which new projects allow (Realtime settings, "Allow public access"). Without them the button is hidden. `SUPABASE_SECRET_KEY` is used on the server only, to store riders' photos (Supabase Storage bucket `rider-photos`, made on the first upload). The YouTube and Instagram variables in `.env.example` are for later phases; the app does not read them yet. Never commit `.env.local`.
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Supabase → Project Settings → API) turn on "Ride together": rooms use Supabase Realtime's public channels, which new projects allow (Realtime settings, "Allow public access"). Without them the button is hidden. `SUPABASE_SECRET_KEY` is used on the server only, to store riders' photos (Supabase Storage bucket `rider-photos`, made on the first upload). `YOUTUBE_API_KEY` in `.env.example` is for phase 6; the app does not read it yet. Never commit `.env.local`.
 
 ### 5. Create the tables and load all the data
 

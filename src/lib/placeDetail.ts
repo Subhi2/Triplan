@@ -50,7 +50,7 @@ export interface PlaceMedia {
 
 export interface PlaceVideo {
   url: string;
-  source: "youtube" | "instagram";
+  source: "youtube";
   creator: string | null;
   title: string | null;
 }

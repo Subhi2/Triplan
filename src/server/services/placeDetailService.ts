@@ -169,7 +169,7 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
     db.execute<VideoRow>(sql`
       SELECT url, source, creator_name, title FROM social_post
       WHERE place_id = ${row.id} AND status IN ('matched', 'verified')
-        AND source IN ('youtube', 'instagram')
+        AND source = 'youtube'
       ORDER BY view_count DESC NULLS LAST, posted_at DESC NULLS LAST
       LIMIT ${MAX_VIDEOS}`),
     db.execute<ReviewRow>(sql`

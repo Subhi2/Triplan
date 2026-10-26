@@ -125,9 +125,9 @@ Reviews and photos (7) and the admin queue (9) come first, in G5 (feature 38), w
 
 6. Accounts via Supabase Auth (email magic link, Google). Not needed for the MVP, which is open without sign-in; decide with reviews and contributions (phase 5) whether they need accounts.
 7. User reviews with rating, month visited, vehicle used, text, up to 5 photos.
-8. "Add a place" form: drop a pin, name, category, photos, optional YouTube/Instagram link. Goes to moderation.
+8. "Add a place" form: drop a pin, name, category, photos, optional link to a YouTube video or an Instagram post (kept as a plain link). Goes to moderation.
 9. Admin moderation queue for places, reviews, photos, and discovered social posts.
-10. Hidden places discovery from YouTube (and Instagram after Meta approval). See `05-hidden-places.md`.
+10. Hidden places discovery from YouTube. See `05-hidden-places.md`. (Instagram discovery was dropped on 2026-10-26: its API needs Meta's app review.)
 11. "Trending" badge on places with many recent posts.
 
 ### Later
