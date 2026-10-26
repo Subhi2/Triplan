@@ -305,6 +305,32 @@ test.describe("with location denied", () => {
   });
 });
 
+test("with no connection, Near me shows the last list kept on this phone", async ({ page }) => {
+  await mockApis(page);
+  await page.goto("/nearby?at=Sakleshpur@75.785,12.943&within=120&v=car");
+  await expect(rows(page)).toHaveCount(3);
+
+  // No signal: the request itself fails (a server's error would not bring the old list back).
+  await page.route("**/api/places/near?**", (route) => route.abort("internetdisconnected"));
+  await page.reload();
+  await expect(rows(page)).toHaveCount(3);
+  await expect(page.getByRole("status").filter({ hasText: "No connection" })).toContainText(
+    "kept on this phone",
+  );
+});
+
+test("a server's error does not bring back the old list", async ({ page }) => {
+  await mockApis(page);
+  await page.goto("/nearby?at=Sakleshpur@75.785,12.943&within=120&v=car");
+  await expect(rows(page)).toHaveCount(3);
+  await page.route("**/api/places/near?**", (route) =>
+    route.fulfill({ status: 500, json: { error: "Could not load places" } }),
+  );
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(rows(page)).toHaveCount(0);
+});
+
 test("touch targets are large enough on phones", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "phone layout only");
   await mockApis(page);

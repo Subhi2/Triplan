@@ -5,7 +5,9 @@ import {
   SAFETY_KINDS,
   safetyRequestSchema,
   summariseSafety,
+  TOLL_CORRIDOR_KM,
   type SafetyPoint,
+  type TollPlaza,
 } from "@/lib/safety";
 import { getRouteGeometry } from "@/server/services/routeService";
 import { servicesAlong } from "@/server/services/servicePointService";
@@ -13,7 +15,8 @@ import { servicesAlong } from "@/server/services/servicePointService";
 /**
  * POST { routeId | geometry } -> SafetySummary
  * Hospitals, police, ATMs, puncture and repair shops within 3 km of the route: counts, how many
- * per 50 km, the longest stretch without each, and the nearest few per 10 km to list and pin.
+ * per 50 km, the longest stretch without each, and the nearest few per 10 km to list and pin;
+ * and the toll plazas within 200 m of the road.
  * routeId refers to a route from POST /api/route; 404 ROUTE_NOT_FOUND once it has expired.
  */
 export async function POST(request: Request) {
@@ -33,17 +36,27 @@ export async function POST(request: Request) {
     const coords = line.coordinates as LngLat[];
     let lengthM = 0;
     for (let i = 1; i < coords.length; i++) lengthM += haversineM(coords[i - 1]!, coords[i]!);
-    const rows = await servicesAlong(line, SAFETY_CORRIDOR_KM * 1000, [...SAFETY_KINDS]);
-    const points: SafetyPoint[] = rows.map((r) => ({
-      id: r.osmId,
-      kind: r.kind as SafetyPoint["kind"],
-      name: r.name,
-      phone: r.phone,
-      location: r.location,
-      kmFromStart: Math.round(r.kmFromStart * 10) / 10,
-      detourKm: Math.round(r.detourM / 100) / 10,
-    }));
-    return Response.json(summariseSafety(points, lengthM / 1000));
+    const rows = await servicesAlong(line, SAFETY_CORRIDOR_KM * 1000, [...SAFETY_KINDS, "toll"]);
+    const points: SafetyPoint[] = rows
+      .filter((r) => r.kind !== "toll")
+      .map((r) => ({
+        id: r.osmId,
+        kind: r.kind as SafetyPoint["kind"],
+        name: r.name,
+        phone: r.phone,
+        location: r.location,
+        kmFromStart: Math.round(r.kmFromStart * 10) / 10,
+        detourKm: Math.round(r.detourM / 100) / 10,
+      }));
+    const tolls: TollPlaza[] = rows
+      .filter((r) => r.kind === "toll" && r.detourM <= TOLL_CORRIDOR_KM * 1000)
+      .map((r) => ({
+        id: r.osmId,
+        name: r.name,
+        location: r.location,
+        kmFromStart: Math.round(r.kmFromStart * 10) / 10,
+      }));
+    return Response.json(summariseSafety(points, lengthM / 1000, tolls));
   } catch (err) {
     console.error("POST /api/services/along failed", err);
     return Response.json({ error: "Could not load safety stops" }, { status: 500 });

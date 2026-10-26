@@ -33,6 +33,12 @@ describe("classifyService", () => {
     expect(classifyService(el({ tourism: "guest_house" }))?.kind).toBe("stay");
   });
 
+  it("keeps toll booths as tolls, with their name and no phone", () => {
+    expect(
+      classifyService(el({ barrier: "toll_booth", name: "Nelamangala Toll Plaza", phone: "1033" })),
+    ).toMatchObject({ kind: "toll", name: "Nelamangala Toll Plaza", phone: null });
+  });
+
   it("keeps the first phone number for hospitals, police and stays only", () => {
     expect(
       classifyService(el({ amenity: "hospital", phone: "+91 8173 244 444; 108" }))?.phone,
@@ -71,6 +77,7 @@ describe("buildServicesQuery", () => {
       '"amenity"="atm"',
       '"shop"~',
       '"tourism"~',
+      '"barrier"="toll_booth"',
     ]) {
       expect(q).toContain(tag);
     }

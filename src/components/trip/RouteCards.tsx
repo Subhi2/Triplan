@@ -5,6 +5,7 @@ import { CountUp } from "@/components/motion/CountUp";
 import { useCrown } from "@/components/motion/useCrown";
 import type { RouteCurvature } from "@/lib/curvature";
 import type { LngLat } from "@/lib/geo";
+import { scenicRouteId, type RouteScenic } from "@/lib/scenic";
 import type { RouteOption } from "@/lib/trip";
 import { RoadMixBar } from "./RoadMixBar";
 
@@ -38,6 +39,8 @@ export function RouteCards({
   const list = useRef<HTMLUListElement>(null);
   useCrown(list, "[data-route-card]", { axis: "y", radius: 130, lift: 5, shift: 4, grow: 0.012 });
   const picked = routes.find((r) => r.id === selectedId);
+  // The most scenic option, when it is not the fastest and scores clearly more.
+  const scenicId = scenicRouteId(routes);
   return (
     <>
       <ul ref={list} className="flex flex-col gap-2" aria-label="Route options">
@@ -59,6 +62,11 @@ export function RouteCards({
                 <span className="flex items-baseline justify-between gap-2">
                   <span className={`font-bold ${selected ? "text-base" : "text-[15px]"}`}>
                     {r.viaLabel}
+                    {r.id === scenicId && (
+                      <span className="bg-ghat-dark ml-2 inline-block rounded-full px-2 py-0.5 align-middle text-xs font-bold text-white dark:bg-orange-300 dark:text-stone-900">
+                        Scenic
+                      </span>
+                    )}
                   </span>
                   <span
                     className={`tabular font-mono text-sm font-semibold whitespace-nowrap ${
@@ -77,7 +85,12 @@ export function RouteCards({
                   />
                   {r.towns.length > 0 && <> · {r.towns.join(" · ")}</>}
                 </span>
-                <RouteFacts curvature={r.curvature} climbM={climbM[r.id]} delayMs={i * 60} />
+                <RouteFacts
+                  curvature={r.curvature}
+                  scenic={r.scenic ?? null}
+                  climbM={climbM[r.id]}
+                  delayMs={i * 60}
+                />
                 {r.roadMix && <RoadMixBar mix={r.roadMix} compact={!selected} />}
               </button>
             </li>
@@ -95,22 +108,24 @@ export function RouteCards({
 }
 
 /**
- * "20 hairpins · 54.6 km twisty · ↑ 1,662 m" under the towns. Hairpins and twisty km only on
- * roads with real bends; the climb once the route's profile has loaded.
+ * "Scenic 7/10 · 20 hairpins · 54.6 km twisty · ↑ 1,662 m" under the towns. Hairpins and twisty
+ * km only on roads with real bends; the climb once the route's profile has loaded.
  */
 function RouteFacts({
   curvature,
+  scenic,
   climbM,
   delayMs,
 }: {
   curvature: RouteCurvature | null;
+  scenic: RouteScenic | null;
   climbM: number | undefined;
   delayMs: number;
 }) {
   const hairpins = curvature?.hairpins ?? 0;
   const twistyKm = curvature?.twistyKm ?? 0;
   const showClimb = climbM !== undefined && climbM >= 100;
-  if (hairpins === 0 && twistyKm < 5 && !showClimb) return null;
+  if (!scenic && hairpins === 0 && twistyKm < 5 && !showClimb) return null;
   return (
     <span
       className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm"
@@ -121,8 +136,23 @@ function RouteFacts({
           : undefined
       }
     >
+      {scenic && (
+        <span
+          className="font-semibold"
+          data-scenic={scenic.score}
+          title={`Scenic score: ghats and twisty road, and ${scenic.sights} viewpoints, waterfalls, passes, beaches, peaks and forts within 2 km`}
+        >
+          Scenic <span className="tabular font-mono">{scenic.score}</span>
+          <span className="text-stone-500 dark:text-stone-400">/10</span>
+        </span>
+      )}
       {hairpins > 0 && (
         <span className="text-ghat-dark inline-flex items-center gap-1 font-bold dark:text-orange-300">
+          {scenic && (
+            <span aria-hidden className="font-normal text-stone-500">
+              ·{" "}
+            </span>
+          )}
           <HairpinIcon />
           <CountUp value={hairpins} delayMs={delayMs} className="tabular font-mono" />{" "}
           {hairpins === 1 ? "hairpin" : "hairpins"}
@@ -130,7 +160,7 @@ function RouteFacts({
       )}
       {twistyKm >= 5 && (
         <span className="text-stone-600 dark:text-stone-300">
-          {hairpins > 0 && <span aria-hidden>· </span>}
+          {(scenic || hairpins > 0) && <span aria-hidden>· </span>}
           <CountUp
             value={twistyKm}
             unit="km"
@@ -146,7 +176,7 @@ function RouteFacts({
           title="Total climb"
           data-climb={climbM}
         >
-          {(hairpins > 0 || twistyKm >= 5) && <span aria-hidden>· </span>}
+          {(scenic || hairpins > 0 || twistyKm >= 5) && <span aria-hidden>· </span>}
           <span className="tabular font-mono">
             ↑ <CountUp value={climbM} unit="metres" />
           </span>

@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  helplines,
   longestGap,
+  type SafetyPoint,
+  type SafetySummary,
   summariseSafety,
   telLink,
   thinByStretch,
-  type SafetyPoint,
 } from "@/lib/safety";
 
 const point = (id: string, kind: SafetyPoint["kind"], km: number, detourKm = 0.2): SafetyPoint => ({
@@ -78,6 +80,25 @@ describe("POST /api/services/along", () => {
         kmFromStart: 11.12,
         detourM: 340,
       },
+      {
+        osmId: "node/2",
+        kind: "toll",
+        name: "Toll Plaza",
+        phone: null,
+        location: [75, 13.3],
+        kmFromStart: 33.3,
+        detourM: 40,
+      },
+      {
+        // A booth on a parallel road, not this one.
+        osmId: "node/3",
+        kind: "toll",
+        name: null,
+        phone: null,
+        location: [75.01, 13.5],
+        kmFromStart: 55,
+        detourM: 900,
+      },
     ]);
     const post = (body: unknown) =>
       POST(
@@ -85,19 +106,33 @@ describe("POST /api/services/along", () => {
       );
     const res = await post({ geometry: line });
     expect(res.status).toBe(200);
-    const data = (await res.json()) as { counts: Record<string, number>; points: SafetyPoint[] };
+    const data = (await res.json()) as SafetySummary;
     expect(data.counts.hospital).toBe(1);
+    expect(data.points).toHaveLength(1);
     expect(data.points[0]).toMatchObject({ id: "node/1", kmFromStart: 11.1, detourKm: 0.3 });
+    expect(data.tolls).toEqual([
+      { id: "node/2", name: "Toll Plaza", location: [75, 13.3], kmFromStart: 33.3 },
+    ]);
     expect(servicesAlong).toHaveBeenCalledWith(line, 3000, [
       "hospital",
       "police",
       "atm",
       "tyre",
       "repair",
+      "toll",
     ]);
 
     vi.mocked(getRouteGeometry).mockResolvedValue(null);
     expect((await post({ routeId: `${"c".repeat(32)}-0` })).status).toBe(404);
     expect((await post({})).status).toBe(400);
+  });
+});
+
+describe("helplines", () => {
+  it("are 112 everywhere, and 1033 on a route with national highways", () => {
+    expect(helplines(0).map((h) => h.number)).toEqual(["112"]);
+    expect(helplines(42.5).map((h) => h.number)).toEqual(["112", "1033"]);
+    // No road mix: 1033 is not guessed.
+    expect(helplines(null).map((h) => h.number)).toEqual(["112"]);
   });
 });

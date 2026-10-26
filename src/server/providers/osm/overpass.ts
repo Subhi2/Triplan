@@ -86,7 +86,7 @@ export function buildPlacesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
 
 /**
  * Tag filters for service points (docs/02, "Safety stops"): hospitals, police, ATMs, tyre and
- * repair shops and stays, kept apart from places (no pages) in service_point.
+ * repair shops, stays and toll booths, kept apart from places (no pages) in service_point.
  */
 const SERVICE_FILTERS = [
   '["amenity"="hospital"]',
@@ -96,6 +96,7 @@ const SERVICE_FILTERS = [
   '["amenity"="bank"]["atm"="yes"]',
   '["shop"~"^(tyres|motorcycle_repair|car_repair|motorcycle)$"]',
   '["tourism"~"^(hotel|guest_house|hostel|motel)$"]',
+  '["barrier"="toll_booth"]',
 ];
 
 export function buildServicesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
@@ -109,6 +110,21 @@ export function buildServicesQuery({ areaIso, bbox }: OsmPlacesRequest): string 
     "node.all;out body qt;",
     "way.all;out tags bb qt;",
     "rel.all;out tags bb qt;",
+  ].join("\n");
+}
+
+/**
+ * A state's districts (docs/02, "Alerts on the route"): the boundary relations at admin_level 5,
+ * with tags (name, ref:LGD:district) and bounds only. Their outlines come from Nominatim, already
+ * simplified, instead of thousands of member ways from Overpass.
+ */
+export function buildDistrictsQuery(areaIso: string): string {
+  return [
+    `[out:json][timeout:${QUERY_TIMEOUT_S}];`,
+    `area["ISO3166-2"="${areaIso}"]["admin_level"="4"]->.region;`,
+    ".region out ids;",
+    'rel["boundary"="administrative"]["admin_level"="5"](area.region);',
+    "out tags bb qt;",
   ].join("\n");
 }
 
@@ -292,6 +308,7 @@ export function createOverpassProvider(urls: string[], userAgent: string): OsmPl
   return {
     fetchPlaces: (request) => run(buildPlacesQuery(request), request.areaIso),
     fetchServices: (request) => run(buildServicesQuery(request), request.areaIso),
+    fetchDistricts: (areaIso) => run(buildDistrictsQuery(areaIso), areaIso),
   };
 }
 

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 // The data snapshot (docs/02-architecture.md, "One-command data setup"): our public tables as
-// gzipped JSON lines with a manifest, so a fresh clone gets every place, photo credit, famous ride and
-// service point with `pnpm db:setup` instead of hours of throttled imports.
+// gzipped JSON lines with a manifest, so a fresh clone gets every place, photo credit, famous ride,
+// service point, open place, district and road rule with `pnpm db:setup` instead of hours of throttled imports.
 
 export const SNAPSHOT_FORMAT = 1;
 
@@ -16,6 +16,9 @@ export const SNAPSHOT_TABLES = [
   "media",
   "ride",
   "service_point",
+  "open_place",
+  "district",
+  "road_rule",
 ] as const;
 export type SnapshotTable = (typeof SNAPSHOT_TABLES)[number];
 
@@ -40,7 +43,7 @@ export const SNAPSHOT_WHERE: Partial<Record<SnapshotTable, string>> = {
   place: PUBLIC_PLACE,
   place_guide: OF_PUBLIC_PLACE,
   place_carry: OF_PUBLIC_PLACE,
-  media: `status = 'verified' AND source IN ('wikimedia', 'youtube', 'instagram') AND ${OF_PUBLIC_PLACE}`,
+  media: `status = 'verified' AND source IN ('wikimedia', 'youtube') AND ${OF_PUBLIC_PLACE}`,
 };
 
 /** Row order in each file: stable, so a refresh with few changes has a small diff in size. */
@@ -53,6 +56,9 @@ const SNAPSHOT_ORDER: Record<SnapshotTable, string> = {
   media: "id",
   ride: "position, slug",
   service_point: "osm_id",
+  open_place: "id",
+  district: "osm_id",
+  road_rule: "slug",
 };
 
 /** Serial ids whose sequences are moved past the loaded rows. */
@@ -71,7 +77,10 @@ export const SNAPSHOT_LICENCE =
   "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap " +
   "(© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). " +
   "Photo files stay with their authors under the licence in each media row. Imported place " +
-  "descriptions keep the licence in their place row (description_license, description_url).";
+  "descriptions keep the licence in their place row (description_license, description_url). " +
+  "open_place rows are from Overture Places (Overture Maps Foundation, overturemaps.org) under " +
+  "the licence in each row (CDLA-Permissive-2.0, Apache-2.0 for Foursquare, CC0-1.0): see " +
+  "LICENCE.md, NOTICE-Foursquare.txt and the LICENSE-*.txt files.";
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
 const quote = (name: string) => {

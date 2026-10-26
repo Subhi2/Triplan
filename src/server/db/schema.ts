@@ -26,7 +26,7 @@ import { authUsers } from "drizzle-orm/supabase";
 import type { RouteCurvature } from "@/lib/curvature";
 import type { ElevationProfile } from "@/lib/elevation";
 import type { RoadMix } from "@/lib/trip";
-import { geographyArea, geographyLine, geographyPoint } from "./postgis";
+import { geographyAny, geographyArea, geographyLine, geographyPoint } from "./postgis";
 
 const emptyArray = sql`'{}'`;
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -78,7 +78,7 @@ export const place = pgTable(
     // When the description import last looked for this place (rechecked after 90 days).
     descriptionCheckedAt: timestamp("description_checked_at", { withTimezone: true }),
     status: placeStatus("status").notNull().default("unverified"),
-    source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube' | 'instagram'
+    source: text("source").notNull(), // 'curated' | 'osm' | 'user' | 'youtube'
     osmId: text("osm_id"), // "node/123", "way/456"; unique, the OSM import upserts on it
     googlePlaceId: text("google_place_id"), // the only Google data stored (Maps ToS 3.2.3(b))
     // When the Google place id was last looked up; with no id found, not retried for 30 days.
@@ -162,7 +162,7 @@ export const media = pgTable(
     kind: text("kind").notNull(), // 'image' | 'video_embed'
     url: text("url").notNull(),
     thumbUrl: text("thumb_url"),
-    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' | 'instagram' (never 'google')
+    source: text("source").notNull(), // 'user' | 'wikimedia' | 'youtube' (never 'google')
     license: text("license").notNull(),
     author: text("author"),
     authorUrl: text("author_url"),
@@ -170,6 +170,8 @@ export const media = pgTable(
     height: integer("height"),
     status: placeStatus("status").notNull().default("unverified"),
     uploadedBy: uuid("uploaded_by").references(() => authUsers.id),
+    // A rider's photo (G5): sha256 of the posting device's key, which lets that device delete it.
+    deviceHash: text("device_hash"),
     createdAt: createdAt(),
   },
   // The photo import re-runs safely: one row per place and image.
@@ -185,19 +187,27 @@ export const review = pgTable(
     placeId: uuid("place_id")
       .notNull()
       .references(() => place.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => authUsers.id),
+    // Null for riders' reviews without sign-in (G5), which carry device_hash instead.
+    userId: uuid("user_id").references(() => authUsers.id),
     rating: smallint("rating").notNull(),
     body: text("body"),
     visitedMonth: smallint("visited_month"),
     visitedYear: smallint("visited_year"),
     vehicleUsed: vehicle("vehicle_used"),
     status: placeStatus("status").notNull().default("verified"),
+    // sha256 of the posting device's key: one review per place per device, and only that device
+    // may change or delete it.
+    deviceHash: text("device_hash"),
+    nickname: text("nickname"),
+    // The AI pre-screen's verdict, model and reason; null when there was none.
+    moderation: jsonb("moderation"),
     createdAt: createdAt(),
   },
   (t) => [
     unique().on(t.placeId, t.userId),
+    uniqueIndex("review_place_device_key")
+      .on(t.placeId, t.deviceHash)
+      .where(sql`${t.deviceHash} IS NOT NULL`),
     check("review_rating_check", sql`${t.rating} BETWEEN 1 AND 5`),
     check("review_visited_month_check", sql`${t.visitedMonth} BETWEEN 1 AND 12`),
   ],
@@ -224,6 +234,7 @@ export const discoveryRegion = pgTable("discovery_region", {
   center: geographyPoint("center").notNull(),
   radiusKm: integer("radius_km").notNull().default(30),
   keywords: text("keywords").array().notNull(),
+  // Unused since Instagram was dropped (2026-10-26); kept rather than dropped on the live database.
   hashtags: text("hashtags").array().notNull().default(emptyArray),
   active: boolean("active").notNull().default(true),
   lastRunAt: timestamp("last_run_at", { withTimezone: true }),
@@ -233,7 +244,7 @@ export const socialPost = pgTable(
   "social_post",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    source: text("source").notNull(), // 'youtube' | 'instagram' | 'user_link'
+    source: text("source").notNull(), // 'youtube' | 'user_link' (a rider's pasted link)
     externalId: text("external_id").notNull(),
     url: text("url").notNull(),
     creatorName: text("creator_name"),
@@ -351,7 +362,7 @@ export const servicePoint = pgTable(
   "service_point",
   {
     osmId: text("osm_id").primaryKey(), // "node/123", "way/456"
-    kind: text("kind").notNull(), // hospital | police | atm | tyre | repair | stay
+    kind: text("kind").notNull(), // hospital | police | atm | tyre | repair | stay | toll
     name: text("name"),
     phone: text("phone"),
     region: text("region").notNull(), // the state it was imported with
@@ -363,8 +374,124 @@ export const servicePoint = pgTable(
     index("service_point_region_idx").on(t.region),
     check(
       "service_point_kind_check",
-      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay')`,
+      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay', 'toll')`,
     ),
+  ],
+);
+
+// Road reports (G5) -------------------------------------------------------------
+// Riders' reports of a closed or flooded road, a landslide, potholes or a diversion: a point and
+// a short note, shown on routes after an admin approves them, until they expire (docs/02).
+
+export const roadReport = pgTable(
+  "road_report",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(), // closed | landslide | flooded | potholes | diversion
+    location: geographyPoint("location").notNull(),
+    note: text("note").notNull().default(""),
+    nickname: text("nickname"),
+    deviceHash: text("device_hash").notNull(),
+    status: placeStatus("status").notNull().default("unverified"),
+    moderation: jsonb("moderation"),
+    createdAt: createdAt(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("road_report_location_gix").using("gist", t.location),
+    index("road_report_expires_idx").on(t.expiresAt),
+    check(
+      "road_report_kind_check",
+      sql`${t.kind} IN ('closed', 'landslide', 'flooded', 'potholes', 'diversion')`,
+    ),
+  ],
+);
+
+// Spent proofs of work (G5): one solved challenge pays for one post. Kept until the challenge
+// would have expired, then removed by the daily clean-up.
+export const powSpent = pgTable("pow_spent", {
+  signature: text("signature").primaryKey(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+// Open places (G5) --------------------------------------------------------------
+// Fuel, food and coffee from Overture Places (`pnpm db:import-open-places`), for the break planner
+// and the fuel gap only: no pages, no search, not in the place list (docs/02, "Open places from
+// Overture"). Each row keeps its own licence.
+
+export const openPlace = pgTable(
+  "open_place",
+  {
+    id: text("id").primaryKey(), // Overture's GERS id, stable across releases
+    name: text("name").notNull(),
+    category: text("category").notNull(), // fuel | food | coffee
+    location: geographyPoint("location").notNull(),
+    confidence: real("confidence").notNull(),
+    license: text("license").notNull(), // "CDLA-Permissive-2.0", "Apache-2.0", "CC0-1.0"
+    datasets: text("datasets").array().notNull(), // "Foursquare", "meta", "AllThePlaces"
+    region: text("region").notNull(), // the state's key in OSM_REGIONS, from our districts
+    release: text("release").notNull(), // the Overture release it was read from
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("open_place_location_gix").using("gist", t.location),
+    index("open_place_region_idx").on(t.region),
+    check("open_place_category_check", sql`${t.category} IN ('fuel', 'food', 'coffee')`),
+  ],
+);
+
+// Districts (G5) ----------------------------------------------------------------
+// India's districts from OpenStreetMap (admin_level 5) with their LGD codes: official alerts name
+// the districts they cover by LGD code (docs/02, "Alerts on the route"). Imported with
+// `pnpm db:import-districts`; public and in the data snapshot.
+
+export const district = pgTable(
+  "district",
+  {
+    osmId: text("osm_id").primaryKey(), // "relation/2020603"
+    lgdCode: integer("lgd_code"), // ref:LGD:district; null when OSM has none
+    name: text("name").notNull(),
+    // Every name it goes by, lower case letters only ("chikkamagaluru", "chikmagalur"), to match
+    // alerts that name a district instead of giving its code.
+    names: text("names")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    region: text("region").notNull(), // the state's key in OSM_REGIONS ("karnataka")
+    geom: geographyArea("geom").notNull(), // simplified to about 200 m
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("district_lgd_code_key").on(t.lgdCode),
+    index("district_geom_gix").using("gist", t.geom),
+    index("district_region_idx").on(t.region),
+  ],
+);
+
+// Road rules (G5) ---------------------------------------------------------------
+// Night bans, permits, e-passes and fees, curated in data/road-rules.json and loaded by
+// `pnpm db:seed-road-rules` (docs/02, "Road rules and permits"). Public, in the data snapshot.
+
+export const roadRule = pgTable(
+  "road_rule",
+  {
+    slug: text("slug").primaryKey(),
+    kind: text("kind").notNull(), // night_ban | permit | epass | fee
+    title: text("title").notNull(),
+    geom: geographyAny("geom").notNull(), // a line along the road, or an area
+    closedFrom: text("closed_from"), // night bans: "21:00" India time; may be later than closed_to
+    closedTo: text("closed_to"),
+    vehicles: text("vehicles").array().notNull().default(sql`'{}'::text[]`), // empty = every vehicle
+    months: smallint("months").array().notNull().default(sql`'{}'::smallint[]`), // empty = all year
+    link: text("link").notNull(),
+    source: text("source"), // who says so, when the link is not the authority's own page
+    checkedOn: date("checked_on").notNull(),
+    note: text("note"),
+    seededAt: timestamp("seeded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("road_rule_geom_gix").using("gist", t.geom),
+    check("road_rule_kind_check", sql`${t.kind} IN ('night_ban', 'permit', 'epass', 'fee')`),
   ],
 );
 

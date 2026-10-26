@@ -44,6 +44,14 @@ async function mockRouting(page: Page, trip: Trip) {
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   // No elevation profile, so tests never read the terrain tiles.
   await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
+  // Official alerts come from NDMA's SACHET; these tests never read it.
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({ json: { alerts: [], partial: false } }),
+  );
+  // No road rules: these tests never read the database for them.
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [], timeline: null } }),
+  );
   const routes: RouteOption[] = routeFixture(trip.fixture, "bike").map((r, i) => ({
     id: `${trip.fixture}-${i}`, // not a cache id, so the client sends the geometry
     geometry: r.geometry,
@@ -96,11 +104,13 @@ for (const [name, trip] of Object.entries(TRIPS)) {
     );
     await expect(page.getByText(/Showing the best stops/)).toBeVisible();
 
-    // Fuel stations are not listed, so there is no Fuel chip.
-    await expect(page.getByRole("button", { name: /^Fuel/ })).toHaveCount(0);
+    // Fuel stations are not listed, so there is no Fuel chip. (A pump can still be suggested as
+    // a break in the ride check, so only the category chips are looked at.)
+    const chips = page.getByRole("group", { name: "Filter by category" });
+    await expect(chips.getByRole("button", { name: /^Fuel/ })).toHaveCount(0);
 
     // Picking a category lists every place in it.
-    const templeChip = page.getByRole("button", { name: /^Temple/ });
+    const templeChip = chips.getByRole("button", { name: /^Temple/ });
     const templeCount = Number((await templeChip.innerText()).replace(/\D/g, ""));
     await templeChip.click();
     await expect(

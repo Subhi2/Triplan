@@ -2,7 +2,8 @@ import { z } from "zod";
 import { tripRequestSchema } from "@/lib/trip";
 import { ProviderError } from "@/server/providers/http";
 import { NoRouteError } from "@/server/providers/routing";
-import { getRoutes } from "@/server/services/routeService";
+import { ROUTE_ID_PATTERN } from "@/lib/places";
+import { getRoutes, getUploadedRoute } from "@/server/services/routeService";
 import { countLater } from "@/server/services/usage";
 import { allowRequestOrOpen, REQUEST_LIMITS } from "@/server/services/writeLimit";
 
@@ -40,5 +41,26 @@ export async function POST(request: Request) {
     const message =
       err instanceof ProviderError ? "The routing service is unavailable" : "Routing failed";
     return Response.json({ error: message }, { status: 502 });
+  }
+}
+
+/**
+ * GET ?id=<route id> -> { route }: one route from route_cache by its id (a ride-together room shows
+ * the trip's route). 404 once it has expired (7 days).
+ */
+export async function GET(request: Request) {
+  const id = new URL(request.url).searchParams.get("id") ?? "";
+  if (!ROUTE_ID_PATTERN.test(id)) {
+    return Response.json({ error: "Invalid route id" }, { status: 400 });
+  }
+  try {
+    const route = await getUploadedRoute(id);
+    if (!route) {
+      return Response.json({ error: "Route not found", code: "ROUTE_NOT_FOUND" }, { status: 404 });
+    }
+    return Response.json({ route });
+  } catch (err) {
+    console.error("GET /api/route failed", err);
+    return Response.json({ error: "Could not load the route" }, { status: 500 });
   }
 }

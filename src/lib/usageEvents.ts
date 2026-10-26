@@ -13,6 +13,10 @@ export const USAGE_EVENTS = [
   "ride_there",
   "plain_words",
   "near_me",
+  "stops_picked",
+  "gpx_opened",
+  "pack_saved",
+  "room_opened",
 ] as const;
 
 export type UsageEvent = (typeof USAGE_EVENTS)[number];

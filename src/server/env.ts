@@ -12,6 +12,8 @@ const serverEnvSchema = z.object({
   // Nominatim's usage policy requires an identifying User-Agent. Also sent to Photon and Overpass.
   NOMINATIM_USER_AGENT: z.string().min(1),
   PHOTON_BASE_URL: z.url().default("https://photon.komoot.io/api"),
+  // NDMA SACHET: alert feeds (rss/), CAP messages and their area files (docs/02, "Alerts").
+  SACHET_BASE_URL: z.url().default("https://sachet.ndma.gov.in/cap_public_website"),
   // Comma-separated Overpass endpoints, tried in order when one is down or unreachable.
   OVERPASS_URLS: z
     .string()

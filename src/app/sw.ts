@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { NetworkOnly, Serwist } from "serwist";
+import { NetworkFirst, NetworkOnly, Serwist } from "serwist";
 import { isNeverCached } from "../lib/swCache";
 
 declare global {
@@ -25,6 +25,17 @@ const serwist = new Serwist({
     {
       matcher: ({ url, sameOrigin }) => isNeverCached(url, sameOrigin),
       handler: new NetworkOnly(),
+    },
+    // The planner, whatever trip its address holds: with no signal, the last planner page seen
+    // opens a trip saved for offline (?pack=…). The page reads the trip from the address itself.
+    {
+      matcher: ({ request, url, sameOrigin }) =>
+        sameOrigin && request.mode === "navigate" && url.pathname === "/",
+      handler: new NetworkFirst({
+        cacheName: "planner-page",
+        networkTimeoutSeconds: 5,
+        matchOptions: { ignoreSearch: true },
+      }),
     },
     ...defaultCache,
   ],

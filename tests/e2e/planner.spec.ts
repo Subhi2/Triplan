@@ -93,6 +93,14 @@ const SAFETY = {
       detourKm: 1.2,
     },
   ],
+  tolls: [
+    {
+      id: "node/10",
+      name: "Nelamangala Toll Plaza",
+      location: [77.39, 13.08],
+      kmFromStart: 31.5,
+    },
+  ],
 };
 
 /** Bengaluru → Kalasa via Sakleshpur over two days, a night in Hassan. */
@@ -179,6 +187,16 @@ async function mockApis(page: Page, routeRequests: unknown[]) {
   );
   // No forecast (as if the trip were too far ahead), so tests never reach MET Norway.
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
+  // No official alerts, so tests never read NDMA's SACHET.
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({ json: { alerts: [], partial: false } }),
+  );
+  // No road rules: these tests never read the database for them.
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [], timeline: null } }),
+  );
+  // No riders' road reports.
+  await page.route("**/api/route/reports", (route) => route.fulfill({ json: { reports: [] } }));
   // No terrain tiles for the 3D preview: it carries on with a flat map.
   await page.route("https://s3.amazonaws.com/elevation-tiles-prod/**", (route) =>
     route.fulfill({ status: 404, body: "" }),
@@ -417,6 +435,10 @@ test("safety stops along the road, with call links and the hospital gap", async 
   await page.goto(
     "/?from=Bengaluru@77.5946,12.9716&via=Sakleshpur@75.785,12.943&to=Kalasa@75.356,13.234",
   );
+  // The helplines lead: 112 everywhere, 1033 because the road is NH75.
+  const lines = page.getByRole("list", { name: "Helplines" });
+  await expect(lines.getByRole("link", { name: /112/ })).toHaveAttribute("href", "tel:112");
+  await expect(lines.getByRole("link", { name: /1033/ })).toHaveAttribute("href", "tel:1033");
   const kinds = page.getByRole("group", { name: "Kinds of safety stop" });
   await expect(kinds).toContainText("2 hospitals");
   await expect(kinds).toContainText("1 ATM");
@@ -769,6 +791,111 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   ).toHaveAttribute("href", /maps\/search\/Manjarabad%20Fort\/@12\.9173,75\.7581,17z/);
 });
 
+test("time for stops ticks the best sights that fit, and a second tap clears them", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  const temple: PlaceAlong = {
+    ...FORT,
+    id: "temple-id",
+    slug: "hasanamba-temple",
+    name: "Hasanamba Temple",
+    category: "temple",
+    location: [76.0977, 13.0049],
+    kmFromStart: 201,
+    detourKm: 0.3,
+  };
+  const trek: PlaceAlong = {
+    ...FORT,
+    id: "trek-id",
+    slug: "long-trek",
+    name: "Long Trek",
+    category: "trek",
+    kmFromStart: 300,
+    detourKm: 1,
+  };
+  await page.route("**/api/places/along", (route) =>
+    route.fulfill({ json: { places: [temple, FORT, trek] } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const times = page.getByRole("group", { name: "Time for stops" });
+  await times.getByRole("button", { name: "2 h" }).click();
+  await expect(times.getByRole("button", { name: "2 h" })).toHaveAttribute("aria-pressed", "true");
+  // The temple (31 min) and the fort (65 min) fit in 2 hours; the 2-hour trek does not.
+  await expect(
+    page.getByRole("status").filter({ hasText: "Ticked the 2 best stops" }),
+  ).toContainText("about 1 h 36 min");
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Hasanamba Temple for Google Maps" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Long Trek for Google Maps" }),
+  ).not.toBeChecked();
+  await expect(page.getByText("2 ticked")).toBeVisible();
+
+  await times.getByRole("button", { name: "2 h" }).click();
+  await expect(
+    page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }),
+  ).not.toBeChecked();
+  await expect(page.getByText("2 ticked")).toBeHidden();
+});
+
+test("Popular keeps the well-known stops and Offbeat the lesser-known", async ({ page }) => {
+  await mockApis(page, []);
+  const quiet: PlaceAlong = {
+    ...FORT,
+    id: "quiet-id",
+    slug: "quiet-viewpoint",
+    name: "Quiet Viewpoint",
+    category: "viewpoint",
+    kmFromStart: 120,
+    notable: false,
+  };
+  await page.route("**/api/places/along", (route) =>
+    route.fulfill({ json: { places: [quiet, FORT] } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const list = page.getByRole("list", { name: "Places along the route" });
+  const mixes = page.getByRole("group", { name: "Popular or offbeat" });
+  await expect(mixes.getByRole("button", { name: "Mixed" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
+  await expect(list.getByRole("button", { name: /Manjarabad Fort/ })).toBeVisible();
+
+  await mixes.getByRole("button", { name: "Offbeat" }).click();
+  await expect(list.getByRole("button", { name: /Manjarabad Fort/ })).toBeHidden();
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
+
+  await mixes.getByRole("button", { name: "Popular" }).click();
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeHidden();
+  await expect(list.getByRole("button", { name: /Manjarabad Fort/ })).toBeVisible();
+
+  // A category shows every place in it, so the mix steps aside.
+  await page
+    .getByRole("group", { name: "Filter by category" })
+    .getByRole("button", { name: /Viewpoint/ })
+    .click();
+  await expect(mixes).toBeHidden();
+  await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
+});
+
 test("on phones the map comes first, then a one-line header and the sheet", async ({
   page,
 }, testInfo) => {
@@ -831,7 +958,12 @@ test.describe("ride check", () => {
       const body = route.request().postDataJSON() as { categories?: string[] };
       const places =
         body.categories?.[0] === "fuel"
-          ? [pump("Nelamangala Fuels", 20), pump("Kunigal HP", 60), pump("Hassan IOCL", 250)]
+          ? [
+              pump("Nelamangala Fuels", 20),
+              // From Overture (open_place): credited next to the count.
+              { ...pump("Kunigal HP", 60), slug: "", open: true as const },
+              pump("Hassan IOCL", 250),
+            ]
           : [];
       return route.fulfill({ json: { places } });
     });
@@ -854,7 +986,9 @@ test.describe("ride check", () => {
     // Default range for a bike is 200 km: a 190 km stretch leaves too little reserve.
     await expect(check).toContainText("Fuel: fill up before a 190 km stretch");
     await expect(check).toContainText("From Kunigal HP (km 60) to Hassan IOCL (km 250)");
-    await expect(check).toContainText("3 fuel stations within 2 km of the route");
+    await expect(check).toContainText(
+      "3 fuel stations within 2 km of the route, from OpenStreetMap and Overture Maps",
+    );
     const range = check.getByRole("spinbutton", { name: "Range on a full tank (km)" });
     await range.fill("300");
     await expect(check).toContainText("Fuel: longest stretch without a pump is 190 km");
@@ -898,6 +1032,515 @@ test.describe("ride check", () => {
     await expect(check).toContainText("Forecast by MET Norway (CC BY 4.0)");
   });
 });
+
+test("official alerts in force during the ride show under the routes and in the ride check", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route/alerts");
+  const hours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+  const alert = (id: string, event: string, severity: string, onset: string, expires: string) => ({
+    id,
+    event,
+    headline: `${event} is likely over Chikkamagaluru district.`,
+    severity,
+    urgency: "Expected",
+    certainty: "Likely",
+    issuer: "IMD Bengaluru",
+    area: "Chikkamagaluru",
+    onset,
+    expires,
+    kmFromStart: 254.2,
+    url: "https://sachet.example/alert",
+  });
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({
+      json: {
+        alerts: [
+          alert("rain", "Heavy Rain", "Severe", hours(-1), hours(72)),
+          // Over before the ride starts (06:00 tomorrow by default): not shown.
+          alert("storm", "Thunderstorm", "Moderate", hours(-2), hours(1)),
+        ],
+        partial: false,
+      },
+    }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const banner = page.getByRole("region", { name: "Official alerts on the route" });
+  await expect(banner).toContainText("Severe alert · Heavy Rain · from km 254");
+  await expect(banner).toContainText("IMD Bengaluru");
+  await expect(banner).not.toContainText("Thunderstorm");
+  await banner.getByRole("button").click();
+  await expect(banner).toContainText("Heavy Rain is likely over Chikkamagaluru district.");
+
+  // Folded to one line on phones, with the alert counted in it.
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  await expect(toggle).toContainText(/Ride check/);
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await expect(toggle).toContainText("1 alert");
+    await toggle.click();
+  }
+  const check = page.getByRole("region", { name: "Ride check" });
+  await expect(check).toContainText("Official alert: heavy rain on the way");
+  await expect(check.getByRole("list", { name: "Official alerts while you ride" })).toContainText(
+    "Severe · Heavy Rain · from km 254",
+  );
+  await expect(check).toContainText("NDMA's SACHET");
+
+  // A start after the alert ends: nothing to show.
+  const later = new Date(Date.now() + 5 * 86_400_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  await check
+    .getByLabel("Start")
+    .fill(`${later.getFullYear()}-${pad(later.getMonth() + 1)}-${pad(later.getDate())}T06:00`);
+  await expect(banner).toHaveCount(0);
+  await expect(check).toContainText("Official alerts: none on the way while you ride");
+});
+
+test("a night ban on the road is checked against the start time, and permits are listed", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route/rules");
+  const rule = {
+    slug: "forest-night",
+    kind: "night_ban",
+    title: "Forest road",
+    kmFrom: 200,
+    kmTo: 240,
+    closedFrom: "21:00",
+    closedTo: "06:00",
+    vehicles: [],
+    months: [],
+    link: "https://example.org/ban",
+    source: "A newspaper, 2025",
+    checkedOn: "2026-10-14",
+    note: null,
+  };
+  const epass = {
+    ...rule,
+    slug: "hills-epass",
+    kind: "epass",
+    title: "E-pass needed to drive into the hills",
+    closedFrom: null,
+    closedTo: null,
+    source: null,
+    link: "https://epass.example.org/",
+  };
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [rule, epass], timeline: null } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  await expect(toggle).toContainText(/Ride check/);
+  if ((await toggle.getAttribute("aria-expanded")) === "false") {
+    await expect(toggle).toContainText(/Fuel/);
+    await toggle.click();
+  }
+  const check = page.getByRole("region", { name: "Ride check" });
+  const start = check.getByLabel("Start");
+
+  await start.fill("2026-10-03T18:00");
+  await expect(check).toContainText("Forest road is closed when you get there");
+  await expect(check).toContainText(
+    /Closed 9 pm–6 am. Start by .+ to get through before it closes/,
+  );
+  await expect(check).toContainText("A newspaper, 2025");
+  await expect(check).toContainText("checked 14 Oct 2026");
+
+  await start.fill("2026-10-03T06:00");
+  await expect(check).toContainText("Forest road: open when you pass");
+  await expect(check).toContainText("E-pass needed to drive into the hills");
+  await expect(check).toContainText("Apply before you go.");
+  await expect(check.getByRole("link", { name: "epass.example.org" })).toBeVisible();
+});
+
+test("shows riders' road reports, and sends a new one with its proof of work", async ({ page }) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route/reports");
+  await page.route("**/api/route/reports", (route) =>
+    route.fulfill({
+      json: {
+        reports: [
+          {
+            id: "r1",
+            kind: "landslide",
+            note: "One lane open near the temple",
+            nickname: "Asha",
+            location: [75.6, 13.0],
+            kmFromStart: 231.4,
+            detourKm: 0.1,
+            createdAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
+            expiresAt: new Date(Date.now() + 69 * 3_600_000).toISOString(),
+          },
+        ],
+      },
+    }),
+  );
+  // The real challenge from the server, solved in the browser; the post itself is caught here.
+  let sent: {
+    report: { kind: string; location: [number, number] };
+    pow: unknown;
+    deviceKey: string;
+  } | null = null;
+  await page.route("**/api/road-reports", (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { status: "pending" } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+
+  await expect(check).toContainText("Road report: landslide at km 231");
+  await expect(check.getByRole("list", { name: "Road reports" })).toContainText(
+    "reported 3 h ago by Asha",
+  );
+  await expect(check).toContainText("One lane open near the temple");
+
+  await check.getByRole("button", { name: "Report the road" }).click();
+  const form = check.getByRole("form", { name: "Road report" });
+  await form.getByLabel("What is wrong").selectOption("flooded");
+  await form.getByLabel("Km along this route").fill("9999");
+  await form.getByRole("button", { name: "Send report" }).click();
+  await expect(check).toContainText("Give a km between 0 and");
+  await form.getByLabel("Km along this route").fill("120");
+  await form.getByLabel("Note (optional)").fill("Water over the bridge");
+  await form.getByRole("button", { name: "Send report" }).click();
+  await expect(check).toContainText("Riders on this road see it once it has been checked.");
+  expect(sent).not.toBeNull();
+  const body = sent!;
+  expect(body.report.kind).toBe("flooded");
+  expect(body.deviceKey).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(body.pow).toMatchObject({ challenge: { signature: expect.any(String) } });
+  // Km 120 of the route, somewhere between Bengaluru and Kalasa.
+  const [lng, lat] = body.report.location;
+  expect(lng).toBeGreaterThan(75.3);
+  expect(lng).toBeLessThan(77.6);
+  expect(lat).toBeGreaterThan(12.5);
+  expect(lat).toBeLessThan(13.5);
+});
+
+test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/places/along");
+  const cafe = {
+    id: "place/ghat-cafe",
+    slug: "ghat-cafe",
+    name: "Ghat Cafe",
+    category: "coffee",
+    location: [75.7, 13.0],
+    kmFromStart: 135,
+    detourKm: 0.2,
+    rating: null,
+    ratingCount: 0,
+    bestMonths: [],
+    bestMonthsEstimated: false,
+    thumbUrl: null,
+    trending: false,
+    notable: false,
+  };
+  // An open place (Overture): no page of its own, credited under the list.
+  const dhaba = {
+    ...cafe,
+    id: "08f61a1b2c3d4e5f0123456789abcdef",
+    slug: "",
+    name: "Highway Dhaba",
+    category: "food",
+    kmFromStart: 245,
+    open: true,
+  };
+  await page.route("**/api/places/along", (route) => {
+    const body = route.request().postDataJSON() as { categories?: string[]; openPlaces?: boolean };
+    const places = body.categories?.includes("coffee") && body.openPlaces ? [cafe, dhaba] : [];
+    return route.fulfill({ json: { places } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  const breaks = check.getByRole("list", { name: "Suggested breaks" });
+  await expect(breaks).toContainText("Ghat Cafe");
+  await expect(breaks).toContainText("Highway Dhaba");
+  await expect(check).toContainText("Some from Overture Maps.");
+
+  const cup = page.getByRole("button", { name: "Break at Ghat Cafe, km 135" });
+  await cup.click();
+  await expect(cup).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
+});
+
+test("every route card has a scenic score, and the most scenic slower one is labelled", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  await page.unroute("**/api/route");
+  await page.route("**/api/route", (route) => {
+    const routes = options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"]);
+    // Chikkamagaluru (259 min) is the fastest; Sakleshpur scores 3 more.
+    routes[0]!.scenic = { score: 3, sights: 4 };
+    routes[1]!.scenic = { score: 6, sights: 9 };
+    return route.fulfill({ json: { routes } });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  const chik = cards.filter({ hasText: "via Chikkamagaluru" });
+  const sak = cards.filter({ hasText: "via Hassan, Sakleshpur" });
+  await expect(chik).toContainText("Scenic 3/10");
+  await expect(sak).toContainText("Scenic 6/10");
+  await expect(sak.getByText("Scenic", { exact: true })).toBeVisible();
+  await expect(chik.getByText("Scenic", { exact: true })).toHaveCount(0);
+});
+
+test("open a GPX ride: only the line is sent, without its ends, and a reload keeps it", async ({
+  page,
+}) => {
+  await mockApis(page, []);
+  // A 12 km ride north from 13.00° N; its first and last 500 m must stay on the phone.
+  const points = Array.from({ length: 121 }, (_, i) => [
+    75.5 + Math.sin(i / 8) * 0.004,
+    13 + i * 0.0009,
+  ]);
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>Charmadi morning</name><trkseg>
+${points.map(([lng, lat]) => `    <trkpt lat="${lat!.toFixed(6)}" lon="${lng!.toFixed(6)}"></trkpt>`).join("\n")}
+  </trkseg></trk>
+</gpx>`;
+  const [, sak] = options("bengaluru-kalasa", ["via Chikkamagaluru", "via Hassan, Sakleshpur"]);
+  const ride = { ...sak!, id: `${"a".repeat(32)}-0`, viaLabel: "Your ride", roadMix: null };
+  const uploads: { geometry: { coordinates: [number, number][] } }[] = [];
+  const reads: string[] = [];
+  await page.route("**/api/route/upload**", (route) => {
+    if (route.request().method() === "POST") {
+      uploads.push(route.request().postDataJSON());
+      return route.fulfill({ json: { route: ride } });
+    }
+    reads.push(route.request().url());
+    return route.fulfill({ json: { route: ride } });
+  });
+  const routing: unknown[] = [];
+  page.on("request", (r) => {
+    if (r.url().endsWith("/api/route") && r.method() === "POST") routing.push(r.url());
+  });
+  await page.goto("/");
+
+  await page.getByTestId("ride-file").setInputFiles({
+    name: "charmadi.gpx",
+    mimeType: "application/gpx+xml",
+    buffer: Buffer.from(gpx),
+  });
+  const cards = page.getByRole("list", { name: "Route options" }).getByRole("button");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText("Charmadi morning");
+  expect(routing).toHaveLength(0); // the ride stands in for routing
+
+  // No point within 500 m of either end left the phone.
+  const sent = uploads[0]!.geometry.coordinates;
+  const metres = ([a, b]: number[], [c, d]: number[]) =>
+    Math.hypot((a! - c!) * 111_320 * Math.cos((b! * Math.PI) / 180), (b! - d!) * 110_574);
+  for (const p of sent) {
+    expect(metres(p, points[0]!)).toBeGreaterThan(490);
+    expect(metres(p, points.at(-1)!)).toBeGreaterThan(490);
+  }
+  await expect(page).toHaveURL(/gpx=a{32}-0/);
+
+  // A reload asks for the ride by its id instead of routing between its ends.
+  await page.reload();
+  await expect(cards.first()).toContainText("Your ride");
+  expect(reads.at(-1)).toContain(`id=${"a".repeat(32)}-0`);
+});
+
+test("save a trip for offline, then open it with no signal", async ({ page }) => {
+  await mockApis(page, []);
+  await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [FORT] } }));
+  // Our own map file, answered from an 11-tile fixture with range requests, as storage does.
+  const file = await readFile("tests/fixtures/pmtiles/corridor.pmtiles");
+  await page.route("https://offline-tiles.test/**", (route) => {
+    if (!route.request().url().endsWith(".pmtiles"))
+      return route.fulfill({ status: 404, body: "" });
+    const m = /bytes=(d+)-(d+)/.exec(route.request().headers()["range"] ?? "");
+    const start = m ? Number(m[1]) : 0;
+    const end = Math.min(m ? Number(m[2]) : file.length - 1, file.length - 1);
+    return route.fulfill({
+      status: 206,
+      headers: {
+        "Content-Range": `bytes ${start}-${end}/${file.length}`,
+        "Content-Type": "application/octet-stream",
+      },
+      body: file.subarray(start, end + 1),
+    });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const offline = page.getByRole("region", { name: "Offline" });
+  await offline.getByRole("button", { name: "Save for offline" }).click();
+  await expect(offline.getByRole("status")).toContainText("Saved for offline", { timeout: 20_000 });
+  // The 11 tiles of the file that lie along the road, in the pack's own cache.
+  const kept = await page.evaluate(async () => {
+    const name = (await caches.keys()).find((n) => n.startsWith("pack-"));
+    return name ? (await (await caches.open(name)).keys()).length : 0;
+  });
+  expect(kept).toBe(11);
+
+  await page.goto("/trips");
+  const packs = page.getByRole("region", { name: "Saved for offline" });
+  await expect(packs).toContainText("Bengaluru → Kalasa");
+
+  // No signal from here on: every API call and the map file fail.
+  await page.route("**/api/**", (route) => route.abort());
+  await page.route("https://offline-tiles.test/**", (route) => route.abort());
+  await packs.getByRole("link", { name: /Bengaluru → Kalasa/ }).click();
+  await expect(page).toHaveURL(/pack=/);
+  await expect(page.getByText("Opened from the copy saved on this phone")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toContainText(
+    "via Hassan, Sakleshpur",
+  );
+  await expect(
+    page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ }),
+  ).toBeVisible();
+  await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
+});
+
+test("the last trip planned stays on the phone and opens with no signal", async ({ page }) => {
+  await mockApis(page, []);
+  await page.route("**/api/places/along", (route) => route.fulfill({ json: { places: [FORT] } }));
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  await expect(
+    page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ }),
+  ).toBeVisible();
+  // Kept a second after it settles.
+  await page.waitForTimeout(1500);
+
+  await page.goto("/trips");
+  const last = page.getByRole("region", { name: "Your last trip" });
+  await expect(last).toContainText("Bengaluru → Kalasa");
+  await page.route("**/api/**", (route) => route.abort());
+  await last.getByRole("link").click();
+  await expect(page.getByText("Your last trip, kept on this phone")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toContainText(
+    "via Hassan, Sakleshpur",
+  );
+  await expect(
+    page
+      .getByRole("list", { name: "Places along the route" })
+      .getByRole("button", { name: /Manjarabad Fort/ }),
+  ).toBeVisible();
+});
+
+test("a sunset stop near the end of the ride, with the time to leave by", async ({ page }) => {
+  await mockApis(page, []);
+  const view: PlaceAlong = {
+    ...FORT,
+    id: "view-id",
+    slug: "kanive-viewpoint",
+    name: "Kanive Viewpoint",
+    category: "viewpoint",
+    location: [75.4, 13.2],
+    kmFromStart: 300,
+    detourKm: 2.6,
+    notable: false,
+  };
+  await page.route("**/api/places/along", (route) =>
+    route.fulfill({ json: { places: [FORT, view] } }),
+  );
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  await expect(check).toContainText("Sunset stop: Kanive Viewpoint");
+  const stop = check.getByRole("list", { name: "Sunset stops" }).getByRole("button");
+  await expect(stop).toContainText(/km 300 · sunset \d{1,2}:\d{2}/);
+  await expect(stop).toContainText(/Leave by \d{1,2}:\d{2}/);
+  await stop.click();
+  await expect(stop).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
+});
+
+for (const vehicle of ["bike", "car"] as const) {
+  test(`tolls by ${vehicle}, and the fuel cost from the rider's mileage and price`, async ({
+    page,
+  }) => {
+    await mockApis(page, []);
+    await page.goto(`/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234&v=${vehicle}`);
+    await page
+      .getByRole("list", { name: "Route options" })
+      .getByRole("button")
+      .filter({ hasText: "via Hassan, Sakleshpur" })
+      .click();
+    const toggle = page.getByRole("button", { name: /^Ride check/ });
+    if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+    const check = page.getByRole("region", { name: "Ride check" });
+
+    if (vehicle === "bike") {
+      await expect(check).toContainText("No tolls: two-wheelers ride national highways free");
+      await expect(check.getByRole("list", { name: "Toll plazas on the route" })).toHaveCount(0);
+    } else {
+      await expect(check).toContainText("Tolls: 1 toll plaza on the route");
+      await expect(check.getByRole("list", { name: "Toll plazas on the route" })).toContainText(
+        "km 32 · Nelamangala Toll Plaza",
+      );
+      await expect(check).toContainText("FASTag annual pass is ₹3,000 for 200");
+    }
+
+    await check.getByLabel("Mileage (km per litre)").fill("35");
+    await check.getByLabel("Fuel price (₹ per litre)").fill("103");
+    await expect(check).toContainText(/Fuel cost: about ₹9\d0 for 3\d\d km/);
+    // Remembered for this vehicle on the next visit.
+    await page.reload();
+    await page
+      .getByRole("list", { name: "Route options" })
+      .getByRole("button")
+      .filter({ hasText: "via Hassan, Sakleshpur" })
+      .click();
+    if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+    await expect(check.getByLabel("Mileage (km per litre)")).toHaveValue("35");
+  });
+}
 
 test("download the trip as a GPX file with the route, stops and places", async ({ page }) => {
   await mockApis(page, []);

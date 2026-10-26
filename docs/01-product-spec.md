@@ -19,6 +19,9 @@ Help riders plan a trip by showing everything worth stopping for along the exact
 - **Place**: a point of interest with a category and curated guide fields.
 - **Detour**: extra distance to reach a place from the nearest point on the route (one way).
 - **Hidden place**: a place discovered from social posts or user submissions, marked unverified until an admin approves it.
+- **Alert**: an official warning (IMD, NDMA, a state disaster authority, CWC, INCOIS) for an area and a time, from NDMA's SACHET feeds.
+- **Road rule**: a night ban, permit, e-pass or fee on a stretch of road or an area, with its hours, the vehicles it applies to, its official link and the date we checked it.
+- **Road report**: a rider's report of a closure, landslide, flood, potholes or a diversion at a point on the road. It expires after 24–72 hours.
 
 ## Features by release
 
@@ -87,20 +90,51 @@ User stories:
 - As someone who has never used the app, I want to see a famous ride in one tap, so I understand what it does.
 - As a family on a long drive, I want the trip split into days with a town to stay in, so we don't drive after dark.
 
+### Ride day, smart picks and riding together (G5, added 2026-10-14)
+
+Chosen after web research; the reasons and sources are in `07-growth-plan.md` ("Research behind G5").
+
+25. **Alerts on the route**: official warnings (heavy rain, thunderstorm, landslide, flood, cyclone) whose area the route crosses, with who issued them and until when.
+26. **Road rules and permits**: night bans, e-passes, permits and fees on the road, checked against when the rider gets there ("Bandipur and Mudumalai forest road (NH181) is closed when you get there, about 9:15 pm. Start by 5:15 pm to get through"). Each shows its link (the authority's page, or the report we checked it against) and the date we checked it.
+27. **Break planner**: a tea, food or fuel stop near every 2 hours of riding, away from the 2–4 pm dip where possible.
+28. **Tolls and trip cost**: no tolls by bike; by car, the toll plazas on the route and the FASTag annual pass. The fuel cost comes from the mileage and fuel price the rider types.
+29. **Helplines**: 1033 (national highways) and 112 in "Safety on the way".
+30. **Best stops for my time**: "I have 2 hours for stops" ticks the most worthwhile places that fit in that time.
+31. **Popular ↔ Offbeat**: only the well-known stops, or only the lesser-known ones.
+32. **Sunset stop**: a viewpoint near the end of the day, with the time to leave to see the sunset there.
+33. **Scenic score**: a scenic score on every route card, and the "Scenic" label on the most scenic of the routes found when it is not the fastest.
+34. **Ride your GPX**: open a GPX, KML or TCX file of a ride (Strava, Garmin, the Royal Enfield app) to see its hairpins, climbs, the places passed, a 3D replay and a story poster.
+35. **Offline trip pack**: a trip's map, route, places and safety stops saved on the phone, for roads with no signal.
+36. **Ride together**: a link for the group to see each other on the map while riding, with a regroup pin, and a follow link for family.
+37. **More fuel, food and coffee** for breaks and the fuel check, from Overture's open places data. They are not in the place list and have no pages.
+38. **Reviews, photos and road reports** without signing in: a rating with the month and vehicle, photos, and reports of closures, landslides, floods, potholes and diversions that expire.
+
+User stories:
+- As a rider planning a monsoon ride, I want to know about an orange or red alert on the ghat, so I can change the day.
+- As a rider leaving Bengaluru late for Ooty, I want to know the Bandipur road closes at night before I get there.
+- As someone new to a road, I want the app to pick the best stops for the time I have, so I don't read through 300 places.
+- As a rider on a ghat with no signal, I want my trip and the map on my phone.
+- As a group, we want to see where everyone is, so nobody is left behind at a turn.
+- As a rider who just rode a road, I want to warn others about a landslide on it.
+
+Privacy: ride-together positions go only to the people in the room. They are never stored or logged, and they stop when the rider stops sharing or after 12 hours. A GPX file is read on the phone: only the line leaves it, cut 500 m short at each end. Reviews and reports need no account; a token on the device lets its writer change or delete them.
+
 ### v1 (phases 5–7)
+
+Reviews and photos (7) and the admin queue (9) come first, in G5 (feature 38), without sign-in for riders. Accounts (6) are for admins only (decided 2026-10-14).
 
 6. Accounts via Supabase Auth (email magic link, Google). Not needed for the MVP, which is open without sign-in; decide with reviews and contributions (phase 5) whether they need accounts.
 7. User reviews with rating, month visited, vehicle used, text, up to 5 photos.
-8. "Add a place" form: drop a pin, name, category, photos, optional YouTube/Instagram link. Goes to moderation.
+8. "Add a place" form: drop a pin, name, category, photos, optional link to a YouTube video or an Instagram post (kept as a plain link). Goes to moderation.
 9. Admin moderation queue for places, reviews, photos, and discovered social posts.
-10. Hidden places discovery from YouTube (and Instagram after Meta approval). See `05-hidden-places.md`.
+10. Hidden places discovery from YouTube. See `05-hidden-places.md`. (Instagram discovery was dropped on 2026-10-26: its API needs Meta's app review.)
 11. "Trending" badge on places with many recent posts.
 
 ### Later
 
-- Monsoon / ghat closure alerts, weather on the trip date.
-- Offline trip pack (PWA cache of route, places and photos).
-- Fuel range planner (tank size, mileage, fuel stations on route).
+Weather on the ride and the fuel range check were built in G1; alerts and the offline trip pack are in G5.
+
+- Landslide nowcast, photos of the road itself, stretches without phone signal, "Avoid this area", "Ask this route", film locations, languages (see "Later" in `07-growth-plan.md`).
 - Native apps.
 
 ## Screens
@@ -110,11 +144,12 @@ User stories:
 3. **Your trips** (`/trips`, the trips saved or opened on this device), **trip** (`/trips/[id]`: the planner opened with the trip; this is its share link).
 4. **Add a place** (`/contribute`).
 5. **Admin** (`/admin/*`): moderation queues, discovery queue.
-6. **Sign in** (`/login`), only if accounts are added later.
+6. **Sign in** (`/login`), for admins only.
 7. **Near me** (`/nearby`): the chooser (Use my location / type a place / pick on the map), time and vehicle chips, the list and the map; on phones the list is in the bottom sheet. Ride mode ("Ahead of you") covers the screen.
 8. **Famous rides** (`/rides`, `/rides/[slug]`).
 9. **About** (`/about`).
 10. **3D ride preview**: covers the screen over the planner or a ride page.
+11. **Ride together** (`/ride/[room]`): the group's map with each rider's nickname, the regroup pin and "Stop sharing"; the follow link opens the same map without sharing.
 
 The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the intended planner layout.
 
@@ -147,4 +182,18 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 - `/rides` lists every famous ride; each page shows its route and opens it in the planner with the same stops.
 - Without `ANTHROPIC_API_KEY` there is no "plan in plain words" box and no AI call.
 - On an empty database, `pnpm db:setup` loads the snapshot and the place count matches its manifest.
+- Works at 375 px width with 44 px touch targets.
+
+## Acceptance criteria for G5
+
+- An alert whose area the route crosses shows on the route card with its issuer and end time. An alert elsewhere does not show, and neither does an expired one. When the alert feeds cannot be read, the planner works as before.
+- Bengaluru → Ooty through Gundlupet, leaving at 6 pm, says the Bandipur forest road is closed when the rider gets there and gives the latest start that clears it; leaving at 5 pm warns that the margin is small. Every rule shown has its link (the authority's page, or the report it was checked against, named) and checked date.
+- Bengaluru → Kalasa suggests a break near each 2 hours of riding, at stops within 1 km of the road.
+- By bike the trip says there are no tolls; by car it lists the toll plazas on the route.
+- "2 h for stops" on Bengaluru → Kalasa via Sakleshpur ticks Manjarabad Fort, and the picked places' detours and visits add up to 2 hours or less.
+- Every route card has a scenic score, and a slower route that scores at least 1 point more than the fastest is labelled "Scenic".
+- A GPX of a ride opens with its hairpins, profile and the places passed, and no point within 500 m of its ends leaves the phone.
+- A saved pack opens the trip, with its map, in airplane mode. Its tiles come only from our own map file, at most 3,000 tiles or 50 MB a pack.
+- Two phones in one room see each other, and no position is stored.
+- A review or road report without an account needs the proof of work, passes the pre-screen and shows after an admin approves it. A road report disappears when it expires.
 - Works at 375 px width with 44 px touch targets.

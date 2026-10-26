@@ -1,8 +1,8 @@
 {
   "format": 1,
-  "createdAt": "2026-10-09T15:36:50.166Z",
-  "migration": "0016_place_area",
-  "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row.",
+  "createdAt": "2026-10-23T06:09:16.894Z",
+  "migration": "0022_open_place",
+  "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url). open_place rows are from Overture Places (Overture Maps Foundation, overturemaps.org) under the licence in each row (CDLA-Permissive-2.0, Apache-2.0 for Foursquare, CC0-1.0): see LICENCE.md, NOTICE-Foursquare.txt and the LICENSE-*.txt files.",
   "tables": [
     {
       "name": "category",
@@ -15,9 +15,9 @@
         "parent_id",
         "weight"
       ],
-      "rows": 19,
-      "bytes": 476,
-      "sha256": "3abbd6c3b982a2c85b7115fab8763e3817cc7996dd12c4296c70008af4d7b52a"
+      "rows": 20,
+      "bytes": 500,
+      "sha256": "306544aa614e0be74c6cba24c74b2980f0311fea5d4c7a576eb4b86c403dcd40"
     },
     {
       "name": "carry_item",
@@ -61,11 +61,15 @@
         "osm_tags",
         "photos_checked_at",
         "google_place_checked_at",
-        "area"
+        "area",
+        "description_source",
+        "description_license",
+        "description_url",
+        "description_checked_at"
       ],
-      "rows": 93033,
-      "bytes": 11654190,
-      "sha256": "6c8514ace8534c5bdad20c8b1b12692aad6fea7b7037d5cb5c15d360dde230f8"
+      "rows": 99372,
+      "bytes": 13747191,
+      "sha256": "bd80799e47e3c529c1f90d9b65d43ef5c1c6e86e1b40f6c111e4029a3156cced"
     },
     {
       "name": "place_guide",
@@ -124,9 +128,9 @@
         "uploaded_by",
         "created_at"
       ],
-      "rows": 2006,
-      "bytes": 226648,
-      "sha256": "1f8a69b3c47758b4c7e7b9caf12ac86d797e24517521be572fd65c87d9138774"
+      "rows": 3036,
+      "bytes": 345873,
+      "sha256": "83e00ca473acfba0209e98c6b3911d665be7fe60458d5a7fc516a3b99b953ec9"
     },
     {
       "name": "ride",
@@ -152,9 +156,9 @@
         "position",
         "seeded_at"
       ],
-      "rows": 21,
-      "bytes": 1490306,
-      "sha256": "6c74e8bdaa50bf54863598dfdbbb99318a7e7fdefd724d1715ffbe8bef7d1812"
+      "rows": 27,
+      "bytes": 1842972,
+      "sha256": "a333b9fe02ca85beba663e630705bde0b25d18231d837e489180d9f0f57c619e"
     },
     {
       "name": "service_point",
@@ -168,9 +172,66 @@
         "location",
         "updated_at"
       ],
-      "rows": 113989,
-      "bytes": 4028498,
-      "sha256": "32a3a0efde42beee2d19fe73de46fc5f3e92fe3a1cff3610ae0a2a9acffb79b6"
+      "rows": 116190,
+      "bytes": 4105263,
+      "sha256": "23ad20dc6e39dcc9355172af31aed718d8b0f7a2cf7f562604b0a083b18c9027"
+    },
+    {
+      "name": "open_place",
+      "file": "open_place.ndjson.gz",
+      "columns": [
+        "id",
+        "name",
+        "category",
+        "location",
+        "confidence",
+        "license",
+        "datasets",
+        "region",
+        "release",
+        "updated_at"
+      ],
+      "rows": 70231,
+      "bytes": 3323453,
+      "sha256": "4b3970cc06d8885e34e163606cd922e58a0db71d468f94895776d009b3121df2"
+    },
+    {
+      "name": "district",
+      "file": "district.ndjson.gz",
+      "columns": [
+        "osm_id",
+        "lgd_code",
+        "name",
+        "names",
+        "region",
+        "geom",
+        "updated_at"
+      ],
+      "rows": 774,
+      "bytes": 3429683,
+      "sha256": "afe333bd8d91a2e8a0e33cd3ef1ced21a054cd030b9bd82769a7cffd41313321"
+    },
+    {
+      "name": "road_rule",
+      "file": "road_rule.ndjson.gz",
+      "columns": [
+        "slug",
+        "kind",
+        "title",
+        "geom",
+        "closed_from",
+        "closed_to",
+        "vehicles",
+        "months",
+        "link",
+        "source",
+        "checked_on",
+        "note",
+        "seeded_at"
+      ],
+      "rows": 10,
+      "bytes": 140474,
+      "sha256": "aaac0efa35a9cbdaaa43b75f7c62906347c3cf6aab20b94768c63576480ad66b"
     }
   ]
 }

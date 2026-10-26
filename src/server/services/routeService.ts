@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import type { LineString } from "geojson";
 import { routeCurvature } from "@/lib/curvature";
-import { simplifyLine, type LngLat } from "@/lib/geo";
+import { haversineM, simplifyLine, type LngLat } from "@/lib/geo";
 import { ROUTE_ID_PATTERN } from "@/lib/places";
+import { SCENIC_CATEGORIES, SCENIC_WITHIN_M, scenicScore } from "@/lib/scenic";
 import type { RouteOption, TripRequest } from "@/lib/trip";
 import { routeDbCache, type JsonCache } from "../db/cache";
 import {
@@ -21,7 +23,7 @@ import {
   viaTownCandidates,
   type CandidateTown,
 } from "./altRoutes";
-import { townsAlong, townsInBox } from "./corridorService";
+import { countsAlong, townsAlong, townsInBox } from "./corridorService";
 import { roadMix } from "./roadMix";
 import { mainTowns, viaLabels, type TownOnRoute } from "./viaLabel";
 
@@ -38,6 +40,8 @@ export interface RouteServiceDeps {
   routing: RoutingProvider;
   townsAlong(geometry: LineString): Promise<TownOnRoute[]>;
   townsInBox(box: [number, number, number, number]): Promise<CandidateTown[]>;
+  /** Scenic sights near the route, per category (the scenic score); none = no score. */
+  scenicAlong?(geometry: LineString): Promise<Record<string, number>>;
 }
 
 export async function townsAlongDb(geometry: LineString): Promise<TownOnRoute[]> {
@@ -45,7 +49,12 @@ export async function townsAlongDb(geometry: LineString): Promise<TownOnRoute[]>
 }
 
 function defaultDeps(): RouteServiceDeps {
-  return { routing: getRoutingProvider(), townsAlong: townsAlongDb, townsInBox };
+  return {
+    routing: getRoutingProvider(),
+    townsAlong: townsAlongDb,
+    townsInBox,
+    scenicAlong: (geometry) => countsAlong(geometry, SCENIC_WITHIN_M, SCENIC_CATEGORIES),
+  };
 }
 
 const CACHE_KEY_PREFIX = "route:v2:";
@@ -156,26 +165,43 @@ export async function getRoutes(
     found = await addTownRoutes(found, [waypoints[0]!, waypoints[1]!], trip.vehicle, deps);
   }
 
-  const routes = await Promise.all(
-    found.map(async ({ id, result }) => {
-      const distanceKm = result.distanceM / 1000;
-      const along = await deps.townsAlong(result.geometry).catch((err: unknown) => {
-        console.warn("Towns along the route failed", err);
-        return [];
-      });
-      const towns = along.filter(
-        (t) => t.kmFromStart > END_MARGIN_KM && t.kmFromStart < distanceKm - END_MARGIN_KM,
-      );
-      return { id, result, distanceKm, towns };
-    }),
-  );
-
+  const routes = await Promise.all(found.map((f) => describeRoute(f, deps)));
   const labels = viaLabels(
     routes.map((r) => ({ distanceKm: r.distanceKm, towns: r.towns })),
     trip.stops.slice(1, -1).map((s) => s.label),
   );
+  return routes.map((r, i) => toRouteOption(r, labels[i]!, waypoints));
+}
 
-  return routes.map((r, i) => ({
+interface Described extends Found {
+  distanceKm: number;
+  towns: TownOnRoute[];
+  sights: Record<string, number> | null;
+}
+
+/** The towns and scenic sights along a route (each skipped if the database fails). */
+async function describeRoute({ id, result }: Found, deps: RouteServiceDeps): Promise<Described> {
+  const distanceKm = result.distanceM / 1000;
+  const along = await deps.townsAlong(result.geometry).catch((err: unknown) => {
+    console.warn("Towns along the route failed", err);
+    return [];
+  });
+  const towns = along.filter(
+    (t) => t.kmFromStart > END_MARGIN_KM && t.kmFromStart < distanceKm - END_MARGIN_KM,
+  );
+  const sights = deps.scenicAlong
+    ? await deps.scenicAlong(result.geometry).catch((err: unknown) => {
+        console.warn("Scenic sights along the route failed", err);
+        return null;
+      })
+    : null;
+  return { id, result, distanceKm, towns, sights };
+}
+
+function toRouteOption(r: Described, viaLabel: string, waypoints: LngLat[]): RouteOption {
+  const mix = roadMix(r.result);
+  const curvature = routeCurvature(r.result.geometry, waypoints);
+  return {
     id: r.id,
     // The browser gets the line simplified to about 10 m: OSRM's full line has about 13 points a
     // km (a 1,700 km route, 17,000). Hairpins and the road mix are measured on the full line
@@ -186,10 +212,80 @@ export async function getRoutes(
     },
     distanceKm: r.distanceKm,
     durationMin: Math.round(r.result.durationS / 60),
-    viaLabel: labels[i]!,
+    viaLabel,
     towns: mainTowns(r.towns).map((t) => t.name),
     townStops: mainTowns(r.towns).map((t) => ({ name: t.name, location: t.location })),
-    roadMix: roadMix(r.result),
-    curvature: routeCurvature(r.result.geometry, waypoints),
-  }));
+    roadMix: mix,
+    curvature,
+    scenic: r.sights
+      ? scenicScore({
+          counts: r.sights,
+          distanceKm: r.distanceKm,
+          roadMix: mix,
+          twistyKm: curvature?.twistyKm ?? 0,
+        })
+      : null,
+  };
+}
+
+// --- Rides opened from a GPX, KML or TCX file (G5, "Ride your GPX") ---
+
+/** Without times in the file, a ride is timed at this average speed. */
+export const UPLOAD_KMH = 40;
+const UPLOAD_LABEL = "Your ride";
+
+function lineLengthM(coords: LngLat[]): number {
+  let m = 0;
+  for (let i = 1; i < coords.length; i++) m += haversineM(coords[i - 1]!, coords[i]!);
+  return m;
+}
+
+/** The cache key of an uploaded line: the hash of its points, so the same ride gets one id. */
+export function uploadCacheKey(geometry: LineString): string {
+  const hash = createHash("sha256").update(JSON.stringify(geometry.coordinates)).digest("hex");
+  return `${CACHE_KEY_PREFIX}${hash.slice(0, 32)}`;
+}
+
+/**
+ * Keeps an uploaded ride's line in route_cache as a one-route answer (no road numbers: the road
+ * mix stays empty, the hairpins and ghats come from its shape), so places along it, its profile,
+ * weather, the 3D replay and the story poster work by route id. Nothing else is kept, and the
+ * cache drops it after 7 days.
+ */
+export async function saveUploadedRoute(
+  geometry: LineString,
+  durationS: number | null,
+  deps: RouteServiceDeps = defaultDeps(),
+  cache: JsonCache = routeDbCache,
+): Promise<RouteOption> {
+  const coords = geometry.coordinates as LngLat[];
+  const distanceM = lineLengthM(coords);
+  const result: RouteResult = {
+    geometry,
+    distanceM,
+    durationS: durationS ?? (distanceM / 1000 / UPLOAD_KMH) * 3600,
+    legs: [],
+  };
+  const key = uploadCacheKey(geometry);
+  await cache.set(key, [result]);
+  const found = { id: routeIdFor(key, 0), result };
+  return toRouteOption(await describeRoute(found, deps), UPLOAD_LABEL, [
+    coords[0]!,
+    coords.at(-1)!,
+  ]);
+}
+
+/** An uploaded ride by its route id (a reload or a shared link), or null once it has expired. */
+export async function getUploadedRoute(
+  id: string,
+  deps: RouteServiceDeps = defaultDeps(),
+  cache: JsonCache = routeDbCache,
+): Promise<RouteOption | null> {
+  const result = await getRouteResult(id, cache);
+  if (!result) return null;
+  const coords = result.geometry.coordinates as LngLat[];
+  return toRouteOption(await describeRoute({ id, result }, deps), UPLOAD_LABEL, [
+    coords[0]!,
+    coords.at(-1)!,
+  ]);
 }

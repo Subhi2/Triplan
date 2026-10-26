@@ -5,6 +5,7 @@ import { Planner } from "@/components/trip/Planner";
 import { SITE_NAME, tripHeadline } from "@/lib/site";
 import { parseTripUrl } from "@/lib/tripUrl";
 import { aiEnabled } from "@/server/providers/llm";
+import { powKey } from "@/server/services/proofOfWork";
 import { listRides } from "@/server/services/rideService";
 
 /** Famous rides for "Try a famous ride", read at most hourly; none if the database is down. */
@@ -47,7 +48,7 @@ export default async function HomePage() {
   // useSearchParams in Planner needs a Suspense boundary.
   return (
     <Suspense>
-      <Planner famousRides={rides} aiEnabled={aiEnabled()} />
+      <Planner famousRides={rides} aiEnabled={aiEnabled()} postsOpen={powKey() !== null} />
     </Suspense>
   );
 }

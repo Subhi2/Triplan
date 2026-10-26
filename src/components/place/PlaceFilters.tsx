@@ -1,7 +1,7 @@
 "use client";
 
 import { categoryStyle } from "@/lib/categories";
-import { DETOUR_LIMITS_KM } from "@/lib/places";
+import { DETOUR_LIMITS_KM, LIST_MIXES, type ListMix } from "@/lib/places";
 import type { DetourLimitKm } from "@/lib/tripUrl";
 
 interface Props {
@@ -9,6 +9,9 @@ interface Props {
   bestCount: number; // places in the default "best stops" list
   selected: string[]; // empty = all
   maxDetourKm: DetourLimitKm | null;
+  /** Popular ↔ Offbeat, for the best-stops list. */
+  mix: ListMix;
+  onMixChange: (mix: ListMix) => void;
   onSelectedChange: (categories: string[]) => void;
   onMaxDetourChange: (km: DetourLimitKm | null) => void;
 }
@@ -17,6 +20,12 @@ const chip =
   "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
 const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
 const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
+
+const MIX_LABELS: Record<ListMix, string> = {
+  popular: "Popular",
+  mixed: "Mixed",
+  offbeat: "Offbeat",
+};
 
 export function PlaceFilters(props: Props) {
   const { counts, selected } = props;
@@ -66,6 +75,33 @@ export function PlaceFilters(props: Props) {
           );
         })}
       </div>
+
+      {all && (
+        <div
+          role="group"
+          aria-label="Popular or offbeat"
+          className="inline-flex rounded-full bg-stone-100 p-0.5 dark:bg-stone-800"
+        >
+          {LIST_MIXES.map((m) => {
+            const on = props.mix === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={on}
+                onClick={() => props.onMixChange(m)}
+                className={`inline-flex min-h-11 items-center rounded-full px-3 text-sm md:min-h-8 md:text-[13px] ${
+                  on
+                    ? "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900"
+                    : "hover:bg-stone-200 dark:hover:bg-stone-700"
+                }`}
+              >
+                {MIX_LABELS[m]}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 text-sm">
         <label className="flex min-h-11 items-center gap-2 md:min-h-0">

@@ -5,6 +5,7 @@ import {
   bestAlongRoute,
   detourLabel,
   placesAlongRequestSchema,
+  popularity,
   type PlaceAlong,
 } from "@/lib/places";
 
@@ -133,5 +134,52 @@ describe("bestAlongRoute", () => {
   it("keeps everything on a quiet road", () => {
     const quiet = [5, 25, 45, 65].map((km) => place({ category: "viewpoint", kmFromStart: km }));
     expect(bestAlongRoute(quiet)).toEqual(quiet);
+  });
+
+  describe("Popular ↔ Offbeat", () => {
+    // One stretch with 4 famous temples and 4 little-known places: 5 are kept.
+    const famous = [1, 2, 3, 4].map((km) =>
+      place({
+        category: "temple",
+        kmFromStart: km,
+        notable: true,
+        thumbUrl: "https://upload.wikimedia.org/x.jpg",
+        ratingCount: 40,
+        name: `Famous ${km}`,
+      }),
+    );
+    const quiet = [5, 6, 7, 8].map((km) =>
+      place({ category: "viewpoint", kmFromStart: km, name: `Quiet ${km}` }),
+    );
+    const names = (mix: "popular" | "mixed" | "offbeat") =>
+      bestAlongRoute([...famous, ...quiet], mix).map((p) => p.name);
+
+    it("Popular keeps only the well-known places", () => {
+      expect(names("popular")).toEqual(["Famous 1", "Famous 2", "Famous 3", "Famous 4"]);
+    });
+
+    it("Offbeat keeps only the little-known places", () => {
+      expect(names("offbeat")).toEqual(["Quiet 5", "Quiet 6", "Quiet 7", "Quiet 8"]);
+    });
+
+    it("Popular puts the best known first in a crowded stretch", () => {
+      const more = [7, 8, 9].map((km) =>
+        place({ category: "temple", kmFromStart: km, notable: true, name: `Notable ${km}` }),
+      );
+      // 7 well-known places, 5 kept: the 4 with photos and reviews beat 1 of the 3 notable only.
+      const popular = bestAlongRoute([...famous, ...more], "popular").map((p) => p.name);
+      expect(popular).toHaveLength(5);
+      expect(popular.filter((n) => n.startsWith("Famous"))).toHaveLength(4);
+    });
+
+    it("Mixed is the default order", () => {
+      expect(names("mixed")).toEqual(bestAlongRoute([...famous, ...quiet]).map((p) => p.name));
+    });
+
+    it("scores popularity from notable, photo, reviews and trending", () => {
+      expect(popularity(famous[0]!)).toBe(2.5);
+      expect(popularity(quiet[0]!)).toBe(0);
+      expect(popularity({ ...quiet[0]!, trending: true, ratingCount: 10 })).toBe(1);
+    });
   });
 });

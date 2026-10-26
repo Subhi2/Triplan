@@ -1,5 +1,6 @@
 import { serverEnv } from "../../env";
 import { createOsmApiProvider, type OsmCurrentProvider } from "./osmApi";
+import { fetchDistrictOutlines } from "./districtOutlines";
 import { createOverpassProvider } from "./overpass";
 import { fetchRegionOutline, type RegionOutline } from "./regionOutline";
 import type { OsmPlacesProvider } from "./types";
@@ -17,6 +18,12 @@ export function getOsmCurrentProvider(): OsmCurrentProvider {
 export function getOsmPlacesProvider(): OsmPlacesProvider {
   const env = serverEnv();
   return createOverpassProvider(env.OVERPASS_URLS, env.NOMINATIM_USER_AGENT);
+}
+
+/** District outlines from Nominatim, by relation id (at most 50 a call). */
+export function getDistrictOutlines(relationIds: number[]): Promise<Map<number, RegionOutline>> {
+  const env = serverEnv();
+  return fetchDistrictOutlines(env.NOMINATIM_BASE_URL, env.NOMINATIM_USER_AGENT, relationIds);
 }
 
 /** A state's outline from Nominatim, or null (then every tile is fetched). */

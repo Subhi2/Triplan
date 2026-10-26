@@ -1,0 +1,104 @@
+[
+  {
+    "slug": "bandipur-nh766-night",
+    "kind": "night_ban",
+    "title": "Bandipur and Muthanga forest road (NH766)",
+    "where": { "road": [[76.69161, 11.8085], [76.36816, 11.67378]] },
+    "closed": { "from": "21:00", "to": "06:00" },
+    "link": "https://www.deccanherald.com/india/karnataka/bandipur-night-traffic-ban-cm-siddaramaiah-to-hold-meeting-with-stakeholders-says-khandre-3478812",
+    "source": "Deccan Herald, April 2025: the ban of 2009, upheld by the Supreme Court in 2019, continues",
+    "checkedOn": "2026-10-14",
+    "note": "Between Gundlupet and Muthanga (Kerala). The forest starts a few km past Gundlupet. Emergency vehicles and a few buses may pass at night."
+  },
+  {
+    "slug": "bandipur-mudumalai-nh181-night",
+    "kind": "night_ban",
+    "title": "Bandipur and Mudumalai forest road (NH181)",
+    "where": { "road": [[76.63897, 11.70112], [76.58374, 11.57912], [76.49239, 11.49924]] },
+    "closed": { "from": "21:00", "to": "06:00" },
+    "link": "https://www.onmanorama.com/news/kerala/2019/10/05/why-is-there-a-night-traffic-on-nh-766-bandipur-reserve-forest.amp.html",
+    "source": "Onmanorama, October 2019: the 2009 order covers NH212 (now NH766) and NH67 (now NH181); Tamil Nadu closes its side to Gudalur",
+    "checkedOn": "2026-10-14",
+    "note": "From Melukamanahalli through Theppakadu to Gudalur. The Masinagudi–Kalhatti road has its own daily limit on tourist vehicles."
+  },
+  {
+    "slug": "nilgiris-epass",
+    "kind": "epass",
+    "title": "E-pass needed to drive into the Nilgiris (Ooty)",
+    "where": { "districts": ["Nilgiris"], "state": "tamil-nadu" },
+    "link": "https://epass.tnega.org/",
+    "checkedOn": "2026-10-14",
+    "note": "Ordered by the Madras High Court. Vehicles registered in the Nilgiris (TN 43) and government buses do not need one. Daily limits apply in busy seasons: apply before you go."
+  },
+  {
+    "slug": "kodaikanal-epass",
+    "kind": "epass",
+    "title": "E-pass needed to drive up to Kodaikanal",
+    "where": { "circles": [{ "center": [77.49197, 10.23371], "radiusKm": 14 }] },
+    "link": "https://epass.tnega.org/",
+    "checkedOn": "2026-10-14",
+    "note": "A separate pass from the Nilgiris one, on the same portal. Vehicles registered in Dindigul (TN 57) do not need one."
+  },
+  {
+    "slug": "rohtang-permit",
+    "kind": "permit",
+    "title": "Permit needed to drive past Gulaba to Rohtang Pass",
+    "where": { "road": [[77.20098, 32.32231], [77.24627, 32.371]] },
+    "link": "https://rohtangpermits.hp.gov.in/",
+    "checkedOn": "2026-10-14",
+    "note": "A daily quota for petrol and diesel vehicles, booked online a day ahead. The road through the Atal Tunnel needs no permit."
+  },
+  {
+    "slug": "ladakh-protected-areas-fee",
+    "kind": "fee",
+    "title": "Fee for Ladakh's protected areas (Nubra, Turtuk, Pangong, Tso Moriri, Hanle)",
+    "where": {
+      "circles": [
+        { "center": [77.55065, 34.55123], "radiusKm": 60 },
+        { "center": [76.83, 34.85], "radiusKm": 25 },
+        { "center": [78.45734, 33.90769], "radiusKm": 35 },
+        { "center": [78.31681, 32.88927], "radiusKm": 30 },
+        { "center": [78.98321, 32.77148], "radiusKm": 30 }
+      ]
+    },
+    "link": "https://www.lahdclehpermit.in/",
+    "checkedOn": "2026-10-14",
+    "note": "Paid online to LAHDC Leh (environment, Red Cross and wildlife fees); carry the receipt. Foreign visitors need a Protected Area Permit through a Leh travel agent."
+  },
+  {
+    "slug": "arunachal-ilp",
+    "kind": "permit",
+    "title": "Inner Line Permit needed to enter Arunachal Pradesh",
+    "where": { "state": "arunachal-pradesh" },
+    "link": "https://eilp.arunachal.gov.in/",
+    "checkedOn": "2026-10-14",
+    "note": "Indian visitors apply online (eILP). Foreign visitors need a Protected Area Permit."
+  },
+  {
+    "slug": "nagaland-ilp",
+    "kind": "permit",
+    "title": "Inner Line Permit needed to enter Nagaland",
+    "where": { "state": "nagaland" },
+    "link": "https://ilp.nagaland.gov.in/",
+    "checkedOn": "2026-10-14",
+    "note": "Indian visitors from outside the state apply online."
+  },
+  {
+    "slug": "mizoram-ilp",
+    "kind": "permit",
+    "title": "Inner Line Permit needed to enter Mizoram",
+    "where": { "state": "mizoram" },
+    "link": "https://ilp.mizoram.gov.in/",
+    "checkedOn": "2026-10-14",
+    "note": "Indian visitors from outside the state apply online."
+  },
+  {
+    "slug": "manipur-ilp",
+    "kind": "permit",
+    "title": "Inner Line Permit needed to enter Manipur",
+    "where": { "state": "manipur" },
+    "link": "https://manipurilponline.mn.gov.in/",
+    "checkedOn": "2026-10-14",
+    "note": "Indian visitors from outside the state apply online."
+  }
+]

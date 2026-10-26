@@ -32,6 +32,14 @@ async function mockRouting(page: Page) {
   await page.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
   // No elevation profile, so tests never read the terrain tiles.
   await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
+  // Official alerts come from NDMA's SACHET; these tests never read it.
+  await page.route("**/api/route/alerts", (route) =>
+    route.fulfill({ json: { alerts: [], partial: false } }),
+  );
+  // No road rules: these tests never read the database for them.
+  await page.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [], timeline: null } }),
+  );
   await page.route("**/api/route", (route) => {
     const { stops } = route.request().postDataJSON() as { stops: { label: string }[] };
     const vias = stops.slice(1, -1).map((s) => s.label);
@@ -166,6 +174,8 @@ test("category chips and the detour toggle filter the list", async ({ page }) =>
 test("plan via Sakleshpur, add Manjarabad Fort, save the trip and reopen it", async ({
   page,
 }, testInfo) => {
+  // Real OSRM and two database writes: slow when the whole suite runs at once.
+  test.slow();
   const title = `E2E trip ${testInfo.project.name} ${Date.now()}`;
   const db = postgres(process.env.DATABASE_URL!, { prepare: false, max: 1 });
   try {

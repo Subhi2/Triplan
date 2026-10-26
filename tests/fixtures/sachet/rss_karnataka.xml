@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-stylesheet title="XSL_formatting" type="text/xsl" href="feed.xsl"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Karnataka: CAP Disaster Alert Feeds</title>
+    <description>CAP Integrated Alert System Warning Updates</description>
+    <language>en</language>
+    <link>https://sachet.ndma.gov.in/cap_public_website/rss/rss_karnataka.xml</link>
+    <atom:link href="https://sachet.ndma.gov.in/cap_public_website/rss/rss_karnataka.xml" rel="self" type="application/rss+xml"/>
+    <copyright>public domain</copyright>
+    <pubDate>Tue, 15 Sep 2026 09:01:58 GMT</pubDate>
+    <item>
+      <title>Thunderstorm with Lightning is likely to occur at isolated places over Chikkamagaluru, Dakshina Kannada, Shivamogga, Udupi and Uttara Kannada districts during next 3 hours. Source: IMD Bangalore.</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791630422097019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791630422097019</guid>
+      <pubDate>Sat, 10 Oct 2026 11:12:30 GMT</pubDate>
+    </item>
+    <item>
+      <title>Thunderstorm with Lightning is likely to occur at isolated places over Chikkamagaluru and Udupi districts during next 3 hours. Source: IMD Bangalore.</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791625808941019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791625808941019</guid>
+      <pubDate>Sat, 10 Oct 2026 09:52:06 GMT</pubDate>
+    </item>
+    <item>
+      <title>ಮುಂದಿನ 3 ಗಂಟೆಗಳಲ್ಲಿ ಚಾಮರಾಜನಗರ, ದಕ್ಷಿಣ ಕನ್ನಡ ಮತ್ತು ಕೊಡಗು ಜಿಲ್ಲೆಗಳ ಒಂದೆರಡು ಕಡೆಗಳಲ್ಲಿ ಗುಡುಗು ಸಹಿತ ಮಳೆಯಾಗುವ ಸಾಧ್ಯತೆಯಿದೆ. ಮೂಲ: IMD MC BNG</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791621699285019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791621699285019</guid>
+      <pubDate>Sat, 10 Oct 2026 08:58:21 GMT</pubDate>
+    </item>
+    <item>
+      <title>Thunderstorm is likely to occur at isolated places over Chamarajanagara, Chikkamagaluru, Dakshina Kannada, Hassan, Kodagu, Mandya, Mysuru, Ramanagara, Shivamogga, Udupi, Uttara Kannada districts in next 3 hours.Source : IMD Bengaluru</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791553740889019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791553740889019</guid>
+      <pubDate>Fri, 09 Oct 2026 13:50:52 GMT</pubDate>
+    </item>
+    <item>
+      <title>Thunderstorm is likely to occur at isolated places over Bengaluru Rural, Bengaluru Urban, Chamarajanagara, Chikkamagaluru, Dakshina Kannada, Hassan, Kodagu, Mandya, Mysuru, Ramanagara districts in next 3 hours. Source : IMD Bangalore</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791543065302019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791543065302019</guid>
+      <pubDate>Fri, 09 Oct 2026 10:53:45 GMT</pubDate>
+    </item>
+    <item>
+      <title>ಮುಂದಿನ 3 ಗಂಟೆಗಳಲ್ಲಿ ಮಂಡ್ಯ ಜಿಲ್ಲೆಯ ಅಲ್ಲಲ್ಲಿ ಗುಡುಗು ಸಹಿತ ಮಿಂಚು ಉಂಟಾಗುವ ಸಾಧ್ಯತೆಯಿದೆ. ಮೂಲ: ಐಎಂಡಿ (IMD) ಬೆಂಗಳೂರು.</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791537790031019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791537790031019</guid>
+      <pubDate>Fri, 09 Oct 2026 09:25:13 GMT</pubDate>
+    </item>
+    <item>
+      <title>Thunderstorm with Lightning is likely to occur at most places over Bengaluru Rural, Bengaluru Urban, Chamarajanagara, Chikkamagaluru, Dakshina Kannada, Hassan, Ramanagara in next 3 hours. Source : IMD Bengaluru</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791537503441019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791537503441019</guid>
+      <pubDate>Fri, 09 Oct 2026 09:22:07 GMT</pubDate>
+    </item>
+    <item>
+      <title>Thunderstorm with Lightning is likely to occur at most places over Chamarajanagara, Kodagu and Mysuru districts during next 3 hours. Source: IMD Bangalore.</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791532503546019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791532503546019</guid>
+      <pubDate>Fri, 09 Oct 2026 07:57:36 GMT</pubDate>
+    </item>
+    <item>
+      <title>ಮುಂದಿನ 3 ಗಂಟೆಗಳಲ್ಲಿ ಚಿಕ್ಕಮಗಳೂರು ಮತ್ತು ಹಾಸನ ಜಿಲ್ಲೆಗಳ ಒಂದೆರಡು ಕಡೆಗಳಲ್ಲಿ ಮಿಂಚು ಸಹಿತ ಗುಡುಗು ಸಹಿತ ಮಳೆಯಾಗುವ ಸಾಧ್ಯತೆಯಿದೆ.</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791477789053019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791477789053019</guid>
+      <pubDate>Thu, 08 Oct 2026 16:44:52 GMT</pubDate>
+    </item>
+    <item>
+      <title>ಮುಂದಿನ 3 ಗಂಟೆಗಳಲ್ಲಿ ದಕ್ಷಿಣ ಕನ್ನಡ, ಹಾಸನ, ತುಮಕೂರು ಮತ್ತು ಕೊಡಗು ಜಿಲ್ಲೆಗಳ ಒಂದು ಅಥವಾ ಎರಡು ಸ್ಥಳಗಳಲ್ಲಿ ಗುಡುಗು ಸಹಿತ ಮಳೆಯಾಗುವ ಸಾಧ್ಯತೆ ಇದೆ.</title>
+      <description/>
+      <category>Met</category>
+      <link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1791466914028019</link>
+      <author>controlroom@ndma.gov.in (IMD Bengaluru)</author>
+      <guid isPermaLink="false">1791466914028019</guid>
+      <pubDate>Thu, 08 Oct 2026 13:43:13 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

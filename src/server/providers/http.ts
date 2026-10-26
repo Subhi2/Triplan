@@ -60,6 +60,17 @@ export async function fetchJson<T>(
   return { status: res.status, data: parsed.data };
 }
 
+/** GETs a text body (XML). Throws on non-2xx answers and bodies over `maxBytes`. */
+export async function fetchText(
+  provider: string,
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 15_000,
+  maxBytes = 2_000_000,
+): Promise<string> {
+  return new TextDecoder().decode(await fetchBytes(provider, url, init, timeoutMs, maxBytes));
+}
+
 /** GETs a binary body (an image tile). Throws on non-2xx answers and bodies over `maxBytes`. */
 export async function fetchBytes(
   provider: string,

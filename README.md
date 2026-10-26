@@ -107,26 +107,30 @@ cp .env.example .env.local
 
 Then fill in `.env.local`. Only the first two are required:
 
-| Variable                          | Needed  | What to put                                                                                                                          |
-| --------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`                    | **yes** | The session pooler string from step 3. On Vercel, use the transaction pooler string.                                                 |
-| `NOMINATIM_USER_AGENT`            | **yes** | Who you are, e.g. `my-triplan/0.1 (you@example.com)`. Nominatim's policy requires it; it is also sent to Photon and Overpass.        |
-| `OSRM_BASE_URL`                   | no      | The routing server. Default: the public OSRM demo server (fair use only; self-host for real traffic).                                |
-| `NOMINATIM_BASE_URL`              | no      | Default `https://nominatim.openstreetmap.org` (1 request per second, used only when Enter is pressed).                               |
-| `PHOTON_BASE_URL`                 | no      | Default `https://photon.komoot.io/api` (suggestions while typing).                                                                   |
-| `OVERPASS_URLS`                   | no      | Overpass servers for the imports, tried in order. Default: overpass-api.de, z.overpass-api.de, maps.mail.ru, kumi.systems.           |
-| `NEXT_PUBLIC_MAP_STYLE_URL`       | no      | A MapLibre style URL. Default: OpenFreeMap "liberty".                                                                                |
-| `NEXT_PUBLIC_TERRAIN_TILES_URL`   | no      | Terrarium PNG tiles `…/{z}/{x}/{y}.png` for the elevation profile and 3D terrain. Default: AWS Terrain Tiles (free, no key).         |
-| `NEXT_PUBLIC_SITE_URL`            | no      | Your public address, for share cards and the sitemap. Vercel's production address is used if empty.                                  |
-| `WRITE_LIMIT_SALT`                | no      | Any random string. It salts the hashed visitor IPs used for rate limits. Default: derived from `DATABASE_URL`.                       |
-| `CRON_SECRET`                     | no      | Any random string. Vercel Cron sends it to `/api/health`; without it the daily clean-up of old counters and cache rows is skipped.   |
-| `ANTHROPIC_API_KEY`               | no      | Turns on "plan in plain words". Empty hides the box and makes no AI calls. See [Plan in plain words](#plan-in-plain-words-optional). |
-| `ANTHROPIC_TRIP_MODEL`            | no      | The Claude model for it. Default `claude-haiku-4-5`.                                                                                 |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | no      | Turns on the Google map, and Google photos and reviews for places with none of their own. See [Google Maps](#google-maps-optional).  |
-| `NEXT_PUBLIC_GOOGLE_MAP_ID`       | no      | A Google Map ID for Advanced Markers.                                                                                                |
-| `GOOGLE_MAPS_API_KEY`             | no      | A separate server-only Google key. Empty uses the key above.                                                                         |
+| Variable                          | Needed  | What to put                                                                                                                                                                                                   |
+| --------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                    | **yes** | The session pooler string from step 3. On Vercel, use the transaction pooler string.                                                                                                                          |
+| `NOMINATIM_USER_AGENT`            | **yes** | Who you are, e.g. `my-triplan/0.1 (you@example.com)`. Nominatim's policy requires it; it is also sent to Photon and Overpass.                                                                                 |
+| `OSRM_BASE_URL`                   | no      | The routing server. Default: the public OSRM demo server (fair use only; self-host for real traffic).                                                                                                         |
+| `NOMINATIM_BASE_URL`              | no      | Default `https://nominatim.openstreetmap.org` (1 request per second, used only when Enter is pressed).                                                                                                        |
+| `PHOTON_BASE_URL`                 | no      | Default `https://photon.komoot.io/api` (suggestions while typing).                                                                                                                                            |
+| `OVERPASS_URLS`                   | no      | Overpass servers for the imports, tried in order. Default: overpass-api.de, z.overpass-api.de, maps.mail.ru, kumi.systems.                                                                                    |
+| `NEXT_PUBLIC_MAP_STYLE_URL`       | no      | A MapLibre style URL. Default: OpenFreeMap "liberty".                                                                                                                                                         |
+| `NEXT_PUBLIC_TERRAIN_TILES_URL`   | no      | Terrarium PNG tiles `…/{z}/{x}/{y}.png` for the elevation profile and 3D terrain. Default: AWS Terrain Tiles (free, no key).                                                                                  |
+| `NEXT_PUBLIC_OFFLINE_TILES_URL`   | no      | Your own PMTiles file of India for "Save for offline", made by `pnpm tiles:extract` and stored with its `fonts/` folder where range requests and CORS work (Cloudflare R2, Supabase Storage). Empty hides it. |
+| `ALTCHA_HMAC_KEY`                 | no      | Any long random string (`openssl rand -base64 32`). Opens reviews, photos and road reports without sign-in; it signs their proof of work. Empty hides the forms. See [Reviews, photos and road reports](#reviews-photos-and-road-reports-optional). |
+| `ADMIN_EMAILS`                    | no      | Comma-separated email addresses that may sign in to `/admin` and approve riders' posts. Set it on Vercel, not in the code. Empty: nobody can sign in. |
+| `SACHET_BASE_URL`                 | no      | NDMA's alert feeds for alerts on the route. Default `https://sachet.ndma.gov.in/cap_public_website`.                                                                                                          |
+| `NEXT_PUBLIC_SITE_URL`            | no      | Your public address, for share cards and the sitemap. Vercel's production address is used if empty.                                                                                                           |
+| `WRITE_LIMIT_SALT`                | no      | Any random string. It salts the hashed visitor IPs used for rate limits. Default: derived from `DATABASE_URL`.                                                                                                |
+| `CRON_SECRET`                     | no      | Any random string. Vercel Cron sends it to `/api/health`; without it the daily clean-up of old counters and cache rows is skipped.                                                                            |
+| `ANTHROPIC_API_KEY`               | no      | Turns on "plan in plain words". Empty hides the box and makes no AI calls. See [Plan in plain words](#plan-in-plain-words-optional).                                                                          |
+| `ANTHROPIC_TRIP_MODEL`            | no      | The Claude model for it. Default `claude-haiku-4-5`.                                                                                                                                                          |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | no      | Turns on the Google map, and Google photos and reviews for places with none of their own. See [Google Maps](#google-maps-optional).                                                                           |
+| `NEXT_PUBLIC_GOOGLE_MAP_ID`       | no      | A Google Map ID for Advanced Markers.                                                                                                                                                                         |
+| `GOOGLE_MAPS_API_KEY`             | no      | A separate server-only Google key. Empty uses the key above.                                                                                                                                                  |
 
-The `SUPABASE_*` keys and the YouTube and Instagram variables in `.env.example` are for later phases; the app does not read them yet. Never commit `.env.local`.
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Supabase → Project Settings → API) turn on "Ride together": rooms use Supabase Realtime's public channels, which new projects allow (Realtime settings, "Allow public access"). Without them the button is hidden. `SUPABASE_SECRET_KEY` is used on the server only, to store riders' photos (Supabase Storage bucket `rider-photos`, made on the first upload). `YOUTUBE_API_KEY` in `.env.example` is for phase 6; the app does not read it yet. Never commit `.env.local`.
 
 ### 5. Create the tables and load all the data
 
@@ -137,7 +141,7 @@ pnpm db:setup
 This one command:
 
 1. Runs the migrations: tables, PostGIS functions, indexes and row-level security.
-2. Loads the data snapshot in `data/snapshot/`: every place (90,000+, all 36 states and union territories), place guide, photo credit, famous ride and service point (110,000+), about 17 MB.
+2. Loads the data snapshot in `data/snapshot/`: every place (90,000+, all 36 states and union territories), place guide, photo credit, famous ride, service point (110,000+) and open place (70,000 fuel stations, food and coffee stops from Overture), about 27 MB.
 
 It takes under a minute. Before writing anything it checks every file against its checksum, and it only loads into empty tables. On a database that already has places, `pnpm db:setup -- --replace --yes` empties the snapshot tables first; it refuses while there are saved trips or reviews.
 
@@ -212,6 +216,16 @@ Every push to `main` deploys to production, and other branches get preview addre
 2. Put the key in `ANTHROPIC_API_KEY`, locally and on Vercel, and redeploy.
 
 The box appears on the empty planner. Each request costs about US$0.002 with Claude Haiku. The server allows 6 requests per visitor an hour and 200 a day in all. The rider's text is sent to Anthropic to be read, and it is never stored or logged.
+
+## Reviews, photos and road reports (optional)
+
+Riders post without an account; only admins sign in.
+
+1. Set `ALTCHA_HMAC_KEY` (a long random string) and `ADMIN_EMAILS` (your address), locally and on Vercel, and redeploy. `SUPABASE_SECRET_KEY` must be set for photos.
+2. In Supabase → Authentication → URL Configuration, set the Site URL to your public address and add `https://<your-domain>/auth/callback` (and `http://localhost:3000/auth/callback` for local use) to the Redirect URLs.
+3. Open `/admin`, type your address and open the emailed link **in the same browser**. To open it on any device instead, change the Magic Link email template's link to `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=magiclink` (and the Confirm signup template's, used for the first sign-in, to the same with `type=signup`).
+
+Every post costs the browser about a second of proof of work (ALTCHA's open-source library, no outside service) and counts against the per-visitor write limit. With `ANTHROPIC_API_KEY` set, Claude Haiku pre-screens the text and the admin queue shows its verdict; nothing shows to riders until an admin approves it. Photos are resized to 1600 px and 400 px with their location and camera details removed; rejected ones are deleted. Road reports last 24 or 72 hours. Supabase's built-in email sender allows only a few emails an hour, which is enough for admin sign-in.
 
 ## Google Maps (optional)
 

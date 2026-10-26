@@ -1,6 +1,6 @@
 # Bike Travelling Guide
 
-A route explorer for bike and car travellers. The user picks a start, a destination and optional via stops (to force a specific path), and the app shows every worthwhile place along that exact route: temples, forts, viewpoints, waterfalls, treks, lakes, food and fuel. Each place has a category, rating, photos, reviews, best vehicle, best time to visit and items to carry. A discovery pipeline finds "hidden places" from YouTube and Instagram posts.
+A route explorer for bike and car travellers. The user picks a start, a destination and optional via stops (to force a specific path), and the app shows every worthwhile place along that exact route: temples, forts, viewpoints, waterfalls, treks, lakes, food and fuel. Each place has a category, rating, photos, reviews, best vehicle, best time to visit and items to carry. A discovery pipeline finds "hidden places" in YouTube videos.
 
 The app must work for **any** start, destination and via stops the user types. Bengaluru → Kalasa is only the test case used in the docs and tests; never hard-code it in app logic.
 
@@ -14,18 +14,19 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 | `docs/02-architecture.md` | Stack, folders, services, routing and corridor search |
 | `docs/03-data-model.md` | Postgres + PostGIS schema (SQL) and TypeScript types |
 | `docs/04-build-plan.md` | Phased build steps. Work through phases in order |
-| `docs/05-hidden-places.md` | YouTube / Instagram discovery pipeline and its rules |
+| `docs/05-hidden-places.md` | YouTube discovery pipeline and its rules |
 | `docs/06-seed-data.md` | Seed places for the Bengaluru → Kalasa demo |
-| `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, making money |
+| `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, the research behind G5, making money |
 | `docs/08-design.md` | The "Ghat Road" design: tokens, type, components, layout and motion. Follow it for any UI |
 
 ## Stack (decided)
 
 - **Next.js 15 (App Router) + TypeScript**, deployed as a PWA. Tailwind CSS for styling.
-- **Maps**: **Google Maps JavaScript API** via `@vis.gl/react-google-maps` when a Google key is set; **MapLibre GL JS** via `react-map-gl/maplibre` with OpenStreetMap tiles (OpenFreeMap) otherwise (dev without a key, tests, the offline pack). Both behind the same `MapView` props.
+- **Maps**: **Google Maps JavaScript API** via `@vis.gl/react-google-maps` when a Google key is set; **MapLibre GL JS** via `react-map-gl/maplibre` with OpenStreetMap tiles (OpenFreeMap) otherwise (dev without a key, tests). Both behind the same `MapView` props. The offline pack reads our own PMTiles file of India (G5), never a public tile server.
 - **Google Maps Platform fills gaps only** (decided 2026-09-29): photos, rating and reviews for places that have none of our own, and exact Google Maps links. Our own data, OSRM, Photon and the PostGIS corridor search stay the core. See "Google Maps Platform" in `docs/02-architecture.md`.
 - **Supabase**: Postgres with **PostGIS**, Auth, Storage.
-- **Routing**: OSRM (public demo server in dev, self-hosted later) behind a `RoutingProvider` interface so Google Routes / GraphHopper can be swapped in.
+- **Routing**: OSRM (public demo server in dev, self-hosted later) behind a `RoutingProvider` interface so Google Routes / GraphHopper can be swapped in. The "Scenic" label picks among the routes OSRM already gives, by our scenic score (G5); an off-highway router (Valhalla) comes only when we run it on our own server.
+- **Alerts**: NDMA SACHET's CAP feeds (each feed states `<copyright>public domain</copyright>`), read on the server only (G5, "Alerts on the route" in `docs/02-architecture.md`). District outlines are our own, from OpenStreetMap.
 - **Geocoding**: Photon (komoot, `https://photon.komoot.io/api`) for suggestions while the user types, Nominatim as the fallback when Enter is pressed, both behind the `GeocodingProvider` interface. Our own places are listed before Photon results (see "Place search" in `docs/02-architecture.md`).
 - **Drizzle ORM** for schema and queries; raw SQL for PostGIS functions.
 - **Zod** for validating every API input and external API response.
@@ -50,6 +51,11 @@ pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptio
 pnpm db:link-wikidata                          # link places to Wikidata by name and distance (--dry-run)
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json
+pnpm db:import-districts                       # India's districts with LGD codes, for official alerts (G5)
+pnpm db:seed-road-rules                        # night bans, permits, e-passes and fees in data/road-rules.json (G5)
+pnpm db:import-open-places -- --region=<key|all>   # fuel, food and coffee from Overture Places into open_place (G5)
+pnpm spike:open-places          # compare Overture with our data on two test rides (read only)
+pnpm tiles:extract              # our own PMTiles file of India for offline packs (G5)
 pnpm rides:lookup -- "<name>"   # coordinates for a ride's stops (our towns, then Nominatim)
 pnpm db:export-snapshot         # rewrite data/snapshot from the live database (read only)
 pnpm screenshots -- --base=<url>  # README screenshots into docs/media
@@ -72,6 +78,15 @@ Add these scripts to `package.json` as the phases introduce them.
 - Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`). GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and unit tests on every push; it cannot build (the ISR pages need the database).
 - Small commits, one feature per commit, message in imperative mood.
 
+## Choosing new features
+
+Decided 2026-10-15: build only features that no one else can take away later. Whenever new features are researched, suggested or planned, check every data source and service each one needs against this list, and say in the plan how each passes.
+
+- **Allowed**: our own data; open data under a published licence that allows commercial use, downloaded and stored by us (OpenStreetMap/ODbL, CC0, CC BY, Apache-2.0, CDLA-Permissive); open-source software we can run on our own server; paid services we already use and could swap (Supabase, Vercel, Anthropic, Google behind its provider and budget), when the feature switches off cleanly without them.
+- **Avoid**: anything that needs someone's approval or an answer first (app reviews, "email them and ask"); terms that are missing, unclear or non-commercial; anything that only works on someone else's free public server with no way to run it ourselves.
+- Features that fail go to "Checked and left out" in `docs/07-growth-plan.md` with the reason, not into the build plan.
+- The core already uses free public servers (OSRM, Nominatim, Photon, OpenFreeMap). They are all open source and get self-hosted before launch (Phase 8). New features add no new dependence on public servers.
+
 ## Environment variables
 
 ```
@@ -93,10 +108,13 @@ NOMINATIM_USER_AGENT=bike-travelling-guide/0.1 (contact email)   # also sent to 
 PHOTON_BASE_URL=https://photon.komoot.io/api   # suggestions while typing
 OVERPASS_URLS=https://overpass-api.de/api/interpreter,...   # OSM imports; servers tried in order
 YOUTUBE_API_KEY=                  # phase 6
-INSTAGRAM_ACCESS_TOKEN=           # phase 7, needs Meta app review
-INSTAGRAM_BUSINESS_ACCOUNT_ID=    # phase 7
-ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction
+ANTHROPIC_API_KEY=                # "plan in plain words" (empty = hidden, no AI calls); phase 6 extraction; G5 review pre-screen
 ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
+SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website   # alerts on the route: feeds in rss/, CAP messages and their areas (G5)
+NEXT_PUBLIC_OFFLINE_TILES_URL=    # our own PMTiles file of India for offline packs (G5); empty = no "Save for offline"
+ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road reports (G5); empty = closed
+ADMIN_EMAILS=                     # who may sign in to /admin (G5); set in the deployment, never committed
+PHOTO_STORE=                      # tests only: "memory" keeps riders' photos out of Supabase Storage
 ```
 
 ## Things to avoid
@@ -112,3 +130,8 @@ ANTHROPIC_TRIP_MODEL=             # default claude-haiku-4-5
 - The data snapshot (`data/snapshot`) never includes trips, reviews, accounts, usage, caches, users' photos or Google ids (`src/lib/snapshot.ts`). Refresh it with `pnpm db:export-snapshot` after imports.
 - No link to the code repository anywhere in the app (footer, planner, About, metadata); the README is where the repository is. `tests/unit/no-repo-link.test.ts` checks it.
 - Never use Nominatim for search-as-you-type (its usage policy forbids it); suggestions come from our own places and Photon. Photon's public server asks for fair use: keep suggestions debounced (300 ms), cached, and for 2+ characters only.
+- Every road rule shows its link and the date it was checked: the authority's own page where there is one, else the newest reliable report, named in `source`. Add or change a rule only after checking it there; reports disagree on hours (G5).
+- Ride-together positions travel only through the Realtime channel: never stored, logged or sent to our server, and only after a tap on "Share my position" (G5).
+- A rider's GPX file is read in the browser; only the line leaves the phone, with 500 m cut from each end (G5).
+- Offline packs take tiles only from our own PMTiles file (`NEXT_PUBLIC_OFFLINE_TILES_URL`), never from OpenFreeMap or another public tile server: at most 3,000 tiles or 50 MB per pack, 4 requests at a time (G5). The service worker still never stores `/api/` answers; the page writes packs.
+- YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).

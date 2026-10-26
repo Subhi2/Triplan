@@ -13,7 +13,8 @@ export type PlacesState =
 
 /**
  * Loads every place within the corridor of the route: the place-list categories (filtering is
- * client-side), or only `categories` when given (e.g. fuel stations for the ride check).
+ * client-side), or only `categories` when given (e.g. fuel stations for the ride check), with
+ * open places in them too when `openPlaces` is set (the break planner and the fuel gap).
  * Sends the small route id first and falls back to the full geometry if the server no longer
  * has that route cached.
  */
@@ -21,6 +22,7 @@ export function usePlacesAlong(
   route: RouteOption | null,
   corridorKm: CorridorKm,
   categories?: string[],
+  openPlaces = false,
 ): PlacesState {
   const [state, setState] = useState<PlacesState>({ status: "idle" });
   const [attempt, setAttempt] = useState(0);
@@ -42,6 +44,7 @@ export function usePlacesAlong(
           ...body,
           corridorKm,
           ...(categoryKey && { categories: categoryKey.split(",") }),
+          ...(openPlaces && { openPlaces }),
         }),
         signal: ctrl.signal,
       });
@@ -65,7 +68,7 @@ export function usePlacesAlong(
       });
     });
     return () => ctrl.abort();
-  }, [route, corridorKm, categoryKey, attempt]);
+  }, [route, corridorKm, categoryKey, openPlaces, attempt]);
 
   return state;
 }

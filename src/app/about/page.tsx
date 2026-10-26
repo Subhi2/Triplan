@@ -22,6 +22,12 @@ const SOURCES: { what: string; who: string; href: string; licence: string }[] = 
     licence: "ODbL 1.0",
   },
   {
+    what: "More fuel stations, food and coffee for breaks and the fuel check",
+    who: "Overture Maps Foundation (data from Meta, Microsoft, Foursquare, AllThePlaces and others)",
+    href: "https://docs.overturemaps.org/attribution/",
+    licence: "CDLA Permissive 2.0; Apache 2.0 for Foursquare; CC0 for AllThePlaces",
+  },
+  {
     what: "Map tiles",
     who: "OpenFreeMap, OpenMapTiles, OpenStreetMap",
     href: "https://openfreemap.org",
