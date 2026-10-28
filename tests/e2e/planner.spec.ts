@@ -568,18 +568,20 @@ test("suggests while typing, ours first, and falls back to Nominatim on Enter", 
     return route.fulfill({ json: { results } });
   });
   await page.goto("/");
-  // The map only renders after hydration; keys typed before that are lost.
-  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+  // The map only renders after hydration; keys typed before that are lost. (On phones it waits,
+  // hidden, for a trip.)
+  await expect(page.locator(".maplibregl-canvas")).toBeAttached();
   const start = page.getByRole("combobox", { name: "Start" });
 
-  // Typing quickly sends one request, after the pause, with the map position as a bias.
+  // Typing quickly searches once, after the pause, with the map position as a bias: our places
+  // alone (shown at once) and the full list (ours, then Photon's) side by side.
   await start.pressSequentially("samse", { delay: 60 });
   const options = page.getByRole("listbox", { name: "Start suggestions" }).getByRole("option");
   await expect(options).toHaveCount(2);
-  expect(requests).toHaveLength(1);
-  expect(requests[0]!.get("q")).toBe("samse");
-  expect(requests[0]!.get("source")).toBe("suggest");
-  for (const key of ["lat", "lon", "zoom"]) expect(Number(requests[0]!.get(key))).not.toBeNaN();
+  expect(requests.map((r) => r.get("source")).sort()).toEqual(["local", "suggest"]);
+  const suggest = requests.find((r) => r.get("source") === "suggest")!;
+  expect(suggest.get("q")).toBe("samse");
+  for (const key of ["lat", "lon", "zoom"]) expect(Number(suggest.get(key))).not.toBeNaN();
   await expect(options.nth(0)).toContainText("Samse View"); // ours first
   await expect(options.nth(1)).toContainText("Kalasa taluk"); // then Photon
   await expect(page.getByText("Suggestions by Photon")).toBeVisible();
