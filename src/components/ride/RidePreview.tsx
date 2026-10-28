@@ -717,10 +717,13 @@ export default function RidePreview(props: RidePreviewProps) {
             <button
               type="button"
               onClick={togglePlay}
-              className="bg-brand inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-white"
+              className="bg-brand inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white max-[359px]:px-0"
             >
               {playing ? <PauseIcon /> : <PlayIcon />}
-              {playing ? "Pause" : hud.t >= 1 ? "Play again" : "Play"}
+              {/* Below 360 px the icon alone, so the speeds stay on its row. */}
+              <span className="max-[359px]:sr-only">
+                {playing ? "Pause" : hud.t >= 1 ? "Play again" : "Play"}
+              </span>
             </button>
             <div role="group" aria-label="Speed" className="flex rounded-xl bg-stone-100 p-1">
               {SPEEDS.map((s) => (
