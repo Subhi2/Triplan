@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GeocodeHit } from "@/server/providers/geocoding";
 import type { LocalPlaceMatch } from "@/server/services/placeService";
-import { suggestPlaces, type SuggestDeps } from "@/server/services/suggestService";
+import { ourSuggestions, suggestPlaces, type SuggestDeps } from "@/server/services/suggestService";
 
 const local = (
   name: string,
@@ -99,5 +99,18 @@ describe("suggestPlaces", () => {
       throw new Error("connect ETIMEDOUT");
     });
     expect((await suggestPlaces("kalasa", {}, d)).map((r) => r.name)).toEqual(["Kalasa"]);
+  });
+});
+
+describe("ourSuggestions", () => {
+  it("lists only our places, close misspellings last, without asking Photon", async () => {
+    const d = deps(
+      [local("Samsi", [75.4, 13.2], null, true), local("Samse", [75.41, 13.21], "node/9")],
+      [hit("Samse", [75.4, 13.2], "node/2")],
+    );
+    const results = await ourSuggestions("samse", d);
+    expect(results.map((r) => r.name)).toEqual(["Samse", "Samsi"]);
+    expect(results.every((r) => r.source === "local")).toBe(true);
+    expect(d.photon.search).not.toHaveBeenCalled();
   });
 });

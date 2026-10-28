@@ -1,13 +1,14 @@
 import { z } from "zod";
 import type { GeocodeResult } from "@/lib/trip";
 import { getGeocodingProvider } from "@/server/providers/geocoding";
-import { suggestPlaces } from "@/server/services/suggestService";
+import { ourSuggestions, suggestPlaces } from "@/server/services/suggestService";
 import { allowRequestOrOpen, REQUEST_LIMITS } from "@/server/services/writeLimit";
 
 const querySchema = z.object({
   q: z.string().trim().min(2).max(200),
-  // suggest: our places, then Photon, while the rider types. osm: Nominatim, when Enter is pressed.
-  source: z.enum(["suggest", "osm"]).default("suggest"),
+  // suggest: our places, then Photon, while the rider types. local: our places only, shown while
+  // Photon's answer is on its way. osm: Nominatim, when Enter is pressed.
+  source: z.enum(["suggest", "local", "osm"]).default("suggest"),
   // Map centre and zoom, to prefer nearby suggestions.
   lat: z.coerce.number().min(-90).max(90).optional(),
   lon: z.coerce.number().min(-180).max(180).optional(),
@@ -19,7 +20,7 @@ const querySchema = z.object({
     .optional(),
 });
 
-/** GET ?q=&source=suggest|osm&lat=&lon=&zoom= -> { results: GeocodeResult[] } */
+/** GET ?q=&source=suggest|local|osm&lat=&lon=&zoom= -> { results: GeocodeResult[] } */
 export async function GET(request: Request) {
   const params = Object.fromEntries(new URL(request.url).searchParams);
   const parsed = querySchema.safeParse(params);
@@ -44,6 +45,8 @@ export async function GET(request: Request) {
       const near =
         lat !== undefined && lon !== undefined ? ([lon, lat] as [number, number]) : undefined;
       results = await suggestPlaces(q, { near, zoom });
+    } else if (source === "local") {
+      results = await ourSuggestions(q);
     } else {
       const hits = await getGeocodingProvider().search(q, { limit: 5 });
       results = hits.map((h) => ({

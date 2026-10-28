@@ -31,8 +31,9 @@ interface Props {
 
 type Status = "idle" | "loading" | "error";
 type Mode = "suggest" | "osm";
+type Source = Mode | "local";
 
-async function searchPlaces(q: string, source: Mode, near: MapBias, signal: AbortSignal) {
+async function searchPlaces(q: string, source: Source, near: MapBias, signal: AbortSignal) {
   const params = new URLSearchParams({
     q,
     source,
@@ -81,8 +82,22 @@ export function StopInput({
     setStatus("loading");
     setMode(m);
     setOpen(true);
+    let done = false;
+    // Our own places come back at once; Photon's far-away server takes a second or two. Show ours
+    // first, then the full list in their place.
+    if (m === "suggest") {
+      searchPlaces(q, "local", near, ctrl.signal)
+        .then((r) => {
+          if (!done && r.length > 0) {
+            setResults(r);
+            setActive(-1);
+          }
+        })
+        .catch(() => {}); // the full search reports errors
+    }
     searchPlaces(q, m, near, ctrl.signal)
       .then((r) => {
+        done = true;
         setResults(r);
         setActive(-1);
         setStatus("idle");
@@ -224,7 +239,7 @@ export function StopInput({
           </ul>
           <div className="shrink-0 space-y-0.5 border-t border-stone-200 px-3 py-2 text-xs text-stone-500 dark:border-stone-700">
             {status === "loading" ? (
-              <p>Searching…</p>
+              <p>{results.length > 0 ? "Searching more places…" : "Searching…"}</p>
             ) : status === "error" ? (
               <p className="text-red-700 dark:text-red-400">Search failed. Try again.</p>
             ) : mode === "suggest" ? (
