@@ -9,6 +9,8 @@ import { bounds, frameKey, framePoints, INDIA_BOUNDS, type MapViewProps } from "
 const PADDING = 48;
 /** Framing a route never zooms in closer than this. */
 const MAX_FRAME_ZOOM = 12;
+/** A map box shorter than this (px) is not framed again when it resizes. */
+const MIN_FRAME_PX = 200;
 
 /** What the camera was last asked to show: a box, or one point at zoom 10. */
 type Framing = { box: [LngLat, LngLat]; padding: number } | { point: LngLat };
@@ -79,6 +81,9 @@ export function useGoogleFraming(props: MapViewProps) {
       const next = `${div.clientWidth}x${div.clientHeight}`;
       if (next === size || div.clientWidth === 0 || div.clientHeight === 0) return;
       size = next;
+      // A strip above a full-height sheet: fitting the route into it would zoom out to half the
+      // world. Keep the view; it is framed again when the sheet comes down.
+      if (div.clientHeight < MIN_FRAME_PX) return;
       cancelAnimationFrame(pending);
       pending = requestAnimationFrame(() => {
         if (!touched.current) apply(framing.current, false);
