@@ -46,7 +46,12 @@ export function useGoogleFraming(props: MapViewProps) {
     const [[west, south], [east, north]] = f.box;
     map.fitBounds(
       { west, south, east, north },
-      { top: f.padding + topInsetRef.current, left: f.padding, right: f.padding, bottom: f.padding },
+      {
+        top: f.padding + topInsetRef.current,
+        left: f.padding,
+        right: f.padding,
+        bottom: f.padding,
+      },
     );
     google.maps.event.addListenerOnce(map, "idle", () => {
       if ((map.getZoom() ?? 0) > MAX_FRAME_ZOOM) map.setZoom(MAX_FRAME_ZOOM);
