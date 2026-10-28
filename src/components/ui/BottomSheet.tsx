@@ -84,7 +84,12 @@ export function BottomSheet({ label, snap, onSnapChange, hidden = false, childre
       style={{
         height: dragPx !== null ? `${dragPx}px` : `${SHEET_SNAPS[snap] * 100}dvh`,
         transform: hidden ? "translateY(100%)" : undefined,
-        transition: dragPx !== null ? "none" : "height 200ms ease-out, transform 200ms ease-out",
+        // Hidden after it slides away, or its shadow would still shade the foot of the screen.
+        visibility: hidden ? "hidden" : "visible",
+        transition:
+          dragPx !== null
+            ? "none"
+            : `height 200ms ease-out, transform 200ms ease-out, visibility 0s ${hidden ? "200ms" : "0s"}`,
       }}
     >
       <button

@@ -1098,7 +1098,9 @@ export function Planner({
   const floatingHeader = compactHeader && !showForm;
 
   return (
-    <div className="relative flex h-dvh flex-col md:flex-row">
+    <div
+      className={`relative flex flex-col md:h-dvh md:flex-row ${hasTrip || packOpen ? "h-dvh" : "min-h-dvh"}`}
+    >
       <aside
         className={`flex shrink-0 flex-col gap-3 ${
           floatingHeader
@@ -1178,7 +1180,9 @@ export function Planner({
         </aside>
       )}
 
-      <div className="relative min-h-0 flex-1">
+      {/* Phones without a trip: no map under the form (it would be a strip showing the world);
+          it appears with the trip and frames it as its box grows. */}
+      <div className={`relative min-h-0 flex-1 ${hasTrip || packOpen ? "" : "max-md:hidden"}`}>
         {/* A saved pack draws from the tiles on this phone (MapLibre only, no Google). */}
         {packOpen ? (
           <DynamicOfflineMapView

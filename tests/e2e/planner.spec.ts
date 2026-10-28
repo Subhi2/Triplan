@@ -898,13 +898,15 @@ test("Popular keeps the well-known stops and Offbeat the lesser-known", async ({
   await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
 });
 
-test("on phones the map comes first, then a one-line header and the sheet", async ({
+test("on phones the map comes with the trip, under a one-line header and over the sheet", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "phone layout only");
   await mockApis(page, []);
   await page.goto("/");
-  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+  // No map under the form before there is a trip (it would only be a strip showing the world).
+  await expect(page.locator(".maplibregl-canvas")).toBeAttached();
+  await expect(page.locator(".maplibregl-canvas")).toBeHidden();
 
   // No empty sheet over the map before there is a trip.
   const sheet = page.locator('section[aria-label="Routes and places"]');
@@ -917,8 +919,10 @@ test("on phones the map comes first, then a one-line header and the sheet", asyn
   await choose(page, "Start", "Beng", "Bengaluru");
   await choose(page, "Destination", "Kala", "Kalasa");
 
-  // The form folds away: the header shows the trip, and the sheet the routes.
+  // The form folds away: the map fills the screen, the header shows the trip, and the sheet the
+  // routes.
   await expect(page.getByText("Bengaluru → Kalasa")).toBeVisible();
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   await expect(start).toBeHidden();
   await expect(sheet).not.toHaveAttribute("aria-hidden", "true");
   await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toHaveCount(
