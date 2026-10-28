@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { CountUp, type CountUnit } from "@/components/motion/CountUp";
 import { RideActions } from "@/components/ride/RideActions";
+import { PHONE_ACTION_BAR_SPACE } from "@/components/site/PhoneActionBar";
 import { RouteSketch } from "@/components/ride/RouteSketch";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -91,7 +92,7 @@ export default async function RidePage({ params }: Props) {
   const line = geometry.coordinates as LngLat[];
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
+    <main className={`mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 ${PHONE_ACTION_BAR_SPACE}`}>
       <script
         type="application/ld+json"
         // JSON-LD must be inline; "<" is escaped so a name cannot close the script tag.

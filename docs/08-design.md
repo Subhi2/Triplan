@@ -60,14 +60,15 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 - **Ride mode** (`RideMode`, "Ahead of you"). Full screen on paper, for a glance: the heading and count in 16 px, rows at least 80 px with the name in `font-display` 22 px, category and side ("ahead on the left"), and the km in 28 px mono; a teal arrow in a `brand-tint` disc points at the place relative to the way of travel. One ink "Stop" button, 48 px. The screen stays on (Wake Lock); the footer says "Glance only; pull over before tapping."
 - **You are here** (`MeDot`, both maps). A teal dot with a white ring on a soft teal halo; while riding, a 70° teal fan points the way of travel.
 - **Month chart** (`MonthStrip`). Twelve bars: best tall teal, OK medium `brand-soft`, avoid short `ghat`, unknown a stub. This month ringed in ink, with "Best time: now, in September" above.
-- **Fact tiles.** White with a `stone-200` border, label above value; sentences span the full row.
+- **Fact tiles.** White with a `stone-200` border, label above value; sentences span the full row. Only known facts get a tile; the unknown ones are named on one line under them ("*Not known yet*: timings, entry fee, permit.").
+- **Phone action bar** (`PhoneActionBar`). Below 768 px a content page's one primary action ("Plan this ride", "Plan a ride here") is pinned to the bottom: a full-width 48 px primary button on a frosted `--surface` bar with a hairline top border and the safe area under it. The page leaves room at its foot. From 768 px the button sits in the page's action row.
 - **Carry chips.** Items needed this month in `marigold-tint` with "needed now"; others outlined.
 
 ## Layout
 
 - **≥ 1024 px:** three columns: trip and routes (24rem, paper) | road strip and places, or the open place (26rem, white) | map.
 - **768–1023 px:** one side panel (26rem) holding everything, then the map.
-- **< 768 px:** the map full screen. With a trip, the header floats over it (frosted, `backdrop-blur`), and the bottom sheet holds routes and places; the map keeps its framing clear of both (`topInset`, `bottomInset`).
+- **< 768 px:** the map full screen. With a trip, the header floats over it (frosted, `backdrop-blur`), and the bottom sheet holds routes and places; the map keeps its framing clear of both (`topInset`, `bottomInset`), and frames the route again whenever its box changes size until the rider moves it. Without a trip there is no map: the form, the famous rides and About scroll as a page.
 
 - **Near me** follows the same layout: side panel (26rem) and map from 768 px; on phones the map full screen, a frosted header, and the chooser, chips and list in the bottom sheet (typing a place opens the sheet fully; picking on the map drops it to its smallest).
 

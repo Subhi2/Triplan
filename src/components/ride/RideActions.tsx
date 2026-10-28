@@ -3,6 +3,7 @@
 import type { LineString } from "geojson";
 import { useCallback, useState } from "react";
 import { RouteProfile } from "@/components/route/RouteProfile";
+import { PHONE_PRIMARY, PhoneActionBar } from "@/components/site/PhoneActionBar";
 import type { ElevationProfile } from "@/lib/elevation";
 import { DynamicRidePreview } from "./DynamicRidePreview";
 import { PreviewButton } from "./PreviewButton";
@@ -27,11 +28,12 @@ export function RideActions(props: Props) {
   const closePreview = useCallback(() => setPreviewOpen(false), []);
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      {/* Phones: "Plan this ride" is pinned to the bottom and the other two share a row. */}
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
         {/* A full page load: the planner reads its trip from the address once. */}
         <a
           href={props.plannerUrl}
-          className="lift bg-brand hover:bg-brand-dark inline-flex min-h-12 items-center rounded-xl px-5 font-bold text-white md:min-h-11"
+          className="lift bg-brand hover:bg-brand-dark hidden min-h-11 items-center rounded-xl px-5 font-bold text-white md:inline-flex"
         >
           Plan this ride
         </a>
@@ -50,6 +52,11 @@ export function RideActions(props: Props) {
           onCursorChange={setCursorKm}
         />
       )}
+      <PhoneActionBar>
+        <a href={props.plannerUrl} className={PHONE_PRIMARY}>
+          Plan this ride
+        </a>
+      </PhoneActionBar>
       {previewOpen && (
         <DynamicRidePreview
           title={props.title}
