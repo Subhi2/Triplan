@@ -779,10 +779,11 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   await expect(page.getByText("1 ticked")).toBeVisible();
   await expect(open).toHaveAttribute("href", /waypoints=12\.9173%2C75\.7581/);
 
-  // The place's own page on Google Maps, for photos and reviews: on its row and in its details.
-  await expect(
-    page.getByRole("link", { name: "Open Manjarabad Fort in Google Maps" }),
-  ).toHaveAttribute("href", /maps\/search\/Manjarabad%20Fort\/@12\.9173,75\.7581,17z/);
+  // The place's own page on Google Maps, for photos and reviews: in its details, one tap from
+  // its row (the rows stay for scanning).
+  await expect(page.getByRole("link", { name: "Open Manjarabad Fort in Google Maps" })).toHaveCount(
+    0,
+  );
   await page
     .getByRole("list", { name: "Places along the route" })
     .getByRole("button", { name: /Manjarabad Fort/ })

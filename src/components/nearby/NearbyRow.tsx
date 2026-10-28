@@ -6,6 +6,7 @@ import { googleEnabled } from "@/lib/google";
 import { placeGoogleMapsHref } from "@/lib/googleMaps";
 import { bestTimeSummary, isInSeason } from "@/lib/months";
 import { formatRideShort, type PlaceNear } from "@/lib/nearby";
+import { trackEvent } from "@/lib/track";
 import type { Vehicle } from "@/lib/trip";
 
 interface Props {
@@ -133,17 +134,33 @@ export function NearbyRow(props: Props) {
             />
           )}
         </button>
-        {/* Outside the button (a link cannot sit inside one), lined up under the name. */}
-        <a
-          href={placeGoogleMapsHref(place, googleEnabled)}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          aria-label={`Open ${place.name} in Google Maps`}
-          className="text-brand-dark -mt-2 mb-1 ml-18 inline-flex min-h-11 items-center self-start text-xs font-bold hover:underline md:min-h-8 dark:text-teal-300"
-        >
-          Open in Google Maps ↗
-        </a>
       </div>
+      {/* Near me is for going now: directions one tap from the row. Outside the row's button (a
+          link cannot sit inside one); the same 44 px column the planner gives its tick box. */}
+      <a
+        href={placeGoogleMapsHref(place, googleEnabled)}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        aria-label={`Open ${place.name} in Google Maps`}
+        title="Open in Google Maps"
+        onClick={() => trackEvent("google_maps")}
+        className="flex h-11 w-11 shrink-0 items-center justify-center self-center"
+      >
+        <span className="bg-brand-tint text-brand-dark flex h-10 w-10 items-center justify-center rounded-full active:scale-95 dark:bg-teal-950 dark:text-teal-200">
+          <svg
+            aria-hidden
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          >
+            <path d="M4 11l16-7-7 16-2-7z" />
+          </svg>
+        </span>
+      </a>
     </li>
   );
 }

@@ -1,8 +1,6 @@
 "use client";
 
 import { categoryStyle } from "@/lib/categories";
-import { googleEnabled } from "@/lib/google";
-import { placeGoogleMapsHref } from "@/lib/googleMaps";
 import { bestTimeSummary, isInSeason } from "@/lib/months";
 import type { ListTurn } from "@/lib/listTurn";
 import { detourLabel, ON_ROUTE_MAX_KM, type PlaceAlong } from "@/lib/places";
@@ -138,16 +136,6 @@ export function PlaceRow(props: Props) {
             />
           )}
         </button>
-        {/* Outside the button (a link cannot sit inside one), lined up under the name. */}
-        <a
-          href={placeGoogleMapsHref(place, googleEnabled)}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          aria-label={`Open ${place.name} in Google Maps`}
-          className="text-brand-dark -mt-2 mb-1 ml-16 inline-flex min-h-11 items-center self-start text-xs font-bold hover:underline md:min-h-8 dark:text-teal-300"
-        >
-          Open in Google Maps ↗
-        </a>
       </div>
       {/* The label is the touch target: 44 × 44 px around a 20 px box. */}
       <label className="flex w-11 shrink-0 cursor-pointer items-center justify-center self-center">
