@@ -568,18 +568,20 @@ test("suggests while typing, ours first, and falls back to Nominatim on Enter", 
     return route.fulfill({ json: { results } });
   });
   await page.goto("/");
-  // The map only renders after hydration; keys typed before that are lost.
-  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+  // The map only renders after hydration; keys typed before that are lost. (On phones it waits,
+  // hidden, for a trip.)
+  await expect(page.locator(".maplibregl-canvas")).toBeAttached();
   const start = page.getByRole("combobox", { name: "Start" });
 
-  // Typing quickly sends one request, after the pause, with the map position as a bias.
+  // Typing quickly searches once, after the pause, with the map position as a bias: our places
+  // alone (shown at once) and the full list (ours, then Photon's) side by side.
   await start.pressSequentially("samse", { delay: 60 });
   const options = page.getByRole("listbox", { name: "Start suggestions" }).getByRole("option");
   await expect(options).toHaveCount(2);
-  expect(requests).toHaveLength(1);
-  expect(requests[0]!.get("q")).toBe("samse");
-  expect(requests[0]!.get("source")).toBe("suggest");
-  for (const key of ["lat", "lon", "zoom"]) expect(Number(requests[0]!.get(key))).not.toBeNaN();
+  expect(requests.map((r) => r.get("source")).sort()).toEqual(["local", "suggest"]);
+  const suggest = requests.find((r) => r.get("source") === "suggest")!;
+  expect(suggest.get("q")).toBe("samse");
+  for (const key of ["lat", "lon", "zoom"]) expect(Number(suggest.get(key))).not.toBeNaN();
   await expect(options.nth(0)).toContainText("Samse View"); // ours first
   await expect(options.nth(1)).toContainText("Kalasa taluk"); // then Photon
   await expect(page.getByText("Suggestions by Photon")).toBeVisible();
@@ -777,10 +779,11 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   await expect(page.getByText("1 ticked")).toBeVisible();
   await expect(open).toHaveAttribute("href", /waypoints=12\.9173%2C75\.7581/);
 
-  // The place's own page on Google Maps, for photos and reviews: on its row and in its details.
-  await expect(
-    page.getByRole("link", { name: "Open Manjarabad Fort in Google Maps" }),
-  ).toHaveAttribute("href", /maps\/search\/Manjarabad%20Fort\/@12\.9173,75\.7581,17z/);
+  // The place's own page on Google Maps, for photos and reviews: in its details, one tap from
+  // its row (the rows stay for scanning).
+  await expect(page.getByRole("link", { name: "Open Manjarabad Fort in Google Maps" })).toHaveCount(
+    0,
+  );
   await page
     .getByRole("list", { name: "Places along the route" })
     .getByRole("button", { name: /Manjarabad Fort/ })
@@ -896,13 +899,15 @@ test("Popular keeps the well-known stops and Offbeat the lesser-known", async ({
   await expect(list.getByRole("button", { name: /Quiet Viewpoint/ })).toBeVisible();
 });
 
-test("on phones the map comes first, then a one-line header and the sheet", async ({
+test("on phones the map comes with the trip, under a one-line header and over the sheet", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "phone layout only");
   await mockApis(page, []);
   await page.goto("/");
-  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+  // No map under the form before there is a trip (it would only be a strip showing the world).
+  await expect(page.locator(".maplibregl-canvas")).toBeAttached();
+  await expect(page.locator(".maplibregl-canvas")).toBeHidden();
 
   // No empty sheet over the map before there is a trip.
   const sheet = page.locator('section[aria-label="Routes and places"]');
@@ -915,8 +920,10 @@ test("on phones the map comes first, then a one-line header and the sheet", asyn
   await choose(page, "Start", "Beng", "Bengaluru");
   await choose(page, "Destination", "Kala", "Kalasa");
 
-  // The form folds away: the header shows the trip, and the sheet the routes.
+  // The form folds away: the map fills the screen, the header shows the trip, and the sheet the
+  // routes.
   await expect(page.getByText("Bengaluru → Kalasa")).toBeVisible();
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   await expect(start).toBeHidden();
   await expect(sheet).not.toHaveAttribute("aria-hidden", "true");
   await expect(page.getByRole("list", { name: "Route options" }).getByRole("button")).toHaveCount(

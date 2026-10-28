@@ -340,6 +340,13 @@ test("touch targets are large enough on phones", async ({ page }, testInfo) => {
     const box = await page.getByRole("button", { name, exact: true }).boundingBox();
     expect(box!.height, name).toBeGreaterThanOrEqual(44);
   }
+  // Each row's directions link, beside the row rather than under it.
+  const name = await rows(page).first().getAttribute("data-name");
+  const maps = page.getByRole("link", { name: `Open ${name} in Google Maps` });
+  await expect(maps).toHaveAttribute("href", /google\.com\/maps/);
+  const mapsBox = await maps.boundingBox();
+  expect(mapsBox!.width).toBeGreaterThanOrEqual(44);
+  expect(mapsBox!.height).toBeGreaterThanOrEqual(44);
   await page.getByRole("button", { name: "Change" }).click();
   const input = page.getByRole("combobox", { name: "Search around a place" });
   const fontSize = await input.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/server/services/suggestService", () => ({ suggestPlaces: vi.fn() }));
+vi.mock("@/server/services/suggestService", () => ({
+  suggestPlaces: vi.fn(),
+  ourSuggestions: vi.fn(),
+}));
 vi.mock("@/server/providers/geocoding", () => {
   const search = vi.fn();
   return { getGeocodingProvider: () => ({ search }), __search: search };
@@ -11,7 +14,7 @@ vi.mock("@/server/services/writeLimit", async (importOriginal) => ({
   allowRequestOrOpen,
 }));
 
-const { suggestPlaces } = await import("@/server/services/suggestService");
+const { ourSuggestions, suggestPlaces } = await import("@/server/services/suggestService");
 const geocoding = (await import("@/server/providers/geocoding")) as unknown as {
   __search: ReturnType<typeof vi.fn>;
 };
@@ -22,6 +25,7 @@ const get = (qs: string) => GET(new Request(`http://localhost/api/geocode?${qs}`
 describe("GET /api/geocode", () => {
   beforeEach(() => {
     vi.mocked(suggestPlaces).mockReset().mockResolvedValue([]);
+    vi.mocked(ourSuggestions).mockReset().mockResolvedValue([]);
     geocoding.__search.mockReset().mockResolvedValue([]);
     allowRequestOrOpen.mockReset().mockResolvedValue(true);
   });
@@ -52,6 +56,15 @@ describe("GET /api/geocode", () => {
     expect(suggestPlaces).toHaveBeenCalledWith("ooty", { near: undefined, zoom: undefined });
   });
 
+  it("lists only our places for source=local, without Photon or a limit", async () => {
+    allowRequestOrOpen.mockResolvedValue(false);
+    const res = await get("q=kalasa&source=local&lat=13.2&lon=75.3&zoom=8");
+    expect(res.status).toBe(200);
+    expect(ourSuggestions).toHaveBeenCalledWith("kalasa");
+    expect(suggestPlaces).not.toHaveBeenCalled();
+    expect(allowRequestOrOpen).not.toHaveBeenCalled();
+  });
+
   it("falls back to Nominatim for source=osm (Enter)", async () => {
     geocoding.__search.mockResolvedValue([
       {
@@ -80,6 +93,6 @@ describe("GET /api/geocode", () => {
   it("rejects short queries and bad coordinates", async () => {
     expect((await get("q=s")).status).toBe(400);
     expect((await get("q=samse&lat=95&lon=76")).status).toBe(400);
-    expect((await get("q=samse&source=local")).status).toBe(400);
+    expect((await get("q=samse&source=google")).status).toBe(400);
   });
 });

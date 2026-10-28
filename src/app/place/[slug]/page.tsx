@@ -3,6 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PlaceDetailView } from "@/components/place/PlaceDetailView";
+import {
+  PHONE_ACTION_BAR_SPACE,
+  PHONE_PRIMARY,
+  PhoneActionBar,
+} from "@/components/site/PhoneActionBar";
 import { ShareButtons } from "@/components/site/ShareButtons";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
@@ -76,8 +81,9 @@ export default async function PlacePage({ params }: Props) {
   if (!place) notFound();
 
   const destination = encodeStop({ label: place.name, location: place.location });
+  const planUrl = `/?${new URLSearchParams({ to: destination }).toString()}`;
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
+    <main className={`mx-auto flex max-w-2xl flex-col gap-4 px-4 pt-6 ${PHONE_ACTION_BAR_SPACE}`}>
       <script
         type="application/ld+json"
         // JSON-LD must be inline; "<" is escaped so a place name cannot close the script tag.
@@ -92,9 +98,10 @@ export default async function PlacePage({ params }: Props) {
         headingLevel={1}
         actions={
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {/* Phones: pinned to the bottom instead (PhoneActionBar below). */}
             <Link
-              href={`/?${new URLSearchParams({ to: destination }).toString()}`}
-              className="bg-brand hover:bg-brand-dark inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-white md:min-h-0 md:py-1.5"
+              href={planUrl}
+              className="lift bg-brand hover:bg-brand-dark hidden min-h-11 items-center rounded-xl px-5 font-bold text-white md:inline-flex"
             >
               Plan a ride here
             </Link>
@@ -113,6 +120,11 @@ export default async function PlacePage({ params }: Props) {
         }
       />
       <SiteFooter />
+      <PhoneActionBar>
+        <Link href={planUrl} className={PHONE_PRIMARY}>
+          Plan a ride here
+        </Link>
+      </PhoneActionBar>
     </main>
   );
 }

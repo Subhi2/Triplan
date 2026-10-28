@@ -88,7 +88,15 @@ function SortableStop(props: {
         {...attributes}
         {...listeners}
       >
-        ⠿
+        {/* Six dots: the grip to drag the stop up or down. */}
+        <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          {[4, 8, 12].map((y) => (
+            <g key={y}>
+              <circle cx="5.5" cy={y} r="1.3" />
+              <circle cx="10.5" cy={y} r="1.3" />
+            </g>
+          ))}
+        </svg>
       </button>
       <StopInput
         label={role.name}
@@ -101,17 +109,27 @@ function SortableStop(props: {
         onText={props.onText}
         onPick={props.onPick}
       />
-      {props.onRemove ? (
+      {/* With two stops none can go, and the field takes the room. */}
+      {props.onRemove && (
         <button
           type="button"
           aria-label={`Remove ${role.name}`}
           onClick={props.onRemove}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-stone-400 hover:text-red-700 dark:hover:text-red-400"
         >
-          ✕
+          <svg
+            aria-hidden
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
         </button>
-      ) : (
-        <span className="w-11 shrink-0" aria-hidden />
       )}
     </li>
   );

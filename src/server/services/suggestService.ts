@@ -23,6 +23,26 @@ function defaultDeps(): SuggestDeps {
 
 const normalise = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
+const ours = (l: LocalPlaceMatch): GeocodeResult => ({
+  id: l.id,
+  name: l.name,
+  label: l.label,
+  location: l.location,
+  source: l.source,
+});
+
+/**
+ * Our own places only, close misspellings last: shown while Photon's answer is still on its way
+ * (its public server is far away, often a second or two).
+ */
+export async function ourSuggestions(
+  query: string,
+  deps: Pick<SuggestDeps, "local"> = { local: searchPlacesByName },
+): Promise<GeocodeResult[]> {
+  const local = await deps.local(query, MAX_LOCAL_SUGGESTIONS);
+  return [...local.filter((l) => !l.fuzzy), ...local.filter((l) => l.fuzzy)].map(ours);
+}
+
 /**
  * Suggestions while the rider types: our own places first (curated and imported, with their guide
  * data), then Photon results for everything else, minus Photon's copies of places we already list
@@ -56,13 +76,6 @@ export async function suggestPlaces(
       ),
   );
 
-  const ours = (l: LocalPlaceMatch): GeocodeResult => ({
-    id: l.id,
-    name: l.name,
-    label: l.label,
-    location: l.location,
-    source: l.source,
-  });
   const theirs = (hit: GeocodeHit): GeocodeResult => ({
     id: hit.id,
     name: hit.name,

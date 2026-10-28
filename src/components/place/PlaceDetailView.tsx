@@ -27,23 +27,51 @@ interface Props {
   headingRef?: React.Ref<HTMLHeadingElement>;
 }
 
-/** A fact as a tile; `wide` ones (sentences) take the full row. */
-function Field(props: { label: string; value: React.ReactNode; source?: string; wide?: boolean }) {
-  const empty = props.value === null || props.value === undefined || props.value === "";
+interface Fact {
+  label: string;
+  value: React.ReactNode;
+  source?: string;
+  /** Sentences take the full row. */
+  wide?: boolean;
+}
+
+const isEmpty = (value: React.ReactNode) => value === null || value === undefined || value === "";
+
+/**
+ * The known facts as tiles, `wide` ones (sentences) across the row; the unknown ones named on one
+ * line under them, so a little-known place is not a wall of empty tiles.
+ */
+function Facts({ facts, className = "" }: { facts: Fact[]; className?: string }) {
+  const known = facts.filter((f) => !isEmpty(f.value));
+  const unknown = facts.filter((f) => isEmpty(f.value));
   return (
-    <div
-      className={`rounded-xl border border-stone-200 bg-(--surface) px-3 py-2.5 dark:border-stone-800 ${
-        props.wide ? "col-span-2" : ""
-      }`}
-    >
-      <dt className="text-xs text-stone-600 dark:text-stone-400">{props.label}</dt>
-      <dd className={`mt-0.5 text-[15px] ${empty || props.wide ? "" : "font-bold"}`}>
-        {empty ? <NotKnown /> : props.value}
-        {!empty && props.source && (
-          <span className="text-xs text-stone-500 dark:text-stone-400"> ({props.source})</span>
-        )}
-      </dd>
-    </div>
+    <>
+      {known.length > 0 && (
+        <dl className={`grid grid-cols-2 gap-2 ${className}`}>
+          {known.map((f) => (
+            <div
+              key={f.label}
+              className={`rounded-xl border border-stone-200 bg-(--surface) px-3 py-2.5 dark:border-stone-800 ${
+                f.wide ? "col-span-2" : ""
+              }`}
+            >
+              <dt className="text-xs text-stone-600 dark:text-stone-400">{f.label}</dt>
+              <dd className={`mt-0.5 text-[15px] ${f.wide ? "" : "font-bold"}`}>
+                {f.value}
+                {f.source && (
+                  <span className="text-xs text-stone-500 dark:text-stone-400"> ({f.source})</span>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {unknown.length > 0 && (
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          <NotKnown />: {unknown.map((f) => f.label.toLowerCase()).join(", ")}.
+        </p>
+      )}
+    </>
   );
 }
 
@@ -255,22 +283,23 @@ export function PlaceDetailView({
       )}
 
       <Section title="Getting there" level={sub}>
-        <dl className="grid grid-cols-2 gap-2">
-          <Field
-            label="Best vehicle"
-            value={
-              g && g.bestVehicles.length > 0
-                ? g.bestVehicles.map((v) => VEHICLE_LABELS[v]).join(", ")
-                : null
-            }
-            source={guessed ? "typical" : undefined}
-          />
-          <Field label="Last mile" value={g?.lastMileNote} wide />
-          <Field
-            label="Road"
-            value={g?.roadCondition && <span className="capitalize">{g.roadCondition}</span>}
-          />
-        </dl>
+        <Facts
+          facts={[
+            {
+              label: "Best vehicle",
+              value:
+                g && g.bestVehicles.length > 0
+                  ? g.bestVehicles.map((v) => VEHICLE_LABELS[v]).join(", ")
+                  : null,
+              source: guessed ? "typical" : undefined,
+            },
+            { label: "Last mile", value: g?.lastMileNote, wide: true },
+            {
+              label: "Road",
+              value: g?.roadCondition && <span className="capitalize">{g.roadCondition}</span>,
+            },
+          ]}
+        />
         {notIdeal && (
           <p className="bg-marigold-tint text-ghat-dark rounded-xl px-3 py-2.5 text-sm font-bold dark:bg-orange-950 dark:text-orange-200">
             Better reached by {notIdeal} than by {vehicle}.
@@ -281,13 +310,16 @@ export function PlaceDetailView({
       <Section title="When to go" level={sub}>
         {guessed && <EstimateNote basis={guessed} />}
         <MonthStrip guide={g} month={month} estimated={Boolean(guessed)} />
-        <dl className="mt-1 grid grid-cols-2 gap-2">
-          <Field label="Time of day" value={g?.bestTimeOfDay} />
-          <Field
-            label="Time needed"
-            value={g?.visitDurationMin ? `About ${formatDuration(g.visitDurationMin)}` : null}
-          />
-        </dl>
+        <Facts
+          className="mt-1"
+          facts={[
+            { label: "Time of day", value: g?.bestTimeOfDay },
+            {
+              label: "Time needed",
+              value: g?.visitDurationMin ? `About ${formatDuration(g.visitDurationMin)}` : null,
+            },
+          ]}
+        />
       </Section>
 
       <Section title="What to carry" level={sub}>
@@ -296,22 +328,24 @@ export function PlaceDetailView({
       </Section>
 
       <Section title="Visiting" level={sub}>
-        <dl className="grid grid-cols-2 gap-2">
-          <Field
-            wide
-            label="Timings"
-            value={g?.timings ?? place.osm.openingHours}
-            source={!g?.timings && place.osm.openingHours ? "OpenStreetMap" : undefined}
-          />
-          <Field
-            label="Entry fee"
-            value={g?.entryFee ?? place.osm.fee}
-            source={!g?.entryFee && place.osm.fee ? "OpenStreetMap" : undefined}
-          />
-          <Field label="Dress code" value={g?.dressCode} />
-          <Field label="Permit" value={g?.permitNeeded} />
-          {g?.notes && <Field label="Notes" value={g.notes} wide />}
-        </dl>
+        <Facts
+          facts={[
+            {
+              label: "Timings",
+              value: g?.timings ?? place.osm.openingHours,
+              source: !g?.timings && place.osm.openingHours ? "OpenStreetMap" : undefined,
+              wide: true,
+            },
+            {
+              label: "Entry fee",
+              value: g?.entryFee ?? place.osm.fee,
+              source: !g?.entryFee && place.osm.fee ? "OpenStreetMap" : undefined,
+            },
+            { label: "Dress code", value: g?.dressCode },
+            { label: "Permit", value: g?.permitNeeded },
+            ...(g?.notes ? [{ label: "Notes", value: g.notes, wide: true }] : []),
+          ]}
+        />
       </Section>
 
       <Section title="Reviews" level={sub}>

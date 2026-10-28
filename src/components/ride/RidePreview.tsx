@@ -42,8 +42,12 @@ const SPEEDS = [0.5, 1, 2, 4] as const;
 const CARD_WITHIN_KM = 0.8;
 /** Camera turns follow the road with this time constant (seconds). */
 const TURN_TAU_S = 0.8;
-/** Frames slower than this on average (ms) make the preview drop detail. */
+/** A frame slower than this (ms) counts as slow. */
 const SLOW_FRAME_MS = 50;
+/** If more than this share of a 2 s window is spent in slow frames, the preview drops detail. */
+const SLOW_SHARE = 0.3;
+/** The route's ridden colour is repainted at most this often (ms): each repaint redoes its tiles. */
+const GRADIENT_EVERY_MS = 100;
 
 export type PreviewPlace = Pick<
   PlaceAlong,
@@ -218,6 +222,9 @@ export default function RidePreview(props: RidePreviewProps) {
       "bottom-right",
     );
 
+    // Set once our layers are on the map. Not map.isStyleLoaded(): that stays false while any tile
+    // is loading (all through a fly-through) and after each setData, which froze the ride.
+    let layersReady = false;
     map.on("load", () => {
       const dem = {
         type: "raster-dem" as const,
@@ -310,6 +317,7 @@ export default function RidePreview(props: RidePreviewProps) {
           { padding: 60, pitch: 45, duration: 0 },
         );
       }
+      layersReady = true;
       setReady(true);
     });
 
@@ -318,27 +326,32 @@ export default function RidePreview(props: RidePreviewProps) {
     let bearing = lookBearing(path, 0);
     let lastHud = 0;
     let lastShare = -1;
+    let lastGradient = 0;
     let slowSince = 0;
-    let slowFrames = 0;
+    let slowMs = 0;
     let degrade = 0;
     // Under reduced motion the camera stays on the overview until the rider plays or scrubs.
     let following = !reduced;
 
     const tick = (now: number) => {
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const frameMs = now - last;
+      const dt = Math.min(0.1, frameMs / 1000);
       last = now;
-      if (!renderingRef.current && map.isStyleLoaded() && map.getLayer("rider")) {
+      if (!renderingRef.current && layersReady) {
         if (playingRef.current) {
           following = true;
           tRef.current = Math.min(1, tRef.current + (dt * speedRef.current) / duration);
           if (tRef.current >= 1) setPlaying(false);
           dirty.current = true;
 
-          // Drop detail if frames are slow: first sharpness, then the 3D terrain.
-          if (dt * 1000 > SLOW_FRAME_MS) slowFrames++;
+          // Drop detail if frames are slow: first sharpness, then the 3D terrain. Judged by the
+          // time spent in slow frames, so a few long stalls count as much as many short ones.
+          if (frameMs > SLOW_FRAME_MS) slowMs += frameMs;
           if (now - slowSince > 2000) {
-            if (slowFrames > 60 && degrade < 2) {
+            if (slowSince > 0 && slowMs / (now - slowSince) > SLOW_SHARE && degrade < 2) {
               degrade++;
+              // Already at one pixel per pixel: go straight to dropping the terrain.
+              if (degrade === 1 && map.getPixelRatio() <= 1) degrade = 2;
               if (degrade === 1) map.setPixelRatio(1);
               else {
                 map.setTerrain(null);
@@ -347,7 +360,7 @@ export default function RidePreview(props: RidePreviewProps) {
               setSimplified(true);
             }
             slowSince = now;
-            slowFrames = 0;
+            slowMs = 0;
           }
         }
         if (dirty.current) {
@@ -365,9 +378,14 @@ export default function RidePreview(props: RidePreviewProps) {
           }
           (map.getSource("rider") as GeoJSONSource | undefined)?.setData(point(pointAt(path, km)));
           const share = km / path.totalKm;
-          if (Math.abs(share - lastShare) > 0.0005) {
+          const settled = !playingRef.current || tRef.current >= 1;
+          if (
+            Math.abs(share - lastShare) > 0.0005 &&
+            (settled || now - lastGradient >= GRADIENT_EVERY_MS)
+          ) {
             map.setPaintProperty("route-line", "line-gradient", progressGradient(share) as never);
             lastShare = share;
+            lastGradient = now;
           }
           // The turn has not settled until the camera faces the road.
           dirty.current = playingRef.current || Math.abs(target - bearing) > 0.5;
@@ -653,39 +671,38 @@ export default function RidePreview(props: RidePreviewProps) {
         ×
       </button>
 
-      {/* The place the camera is passing */}
-      {card && (
-        <div
-          key={card.id}
-          className="animate-rise pointer-events-none absolute bottom-[calc(10.5rem+env(safe-area-inset-bottom))] left-3 flex max-w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl bg-white/95 p-2.5 pr-4 shadow-md sm:bottom-[calc(9.5rem+env(safe-area-inset-bottom))]"
-          data-card={card.name}
-        >
-          {card.thumbUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- remote photo, already sized
-            <img
-              src={card.thumbUrl}
-              alt=""
-              className="h-14 w-14 shrink-0 rounded-xl object-cover"
-            />
-          )}
-          <span className="min-w-0">
-            <span className="block truncate font-bold">{card.name}</span>
-            <span className="flex items-center gap-1.5 text-sm text-stone-600">
-              <span
-                aria-hidden
-                className="h-2 w-2 rounded-full"
-                style={{ background: categoryStyle(card.category).color }}
+      {/* Controls, with the card of the place the camera is passing just above them */}
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 bg-gradient-to-t from-black/60 to-transparent px-3 pt-8 pb-[calc(2.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(1.75rem+env(safe-area-inset-bottom))]">
+        {/* The place the camera is passing */}
+        {card && (
+          <div
+            key={card.id}
+            className="animate-rise pointer-events-none flex max-w-full items-center gap-3 self-start rounded-2xl bg-white/95 p-2.5 pr-4 shadow-md"
+            data-card={card.name}
+          >
+            {card.thumbUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- remote photo, already sized
+              <img
+                src={card.thumbUrl}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-xl object-cover"
               />
-              {categoryStyle(card.category).name} · km {Math.round(card.kmFromStart)} ·{" "}
-              {detourLabel(card.detourKm)}
+            )}
+            <span className="min-w-0">
+              <span className="block truncate font-bold">{card.name}</span>
+              <span className="flex items-center gap-1.5 text-sm text-stone-600">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: categoryStyle(card.category).color }}
+                />
+                {categoryStyle(card.category).name} · km {Math.round(card.kmFromStart)} ·{" "}
+                {detourLabel(card.detourKm)}
+              </span>
             </span>
-          </span>
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 pt-8 pb-[calc(2.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(1.75rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex max-w-3xl flex-col gap-2 rounded-2xl bg-white/92 p-3 shadow-md backdrop-blur-md">
+          </div>
+        )}
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-2xl bg-white/92 p-3 shadow-md backdrop-blur-md">
           <ScrubTrack
             profile={profile}
             totalKm={path.totalKm}
@@ -695,14 +712,18 @@ export default function RidePreview(props: RidePreviewProps) {
               scrubTo(k);
             }}
           />
-          <div className="flex items-center gap-2">
+          {/* Wraps on narrow phones: "Save video" moves to its own line. */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={togglePlay}
-              className="bg-brand inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-white"
+              className="bg-brand inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white max-[359px]:px-0"
             >
               {playing ? <PauseIcon /> : <PlayIcon />}
-              {playing ? "Pause" : hud.t >= 1 ? "Play again" : "Play"}
+              {/* Below 360 px the icon alone, so the speeds stay on its row. */}
+              <span className="max-[359px]:sr-only">
+                {playing ? "Pause" : hud.t >= 1 ? "Play again" : "Play"}
+              </span>
             </button>
             <div role="group" aria-label="Speed" className="flex rounded-xl bg-stone-100 p-1">
               {SPEEDS.map((s) => (
