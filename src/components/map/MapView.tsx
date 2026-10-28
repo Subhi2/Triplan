@@ -57,19 +57,26 @@ export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification })
   const padding = { top: 48 + topInset, left: 48, right: 48, bottom: 48 + bottomInset };
 
   // Frame all routes when they change; with no routes yet, the given frame or the stops. Also once
-  // the map has loaded: a saved pack hands over its route before the map exists.
+  // the map has loaded: a saved pack hands over its route before the map exists. When the map's
+  // box changes size (the phone layout grows it to the whole screen), frame it again, until the
+  // rider moves the map.
   const frame = frameKey(routes, stops, props.frame);
+  const touched = useRef(false);
   function frameMap(duration: number) {
     const map = mapRef.current;
     if (!map) return;
     const points = framePoints(routes, stops, props.frame);
     const b = bounds(points);
-    if (!b) return;
+    if (!b) {
+      if (duration === 0) map.fitBounds(INDIA_BOUNDS, { padding: 16, duration: 0 });
+      return;
+    }
     if (points.length === 1) {
       map.flyTo({ center: points[0], zoom: 10, duration: ms(duration), padding });
     } else map.fitBounds(b, { padding, duration: ms(duration), maxZoom: 12 });
   }
   useEffect(() => {
+    touched.current = false;
     frameMap(600);
     // frame captures the inputs; re-running on every render would fight the user's panning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,6 +156,13 @@ export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification })
         frameMap(0);
         const c = e.target.getCenter();
         props.onViewChange?.([c.lng, c.lat], e.target.getZoom());
+      }}
+      onMoveStart={(e) => {
+        // Only the rider's own moves carry the input event.
+        if (e.originalEvent) touched.current = true;
+      }}
+      onResize={() => {
+        if (!touched.current) frameMap(0);
       }}
       onMoveEnd={(e) =>
         props.onViewChange?.([e.viewState.longitude, e.viewState.latitude], e.viewState.zoom)
