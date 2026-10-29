@@ -48,6 +48,10 @@ const SLOW_FRAME_MS = 50;
 const SLOW_SHARE = 0.3;
 /** The route's ridden colour is repainted at most this often (ms): each repaint redoes its tiles. */
 const GRADIENT_EVERY_MS = 100;
+/** While the base map in view is still loading, the ride eases down to this share of its speed. */
+const TILE_WAIT_PACE = 0.4;
+/** The first seconds always stutter while tiles stream in; slowness is judged after them. */
+const WARM_UP_MS = 3000;
 
 export type PreviewPlace = Pick<
   PlaceAlong,
@@ -94,6 +98,34 @@ function chasePadding(map: MapLibreMap) {
 
 function firstSymbolLayer(map: MapLibreMap): string | undefined {
   return map.getStyle().layers?.find((l) => l.type === "symbol")?.id;
+}
+
+/**
+ * Layers a fly-through over the hills does not need (OpenFreeMap's "liberty" names): buildings,
+ * airports, tunnels, paths and tracks, rail hatching, small land uses. Dropped before tiles load,
+ * so the workers never build them and each frame draws less. Another style matches fewer of them.
+ */
+const FLY_SKIP_LAYER =
+  /^(building|airport|aeroway_|tunnel_|road_area_pattern|landuse_(pitch|track|cemetery|hospital|school))|(_hatching|path_pedestrian(_casing)?|service_track(_casing)?)$/;
+/**
+ * The only labels kept. With the camera moving every frame, MapLibre places and collides every
+ * label again each frame: with the style's road names, shields, POIs and villages a 4x slower CPU
+ * drew 5-21 frames a second, with towns and cities alone 27-29 (2026-10-28). The card above the
+ * controls names the places on the route.
+ */
+const FLY_KEEP_LABEL = /^label_(city|town)/;
+
+function lightenStyle(map: MapLibreMap) {
+  for (const layer of map.getStyle().layers ?? []) {
+    const label = layer.type === "symbol";
+    if (
+      layer.type === "fill-extrusion" ||
+      (label && !FLY_KEEP_LABEL.test(layer.id)) ||
+      (!label && FLY_SKIP_LAYER.test(layer.id))
+    ) {
+      map.removeLayer(layer.id);
+    }
+  }
 }
 
 function lowEndDevice(): boolean {
@@ -225,7 +257,20 @@ export default function RidePreview(props: RidePreviewProps) {
     // Set once our layers are on the map. Not map.isStyleLoaded(): that stays false while any tile
     // is loading (all through a fly-through) and after each setData, which froze the ride.
     let layersReady = false;
-    map.on("load", () => {
+    let judgeFrom = Infinity;
+    // The base map's own sources: the ride waits for these, not for the terrain (flat ground for a
+    // moment is fine; a blank one is not, and the terrain tiles come from far away).
+    let baseSources: string[] = [];
+    // 1 at full speed, down to TILE_WAIT_PACE while the map catches up with the camera.
+    let pace = 1;
+    // On the style, not "load": that waits for every tile in view, and a pitched camera over 3D
+    // terrain sees dozens (half a minute on a slow line), with the ride standing still meanwhile.
+    // The tiles fill in as it moves; a saved video waits for each frame's tiles anyway.
+    map.on("style.load", () => {
+      lightenStyle(map);
+      baseSources = Object.entries(map.getStyle().sources)
+        .filter(([, source]) => source.type === "vector")
+        .map(([id]) => id);
       const dem = {
         type: "raster-dem" as const,
         tiles: [terrainTilesUrl()],
@@ -318,6 +363,7 @@ export default function RidePreview(props: RidePreviewProps) {
         );
       }
       layersReady = true;
+      judgeFrom = performance.now() + WARM_UP_MS;
       setReady(true);
     });
 
@@ -340,13 +386,18 @@ export default function RidePreview(props: RidePreviewProps) {
       if (!renderingRef.current && layersReady) {
         if (playingRef.current) {
           following = true;
-          tRef.current = Math.min(1, tRef.current + (dt * speedRef.current) / duration);
+          // Slow down, never stop, while the ground under the camera is still loading: a phone
+          // that cannot keep up sees the map drawn instead of blank, and the motion stays smooth.
+          const target = baseSources.every((id) => map.isSourceLoaded(id)) ? 1 : TILE_WAIT_PACE;
+          pace += (target - pace) * Math.min(1, dt / 0.6);
+          tRef.current = Math.min(1, tRef.current + (dt * speedRef.current * pace) / duration);
           if (tRef.current >= 1) setPlaying(false);
           dirty.current = true;
 
           // Drop detail if frames are slow: first sharpness, then the 3D terrain. Judged by the
           // time spent in slow frames, so a few long stalls count as much as many short ones.
-          if (frameMs > SLOW_FRAME_MS) slowMs += frameMs;
+          if (now < judgeFrom) slowSince = now;
+          else if (frameMs > SLOW_FRAME_MS) slowMs += frameMs;
           if (now - slowSince > 2000) {
             if (slowSince > 0 && slowMs / (now - slowSince) > SLOW_SHARE && degrade < 2) {
               degrade++;
