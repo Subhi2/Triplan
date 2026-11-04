@@ -1,14 +1,22 @@
 import Link from "next/link";
+import { UpdatesBadge } from "@/components/community/UpdatesBadge";
+import { communityEnabled } from "@/lib/community/enabled";
 import { SITE_NAME } from "@/lib/site";
 
 const LINKS = [
   { href: "/rides", label: "Famous rides" },
+  { href: "/group-rides", label: "Group rides", community: true },
+  { href: "/clubs", label: "Clubs", community: true },
   { href: "/nearby", label: "Near me" },
   { href: "/trips", label: "Your trips" },
   { href: "/about", label: "About" },
+  { href: "/me", label: "Me", community: true },
 ] as const;
 
 export type SiteSection = (typeof LINKS)[number]["href"];
+
+/** The site's links, without clubs, group rides and Me when community is off. */
+export const SITE_LINKS = LINKS.filter((l) => communityEnabled || !("community" in l));
 
 /** The top bar of the content pages (rides, places, trips, about): the name and the main links. */
 export function SiteNav({ current }: { current?: SiteSection }) {
@@ -21,7 +29,7 @@ export function SiteNav({ current }: { current?: SiteSection }) {
         {SITE_NAME}
       </Link>
       <ul className="flex flex-wrap items-center gap-x-1 text-sm font-bold">
-        {LINKS.map((l) => (
+        {SITE_LINKS.map((l) => (
           <li key={l.href}>
             <Link
               href={l.href}
@@ -33,6 +41,7 @@ export function SiteNav({ current }: { current?: SiteSection }) {
               }`}
             >
               {l.label}
+              {l.href === "/me" && <UpdatesBadge />}
             </Link>
           </li>
         ))}

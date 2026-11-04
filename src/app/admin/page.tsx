@@ -5,7 +5,7 @@ import { SITE_NAME } from "@/lib/site";
 import { adminEmails, currentAdmin } from "@/server/auth/admin";
 import type { Moderation } from "@/server/providers/llm/moderation";
 import { pendingPosts } from "@/server/services/riderPostService";
-import { moderate, sendSignInLink, signOut } from "./actions";
+import { moderate, sendSignInLink, signOut, takeDown } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -76,9 +76,9 @@ function Empty({ what }: { what: string }) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; link?: string }>;
+  searchParams: Promise<{ sent?: string; link?: string; takedown?: string }>;
 }) {
-  const { sent, link } = await searchParams;
+  const { sent, link, takedown } = await searchParams;
   const admin = await currentAdmin();
 
   if (!admin) {
@@ -227,6 +227,36 @@ export default async function AdminPage({
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="takedown" className="flex flex-col gap-3">
+        <h2 id="takedown" className="font-display text-xl font-bold">
+          Take down a club or group ride
+        </h2>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          Clubs and rides go up without a check and are run by their own hosts. Remove one only for
+          a legal request: paste its link. Its members and riders go with it.
+        </p>
+        <form action={takeDown} className="flex flex-wrap gap-2">
+          <input
+            name="link"
+            required
+            aria-label="Club or ride link"
+            placeholder="/clubs/… or /group-rides/…"
+            className="min-h-11 min-w-60 flex-1 rounded-md border border-stone-300 bg-white px-2 text-base md:min-h-9 md:text-sm dark:border-stone-700 dark:bg-stone-900"
+          />
+          <button
+            type="submit"
+            className={`${button} border border-stone-300 dark:border-stone-600`}
+          >
+            Take down
+          </button>
+        </form>
+        {takedown && (
+          <p role="status" className="text-sm">
+            {takedown === "done" ? "Taken down." : "No club or ride at that link."}
+          </p>
+        )}
       </section>
     </main>
   );

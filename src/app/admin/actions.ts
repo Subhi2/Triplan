@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { siteUrl } from "@/lib/site";
 import { currentAdmin, isAdminEmail, supabaseForRequest } from "@/server/auth/admin";
+import { takeDownClub } from "@/server/services/clubService";
+import { takeDownRide } from "@/server/services/groupRideService";
 import { moderatePost } from "@/server/services/riderPostService";
 import { allowRequestOrOpen } from "@/server/services/writeLimit";
 
@@ -67,6 +69,29 @@ export async function moderate(form: FormData) {
   const slug = await moderatePost(kind, id, decision);
   if (slug) revalidatePath(`/place/${slug}`);
   revalidatePath("/admin");
+}
+
+/**
+ * Removes a club or group ride by its link, for a legal takedown (docs/02, "Community (G6)").
+ * Clubs and rides are not checked before they go up; this is the only thing admins do to them.
+ */
+export async function takeDown(form: FormData) {
+  if (!(await currentAdmin())) redirect("/admin");
+  const raw = String(form.get("link") ?? "").trim();
+  let path = raw;
+  try {
+    path = new URL(raw, siteUrl()).pathname;
+  } catch {
+    // Not a link: tried as a path below.
+  }
+  const club = /^\/clubs\/([a-z0-9][a-z0-9-]{1,70})\/?$/.exec(path);
+  const ride = /^\/group-rides\/([0-9a-f-]{36})\/?$/.exec(path);
+  const done = club
+    ? await takeDownClub(club[1]!)
+    : ride && z.uuid().safeParse(ride[1]).success
+      ? await takeDownRide(ride[1]!)
+      : false;
+  redirect(`/admin?takedown=${done ? "done" : "none"}`);
 }
 
 export async function signOut() {

@@ -17,6 +17,9 @@ export const USAGE_EVENTS = [
   "gpx_opened",
   "pack_saved",
   "room_opened",
+  "club_created",
+  "ride_hosted",
+  "ride_requested",
 ] as const;
 
 export type UsageEvent = (typeof USAGE_EVENTS)[number];

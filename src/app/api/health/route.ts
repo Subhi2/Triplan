@@ -2,13 +2,17 @@ import { sql } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { forgetOldAlerts, forgetOldCache, forgetOldForecasts } from "@/server/db/cache";
 import { isCronRequest } from "@/server/services/cron";
+import { forgetOldRideNotes } from "@/server/services/groupRideService";
 import { forgetOldPosts } from "@/server/services/riderPostService";
+import { forgetIdleRiders } from "@/server/services/riderService";
 import { forgetOldVisitors } from "@/server/services/writeLimit";
 
 // Called daily by Vercel Cron (vercel.json). The query keeps the free Supabase project active
 // (it pauses after 7 days without activity). Only the cron, which sends
 // `Authorization: Bearer $CRON_SECRET`, may clean up: old write-limit counters, cached weather
-// forecasts and alerts, cache rows past their time, spent proofs of work and old road reports. Anyone else gets the health check alone.
+// forecasts and alerts, cache rows past their time, spent proofs of work, old road reports,
+// riders' notes to hosts 30 days after a ride, and idle device accounts (G6). Anyone else gets the
+// health check alone.
 export const dynamic = "force-dynamic";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -30,6 +34,8 @@ export async function GET(request: Request) {
       alerts: await forgetOldAlerts(),
       ...(await forgetOldCache()),
       ...(await forgetOldPosts()),
+      rideNotes: await forgetOldRideNotes(),
+      idleRiders: await forgetIdleRiders(),
     };
     return Response.json({ ok: true, places, cleaned }, { headers: NO_STORE });
   } catch (err) {

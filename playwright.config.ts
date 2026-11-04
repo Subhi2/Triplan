@@ -52,6 +52,8 @@ export default defineConfig({
       ALTCHA_HMAC_KEY: "e2e-proof-of-work-key",
       PHOTO_STORE: "memory",
       ADMIN_EMAILS: "",
+      // Clubs and group rides use signed test accounts in a cookie, never Supabase users.
+      NEXT_PUBLIC_COMMUNITY_AUTH: "local",
     },
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
