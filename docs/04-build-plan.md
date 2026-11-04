@@ -238,6 +238,22 @@ Decided 2026-10-14 after web research (`07-growth-plan.md`, "G5" and "Research b
 
 **Done when:** the spike's numbers are in its commit message; a review without sign-in needs the proof of work, is pre-screened and shows only after approval; a road report disappears when it expires; the snapshot's place count matches its manifest.
 
+## Growth G6 · Clubs, group rides and roles
+
+Decided 2026-11-05 (`07`, "G6"): riders host rides and run clubs themselves, with device accounts and no approval step. Rules in `02`, "Community (G6)".
+
+1. **Device accounts.** `src/server/auth/session.ts` (`supabaseForRequest` moved here; `currentAccount`, `accountForNewRider`, test accounts with `NEXT_PUBLIC_COMMUNITY_AUTH=local`), table `rider` (migration 0024), `GET/POST/DELETE /api/me`, the nickname prompt, `/me` with Keep my account (`/auth/rider`) and Delete my account. Supabase: Anonymous sign-ins on.
+2. **Rules.** `src/lib/community/roles.ts`, `seats.ts`, `schemas.ts`, `shareText.ts`, with unit tests for every role and action.
+3. **Clubs.** Tables `club`, `club_member`; `clubService.ts`; the club API; `/clubs`, `/clubs/new`, `/clubs/[slug]`.
+4. **Running a club.** Requests, admins, owner hand-over, block, invite link, edit, delete.
+5. **Group rides.** Tables `group_ride`, `group_ride_member`; `groupRideService.ts`; "Host a group ride" on the save bar; `/group-rides/new`, `/group-rides/[id]`.
+6. **Joining.** Ask to join, the host's panel (let in, waitlist, decline, remove, co-hosts), seats with a row lock, the waitlist moving up, call off.
+7. **Ride day.** A room id per ride, Ride together for riders who are in, WhatsApp texts.
+8. **Finding.** `/group-rides` with its filters, club rides on club pages, the badge on Me (`/api/me/updates`), Group rides, Clubs and Me in the site menu.
+9. **Clean-up.** Join notes and idle device accounts in the daily clean-up, the admin's takedown by link, the community tables out of the snapshot, docs.
+
+**Done when:** a host puts up a one-seat ride and lets a rider in, who then sees the meeting point and Ride together; the next rider waitlists and moves up when the first leaves an open ride; a club approves a request and the member sees its WhatsApp link (`tests/e2e/community.spec.ts`, desktop and 375 px).
+
 ## Phase 5 · Community content
 
 Steps 1, 2 and 5 are planned in Growth G5 D (step 14), without sign-in for riders. Steps 3 and 4 ("Add a place") stay here.

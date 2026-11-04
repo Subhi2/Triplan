@@ -8,16 +8,18 @@ Reference example used throughout: **Bengaluru → Kalasa**, via Sakleshpur (NH7
 
 ## Read these first
 
-| File | What it covers |
-|---|---|
-| `docs/01-product-spec.md` | Features, screens, user stories, acceptance criteria |
-| `docs/02-architecture.md` | Stack, folders, services, routing and corridor search |
-| `docs/03-data-model.md` | Postgres + PostGIS schema (SQL) and TypeScript types |
-| `docs/04-build-plan.md` | Phased build steps. Work through phases in order |
-| `docs/05-hidden-places.md` | YouTube discovery pipeline and its rules |
-| `docs/06-seed-data.md` | Seed places for the Bengaluru → Kalasa demo |
-| `docs/07-growth-plan.md` | Product positioning, growth features, open-source tools and licences, the research behind G5, making money |
-| `docs/08-design.md` | The "Ghat Road" design: tokens, type, components, layout and motion. Follow it for any UI |
+| File                       | What it covers                                                                                             |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `docs/01-product-spec.md`  | Features, screens, user stories, acceptance criteria                                                       |
+| `docs/02-architecture.md`  | Stack, folders, services, routing and corridor search                                                      |
+| `docs/03-data-model.md`    | Postgres + PostGIS schema (SQL) and TypeScript types                                                       |
+| `docs/04-build-plan.md`    | Phased build steps. Work through phases in order                                                           |
+| `docs/05-hidden-places.md` | YouTube discovery pipeline and its rules                                                                   |
+| `docs/06-seed-data.md`     | Seed places for the Bengaluru → Kalasa demo                                                                |
+| `docs/07-growth-plan.md`   | Product positioning, growth features, open-source tools and licences, the research behind G5, making money |
+| `docs/08-design.md`        | The "Ghat Road" design: tokens, type, components, layout and motion. Follow it for any UI                  |
+
+Clubs, hosted group rides and their roles (G6) are in `docs/02-architecture.md`, "Community (G6)".
 
 ## Stack (decided)
 
@@ -115,6 +117,8 @@ NEXT_PUBLIC_OFFLINE_TILES_URL=    # our own PMTiles file of India for offline pa
 ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road reports (G5); empty = closed
 ADMIN_EMAILS=                     # who may sign in to /admin (G5); set in the deployment, never committed
 PHOTO_STORE=                      # tests only: "memory" keeps riders' photos out of Supabase Storage
+NEXT_PUBLIC_COMMUNITY=            # 0 hides clubs, group rides and Me (G6); on whenever Supabase is set
+NEXT_PUBLIC_COMMUNITY_AUTH=       # tests only: "local" uses signed test accounts instead of Supabase users
 ```
 
 ## Things to avoid
@@ -134,4 +138,5 @@ PHOTO_STORE=                      # tests only: "memory" keeps riders' photos ou
 - Ride-together positions travel only through the Realtime channel: never stored, logged or sent to our server, and only after a tap on "Share my position" (G5).
 - A rider's GPX file is read in the browser; only the line leaves the phone, with 500 m cut from each end (G5).
 - Offline packs take tiles only from our own PMTiles file (`NEXT_PUBLIC_OFFLINE_TILES_URL`), never from OpenFreeMap or another public tile server: at most 3,000 tiles or 50 MB per pack, 4 requests at a time (G5). The service worker still never stores `/api/` answers; the page writes packs.
+- Clubs and group rides (G6): a ride's exact meeting point, WhatsApp link and room id go only to riders a host let in, a club's WhatsApp link and members list only to its members; who may do what lives only in `src/lib/community/roles.ts`. Riders show by nickname only. No approval queue: platform admins only take down by link.
 - YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).

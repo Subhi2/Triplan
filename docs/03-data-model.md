@@ -348,6 +348,82 @@ CREATE TABLE pow_spent (
   expires_at timestamptz NOT NULL
 );
 
+-- Community (migration 0024, G6) ------------------------------------------------
+-- Riders' device accounts, clubs, hosted group rides and their members. Server only (RLS on, no
+-- policies). Never in the data snapshot. Who may do what: src/lib/community/roles.ts.
+
+-- rider.id is the Supabase user id (anonymous until kept with an email). No foreign key to
+-- auth.users, so tests can make riders without Supabase.
+CREATE TABLE rider (
+  id           uuid PRIMARY KEY,
+  nickname     text NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  last_seen_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE club (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug              text NOT NULL UNIQUE,
+  name              text NOT NULL,
+  about             text NOT NULL DEFAULT '',
+  home_label        text NOT NULL,
+  home_point        geography(Point, 4326),        -- optional, for "clubs near me"
+  vehicle           text NOT NULL DEFAULT 'any' CHECK (vehicle IN ('bike', 'car', 'any')),
+  join_policy       text NOT NULL DEFAULT 'approval' CHECK (join_policy IN ('open', 'approval', 'invite')),
+  invite_token_hash text,                          -- sha256 of the invite link's token
+  whatsapp_url      text,                          -- members only; chat.whatsapp.com links only
+  created_at        timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE club_member (
+  club_id    uuid NOT NULL REFERENCES club(id) ON DELETE CASCADE,
+  rider_id   uuid NOT NULL REFERENCES rider(id) ON DELETE CASCADE,
+  role       text NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+  status     text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'blocked')),
+  note       text NOT NULL DEFAULT '',             -- the rider's note with a request
+  decided_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (club_id, rider_id)
+);
+
+CREATE TABLE group_ride (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  club_id      uuid REFERENCES club(id) ON DELETE CASCADE,
+  trip_id      uuid NOT NULL REFERENCES trip(id),  -- the road: a saved trip
+  title        text NOT NULL,
+  about        text NOT NULL DEFAULT '',
+  starts_at    timestamptz NOT NULL,
+  meet_label   text NOT NULL,                      -- public: the town or area
+  meet_note    text NOT NULL DEFAULT '',           -- riders only
+  meet_point   geography(Point, 4326),             -- riders only
+  seats        smallint NOT NULL CHECK (seats BETWEEN 1 AND 50),  -- besides the host
+  vehicle      text NOT NULL DEFAULT 'bike' CHECK (vehicle IN ('bike', 'car', 'any')),
+  pace         text NOT NULL DEFAULT 'steady' CHECK (pace IN ('relaxed', 'steady', 'brisk')),
+  needs        text[] NOT NULL DEFAULT '{}',       -- own_vehicle, helmet, riding_gear, licence, pillion_ok
+  visibility   text NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'club', 'link')),
+  join_policy  text NOT NULL DEFAULT 'approval' CHECK (join_policy IN ('approval', 'open')),
+  whatsapp_url text,                               -- riders only
+  room_id      text NOT NULL,                      -- the ride-together room, riders only
+  cancelled    boolean NOT NULL DEFAULT false,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  CHECK (visibility <> 'club' OR club_id IS NOT NULL)
+);
+CREATE INDEX group_ride_starts_at_idx ON group_ride (starts_at);
+
+CREATE TABLE group_ride_member (
+  ride_id     uuid NOT NULL REFERENCES group_ride(id) ON DELETE CASCADE,
+  rider_id    uuid NOT NULL REFERENCES rider(id) ON DELETE CASCADE,
+  role        text NOT NULL DEFAULT 'rider' CHECK (role IN ('host', 'cohost', 'rider')),
+  status      text NOT NULL DEFAULT 'pending'
+              CHECK (status IN ('pending', 'approved', 'waitlist', 'declined', 'left', 'removed')),
+  note        text NOT NULL DEFAULT '',            -- blanked 30 days after the ride
+  seats_taken smallint NOT NULL DEFAULT 1 CHECK (seats_taken BETWEEN 1 AND 2),  -- 2 with a pillion
+  decided_at  timestamptz,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (ride_id, rider_id)
+);
+
 -- Usage counters (migration 0014) -----------------------------------------------
 -- Counts per UTC day: routes planned, AI requests and tokens. Server only (RLS on, no policies).
 CREATE TABLE usage_daily (

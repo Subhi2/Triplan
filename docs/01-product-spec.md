@@ -119,9 +119,30 @@ User stories:
 
 Privacy: ride-together positions go only to the people in the room. They are never stored or logged, and they stop when the rider stops sharing or after 12 hours. A GPX file is read on the phone: only the line leaves it, cut 500 m short at each end. Reviews and reports need no account; a token on the device lets its writer change or delete them.
 
+### Community: clubs and group rides (G6, added 2026-11-05)
+
+Riders who ride together, and hosts who want riders. No supervisor: clubs and rides go up at once, and their own owners, admins and hosts decide who comes in.
+
+39. **Rider identity**: a nickname on the first tap on Host, Start a club or Ask to join; nothing else is asked. The account lives on the device until the rider keeps it with an email (then it works on any phone). **Me** (`/me`) lists their clubs, rides hosted and rides joined, and has Keep my account, Sign in on another device and Delete my account.
+40. **Clubs** (`/clubs`, `/clubs/new`, `/clubs/[slug]`): name, about, home town (and an optional point for "near me"), bikes / cars / both, and how riders join: anyone, ask to join, or invite link only. A WhatsApp group link for members.
+41. **Club roles**: owner (everything, hand over, delete), admins (approve or decline requests, remove and block members, invite link, edit, host club rides), members (the members list, the WhatsApp link and members-only rides).
+42. **Host a group ride** from a saved trip ("Host a group ride" on the planner's save bar, or from a club): when, where riders meet (the area for everyone, the exact point only for riders who are in), seats, bikes / cars, pace, what riders need (own vehicle, helmet, gear, licence, pillion welcome), who can see it (listed, link only, club members) and how riders join (the host approves each, or open until full), and a WhatsApp group link.
+43. **Group ride page** (`/group-rides/[id]`): the road's sketch, km, time, pace, seats left, host and club, and Open in the planner. **Ask to join** with a note and a pillion. Once in: the exact meeting point, the WhatsApp group and Ride together for the day.
+44. **Ride roles**: host (let in, waitlist, decline, remove, make co-hosts, change seats and joining, call off), co-hosts (the same for riders, without co-hosts or calling off), riders. A full ride waitlists, and the waitlist moves up on its own when a seat frees on an open ride.
+45. **Group rides list** (`/group-rides`): rides that have not started, soonest first, filtered by starting near me, month, bikes or cars.
+46. **Updates**: a badge on Me for requests waiting on the rider's clubs and rides and for decisions on their own requests; WhatsApp messages the rider sends with one tap ("Join my ride…", "You're in for…", club invite).
+
+User stories:
+- As a rider who plans a Charmadi ride for Sunday, I want to put it up with 8 seats and pick who comes, so I ride with people at my pace.
+- As a rider new to a city, I want to find a club and rides leaving near me, so I don't ride alone.
+- As a host, I want only the riders I let in to see the meeting point and our WhatsApp group.
+- As a club owner, I want admins to help with requests, and to block someone who spams.
+
+Privacy: riders show by nickname only, never an email or phone number. The exact meeting point, the WhatsApp link and the ride-together room go only to riders who are in. Notes to hosts are deleted 30 days after the ride; unused device accounts after 90 days. Platform admins only take down a club or ride for a legal request.
+
 ### v1 (phases 5–7)
 
-Reviews and photos (7) and the admin queue (9) come first, in G5 (feature 38), without sign-in for riders. Accounts (6) are for admins only (decided 2026-10-14).
+Reviews and photos (7) and the admin queue (9) come first, in G5 (feature 38), without sign-in for riders. Accounts (6) were for admins only (decided 2026-10-14); riders get a device account for clubs and group rides (G6, decided 2026-11-05), still with no sign-in for anything else.
 
 6. Accounts via Supabase Auth (email magic link, Google). Not needed for the MVP, which is open without sign-in; decide with reviews and contributions (phase 5) whether they need accounts.
 7. User reviews with rating, month visited, vehicle used, text, up to 5 photos.
@@ -150,6 +171,9 @@ Weather on the ride and the fuel range check were built in G1; alerts and the of
 9. **About** (`/about`).
 10. **3D ride preview**: covers the screen over the planner or a ride page.
 11. **Ride together** (`/ride/[room]`): the group's map with each rider's nickname, the regroup pin and "Stop sharing"; the follow link opens the same map without sharing.
+12. **Group rides** (`/group-rides`, `/group-rides/new`, `/group-rides/[id]`): the list with its filters, the host's form, and a ride's page with Ask to join, the riders' part and the host's panel (G6).
+13. **Clubs** (`/clubs`, `/clubs/new`, `/clubs/[slug]`): the list with search and near me, Start a club, and a club's page with Join, members and Run the club (G6).
+14. **Me** (`/me`): nickname, clubs, rides and the account (G6).
 
 The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the intended planner layout.
 
@@ -196,4 +220,14 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 - A saved pack opens the trip, with its map, in airplane mode. Its tiles come only from our own map file, at most 3,000 tiles or 50 MB a pack.
 - Two phones in one room see each other, and no position is stored.
 - A review or road report without an account needs the proof of work, passes the pre-screen and shows after an admin approves it. A road report disappears when it expires.
+- Works at 375 px width with 44 px touch targets.
+
+## Acceptance criteria for G6
+
+- A rider hosts a ride on a saved trip with only a nickname, and it is live at once. Another rider asks to join and does not see the meeting point or the WhatsApp link until the host lets them in.
+- A one-seat ride waitlists the next rider. On an open ride, when a rider leaves, the first one on the waitlist who fits gets in without the host.
+- A club that asks to join keeps requests for its owner and admins; once approved, the member sees the WhatsApp link and members-only rides, which nobody else sees.
+- An admin cannot act on the owner or another admin; a co-host cannot act on the host or other co-hosts; nobody acts on themselves.
+- Every new club, ride and request carries a proof of work; a link other than a WhatsApp group invite is refused.
+- Deleting an account hands its clubs and rides on (or ends them), and no community table is in the data snapshot.
 - Works at 375 px width with 44 px touch targets.
