@@ -168,12 +168,14 @@ export default async function AboutPage() {
           Privacy
         </h2>
         <p>
-          No account and no tracking cookies. Your position is asked for only when you tap
-          &ldquo;Use my location&rdquo;, rounded to about 100 m before it leaves your phone, and
-          never stored. Saved trips are public to anyone with the link. Visits are counted without
-          cookies, and routes planned are counted per day, with nothing about who planned them. Text
-          typed into &ldquo;plan in plain words&rdquo; goes to the AI provider to read it and is not
-          stored.
+          No account needed and no tracking cookies. Clubs and group rides give you a device account
+          with only the nickname you pick (no email or phone unless you keep it with an email); a
+          ride&apos;s meeting point goes only to riders the host lets in. Your position is asked for
+          only when you tap &ldquo;Use my location&rdquo;, rounded to about 100 m before it leaves
+          your phone, and never stored. Saved trips are public to anyone with the link. Visits are
+          counted without cookies, and routes planned are counted per day, with nothing about who
+          planned them. Text typed into &ldquo;plan in plain words&rdquo; goes to the AI provider to
+          read it and is not stored.
         </p>
       </section>
 

@@ -71,7 +71,17 @@ export const SNAPSHOT_SERIALS: Partial<Record<SnapshotTable, string>> = {
  * Tables outside the snapshot whose rows point at it (trips, reviews...). `db:setup --replace`
  * empties the snapshot tables only while these are empty: a database with them is in use.
  */
-export const DEPENDENT_TABLES = ["trip", "trip_stop", "review", "social_post"] as const;
+export const DEPENDENT_TABLES = [
+  "trip",
+  "trip_stop",
+  "review",
+  "social_post",
+  "rider",
+  "club",
+  "club_member",
+  "group_ride",
+  "group_ride_member",
+] as const;
 
 export const SNAPSHOT_LICENCE =
   "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap " +

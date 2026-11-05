@@ -97,7 +97,9 @@ export const place = pgTable(
   },
   (t) => [
     index("place_location_gix").using("gist", t.location),
-    index("place_area_gix").using("gist", t.area).where(sql`${t.area} IS NOT NULL`),
+    index("place_area_gix")
+      .using("gist", t.area)
+      .where(sql`${t.area} IS NOT NULL`),
     index("place_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
     index("place_status_idx").on(t.status),
     index("place_category_idx").on(t.categoryId),
@@ -481,8 +483,14 @@ export const roadRule = pgTable(
     geom: geographyAny("geom").notNull(), // a line along the road, or an area
     closedFrom: text("closed_from"), // night bans: "21:00" India time; may be later than closed_to
     closedTo: text("closed_to"),
-    vehicles: text("vehicles").array().notNull().default(sql`'{}'::text[]`), // empty = every vehicle
-    months: smallint("months").array().notNull().default(sql`'{}'::smallint[]`), // empty = all year
+    vehicles: text("vehicles")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`), // empty = every vehicle
+    months: smallint("months")
+      .array()
+      .notNull()
+      .default(sql`'{}'::smallint[]`), // empty = all year
     link: text("link").notNull(),
     source: text("source"), // who says so, when the link is not the authority's own page
     checkedOn: date("checked_on").notNull(),
@@ -532,3 +540,131 @@ export const profile = pgTable("profile", {
   displayName: text("display_name"),
   role: text("role").notNull().default("user"), // 'user' | 'moderator' | 'admin'
 });
+
+// Community (G6) --------------------------------------------------------------
+// Clubs, hosted group rides and their members (docs/02, "Community (G6)"). Riders get a device
+// account (Supabase anonymous sign-in) the first time they host, start a club or ask to join;
+// rider.id is that account's id. No foreign key to auth.users, so tests can make riders without
+// Supabase. Nothing here goes into the data snapshot.
+
+export const rider = pgTable("rider", {
+  id: uuid("id").primaryKey(),
+  nickname: text("nickname").notNull(),
+  createdAt: createdAt(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const club = pgTable(
+  "club",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    about: text("about").notNull().default(""),
+    homeLabel: text("home_label").notNull(),
+    homePoint: geographyPoint("home_point"),
+    vehicle: text("vehicle").notNull().default("any"), // bike | car | any
+    joinPolicy: text("join_policy").notNull().default("approval"), // open | approval | invite
+    // sha256 of the invite link's token, shown once to the owner or an admin who makes it.
+    inviteTokenHash: text("invite_token_hash"),
+    whatsappUrl: text("whatsapp_url"), // members only
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("club_home_point_gix").using("gist", t.homePoint),
+    check("club_vehicle_check", sql`${t.vehicle} IN ('bike', 'car', 'any')`),
+    check("club_join_policy_check", sql`${t.joinPolicy} IN ('open', 'approval', 'invite')`),
+  ],
+);
+
+export const clubMember = pgTable(
+  "club_member",
+  {
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => club.id, { onDelete: "cascade" }),
+    riderId: uuid("rider_id")
+      .notNull()
+      .references(() => rider.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("member"), // owner | admin | member
+    status: text("status").notNull().default("pending"), // pending | active | blocked
+    note: text("note").notNull().default(""), // the rider's note with a request
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.clubId, t.riderId] }),
+    index("club_member_rider_idx").on(t.riderId),
+    check("club_member_role_check", sql`${t.role} IN ('owner', 'admin', 'member')`),
+    check("club_member_status_check", sql`${t.status} IN ('pending', 'active', 'blocked')`),
+  ],
+);
+
+export const groupRide = pgTable(
+  "group_ride",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clubId: uuid("club_id").references(() => club.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trip.id),
+    title: text("title").notNull(),
+    about: text("about").notNull().default(""),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    meetLabel: text("meet_label").notNull(), // public: the town or area
+    meetNote: text("meet_note").notNull().default(""), // riders only: "Shell pump after the toll"
+    meetPoint: geographyPoint("meet_point"), // riders only
+    seats: smallint("seats").notNull(), // riders besides the host; a pillion takes one
+    vehicle: text("vehicle").notNull().default("bike"),
+    pace: text("pace").notNull().default("steady"),
+    needs: text("needs").array().notNull().default(emptyArray),
+    visibility: text("visibility").notNull().default("public"), // public | club | link
+    joinPolicy: text("join_policy").notNull().default("approval"), // approval | open
+    whatsappUrl: text("whatsapp_url"), // riders only
+    // The ride-together room for the day (src/lib/rideRoom.ts), riders only. Positions in it are
+    // never stored.
+    roomId: text("room_id").notNull(),
+    cancelled: boolean("cancelled").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("group_ride_starts_at_idx").on(t.startsAt),
+    index("group_ride_club_idx").on(t.clubId),
+    check("group_ride_seats_check", sql`${t.seats} BETWEEN 1 AND 50`),
+    check("group_ride_vehicle_check", sql`${t.vehicle} IN ('bike', 'car', 'any')`),
+    check("group_ride_pace_check", sql`${t.pace} IN ('relaxed', 'steady', 'brisk')`),
+    check("group_ride_visibility_check", sql`${t.visibility} IN ('public', 'club', 'link')`),
+    check("group_ride_join_policy_check", sql`${t.joinPolicy} IN ('approval', 'open')`),
+    check("group_ride_club_only_check", sql`${t.visibility} <> 'club' OR ${t.clubId} IS NOT NULL`),
+  ],
+);
+
+export const groupRideMember = pgTable(
+  "group_ride_member",
+  {
+    rideId: uuid("ride_id")
+      .notNull()
+      .references(() => groupRide.id, { onDelete: "cascade" }),
+    riderId: uuid("rider_id")
+      .notNull()
+      .references(() => rider.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("rider"), // host | cohost | rider
+    // pending | approved | waitlist | declined | left | removed
+    status: text("status").notNull().default("pending"),
+    note: text("note").notNull().default(""), // the rider's note with a request
+    seatsTaken: smallint("seats_taken").notNull().default(1), // 2 with a pillion
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.rideId, t.riderId] }),
+    index("group_ride_member_rider_idx").on(t.riderId),
+    check("group_ride_member_role_check", sql`${t.role} IN ('host', 'cohost', 'rider')`),
+    check(
+      "group_ride_member_status_check",
+      sql`${t.status} IN ('pending', 'approved', 'waitlist', 'declined', 'left', 'removed')`,
+    ),
+    check("group_ride_member_seats_check", sql`${t.seatsTaken} BETWEEN 1 AND 2`),
+  ],
+);

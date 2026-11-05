@@ -102,6 +102,18 @@ Status (2026-10-02): G2.1, G2.2, G2.4, G2.5 and G2.8 are built in "Growth G3 · 
 
 This settles the question G4 left open, how to stop spam without sign-in: proof of work, per-visitor limits, a device token for editing one's own posts, an AI pre-screen and approval by an admin.
 
+**G6 · Clubs, group rides and roles (decided 2026-11-05).** The owner asked for community, groups, hosted trips, join requests and roles. Decisions: riders get a **device account** (Supabase anonymous sign-in, a nickname only, kept with an email if they like), which changes "only admins sign in" for this feature alone; clubs and rides go up **without approval or supervision**, run by their own owners, admins and hosts; updates are **in the app and through WhatsApp links**. Steps are in `04-build-plan.md` "Growth G6".
+
+| Feature | Why it sells | Tools and data, and how it passes "Choosing new features" |
+|---|---|---|
+| Clubs with owner, admin and member roles | Riding clubs run on WhatsApp alone today: no page, no member list, no ride calendar | Our own data in Supabase Postgres (a paid service we use and could swap) |
+| Host a group ride, ask to join, approve, waitlist | The host picks who rides; riders find rides leaving near them | Our own data; seats and rules in our code |
+| Device accounts | No email or phone needed to start; keep it with an email later | Supabase Auth anonymous sign-in and email links: part of the service we already use, free, nobody's approval needed; the feature switches off without it (`NEXT_PUBLIC_COMMUNITY=0`) |
+| WhatsApp group link and share texts | Every Indian riding group already lives on WhatsApp | Plain `wa.me` and `chat.whatsapp.com` links: no API, no account, no approval |
+| Ride day | The group's live map from the ride's page | Ride together (G5), unchanged: Supabase Realtime, positions never stored |
+
+Spam without a supervisor: proof of work (ALTCHA, MIT) and per-visitor limits on every new club, ride and request, caps per rider, WhatsApp invite links as the only links, and blocking by owners and hosts. Admins only take down a club or ride by its link for a legal request. Checked and left out: push notifications (left for later: they need service-worker work, and iPhones only get them for an installed app), email notices (Supabase's built-in mailer sends only a few emails an hour; a mail service costs money).
+
 **Later: needs decisions, accounts or money.**
 
 - "Add a place" (Phase 5 steps 3–4). Reviews and rider photos are in G5.
@@ -171,7 +183,7 @@ In order of fit with the product:
 3. **Riding gear** linked from "What to carry" (Amazon Associates India: about 5–7% for sports, apparel and luggage).
 4. **Featured listings** for cafes, homestays and garages on the route, always labelled "Sponsored" and never changing the km order.
 5. **Rider Pro** (later): offline packs, multi-day planner, unlimited GPX. Only once the free app has regular users.
-6. **Clubs and tour operators**: branded group-ride pages.
+6. **Clubs and tour operators**: branded group-ride pages. Clubs and group rides themselves are built (G6), free.
 
 ## What to measure
 

@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
+import { communityEnabled } from "@/lib/community/enabled";
 
 const LINKS = [
   { href: "/rides", label: "Famous rides" },
+  ...(communityEnabled
+    ? [
+        { href: "/group-rides", label: "Group rides" },
+        { href: "/clubs", label: "Clubs" },
+      ]
+    : []),
   { href: "/trips", label: "Your trips" },
+  ...(communityEnabled ? [{ href: "/me", label: "Me" }] : []),
   { href: "/about", label: "About" },
-] as const;
+];
 
 /**
  * The site's other screens behind one "More" button, for headers with no room for the links

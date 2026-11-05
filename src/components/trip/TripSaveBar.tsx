@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ShareButtons } from "@/components/site/ShareButtons";
+import { communityEnabled } from "@/lib/community/enabled";
 import { isSavedPlan, type CreatedTrip, type SavedTrip, type TripPlan } from "@/lib/savedTrip";
 import { tripHeadline } from "@/lib/site";
 import { trackEvent } from "@/lib/track";
@@ -184,6 +186,11 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
                 )
               )}
               {shareButtons}
+              {communityEnabled && !changed && (
+                <Link href={`/group-rides/new?trip=${saved.id}`} className={link}>
+                  Host a group ride
+                </Link>
+              )}
             </div>
           </div>
           {changed && !canEdit && (
