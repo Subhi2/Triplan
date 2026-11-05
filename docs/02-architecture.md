@@ -339,7 +339,7 @@ Saved trips need no sign-in (`trip.user_id` stays empty, `is_public` is always t
 
 - Saving sends the stops, vehicle, corridor and the selected route (id, geometry, distance, time, label). The geometry is stored in `trip.route_geom`; the route id is stored so reopening selects the same route option (route ids are deterministic hashes of the routing request). Stops that match one of our places (same name within 150 m) get `trip_stop.place_id`.
 - In the planner the URL keeps the working state (`/trips/[id]?from=...`), so a reload keeps unsaved edits; the bare link opens the saved version. The save bar shows "Changes not saved" when the stops, vehicle, corridor or selected route differ from the saved trip, with "Save changes" and "Save as new trip" on the device that saved it, and "Save as my trip" elsewhere.
-- The app server writes trips with the table owner's connection; the RLS policies on `trip` only matter for requests made with the Supabase keys.
+- The app server writes trips with the table owner's connection; through the Supabase keys trips can only be read (see "Auth and security").
 
 ## Share cards and search engines
 
@@ -416,7 +416,7 @@ G5 adds "Best stops for my time" (an orienteering pick within a time budget) and
 ## Auth and security
 
 - The app is open: saved trips have no owner (see "Saved trips"), and reviews, photos and road reports need no account (see "Reviews, photos and road reports"). Admins sign in with an email link (G5). Riders get a device account only for clubs and group rides (see "Community (G6)"). Sessions are read through `@supabase/ssr` in `src/server/auth/session.ts`.
-- Row Level Security on every user-writable table (`review`, `trip`, `place_submission`, `media` uploads): users can read public rows and write their own; admins (role in `profile.role`) can moderate.
+- Row Level Security on every table. Through Supabase's keys, anyone may read public rows (verified places, reviews and media, public trips, approved road reports) and nobody may write: every write goes through the server's own connection, with its proof of work, limits and checks. Migration 0025 dropped the self-service write policies of 0002 before riders got anonymous accounts (G6), since they would have let any signed-in visitor write directly (even a review already marked verified). The moderator policies remain, keyed on `profile.role`, which no user can change.
 - API route handlers validate input with Zod and rate-limit writes per user (e.g. 20 reviews/day).
 - Uploaded images: max 8 MB, resized to 1600 px and 400 px thumbnails, EXIF location stripped unless the user opts in to use it as the place pin.
 
