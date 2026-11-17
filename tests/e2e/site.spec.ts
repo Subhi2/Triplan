@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test("About tells how it works and credits every data source", async ({ page }) => {
   await page.goto("/about");
@@ -10,22 +10,35 @@ test("About tells how it works and credits every data source", async ({ page }) 
   for (const name of ["OpenStreetMap", "Wikimedia Commons", "MET Norway", "AWS Terrain Tiles"]) {
     await expect(sources).toContainText(name);
   }
+  await openPhoneMenu(page);
   await expect(page.getByRole("link", { name: "About", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
   );
 });
 
+/** Phones keep Plan a ride and Near me in view; the rest of the links are behind "Menu". */
+async function openPhoneMenu(page: Page) {
+  const menu = page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: "Menu" });
+  if (await menu.isVisible()) await menu.click();
+}
+
 test("an unknown address gets a way back", async ({ page }) => {
   const res = await page.goto("/no-such-page");
   expect(res?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "This road doesn't go anywhere" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Plan a ride" })).toHaveAttribute("href", "/");
+  // The page's own way back, and the bar's.
+  const back = page.getByRole("link", { name: "Plan a ride" });
+  await expect(back).toHaveCount(2);
+  for (const link of await back.all()) await expect(link).toHaveAttribute("href", "/");
 });
 
 test("content pages share the main navigation", async ({ page }) => {
   await page.goto("/trips");
   const nav = page.getByRole("navigation", { name: "Main" });
+  // Every content page leads back to the planner.
+  await expect(nav.getByRole("link", { name: "Plan a ride" })).toHaveAttribute("href", "/");
+  await openPhoneMenu(page);
   for (const name of ["Famous rides", "Near me", "Your trips", "About"]) {
     await expect(nav.getByRole("link", { name })).toBeVisible();
   }

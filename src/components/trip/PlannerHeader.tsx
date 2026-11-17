@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import { SiteMenu } from "@/components/site/SiteMenu";
+import { SITE_LINKS } from "@/components/site/siteLinks";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import type { CorridorKm, Vehicle } from "@/lib/trip";
 
@@ -19,8 +20,9 @@ interface Props {
 }
 
 /**
- * The planner's header: the app's name (or the trip on phones) and links to the other screens.
- * Phones get Rides, Trips and About behind "More", so they stay reachable once a trip is loaded.
+ * The planner's header: the app's name and tagline (or the trip on phones), Near me, and the
+ * site's other screens behind "Menu" at every width, so the tagline keeps its room and the
+ * screens stay reachable once a trip is loaded.
  */
 export function PlannerHeader({
   compact,
@@ -62,21 +64,7 @@ export function PlannerHeader({
           <CrosshairIcon size={18} />
           {!compact && "Near me"}
         </Link>
-        {!compact &&
-          [
-            { href: "/rides", label: "Rides" },
-            { href: "/trips", label: "Trips" },
-            { href: "/about", label: "About" },
-          ].map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-brand-dark hidden min-h-11 items-center px-2 text-sm font-bold hover:underline sm:inline-flex dark:text-teal-300"
-            >
-              {l.label}
-            </Link>
-          ))}
-        <SiteMenu className={compact ? "" : "sm:hidden"} />
+        <SiteMenu links={SITE_LINKS.filter((l) => l.href !== "/" && l.href !== "/nearby")} />
         {formToggle && (
           <button
             type="button"

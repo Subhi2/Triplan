@@ -938,12 +938,12 @@ test("on phones the map comes with the trip, under a one-line header and over th
   );
   for (const target of [
     page.getByRole("button", { name: "Edit trip" }),
-    page.getByRole("button", { name: "More" }),
+    page.getByRole("button", { name: "Menu" }),
   ]) {
     expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
   // The other screens stay reachable with a trip loaded.
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "Menu" }).click();
   for (const name of ["Famous rides", "Your trips", "About"]) {
     await expect(page.getByRole("link", { name })).toBeVisible();
   }

@@ -451,25 +451,9 @@ export function Nearby() {
               )}
             </div>
           </div>
-          {floatingHeader ? (
-            <SiteMenu className="shrink-0" />
-          ) : (
-            <nav aria-label="Main" className="flex shrink-0 items-center">
-              {[
-                { href: "/rides", label: "Rides" },
-                { href: "/trips", label: "Trips" },
-                { href: "/about", label: "About" },
-              ].map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="text-brand-dark inline-flex min-h-11 items-center px-2 text-sm font-bold hover:underline dark:text-teal-300"
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
-          )}
+          <nav aria-label="Main" className="shrink-0">
+            <SiteMenu current="/nearby" />
+          </nav>
         </header>
         {isDesktop && <div className="mt-3">{panel}</div>}
       </aside>
