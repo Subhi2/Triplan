@@ -150,7 +150,7 @@ export function ClubForm({
             value={homeLabel}
             onChange={(e) => setHomeLabel(e.target.value)}
             maxLength={60}
-            placeholder="Bengaluru"
+            placeholder="Town the club rides from"
             required
             className={field}
           />
@@ -190,7 +190,7 @@ export function ClubForm({
           maxLength={CLUB_ABOUT_MAX}
           rows={4}
           className={`${field} py-2`}
-          placeholder="Weekend rides to the ghats, steady pace, everyone waits at turns."
+          placeholder="What rides you do and how the group rides"
         />
       </label>
       <fieldset className="flex flex-col gap-2">

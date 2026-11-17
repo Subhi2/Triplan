@@ -70,7 +70,7 @@ export function PlainWordsBox({ near }: { near: LngLat }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={300}
-          placeholder="2-day monsoon ride from Pune with waterfalls"
+          placeholder="Describe your ride: days, where from, what to see"
           className="field-glow min-h-12 min-w-0 flex-1 rounded-xl border border-stone-300 bg-stone-50 px-3 text-base md:min-h-11 dark:border-stone-600 dark:bg-stone-800"
         />
         <button

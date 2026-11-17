@@ -53,9 +53,9 @@ interface Props {
 }
 
 function roleOf(index: number, count: number) {
-  if (index === 0) return { name: "Start", placeholder: "Where from? e.g. Bengaluru" };
-  if (index === count - 1) return { name: "Destination", placeholder: "Where to? e.g. Kalasa" };
-  return { name: `Stop ${index}`, placeholder: "Via town or place" };
+  if (index === 0) return { name: "Start", placeholder: "Where are you starting from?" };
+  if (index === count - 1) return { name: "Destination", placeholder: "Where are you going?" };
+  return { name: `Stop ${index}`, placeholder: "A town or place to ride through" };
 }
 
 function SortableStop(props: {

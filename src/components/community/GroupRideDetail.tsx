@@ -425,7 +425,7 @@ export function GroupRideDetail({ id, initial }: { id: string; initial: GroupRid
                 maxLength={JOIN_NOTE_MAX}
                 rows={2}
                 className={`${field} py-2`}
-                placeholder="Classic 350, done Charmadi twice."
+                placeholder="Your bike and riding experience"
               />
             </label>
             {ride.needs.includes("pillion_ok") && (

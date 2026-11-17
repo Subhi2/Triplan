@@ -310,7 +310,7 @@ export function ClubDetail({ initial, invite }: { initial: ClubPublic; invite: s
                   maxLength={300}
                   rows={2}
                   className={`${field} py-2`}
-                  placeholder="I ride a Himalayan, mostly weekends."
+                  placeholder="Your bike and how often you ride"
                 />
               </label>
             )}

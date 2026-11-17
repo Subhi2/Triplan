@@ -97,7 +97,7 @@ export function OriginBar(props: Props) {
       </div>
       <StopInput
         label="Search around a place"
-        placeholder="Type a place, e.g. Sakleshpur"
+        placeholder="Type a town or place"
         value={text}
         resolved={false}
         near={props.near}
