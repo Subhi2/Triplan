@@ -57,6 +57,15 @@ export interface Ride {
 }
 
 /** A ride in a list: the numbers and a small line to sketch. */
+/** A ride card's photo: the best place near its road that has one, with the photo's credit. */
+export interface RidePhoto {
+  thumbUrl: string;
+  placeName: string;
+  author: string | null;
+  license: string;
+  source: string;
+}
+
 export interface RideSummary {
   slug: string;
   title: string;
