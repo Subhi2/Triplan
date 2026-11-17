@@ -494,8 +494,10 @@ export function Planner({
         (maxDetourKm === null || p.detourKm <= maxDetourKm),
     );
     // No category picked: the best stops only. A picked category shows every place in it.
-    return categories.length === 0 ? bestAlongRoute(matching, mix) : matching;
-  }, [allPlaces, categories, maxDetourKm, mix]);
+    return categories.length === 0
+      ? bestAlongRoute(matching, mix, selectedRoute?.distanceKm)
+      : matching;
+  }, [allPlaces, categories, maxDetourKm, mix, selectedRoute?.distanceKm]);
   // Switching route or filter turns the list from that side (docs/08 "Motion").
   const turn = useListTurn(
     {
@@ -968,7 +970,9 @@ export function Planner({
               <PlaceFilters
                 counts={categoryCounts}
                 bestCount={
-                  categories.length === 0 ? places.length : bestAlongRoute(allPlaces, mix).length
+                  categories.length === 0
+                    ? places.length
+                    : bestAlongRoute(allPlaces, mix, selectedRoute?.distanceKm).length
                 }
                 selected={categories}
                 maxDetourKm={maxDetourKm}

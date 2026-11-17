@@ -87,7 +87,7 @@ function ReviewText({ text }: { text: string }) {
           type="button"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
-          className="text-brand-dark inline-flex min-h-11 items-center text-sm font-bold hover:underline md:min-h-0 dark:text-teal-300"
+          className="text-brand-dark inline-flex min-h-11 min-w-11 items-center text-sm font-bold hover:underline md:min-h-0 dark:text-teal-300"
         >
           {open ? "Less" : "More"}
         </button>

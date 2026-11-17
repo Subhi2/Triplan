@@ -780,7 +780,7 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
 
   await page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }).check();
   await expect(
-    page.getByRole("region", { name: "Google Maps" }).getByText("1 stop", { exact: true }),
+    page.getByRole("region", { name: "Google Maps" }).getByText("1 place ticked", { exact: true }),
   ).toBeVisible();
   await expect(open).toHaveAttribute("href", /waypoints=12\.9173%2C75\.7581/);
 
@@ -849,7 +849,7 @@ test("time for stops ticks the best sights that fit, and a second tap clears the
     page.getByRole("checkbox", { name: "Tick Long Trek for Google Maps" }),
   ).not.toBeChecked();
   await expect(
-    page.getByRole("region", { name: "Google Maps" }).getByText("2 stops", { exact: true }),
+    page.getByRole("region", { name: "Google Maps" }).getByText("2 places ticked", { exact: true }),
   ).toBeVisible();
 
   await times.getByRole("button", { name: "2 h" }).click();
@@ -857,7 +857,7 @@ test("time for stops ticks the best sights that fit, and a second tap clears the
     page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }),
   ).not.toBeChecked();
   await expect(
-    page.getByRole("region", { name: "Google Maps" }).getByText("2 stops", { exact: true }),
+    page.getByRole("region", { name: "Google Maps" }).getByText("2 places ticked", { exact: true }),
   ).toBeHidden();
 });
 
@@ -1317,7 +1317,9 @@ test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) 
   const cup = page.getByRole("button", { name: "Break at Ghat Cafe, km 135" });
   await cup.click();
   await expect(cup).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 stop · about");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText(
+    "1 place ticked · about",
+  );
 });
 
 test("every route card has a scenic score, and the most scenic slower one is labelled", async ({
@@ -1522,10 +1524,12 @@ test("a sunset stop near the end of the ride, with the time to leave by", async 
   await expect(check).toContainText("Sunset stop: Kanive Viewpoint");
   const stop = check.getByRole("list", { name: "Sunset stops" }).getByRole("button");
   await expect(stop).toContainText(/km 300 · sunset \d{1,2}:\d{2}/);
-  await expect(stop).toContainText(/Leave by \d{1,2}:\d{2}/);
+  await expect(stop).toContainText(/Start the ride by \d{1,2}:\d{2}/);
   await stop.click();
   await expect(stop).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 stop · about");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText(
+    "1 place ticked · about",
+  );
 });
 
 for (const vehicle of ["bike", "car"] as const) {

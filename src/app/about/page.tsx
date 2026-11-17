@@ -185,7 +185,10 @@ export default async function AboutPage() {
         </h2>
         <p>Built by Subhash as a free-time project.</p>
         <p>
-          <Link href="/rides" className="text-brand-dark font-bold underline dark:text-teal-300">
+          <Link
+            href="/rides"
+            className="text-brand-dark inline-flex min-h-11 items-center font-bold underline md:min-h-0 dark:text-teal-300"
+          >
             Start with a famous ride
           </Link>
         </p>

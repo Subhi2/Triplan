@@ -103,8 +103,18 @@ export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
               ›
             </span>
             Safety on the way
-            <span className="tabular font-mono text-xs font-normal text-stone-600 dark:text-stone-400">
-              {total} stops
+            {/* The fact a rider needs, not a total: how far the road goes without a hospital. */}
+            <span className="text-xs font-normal text-stone-600 dark:text-stone-400">
+              {summary.counts.hospital > 0 ? (
+                <>
+                  longest gap without a hospital{" "}
+                  <span className="tabular font-mono">
+                    {Math.round(summary.longestGap.hospital.km)} km
+                  </span>
+                </>
+              ) : (
+                "no hospital near the road"
+              )}
             </span>
           </button>
         </h3>

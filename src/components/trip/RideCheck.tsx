@@ -763,8 +763,8 @@ export function RideCheck({
                           {" "}
                           · km {Math.round(s.place.kmFromStart)} · sunset {time.format(s.sunset)} ·
                           you get there about {time.format(s.arriveAt)}
-                          {early ? "" : " (late)"}. Leave by {time.format(s.leaveBy)} to be there 30
-                          min before sunset
+                          {early ? "" : " (late)"}. Start the ride by {time.format(s.leaveBy)} to be
+                          there 30 min before sunset
                           {on ? " · ticked" : ""}
                         </span>
                       </button>

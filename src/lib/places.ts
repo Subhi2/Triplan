@@ -95,11 +95,23 @@ const SAME_SIGHT_WORDS =
   /\b(trek|trail|falls?|waterfalls?|fort|viewpoint|view point|point|peak|hill|temple)\b/g;
 
 function sightKey(name: string): string {
-  return name.toLowerCase().replace(SAME_SIGHT_WORDS, "").replace(/[^a-z0-9]/g, "");
+  return name
+    .toLowerCase()
+    .replace(SAME_SIGHT_WORDS, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
 /** Places this close (km along the route) with the same `sightKey` are one sight. */
 const SAME_SIGHT_KM = 3;
+
+/** The start of a route is skipped by best stops (the rider has only just left): 10%, ≤ 25 km. */
+export const START_SKIP_SHARE = 0.1;
+export const START_SKIP_MAX_KM = 25;
+
+/** km at the start of a route where no stop is suggested: the city the rider is leaving. */
+export function startSkipKm(routeKm: number): number {
+  return Math.min(START_SKIP_MAX_KM, routeKm * START_SKIP_SHARE);
+}
 
 /**
  * How worth stopping a place is: category weight, notable, rating. The rating is the Bayesian
@@ -153,9 +165,15 @@ export function mixRank(p: PlaceAlong, mix: ListMix): number {
  * have hundreds of mapped places; this keeps the list readable on any trip. Popular keeps only
  * well-known places and Offbeat only the others. Picking a category shows every place in it.
  */
-export function bestAlongRoute(places: PlaceAlong[], mix: ListMix = "mixed"): PlaceAlong[] {
+export function bestAlongRoute(
+  places: PlaceAlong[],
+  mix: ListMix = "mixed",
+  /** The route's length: its first km (`startSkipKm`) are left out, as for picked stops. */
+  routeKm?: number,
+): PlaceAlong[] {
+  const skipKm = routeKm === undefined ? 0 : startSkipKm(routeKm);
   const byRank = places
-    .filter((p) => inMix(p, mix) && worthStop(p))
+    .filter((p) => p.kmFromStart >= skipKm && inMix(p, mix) && worthStop(p))
     .sort((a, b) => mixRank(b, mix) - mixRank(a, mix) || a.detourKm - b.detourKm);
   const sights: PlaceAlong[] = [];
   for (const p of byRank) {

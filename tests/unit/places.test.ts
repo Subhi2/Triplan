@@ -155,6 +155,18 @@ describe("bestAlongRoute", () => {
     expect(best.map((p) => p.kmFromStart)).toEqual([54, 396, 420]);
   });
 
+  it("leaves out the city the rider is leaving: 10% of the route, at most 25 km", () => {
+    const statue = place({ category: "heritage", kmFromStart: 0, notable: true });
+    const park = place({ category: "fort", kmFromStart: 14 });
+    const fort = place({ category: "fort", kmFromStart: 244, notable: true });
+    expect(bestAlongRoute([statue, park, fort], "mixed", 330)).toEqual([fort]);
+    // A short ride skips less: 6.4 km of 64.
+    const falls = place({ category: "waterfall", kmFromStart: 7 });
+    expect(bestAlongRoute([falls], "mixed", 64)).toEqual([falls]);
+    // Without the route's length nothing is skipped.
+    expect(bestAlongRoute([statue])).toEqual([statue]);
+  });
+
   it("knows which places are worth a stop", () => {
     expect(worthStop(place({ category: "temple", kmFromStart: 1 }))).toBe(false);
     expect(worthStop(place({ category: "temple", kmFromStart: 1, notable: true }))).toBe(true);

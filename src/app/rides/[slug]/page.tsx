@@ -87,7 +87,7 @@ export default async function RidePage({ params }: Props) {
   if (!found) notFound();
   const { ride, geometry } = found;
   const places = await placesAlong(geometry, 5_000, PLACE_LIST_CATEGORIES)
-    .then((rows) => bestAlongRoute(rows.map(toPlaceAlong)))
+    .then((rows) => bestAlongRoute(rows.map(toPlaceAlong), "mixed", ride.distanceKm))
     .catch(() => []);
   const line = geometry.coordinates as LngLat[];
 
@@ -152,7 +152,7 @@ export default async function RidePage({ params }: Props) {
       )}
 
       {ride.notes && (
-        <aside className="bg-marigold-tint rounded-xl px-4 py-3 text-sm text-stone-900">
+        <aside className="bg-marigold-tint rounded-xl px-4 py-3 text-sm text-stone-900 dark:bg-amber-950 dark:text-amber-100">
           <strong>Before you go:</strong> {ride.notes}
         </aside>
       )}
