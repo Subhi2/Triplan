@@ -26,7 +26,7 @@ export default async function RidesPage() {
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
       <SiteNav current="/rides" />
       <header className="flex flex-col gap-2">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+        <h1 className="font-display text-4xl leading-none font-extrabold tracking-tight md:text-6xl">
           Famous rides
         </h1>
         <p className="max-w-2xl text-stone-600 dark:text-stone-400">

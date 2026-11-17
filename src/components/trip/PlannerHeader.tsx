@@ -14,7 +14,8 @@ interface Props {
   toLabel: string;
   vehicle: Vehicle;
   corridorKm: CorridorKm;
-  viaCount: number;
+  /** The via stops' names, in order ("stop" is kept for the places a rider ticks). */
+  viaLabels: string[];
   /** A trip is loaded: the menu offers "New trip". */
   hasTrip: boolean;
   /** The "Edit trip" / "Done" toggle, on phones with a trip. */
@@ -32,7 +33,7 @@ export function PlannerHeader({
   toLabel,
   vehicle,
   corridorKm,
-  viaCount,
+  viaLabels,
   hasTrip,
   formToggle,
 }: Props) {
@@ -41,12 +42,19 @@ export function PlannerHeader({
       {compact ? (
         <div className="min-w-0">
           <h1 className="sr-only">{SITE_NAME}</h1>
-          <p className="font-display truncate text-[17px] font-bold">
-            {fromLabel} → {toLabel}
+          {/* Short names, and the start gives way first: the destination is the word that
+              matters ("Bengaluru → K…" hid it). */}
+          <p className="font-display flex min-w-0 text-[17px] font-bold whitespace-nowrap">
+            <span className="min-w-0 truncate">{shortPlace(fromLabel)}</span>
+            <span aria-hidden className="shrink-0 px-1">
+              →
+            </span>
+            <span className="sr-only"> to </span>
+            <span className="max-w-[65%] shrink-0 truncate">{shortPlace(toLabel)}</span>
           </p>
           <p className="text-xs text-stone-600 dark:text-stone-400">
             {vehicle === "bike" ? "Bike" : "Car"} · within {corridorKm} km
-            {viaCount > 0 && ` · ${viaCount} stop${viaCount > 1 ? "s" : ""} on the way`}
+            {viaLabels.length > 0 && ` · ${viaLine(viaLabels)}`}
           </p>
         </div>
       ) : (
@@ -84,4 +92,16 @@ export function PlannerHeader({
       </div>
     </header>
   );
+}
+
+/** A place's name without its district and state: "Kalasa, Chikkamagaluru" → "Kalasa". */
+export function shortPlace(label: string): string {
+  return label.split(",")[0]!.trim();
+}
+
+/** "via Sakleshpur", "via Hassan, Sakleshpur", or "via 3 towns" when there are more. */
+export function viaLine(labels: string[]): string {
+  const names = labels.map(shortPlace).filter(Boolean);
+  if (names.length === 0) return "";
+  return names.length <= 2 ? `via ${names.join(", ")}` : `via ${names.length} towns`;
 }

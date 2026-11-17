@@ -1138,7 +1138,7 @@ export function Planner({
             toLabel={last?.label ?? ""}
             vehicle={vehicle}
             corridorKm={corridorKm}
-            viaCount={stops.length - 2}
+            viaLabels={stops.slice(1, -1).map((st) => st.label)}
             hasTrip={hasTrip}
             formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
           />

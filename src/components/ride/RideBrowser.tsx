@@ -136,7 +136,7 @@ export function RideBrowser({
                   </span>
                   <span className="text-sm text-stone-600 dark:text-stone-400">{r.region}</span>
                   {photos[r.slug] && (
-                    <span className="truncate text-xs text-stone-600 dark:text-stone-400">
+                    <span className="line-clamp-2 text-xs text-stone-600 dark:text-stone-400">
                       {photos[r.slug]!.placeName} · photo {photos[r.slug]!.author ?? "unknown"} ·{" "}
                       {photos[r.slug]!.license} · {mediaSourceName(photos[r.slug]!.source)}
                     </span>

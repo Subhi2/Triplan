@@ -255,7 +255,10 @@ export async function ridePhotos(): Promise<Record<string, RidePhoto>> {
         )
       ORDER BY c.weight
           + CASE WHEN p.source <> 'osm' OR p.wikidata_id IS NOT NULL OR p.rating_count > 0
-                 THEN 1 ELSE 0 END DESC,
+                 THEN 1 ELSE 0 END
+          -- Landscapes photograph well; a park or museum photo is often its signboard.
+          + CASE WHEN c.slug IN ('waterfall', 'viewpoint', 'pass', 'peak', 'fort', 'beach', 'lake')
+                 THEN 0.5 ELSE 0 END DESC,
         p.rating_count DESC
       LIMIT 1
     ) pick

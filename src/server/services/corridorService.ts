@@ -3,7 +3,9 @@ import { sql } from "drizzle-orm";
 import type { LngLat } from "@/lib/geo";
 import { estimateBestMonths } from "@/lib/guideDefaults";
 import { TRENDING_MIN_SCORE, type PlaceAlong } from "@/lib/places";
+import type { PhotoCredit } from "@/lib/media";
 import { getDb } from "../db";
+import { photoCredits } from "./photoCredit";
 
 export interface PlaceAlongRow {
   id: string;
@@ -17,6 +19,7 @@ export interface PlaceAlongRow {
   ratingCount: number;
   bestMonths: number[];
   thumbUrl: string | null;
+  thumbCredit?: PhotoCredit | null;
   trendingScore: number;
   notable: boolean;
 }
@@ -52,6 +55,7 @@ export async function placesAlong(
     sql`SELECT * FROM places_along_route(${JSON.stringify(geometry)}, ${Math.round(corridorM)},
           ${sql.param(categories)}::text[])`,
   );
+  const credits = await photoCredits(rows.map((r) => r.thumb_url));
   return rows.map((r) => ({
     id: r.id,
     slug: r.slug,
@@ -64,6 +68,7 @@ export async function placesAlong(
     ratingCount: r.rating_count,
     bestMonths: r.best_months,
     thumbUrl: r.thumb_url,
+    thumbCredit: (r.thumb_url && credits.get(r.thumb_url)) || null,
     trendingScore: r.trending_score,
     notable: r.notable,
   }));
@@ -85,6 +90,7 @@ export function toPlaceAlong(row: PlaceAlongRow): PlaceAlong {
     bestMonths: estimated ? estimateBestMonths(row.category, row.location) : row.bestMonths,
     bestMonthsEstimated: estimated,
     thumbUrl: row.thumbUrl,
+    thumbCredit: row.thumbCredit ?? null,
     trending: row.trendingScore >= TRENDING_MIN_SCORE,
     notable: row.notable,
   };

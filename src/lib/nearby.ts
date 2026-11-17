@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PhotoCredit } from "./media";
 import { CATEGORIES, isCategorySlug } from "./categories";
 import { isInSeason } from "./months";
 import { round3, roundLngLat3, type LngLat } from "./geo";
@@ -45,6 +46,8 @@ export interface PlaceNear {
   /** The months are estimated from the category and climate (src/lib/guideDefaults.ts). */
   bestMonthsEstimated: boolean;
   thumbUrl: string | null;
+  /** The thumbnail's credit, shown beside it; null without a thumbnail. */
+  thumbCredit?: PhotoCredit | null;
   trending: boolean;
   notable: boolean;
   /** How well-known the place is: category weight, curated, Wikidata, rating, trending. */

@@ -72,6 +72,8 @@ const SOURCES: { what: string; who: string; href: string; licence: string }[] = 
 ];
 
 function Stat({ value, label }: { value: number | null; label: string }) {
+  // A zero says nothing good about the site; the tile shows once there is something to count.
+  if (value === 0) return null;
   return (
     <div className="flex flex-col-reverse rounded-xl border border-stone-200 bg-(--surface) px-4 py-3 dark:border-stone-700">
       <dt className="text-sm text-stone-600 dark:text-stone-400">{label}</dt>
@@ -88,7 +90,7 @@ export default async function AboutPage() {
     <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-6 [&_p]:max-w-prose">
       <SiteNav current="/about" />
       <header className="flex flex-col gap-3">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight md:text-4xl">
+        <h1 className="font-display text-4xl leading-none font-extrabold tracking-tight md:text-6xl">
           About {SITE_NAME}
         </h1>
         <p className="text-lg">{SITE_TAGLINE}</p>

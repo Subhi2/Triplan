@@ -935,7 +935,7 @@ test("on phones the map comes with the trip, under a one-line header and over th
 
   // The form folds away: the map fills the screen, the header shows the trip, and the sheet the
   // routes.
-  await expect(page.getByText("Bengaluru → Kalasa")).toBeVisible();
+  await expect(page.getByText(/^Bengaluru.*Kalasa$/)).toBeVisible();
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   await expect(start).toBeHidden();
   await expect(sheet).not.toHaveAttribute("aria-hidden", "true");

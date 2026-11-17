@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CATEGORIES, isCategorySlug } from "./categories";
 import type { LngLat } from "./geo";
+import type { PhotoCredit } from "./media";
 import { rankingRating } from "./riderPosts";
 import { CORRIDOR_KM, lngLatSchema } from "./trip";
 
@@ -19,6 +20,8 @@ export interface PlaceAlong {
   /** The months are estimated from the category and climate (src/lib/guideDefaults.ts). */
   bestMonthsEstimated: boolean;
   thumbUrl: string | null;
+  /** The thumbnail's credit, shown beside it; null without a thumbnail. */
+  thumbCredit?: PhotoCredit | null;
   trending: boolean;
   notable: boolean; // curated, reviewed or linked to Wikidata
   /** Fuel, food or coffee from Overture (open_place): no page of its own. */

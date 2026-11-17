@@ -761,10 +761,11 @@ export function RideCheck({
                         </span>
                         <span className="text-stone-600 dark:text-stone-400">
                           {" "}
-                          · km {Math.round(s.place.kmFromStart)} · sunset {time.format(s.sunset)} ·
-                          you get there about {time.format(s.arriveAt)}
-                          {early ? "" : " (late)"}. Start the ride by {time.format(s.leaveBy)} to be
-                          there 30 min before sunset
+                          · km {Math.round(s.place.kmFromStart)} · sunset {time.format(s.sunset)} ·{" "}
+                          {/* One time, the deadline; the arrival time pointed the other way. */}
+                          {early ? "" : "Your start gets you there too late. "}
+                          Start the ride by {time.format(s.leaveBy)}
+                          {early ? " at the latest" : ""} to be there 30 min before sunset
                           {on ? " · ticked" : ""}
                         </span>
                       </button>

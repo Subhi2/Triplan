@@ -31,7 +31,10 @@ test("a ride page shows the route's facts and opens it in the planner", async ({
   await page.goto("/rides/pollachi-to-valparai");
   await expect(page).toHaveTitle(/Pollachi to Valparai/);
   await expect(page.getByRole("heading", { name: "Pollachi to Valparai", level: 1 })).toBeVisible();
-  await expect(page.locator("dl").first()).toContainText("Hairpins40");
+  // On phones the photo pushes the facts below the fold; their numbers count up once in view.
+  const facts = page.locator("dl").first();
+  await facts.scrollIntoViewIfNeeded();
+  await expect(facts).toContainText("Hairpins40");
   await expect(page.getByRole("heading", { name: "Ups and downs" })).toBeVisible();
 
   const plan = page.getByRole("link", { name: "Plan this ride" });

@@ -12,7 +12,7 @@ import { RoadMixBar } from "@/components/trip/RoadMixBar";
 import { categoryStyle, PLACE_LIST_CATEGORIES } from "@/lib/categories";
 import { formatKm } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
-import { mediaSourceName } from "@/lib/media";
+import { mediaSourceName, shortCredit } from "@/lib/media";
 import { bestAlongRoute, detourLabel, placeRank, type PlaceAlong } from "@/lib/places";
 import { monthRange, ridePlannerUrl, type Ride } from "@/lib/rides";
 import { SITE_NAME, siteUrl } from "@/lib/site";
@@ -95,7 +95,9 @@ export default async function RidePage({ params }: Props) {
   const lead = await leadPhoto(places);
 
   return (
-    <main className={`mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 ${PHONE_ACTION_BAR_SPACE}`}>
+    <main
+      className={`mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 [&_header_p]:max-w-prose ${PHONE_ACTION_BAR_SPACE}`}
+    >
       <script
         type="application/ld+json"
         // JSON-LD must be inline; "<" is escaped so a name cannot close the script tag.
@@ -238,9 +240,14 @@ export default async function RidePage({ params }: Props) {
                     <span className="text-sm text-stone-600 dark:text-stone-400">
                       {categoryStyle(p.category).name} · {detourLabel(p.detourKm)}
                     </span>
+                    {p.thumbUrl && p.thumbCredit && (
+                      <span className="block truncate text-xs text-stone-600 dark:text-stone-400">
+                        {shortCredit(p.thumbCredit)}
+                      </span>
+                    )}
                   </span>
                   {p.thumbUrl && (
-                    // Credited on the place's own page, as in the planner's list.
+                    // Its credit is the line under the place's facts.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={p.thumbUrl}

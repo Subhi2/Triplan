@@ -1,6 +1,7 @@
 "use client";
 
 import { categoryStyle } from "@/lib/categories";
+import { shortCredit } from "@/lib/media";
 import { formatDuration, formatKm } from "@/lib/format";
 import { googleEnabled } from "@/lib/google";
 import { placeGoogleMapsHref } from "@/lib/googleMaps";
@@ -121,9 +122,15 @@ export function NearbyRow(props: Props) {
               )}
               {bestTimeSummary(place.bestMonths, place.bestMonthsEstimated)}
             </span>
+            {place.thumbUrl && place.thumbCredit && (
+              // Every photo shown carries its credit (CLAUDE.md), here beside its thumbnail.
+              <span className="truncate text-[11px] text-stone-600 dark:text-stone-400">
+                {shortCredit(place.thumbCredit)}
+              </span>
+            )}
           </span>
           {place.thumbUrl && (
-            // Credit and licence are on the place's details, one tap away (docs/02).
+            // Its credit is the line under the place's facts.
             // eslint-disable-next-line @next/next/no-img-element -- photos come from many hosts
             <img
               src={place.thumbUrl}
