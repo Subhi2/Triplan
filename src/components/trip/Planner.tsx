@@ -1000,8 +1000,9 @@ export function Planner({
                 />
                 {hiddenCount > 0 && (
                   <p className="text-sm text-stone-600 dark:text-stone-400">
-                    Showing the best stops: up to {BEST_PER_STRETCH} every {STRETCH_KM} km. Pick a
-                    category to see all {hiddenCount + places.length} places.
+                    Showing the best stops: sights and well-known places, up to{" "}
+                    {BEST_PER_STRETCH} every {STRETCH_KM} km. Pick a category to see all{" "}
+                    {hiddenCount + places.length} places.
                   </p>
                 )}
                 <p className="text-xs text-stone-600 dark:text-stone-400">
