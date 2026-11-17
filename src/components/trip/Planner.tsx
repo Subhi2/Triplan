@@ -35,7 +35,6 @@ import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl, MAX_GOOGLE_WAYPOINTS } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 import { DEFAULT_RIDE_HOURS, routeTimeline, suggestDays, type RideHours } from "@/lib/multiDay";
-import { formatDuration, formatKm } from "@/lib/format";
 import { isSight, pickStops, stopMinutes, type StopBudgetMin } from "@/lib/pickStops";
 import { newRoomId, rideRoomPath } from "@/lib/rideRoom";
 import {
@@ -71,6 +70,7 @@ import { RouteCards } from "./RouteCards";
 import { StopPicker } from "./StopPicker";
 import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
+import { FeatureShelf } from "./FeatureShelf";
 import { TripSaveBar } from "./TripSaveBar";
 
 // Panels that show only once a route is on screen (or only with the AI key) load then, not with
@@ -839,7 +839,10 @@ export function Planner({
     </>
   );
   const routeAlerts = selectedRoute && rideAlerts.length > 0 && <RouteAlerts alerts={rideAlerts} />;
-  const routeDetails = (
+  const saveBar = (saved || plan) && (
+    <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
+  );
+  const routeExtras = (
     <>
       {selectedRoute && (
         <RouteProfile
@@ -882,9 +885,12 @@ export function Planner({
           }}
         />
       )}
-      {(saved || plan) && (
-        <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
-      )}
+    </>
+  );
+  const routeDetails = (
+    <>
+      {routeExtras}
+      {saveBar}
     </>
   );
   const rideCheck = (
@@ -925,6 +931,53 @@ export function Planner({
       {routeDetails}
       {rideCheck}
     </div>
+  );
+
+  // The last things before riding: offline copy and ride together (save and share sit in saveBar).
+  const rideActions = selectedRoute && (
+    <>
+      {packOpen ? (
+        <p role="status" className="text-sm text-stone-600 dark:text-stone-400">
+          {pack.tiles > 0
+            ? "Opened from the copy saved on this phone. Places, safety stops and the map are as they were when saved."
+            : "Your last trip, kept on this phone without its map. Save a trip for offline to keep the map too."}
+        </p>
+      ) : (
+        <SavePack
+          route={selectedRoute}
+          title={tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])))}
+          vehicle={vehicle}
+          query={query}
+          stops={stops.flatMap((s) =>
+            s.location ? [{ label: s.label, location: s.location }] : [],
+          )}
+          places={placesState.status === "ok" ? placesState.places : null}
+          breakPlaces={breakPlaces.status === "ok" ? breakPlaces.places : null}
+          safety={safety.status === "ok" ? safety.summary : null}
+        />
+      )}
+      {rideTogetherEnabled && !packOpen && (
+        <section aria-label="Ride together" className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() =>
+              window.open(
+                rideRoomPath(newRoomId(), { routeId: selectedRoute.id, title: lastTitle }),
+                "_blank",
+                "noopener",
+              )
+            }
+            className="inline-flex min-h-11 items-center self-start rounded-full border border-stone-300 px-3 text-sm font-bold hover:border-stone-500 md:min-h-9 dark:border-stone-600"
+          >
+            Ride together
+          </button>
+          <p className="text-xs text-stone-600 dark:text-stone-400">
+            A link for the group to see each other on this route while riding, and one for family to
+            follow. Positions are shared only after a tap, and never stored.
+          </p>
+        </section>
+      )}
+    </>
   );
 
   const placesPanel = selectedRoute && (
@@ -1052,72 +1105,51 @@ export function Planner({
         onClear={() => setPicked([])}
         onDownloadGpx={downloadGpx}
       />
-      {packOpen ? (
-        <p role="status" className="text-sm text-stone-600 dark:text-stone-400">
-          {pack.tiles > 0
-            ? "Opened from the copy saved on this phone. Places, safety stops and the map are as they were when saved."
-            : "Your last trip, kept on this phone without its map. Save a trip for offline to keep the map too."}
-        </p>
-      ) : (
-        <SavePack
-          route={selectedRoute}
-          title={tripHeadline(stops.flatMap((st) => (st.location ? [st.label] : [])))}
-          vehicle={vehicle}
-          query={query}
-          stops={stops.flatMap((s) =>
-            s.location ? [{ label: s.label, location: s.location }] : [],
-          )}
-          places={placesState.status === "ok" ? placesState.places : null}
-          breakPlaces={breakPlaces.status === "ok" ? breakPlaces.places : null}
-          safety={safety.status === "ok" ? safety.summary : null}
-        />
-      )}
-      {rideTogetherEnabled && !packOpen && (
-        <section aria-label="Ride together" className="flex flex-col gap-1">
-          <button
-            type="button"
-            onClick={() =>
-              window.open(
-                rideRoomPath(newRoomId(), { routeId: selectedRoute.id, title: lastTitle }),
-                "_blank",
-                "noopener",
-              )
-            }
-            className="inline-flex min-h-11 items-center self-start rounded-full border border-stone-300 px-3 text-sm font-bold hover:border-stone-500 md:min-h-9 dark:border-stone-600"
-          >
-            Ride together
-          </button>
-          <p className="text-xs text-stone-600 dark:text-stone-400">
-            A link for the group to see each other on this route while riding, and one for family to
-            follow. Positions are shared only after a tap, and never stored.
-          </p>
-        </section>
-      )}
+      {isWide && rideActions}
     </div>
   );
 
   // Wide screens: trip and routes | places | map. Narrower: one side panel, or the phone sheet.
   const secondColumn = isWide ? (placePanel ?? placesPanel) : null;
-  // Phones and tablets: the places lead, with a jump bar to the route and the ride check, so a
-  // rider no longer scrolls past every route detail to reach the first place.
+  // Phones and tablets: a step guide (Route, Stops, Check, Ride) that stays at the top of the
+  // sheet, each step one tap away, with "Next" at the end of each.
   const sidePanel = isWide
     ? routesPanel
     : (placePanel ??
       (selectedRoute ? (
         <div className="flex flex-col gap-6">
-          <SheetJumpBar />
-          <SelectedRouteLine route={selectedRoute} onChange={() => jumpTo("sheet-route")} />
+          <StepBar />
           {routeAlerts}
-          <div id="sheet-places" className="scroll-mt-14">
-            {placesPanel}
-          </div>
-          <div id="sheet-route" className="flex scroll-mt-14 flex-col gap-5">
+          <section
+            id="step-route"
+            aria-label="1. Route"
+            className="flex scroll-mt-16 flex-col gap-3"
+          >
             {routeCards}
-            {routeDetails}
-          </div>
-          <div id="sheet-check" className="scroll-mt-14">
+            <NextStep to="step-stops" label="Pick your stops" />
+          </section>
+          <section
+            id="step-stops"
+            aria-label="2. Stops"
+            className="flex scroll-mt-16 flex-col gap-3"
+          >
+            {placesPanel}
+            <NextStep to="step-check" label="Check the ride" />
+          </section>
+          <section
+            id="step-check"
+            aria-label="3. Check"
+            className="flex scroll-mt-16 flex-col gap-5"
+          >
             {rideCheck}
-          </div>
+            {routeExtras}
+            <NextStep to="step-ride" label="Get ready to ride" />
+          </section>
+          <section id="step-ride" aria-label="4. Ride" className="flex scroll-mt-16 flex-col gap-5">
+            <h2 className="font-display text-xl font-bold tracking-tight">Ready to ride</h2>
+            {saveBar}
+            {rideActions}
+          </section>
         </div>
       ) : (
         routesPanel
@@ -1199,9 +1231,12 @@ export function Planner({
               onVehicleChange={setVehicle}
               onCorridorChange={setCorridorKm}
             />
-            <div className="mt-3">
-              <OpenRideFile onOpened={openRide} />
-            </div>
+            {/* With no trip yet, the shelf below offers opening a ride. */}
+            {hasTrip && (
+              <div className="mt-3">
+                <OpenRideFile onOpened={openRide} />
+              </div>
+            )}
             {gpxExpired && (
               <p role="status" className="mt-1 text-sm text-stone-600 dark:text-stone-400">
                 That opened ride has expired (rides are kept for 7 days), so this is the route
@@ -1214,6 +1249,7 @@ export function Planner({
         {!hasTrip && !typing && (
           <>
             {aiEnabled && <PlainWordsBox near={mapBias.center} />}
+            <FeatureShelf vehicle={vehicle} onRideOpened={openRide} />
             <FamousRidesStrip rides={famousRides} />
             <p className="flex gap-3 text-xs text-stone-600 dark:text-stone-400">
               <Link
@@ -1290,50 +1326,104 @@ function jumpTo(id: string) {
     ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
 }
 
-const JUMPS = [
-  { id: "sheet-places", label: "Places" },
-  { id: "sheet-route", label: "Route" },
-  { id: "sheet-check", label: "Ride check" },
+const STEPS = [
+  { id: "step-route", label: "Route" },
+  { id: "step-stops", label: "Stops" },
+  { id: "step-check", label: "Check" },
+  { id: "step-ride", label: "Ride" },
 ] as const;
 
-/** The sheet's three parts, one tap away, kept at the top while the sheet scrolls. */
-function SheetJumpBar() {
+/**
+ * The step guide at the top of the sheet: where the rider is (the step in view) and a tap to
+ * any other step.
+ */
+function StepBar() {
+  const [current, setCurrent] = useState<string>(STEPS[0].id);
+  const bar = useRef<HTMLElement>(null);
+  // After a tap the tapped step stays current while the sheet scrolls to it.
+  const tappedUntil = useRef(0);
+  useEffect(() => {
+    // The sheet (or side panel) scrolls in its own box: watch steps against that box, not the
+    // window, where the map takes the upper part on phones.
+    let root: HTMLElement | null = bar.current?.parentElement ?? null;
+    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY)) root = root.parentElement;
+    const bottom = () =>
+      !!root && root.scrollTop > 0 && root.scrollTop + root.clientHeight >= root.scrollHeight - 8;
+    const seen = new Map<string, boolean>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) seen.set(e.target.id, e.isIntersecting);
+        if (Date.now() < tappedUntil.current) return;
+        if (bottom()) return setCurrent(STEPS[STEPS.length - 1]!.id);
+        const first = STEPS.find((st) => seen.get(st.id));
+        if (first) setCurrent(first.id);
+      },
+      // A step counts once it reaches the top quarter of the box, under the step bar.
+      { root, rootMargin: "-56px 0px -75% 0px" },
+    );
+    for (const st of STEPS) {
+      const el = document.getElementById(st.id);
+      if (el) io.observe(el);
+    }
+    // The last step is short and never reaches the top: at the bottom of the box, it is current.
+    const atEnd = () => {
+      if (Date.now() >= tappedUntil.current && bottom()) setCurrent(STEPS[STEPS.length - 1]!.id);
+    };
+    root?.addEventListener("scroll", atEnd, { passive: true });
+    return () => {
+      io.disconnect();
+      root?.removeEventListener("scroll", atEnd);
+    };
+  }, []);
+  const at = STEPS.findIndex((st) => st.id === current);
   return (
     <nav
-      aria-label="Jump to"
-      className="sticky top-0 z-10 -mx-4 flex gap-1.5 bg-(--surface) px-4 py-2 shadow-[0_1px_0_var(--color-stone-200)] dark:shadow-[0_1px_0_var(--color-stone-800)]"
+      ref={bar}
+      aria-label="Steps"
+      className="sticky top-0 z-10 -mx-4 flex gap-1 bg-(--surface) px-4 py-2 shadow-[0_1px_0_var(--color-stone-200)] dark:shadow-[0_1px_0_var(--color-stone-800)]"
     >
-      {JUMPS.map((j) => (
-        <button
-          key={j.id}
-          type="button"
-          // Its own name: "Ride check" alone would clash with the Ride check toggle below.
-          aria-label={`Go to ${j.label}`}
-          onClick={() => jumpTo(j.id)}
-          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-stone-100 px-3 text-sm font-bold hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700"
-        >
-          {j.label}
-        </button>
-      ))}
+      {STEPS.map((st, i) => {
+        const here = i === at;
+        return (
+          <button
+            key={st.id}
+            type="button"
+            // Its own name: "Check" alone would sit beside the Ride check toggle.
+            aria-label={`Step ${i + 1}: ${st.label}`}
+            aria-current={here ? "step" : undefined}
+            onClick={() => {
+              tappedUntil.current = Date.now() + 1200;
+              setCurrent(st.id);
+              jumpTo(st.id);
+            }}
+            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-bold ${
+              here
+                ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
+                : i < at
+                  ? "bg-brand-tint text-brand-dark dark:bg-teal-950 dark:text-teal-200"
+                  : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700"
+            }`}
+          >
+            <span aria-hidden className="tabular font-mono text-xs">
+              {i < at ? "✓" : i + 1}
+            </span>
+            {st.label}
+          </button>
+        );
+      })}
     </nav>
   );
 }
 
-/** The picked route in one line, above the places, with a way to change it. */
-function SelectedRouteLine({ route, onChange }: { route: RouteOption; onChange: () => void }) {
+/** The way on at the end of a step. */
+function NextStep({ to, label }: { to: string; label: string }) {
   return (
-    <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
-      <span className="font-bold">{route.viaLabel}</span>
-      <span className="tabular font-mono text-stone-600 dark:text-stone-400">
-        {formatDuration(route.durationMin)} · {formatKm(route.distanceKm * 1000)}
-      </span>
-      <button
-        type="button"
-        onClick={onChange}
-        className="text-brand-dark -my-3 inline-flex min-h-11 items-center font-bold hover:underline dark:text-teal-300"
-      >
-        Change route
-      </button>
-    </p>
+    <button
+      type="button"
+      onClick={() => jumpTo(to)}
+      className="text-brand-dark inline-flex min-h-11 items-center gap-1 self-end rounded-full px-3 text-sm font-bold hover:underline dark:text-teal-300"
+    >
+      Next: {label} <span aria-hidden>→</span>
+    </button>
   );
 }

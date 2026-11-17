@@ -176,7 +176,8 @@ test.describe("with location allowed", () => {
     await page.goto("/");
     // The planner writes its state to the URL once hydrated; a click before that would race it.
     await expect(page).toHaveURL(/v=bike/);
-    await page.getByRole("link", { name: "Near me" }).click();
+    // The header's link (the landing page's shelf has a "Near me" door too).
+    await page.getByRole("link", { name: "Near me", exact: true }).click();
     // The dev server may compile /nearby on this first visit.
     await expect(page).toHaveURL(/\/nearby/, { timeout: 30_000 });
     await expect(page.getByRole("button", { name: "Use my location" })).toBeVisible();
@@ -345,8 +346,9 @@ test("touch targets are large enough on phones", async ({ page }, testInfo) => {
   const maps = page.getByRole("link", { name: `Open ${name} in Google Maps` });
   await expect(maps).toHaveAttribute("href", /google\.com\/maps/);
   const mapsBox = await maps.boundingBox();
-  expect(mapsBox!.width).toBeGreaterThanOrEqual(44);
-  expect(mapsBox!.height).toBeGreaterThanOrEqual(44);
+  // Rounded: the row's motion transform can report 43.9999 for a 44 px box.
+  expect(Math.round(mapsBox!.width)).toBeGreaterThanOrEqual(44);
+  expect(Math.round(mapsBox!.height)).toBeGreaterThanOrEqual(44);
   await page.getByRole("button", { name: "Change" }).click();
   const input = page.getByRole("combobox", { name: "Search around a place" });
   const fontSize = await input.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
