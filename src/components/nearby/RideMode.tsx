@@ -133,7 +133,7 @@ export function RideMode({ month, onStop }: Props) {
                     <span className="tabular block font-mono text-[28px] leading-none font-semibold">
                       {distanceKm.toFixed(1)}
                     </span>
-                    <span className="font-mono text-[10px] tracking-widest text-stone-600 dark:text-stone-400">
+                    <span className="font-mono text-[11px] tracking-widest text-stone-600 dark:text-stone-400">
                       KM
                     </span>
                   </p>

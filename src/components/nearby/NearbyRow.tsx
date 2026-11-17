@@ -75,7 +75,7 @@ export function NearbyRow(props: Props) {
           className="flex w-full items-center gap-3 py-3 pr-1 pl-1 text-left active:scale-[0.99]"
         >
           <span aria-hidden className="flex w-14 shrink-0 flex-col">
-            <span className="font-mono text-[10px] tracking-widest text-stone-600 dark:text-stone-400">
+            <span className="font-mono text-[11px] tracking-widest text-stone-600 dark:text-stone-400">
               {time ? time.unit : "KM"}
             </span>
             <span className="tabular font-mono text-xl leading-tight font-semibold">

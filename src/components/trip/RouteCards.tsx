@@ -4,7 +4,9 @@ import { useRef } from "react";
 import { CountUp } from "@/components/motion/CountUp";
 import { useCrown } from "@/components/motion/useCrown";
 import type { RouteCurvature } from "@/lib/curvature";
+import { formatDuration, formatKm } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
+import { routeDiffs, scenicTellsApart } from "@/lib/routeCompare";
 import { scenicRouteId, type RouteScenic } from "@/lib/scenic";
 import type { RouteOption } from "@/lib/trip";
 import { RoadMixBar } from "./RoadMixBar";
@@ -41,6 +43,9 @@ export function RouteCards({
   const picked = routes.find((r) => r.id === selectedId);
   // The most scenic option, when it is not the fastest and scores clearly more.
   const scenicId = scenicRouteId(routes);
+  // How each option differs from the fastest; the scenic score only where it differs.
+  const diffs = routeDiffs(routes);
+  const showScenic = scenicTellsApart(routes);
   return (
     <>
       <ul ref={list} className="flex flex-col gap-2" aria-label="Route options">
@@ -74,6 +79,16 @@ export function RouteCards({
                     }`}
                   >
                     <CountUp value={r.durationMin} unit="duration" delayMs={i * 60} />
+                    {diffs[r.id] && diffs[r.id]!.slowerMin > 0 && (
+                      <span className="text-ghat-dark ml-1.5 text-xs dark:text-orange-300">
+                        +{formatDuration(diffs[r.id]!.slowerMin)}
+                      </span>
+                    )}
+                    {diffs[r.id] && diffs[r.id]!.slowerMin === 0 && (
+                      <span className="text-brand-dark ml-1.5 text-xs dark:text-teal-300">
+                        fastest
+                      </span>
+                    )}
                   </span>
                 </span>
                 <span className="mt-1 block text-sm text-stone-600 dark:text-stone-300">
@@ -83,11 +98,18 @@ export function RouteCards({
                     delayMs={i * 60}
                     className="tabular font-mono"
                   />
+                  {diffs[r.id] && diffs[r.id]!.longerKm !== 0 && (
+                    <span className="tabular font-mono text-xs">
+                      {" "}
+                      ({diffs[r.id]!.longerKm > 0 ? "+" : "−"}
+                      {formatKm(Math.abs(diffs[r.id]!.longerKm) * 1000)})
+                    </span>
+                  )}
                   {r.towns.length > 0 && <> · {r.towns.join(" · ")}</>}
                 </span>
                 <RouteFacts
                   curvature={r.curvature}
-                  scenic={r.scenic ?? null}
+                  scenic={showScenic ? (r.scenic ?? null) : null}
                   climbM={climbM[r.id]}
                   delayMs={i * 60}
                 />
