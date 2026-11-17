@@ -50,6 +50,7 @@ export function RideActions(props: Props) {
           ghats={props.ghats}
           cursorKm={cursorKm}
           onCursorChange={setCursorKm}
+          headingLevel={2}
         />
       )}
       <PhoneActionBar>

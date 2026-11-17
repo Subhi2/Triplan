@@ -411,7 +411,7 @@ export function Nearby() {
   const floatingHeader = !isDesktop;
 
   return (
-    <div className="relative flex h-dvh flex-col md:flex-row">
+    <main className="relative flex h-dvh flex-col md:flex-row">
       <aside
         className={`z-10 flex shrink-0 flex-col gap-3 ${
           floatingHeader
@@ -489,6 +489,6 @@ export function Nearby() {
           {panel}
         </BottomSheet>
       )}
-    </div>
+    </main>
   );
 }

@@ -26,7 +26,7 @@ export function SiteNav({ current }: { current?: SiteSection }) {
               <Link
                 href={l.href}
                 aria-current={current === l.href ? "page" : undefined}
-                className={`inline-flex min-h-11 items-center rounded-lg px-2 hover:underline ${
+                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 hover:underline ${
                   current === l.href
                     ? "text-stone-900 dark:text-stone-100"
                     : "text-brand-dark dark:text-teal-300"

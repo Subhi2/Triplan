@@ -84,7 +84,7 @@ function SortableStop(props: {
       <button
         type="button"
         aria-label={`Reorder ${role.name}`}
-        className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded text-stone-400 hover:text-stone-700 active:cursor-grabbing dark:hover:text-stone-200"
+        className="-ml-1.5 flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded text-stone-400 hover:text-stone-700 active:cursor-grabbing dark:hover:text-stone-200"
         {...attributes}
         {...listeners}
       >
