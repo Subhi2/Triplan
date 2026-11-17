@@ -13,6 +13,7 @@ import { MeDot } from "../MeDot";
 import { SAFETY_STYLE } from "@/lib/safety";
 import { INDIA_BOUNDS, type MapViewProps } from "../types";
 import { GooglePlaceMarkers } from "./GooglePlaceMarkers";
+import { GoogleRidePreviews } from "./GoogleRidePreviews";
 import { GoogleRoutes } from "./GoogleRoutes";
 import { useGoogleFraming } from "./useGoogleFraming";
 
@@ -66,6 +67,9 @@ function MapContents(props: MapViewProps) {
 
   return (
     <>
+      {props.ridePreviews && props.ridePreviews.length > 0 && props.onSelectRidePreview && (
+        <GoogleRidePreviews rides={props.ridePreviews} onSelect={props.onSelectRidePreview} />
+      )}
       <GoogleRoutes
         routes={props.routes}
         selectedId={props.selectedRouteId}

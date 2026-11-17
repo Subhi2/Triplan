@@ -47,7 +47,7 @@ import {
 } from "@/lib/places";
 import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
-import type { RideSummary } from "@/lib/rides";
+import { ridePlannerUrl, type RideSummary } from "@/lib/rides";
 import { tripHeadline } from "@/lib/site";
 import { planSunsetStops } from "@/lib/sunset";
 import { trackEvent } from "@/lib/track";
@@ -1088,6 +1088,16 @@ export function Planner({
           {placesPanel}
         </div>
       ));
+  const ridePreviews = useMemo(
+    () => famousRides.map((r) => ({ slug: r.slug, line: r.line })),
+    [famousRides],
+  );
+  // A full page load, like the strip's cards: the planner reads its trip from the address once.
+  const openRidePreview = (slug: string) => {
+    const ride = famousRides.find((r) => r.slug === slug);
+    if (ride) window.location.assign(ridePlannerUrl(ride));
+  };
+
   const mapProps = {
     routes,
     selectedRouteId,
@@ -1102,6 +1112,9 @@ export function Planner({
     cursor: mapCursor,
     servicePins,
     bottomInset: sheetInset,
+    // The empty planner draws the famous rides; a tap opens one, as the strip's cards do.
+    ridePreviews: hasTrip ? undefined : ridePreviews,
+    onSelectRidePreview: openRidePreview,
   };
 
   // Phones with a trip: the header floats over the map instead of pushing it down.

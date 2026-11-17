@@ -85,7 +85,7 @@ function Stat({ value, label }: { value: number | null; label: string }) {
 export default async function AboutPage() {
   const stats = await getStats().catch(() => null);
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-6">
+    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-6 [&_p]:max-w-prose">
       <SiteNav current="/about" />
       <header className="flex flex-col gap-3">
         <h1 className="font-display text-3xl font-extrabold tracking-tight md:text-4xl">

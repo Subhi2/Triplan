@@ -67,6 +67,15 @@ export interface MapViewProps {
   /** Ride together: the group's riders (MapLibre map only) and the regroup pin. */
   riders?: MapRider[];
   regroup?: LngLat | null;
+  /** Famous rides drawn faintly before a trip is chosen (the empty planner); a tap opens one. */
+  ridePreviews?: MapRidePreview[];
+  onSelectRidePreview?: (slug: string) => void;
+}
+
+/** A famous ride's shape on the empty planner's map. */
+export interface MapRidePreview {
+  slug: string;
+  line: LngLat[];
 }
 
 /** Before a trip is chosen, frame India (places are imported for every state). */
