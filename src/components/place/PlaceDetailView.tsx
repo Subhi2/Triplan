@@ -5,6 +5,7 @@ import { placeGoogleMapsHref } from "@/lib/googleMaps";
 import { MONTH_SHORT } from "@/lib/months";
 import { VEHICLE_LABELS, type PlaceDetail } from "@/lib/placeDetail";
 import { detourLabel } from "@/lib/places";
+import { mediaSourceName } from "@/lib/media";
 import type { Vehicle } from "@/lib/trip";
 import { PhotoForm } from "../posts/PhotoForm";
 import { ReviewForm } from "../posts/ReviewForm";
@@ -115,11 +116,6 @@ const external = "noopener noreferrer nofollow";
  * Everything known about a place: photos, rating, guide fields (with "Not known yet" for empty
  * ones), items to carry, reviews and videos. Used on /place/[slug] and in the planner's panel.
  */
-/** Where a photo comes from, as shown in its credit line. */
-const MEDIA_SOURCES: Record<string, string> = {
-  wikimedia: "Wikimedia Commons",
-  user: "Rider photo",
-};
 
 export function PlaceDetailView({
   place,
@@ -236,7 +232,7 @@ export function PlaceDetailView({
                   ) : (
                     (m.author ?? "Unknown author")
                   )}{" "}
-                  · {m.license} · {MEDIA_SOURCES[m.source] ?? m.source}
+                  · {m.license} · {mediaSourceName(m.source)}
                 </figcaption>
               </figure>
             </li>
