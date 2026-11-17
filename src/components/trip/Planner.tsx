@@ -35,6 +35,7 @@ import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl, MAX_GOOGLE_WAYPOINTS } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 import { DEFAULT_RIDE_HOURS, routeTimeline, suggestDays, type RideHours } from "@/lib/multiDay";
+import { formatDuration, formatKm } from "@/lib/format";
 import { isSight, pickStops, stopMinutes, type StopBudgetMin } from "@/lib/pickStops";
 import { newRoomId, rideRoomPath } from "@/lib/rideRoom";
 import {
@@ -795,8 +796,9 @@ export function Planner({
     />
   );
 
-  const routesPanel = (
-    <div className="flex flex-col gap-5">
+  // The route panel's parts: the desktop column stacks them; phones reorder them (sidePanel).
+  const routeCards = (
+    <>
       <section aria-label="Routes" aria-live="polite" aria-busy={routeState.status === "loading"}>
         {routeState.status === "idle" && (
           <p className="text-sm text-stone-600 dark:text-stone-400">
@@ -834,7 +836,11 @@ export function Planner({
           </>
         )}
       </section>
-      {selectedRoute && rideAlerts.length > 0 && <RouteAlerts alerts={rideAlerts} />}
+    </>
+  );
+  const routeAlerts = selectedRoute && rideAlerts.length > 0 && <RouteAlerts alerts={rideAlerts} />;
+  const routeDetails = (
+    <>
       {selectedRoute && (
         <RouteProfile
           key={selectedRoute.id}
@@ -879,6 +885,10 @@ export function Planner({
       {(saved || plan) && (
         <TripSaveBar saved={saved} plan={plan} defaultTitle={defaultTitle} onSaved={onSaved} />
       )}
+    </>
+  );
+  const rideCheck = (
+    <>
       {selectedRoute && first?.location && last?.location && (
         <RideCheck
           route={selectedRoute}
@@ -906,6 +916,14 @@ export function Planner({
           onBreakToggle={(place) => setPlacePicked(place, !pickedIds.has(place.id))}
         />
       )}
+    </>
+  );
+  const routesPanel = (
+    <div className="flex flex-col gap-5">
+      {routeCards}
+      {routeAlerts}
+      {routeDetails}
+      {rideCheck}
     </div>
   );
 
@@ -1080,14 +1098,30 @@ export function Planner({
 
   // Wide screens: trip and routes | places | map. Narrower: one side panel, or the phone sheet.
   const secondColumn = isWide ? (placePanel ?? placesPanel) : null;
+  // Phones and tablets: the places lead, with a jump bar to the route and the ride check, so a
+  // rider no longer scrolls past every route detail to reach the first place.
   const sidePanel = isWide
     ? routesPanel
-    : (placePanel ?? (
+    : (placePanel ??
+      (selectedRoute ? (
         <div className="flex flex-col gap-6">
-          {routesPanel}
-          {placesPanel}
+          <SheetJumpBar />
+          <SelectedRouteLine route={selectedRoute} onChange={() => jumpTo("sheet-route")} />
+          {routeAlerts}
+          <div id="sheet-places" className="scroll-mt-14">
+            {placesPanel}
+          </div>
+          <div id="sheet-route" className="flex scroll-mt-14 flex-col gap-5">
+            {routeCards}
+            {routeDetails}
+          </div>
+          <div id="sheet-check" className="scroll-mt-14">
+            {rideCheck}
+          </div>
         </div>
-      ));
+      ) : (
+        routesPanel
+      )));
   const ridePreviews = useMemo(
     () => famousRides.map((r) => ({ slug: r.slug, line: r.line })),
     [famousRides],
@@ -1245,5 +1279,61 @@ export function Planner({
         </BottomSheet>
       )}
     </main>
+  );
+}
+
+/** Scrolls the sheet to one of its sections (respecting reduced motion). */
+function jumpTo(id: string) {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document
+    .getElementById(id)
+    ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+}
+
+const JUMPS = [
+  { id: "sheet-places", label: "Places" },
+  { id: "sheet-route", label: "Route" },
+  { id: "sheet-check", label: "Ride check" },
+] as const;
+
+/** The sheet's three parts, one tap away, kept at the top while the sheet scrolls. */
+function SheetJumpBar() {
+  return (
+    <nav
+      aria-label="Jump to"
+      className="sticky top-0 z-10 -mx-4 flex gap-1.5 bg-(--surface) px-4 py-2 shadow-[0_1px_0_var(--color-stone-200)] dark:shadow-[0_1px_0_var(--color-stone-800)]"
+    >
+      {JUMPS.map((j) => (
+        <button
+          key={j.id}
+          type="button"
+          // Its own name: "Ride check" alone would clash with the Ride check toggle below.
+          aria-label={`Go to ${j.label}`}
+          onClick={() => jumpTo(j.id)}
+          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-stone-100 px-3 text-sm font-bold hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700"
+        >
+          {j.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+/** The picked route in one line, above the places, with a way to change it. */
+function SelectedRouteLine({ route, onChange }: { route: RouteOption; onChange: () => void }) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+      <span className="font-bold">{route.viaLabel}</span>
+      <span className="tabular font-mono text-stone-600 dark:text-stone-400">
+        {formatDuration(route.durationMin)} · {formatKm(route.distanceKm * 1000)}
+      </span>
+      <button
+        type="button"
+        onClick={onChange}
+        className="text-brand-dark -my-3 inline-flex min-h-11 items-center font-bold hover:underline dark:text-teal-300"
+      >
+        Change route
+      </button>
+    </p>
   );
 }
