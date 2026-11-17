@@ -5,6 +5,7 @@ import { Layer, Source } from "react-map-gl/maplibre";
 import type { LngLat } from "@/lib/geo";
 import type { RouteOption } from "@/lib/trip";
 import { linePart, useDrawIn } from "./useDrawIn";
+import { MAP_COLORS } from "./mapColors";
 
 export const ROUTE_LAYER_IDS = ["routes-alt", "routes-selected"];
 
@@ -39,21 +40,21 @@ export function RouteLayer({ routes, selectedId }: Props) {
         type="line"
         filter={["==", ["get", "selected"], false]}
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": "#8c877c", "line-width": 3, "line-dasharray": [2, 2] }}
+        paint={{ "line-color": MAP_COLORS.altRoute, "line-width": 3, "line-dasharray": [2, 2] }}
       />
       <Layer
         id="routes-selected-casing"
         type="line"
         filter={["==", ["get", "selected"], true]}
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": "#ffffff", "line-width": 9 }}
+        paint={{ "line-color": MAP_COLORS.casing, "line-width": 9 }}
       />
       <Layer
         id="routes-selected"
         type="line"
         filter={["==", ["get", "selected"], true]}
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": "#0f766e", "line-width": 5 }}
+        paint={{ "line-color": MAP_COLORS.brand, "line-width": 5 }}
       />
     </Source>
   );

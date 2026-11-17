@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import type { LngLat } from "@/lib/geo";
 import type { RouteOption } from "@/lib/trip";
 import { linePart, useDrawIn } from "../useDrawIn";
+import { MAP_COLORS } from "../mapColors";
 
 interface Props {
   routes: RouteOption[];
@@ -36,7 +37,7 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
         const casing = new google.maps.Polyline({
           map,
           path: path(r),
-          strokeColor: "#ffffff",
+          strokeColor: MAP_COLORS.casing,
           strokeWeight: 9,
           strokeOpacity: 1,
           zIndex: 20,
@@ -45,7 +46,7 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
         const line = new google.maps.Polyline({
           map,
           path: path(r),
-          strokeColor: "#0f766e",
+          strokeColor: MAP_COLORS.brand,
           strokeWeight: 5,
           strokeOpacity: 1,
           zIndex: 21,
@@ -63,7 +64,12 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
           zIndex: 10,
           icons: [
             {
-              icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: "#64748b", scale: 3 },
+              icon: {
+                path: "M 0,-1 0,1",
+                strokeOpacity: 1,
+                strokeColor: MAP_COLORS.altRoute,
+                scale: 3,
+              },
               offset: "0",
               repeat: "12px",
             },

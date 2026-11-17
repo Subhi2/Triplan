@@ -15,6 +15,8 @@ interface Props {
   vehicle: Vehicle;
   corridorKm: CorridorKm;
   viaCount: number;
+  /** A trip is loaded: the menu offers "New trip". */
+  hasTrip: boolean;
   /** The "Edit trip" / "Done" toggle, on phones with a trip. */
   formToggle: { open: boolean; onToggle: () => void } | null;
 }
@@ -31,6 +33,7 @@ export function PlannerHeader({
   vehicle,
   corridorKm,
   viaCount,
+  hasTrip,
   formToggle,
 }: Props) {
   return (
@@ -64,7 +67,10 @@ export function PlannerHeader({
           <CrosshairIcon size={18} />
           {!compact && "Near me"}
         </Link>
-        <SiteMenu links={SITE_LINKS.filter((l) => l.href !== "/" && l.href !== "/nearby")} />
+        <SiteMenu
+          links={SITE_LINKS.filter((l) => l.href !== "/" && l.href !== "/nearby")}
+          lead={hasTrip ? { href: `/?v=${vehicle}`, label: "New trip" } : undefined}
+        />
         {formToggle && (
           <button
             type="button"

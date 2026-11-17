@@ -1,11 +1,14 @@
 "use client";
 
+import { formatDuration } from "@/lib/format";
 import { MAX_GOOGLE_WAYPOINTS, type GoogleMapsTrip } from "@/lib/googleMaps";
 import { trackEvent } from "@/lib/track";
 
 interface Props {
   trip: GoogleMapsTrip;
   pickedCount: number;
+  /** Riding plus the ticked stops' detours and visits, in minutes; null without a route. */
+  totalMin: number | null;
   onClear: () => void;
   /** Downloads the trip as a GPX file, for OsmAnd, Organic Maps and GPS units. */
   onDownloadGpx: () => void;
@@ -16,7 +19,7 @@ interface Props {
  * via stops and the ticked places as stops in route order, or downloads it as GPX. The negative
  * bottom undoes the panel padding (and the safe area below it on phones).
  */
-export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Props) {
+export function GoogleMapsBar({ trip, pickedCount, totalMin, onClear, onDownloadGpx }: Props) {
   const tooMany = trip.url === null && trip.waypointCount > MAX_GOOGLE_WAYPOINTS;
   return (
     <div
@@ -29,7 +32,17 @@ export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Pro
           "Tick places as stops"
         ) : (
           <>
-            {pickedCount} ticked ·{" "}
+            <span className="font-bold text-stone-900 dark:text-stone-100">
+              {pickedCount} stop{pickedCount === 1 ? "" : "s"}
+            </span>
+            {totalMin !== null && (
+              <>
+                {" "}
+                · about <span className="tabular font-mono">{formatDuration(totalMin)}</span> with
+                visits
+              </>
+            )}{" "}
+            ·{" "}
             <button
               type="button"
               onClick={onClear}

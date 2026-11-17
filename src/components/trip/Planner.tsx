@@ -35,7 +35,7 @@ import { pointAtKm, type LngLat } from "@/lib/geo";
 import { googleMapsTripUrl, MAX_GOOGLE_WAYPOINTS } from "@/lib/googleMaps";
 import { gpxFileName, sliceLine, tripGpx } from "@/lib/gpx";
 import { DEFAULT_RIDE_HOURS, routeTimeline, suggestDays, type RideHours } from "@/lib/multiDay";
-import { isSight, pickStops, type StopBudgetMin } from "@/lib/pickStops";
+import { isSight, pickStops, stopMinutes, type StopBudgetMin } from "@/lib/pickStops";
 import { newRoomId, rideRoomPath } from "@/lib/rideRoom";
 import {
   BEST_PER_STRETCH,
@@ -1022,6 +1022,11 @@ export function Planner({
       <GoogleMapsBar
         trip={googleTrip}
         pickedCount={picked.length}
+        totalMin={
+          selectedRoute
+            ? selectedRoute.durationMin + picked.reduce((n, p) => n + stopMinutes(p), 0)
+            : null
+        }
         onClear={() => setPicked([])}
         onDownloadGpx={downloadGpx}
       />
@@ -1117,6 +1122,7 @@ export function Planner({
             vehicle={vehicle}
             corridorKm={corridorKm}
             viaCount={stops.length - 2}
+            hasTrip={hasTrip}
             formToggle={!isDesktop && hasTrip ? { open: showForm, onToggle: toggleForm } : null}
           />
           <LoadStreak

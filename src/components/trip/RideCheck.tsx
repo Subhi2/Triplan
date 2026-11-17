@@ -412,6 +412,12 @@ export function RideCheck({
             // Wraps instead of cutting words off: with an alert there are four items, too many
             // for one line at 375 px. The alert count leads.
             <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5 py-1 text-xs font-normal whitespace-nowrap text-stone-600 dark:text-stone-400">
+              {/* Daylight, weather and night bans all hang on the start: say which one is used. */}
+              {departAt && (
+                <span>
+                  Leaving <span className="tabular font-mono">{dayAndTime.format(departAt)}</span>
+                </span>
+              )}
               {rideAlerts.length > 0 && (
                 <span className="inline-flex items-center gap-1 font-bold text-stone-800 dark:text-stone-200">
                   <span

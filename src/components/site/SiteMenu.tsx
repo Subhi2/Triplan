@@ -13,10 +13,13 @@ export function SiteMenu({
   className = "",
   current,
   links = SITE_LINKS,
+  lead,
 }: {
   className?: string;
   current?: SiteSection;
   links?: readonly SiteLink[];
+  /** An action listed first, as a full page load (the planner's "New trip"). */
+  lead?: { href: string; label: string };
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -58,6 +61,17 @@ export function SiteMenu({
           id={id}
           className="absolute right-0 z-30 mt-1 min-w-44 rounded-xl border border-stone-200 bg-(--surface) py-1 text-sm font-bold shadow-lg dark:border-stone-700"
         >
+          {lead && (
+            <li className="border-b border-stone-200 pb-1 dark:border-stone-700">
+              {/* A plain link: a full load starts the planner empty, with no state carried over. */}
+              <a
+                href={lead.href}
+                className="text-brand-dark flex min-h-11 items-center px-4 hover:bg-stone-100 dark:text-teal-300 dark:hover:bg-stone-800"
+              >
+                {lead.label}
+              </a>
+            </li>
+          )}
           {links.map((l) => (
             <li key={l.href}>
               <Link
