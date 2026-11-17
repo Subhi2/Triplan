@@ -439,7 +439,10 @@ test("safety stops along the road, with call links and the hospital gap", async 
   const lines = page.getByRole("list", { name: "Helplines" });
   await expect(lines.getByRole("link", { name: /112/ })).toHaveAttribute("href", "tel:112");
   await expect(lines.getByRole("link", { name: /1033/ })).toHaveAttribute("href", "tel:1033");
+  // The kinds of stop are folded so the places lead; the helplines are not.
   const kinds = page.getByRole("group", { name: "Kinds of safety stop" });
+  await expect(kinds).toBeHidden();
+  await page.getByRole("button", { name: /Safety on the way/ }).click();
   await expect(kinds).toContainText("2 hospitals");
   await expect(kinds).toContainText("1 ATM");
   await kinds.getByRole("button", { name: /hospitals/ }).click();
@@ -874,6 +877,10 @@ test("Popular keeps the well-known stops and Offbeat the lesser-known", async ({
     .click();
 
   const list = page.getByRole("list", { name: "Places along the route" });
+  await page
+    .getByRole("group", { name: "Filter by category" })
+    .getByRole("button", { name: /^More/ })
+    .click();
   const mixes = page.getByRole("group", { name: "Popular or offbeat" });
   await expect(mixes.getByRole("button", { name: "Mixed" })).toHaveAttribute(
     "aria-pressed",

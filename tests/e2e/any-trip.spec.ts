@@ -109,8 +109,9 @@ for (const [name, trip] of Object.entries(TRIPS)) {
     const chips = page.getByRole("group", { name: "Filter by category" });
     await expect(chips.getByRole("button", { name: /^Fuel/ })).toHaveCount(0);
 
-    // Picking a category lists every place in it.
+    // Picking a category lists every place in it (temples may sit behind "More").
     const templeChip = chips.getByRole("button", { name: /^Temple/ });
+    if (!(await templeChip.isVisible())) await chips.getByRole("button", { name: /^More/ }).click();
     const templeCount = Number((await templeChip.innerText()).replace(/\D/g, ""));
     await templeChip.click();
     await expect(

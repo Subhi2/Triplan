@@ -44,6 +44,7 @@ function Helplines({ nationalKm }: { nationalKm: number | null }) {
  */
 export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
   const [showAll, setShowAll] = useState(false);
+  const [open, setOpen] = useState(false);
   if (state.status === "idle") return null;
   const heading = (
     <h3 id="safety-heading" className="font-display text-[17px] font-bold tracking-tight">
@@ -78,42 +79,75 @@ export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
   }
   const points = selected ? summary.points.filter((p) => p.kind === selected) : [];
   const shown = showAll ? points : points.slice(0, LISTED);
+  // The kinds stay folded until asked for, so the places lead; a picked kind keeps them open.
+  const expanded = open || selected !== null;
 
   return (
     <section aria-labelledby="safety-heading" className="flex flex-col gap-2">
-      {heading}
-      <Helplines nationalKm={nationalKm} />
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Kinds of safety stop">
-        {SAFETY_KINDS.filter((k) => summary.counts[k] > 0).map((k) => {
-          const on = selected === k;
-          return (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={on}
-              data-kind={k}
-              title={`${summary.perFiftyKm[k]} per 50 km; longest stretch without one ${Math.round(summary.longestGap[k].km)} km`}
-              onClick={() => {
-                setShowAll(false);
-                onSelect(on ? null : k);
-              }}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm md:min-h-9 ${
-                on
-                  ? "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900"
-                  : "bg-stone-100 dark:bg-stone-800"
-              }`}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <h3 id="safety-heading" className="font-display text-[17px] font-bold tracking-tight">
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls="safety-kinds"
+            onClick={() => {
+              if (expanded) onSelect(null);
+              setOpen(!expanded);
+            }}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg pr-2 text-left hover:underline md:min-h-9"
+          >
+            <span
+              aria-hidden
+              className={`inline-block text-sm transition-transform motion-reduce:transition-none ${expanded ? "rotate-90" : ""}`}
             >
-              <span
-                aria-hidden
-                className="h-2 w-2 rounded-full"
-                style={{ background: SAFETY_STYLE[k].color }}
-              />
-              <span className="tabular font-mono">{summary.counts[k]}</span>{" "}
-              {summary.counts[k] === 1 ? SAFETY_STYLE[k].one : SAFETY_STYLE[k].many}
-            </button>
-          );
-        })}
+              ›
+            </span>
+            Safety on the way
+            <span className="tabular font-mono text-xs font-normal text-stone-600 dark:text-stone-400">
+              {total} stops
+            </span>
+          </button>
+        </h3>
+        <Helplines nationalKm={nationalKm} />
       </div>
+      {expanded && (
+        <div
+          id="safety-kinds"
+          className="flex flex-wrap gap-1.5"
+          role="group"
+          aria-label="Kinds of safety stop"
+        >
+          {SAFETY_KINDS.filter((k) => summary.counts[k] > 0).map((k) => {
+            const on = selected === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={on}
+                data-kind={k}
+                title={`${summary.perFiftyKm[k]} per 50 km; longest stretch without one ${Math.round(summary.longestGap[k].km)} km`}
+                onClick={() => {
+                  setShowAll(false);
+                  onSelect(on ? null : k);
+                }}
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm md:min-h-9 ${
+                  on
+                    ? "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900"
+                    : "bg-stone-100 dark:bg-stone-800"
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: SAFETY_STYLE[k].color }}
+                />
+                <span className="tabular font-mono">{summary.counts[k]}</span>{" "}
+                {summary.counts[k] === 1 ? SAFETY_STYLE[k].one : SAFETY_STYLE[k].many}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {selected && (
         <div className="flex flex-col gap-1">
           <p className="text-xs text-stone-600 dark:text-stone-400">
