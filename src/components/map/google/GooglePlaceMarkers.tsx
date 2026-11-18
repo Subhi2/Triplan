@@ -9,6 +9,7 @@ import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { useEffect, useRef } from "react";
 import { categoryStyle } from "@/lib/categories";
 import type { PlacePin } from "../types";
+import { MAP_COLORS } from "../mapColors";
 
 interface Props {
   places: PlacePin[];
@@ -32,7 +33,7 @@ function dotElement(color: string, name: string): HTMLElement {
     "width:40px;height:40px;display:flex;align-items:center;justify-content:center;" +
     "transform:translateY(50%);cursor:pointer";
   const dot = document.createElement("div");
-  dot.style.cssText = `width:14px;height:14px;border-radius:9999px;background:${color};border:2px solid #fff;box-sizing:content-box`;
+  dot.style.cssText = `width:14px;height:14px;border-radius:9999px;background:${color};border:2px solid ${MAP_COLORS.casing};box-sizing:content-box`;
   hit.appendChild(dot);
   return hit;
 }
@@ -41,7 +42,7 @@ function setHighlighted(el: HTMLElement, on: boolean) {
   const dot = el.firstElementChild as HTMLElement | null;
   if (!dot) return;
   dot.style.width = dot.style.height = on ? "20px" : "14px";
-  dot.style.border = on ? "3px solid #111827" : "2px solid #fff";
+  dot.style.border = on ? `3px solid ${MAP_COLORS.active}` : `2px solid ${MAP_COLORS.casing}`;
 }
 
 /** White with a teal ring: clusters stay readable without hiding the teal route. */
@@ -52,7 +53,8 @@ const renderer: Renderer = {
     el.textContent = String(count);
     el.style.cssText =
       `width:${size}px;height:${size}px;border-radius:9999px;background:rgba(255,255,255,.95);` +
-      "border:2px solid #0f766e;color:#115e59;font:12px/1 sans-serif;display:flex;" +
+      `border:2px solid ${MAP_COLORS.brand};color:${MAP_COLORS.brandText};` +
+      "font:12px/1 sans-serif;display:flex;" +
       "align-items:center;justify-content:center;transform:translateY(50%);cursor:pointer";
     return new google.maps.marker.AdvancedMarkerElement({
       position,

@@ -3,6 +3,7 @@
 import { categoryStyle } from "@/lib/categories";
 import { bestTimeSummary, isInSeason } from "@/lib/months";
 import type { ListTurn } from "@/lib/listTurn";
+import { shortCredit } from "@/lib/media";
 import { detourLabel, ON_ROUTE_MAX_KM, type PlaceAlong } from "@/lib/places";
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   /** Ticked to open in Google Maps with the trip. */
   picked: boolean;
   onPickedChange: (picked: boolean) => void;
+  /** Show "In season": off when every place in the list is in season, so it would say nothing. */
+  markSeason?: boolean;
 }
 
 export function placeRowId(placeId: string) {
@@ -71,7 +74,7 @@ export function PlaceRow(props: Props) {
           className="flex w-full items-center gap-3 py-3 pr-1 pl-1 text-left active:scale-[0.99]"
         >
           <span className="flex w-12 shrink-0 flex-col">
-            <span className="font-mono text-[10px] tracking-widest text-stone-600 dark:text-stone-400">
+            <span className="font-mono text-[11px] tracking-widest text-stone-600 dark:text-stone-400">
               KM
             </span>
             <span className="tabular font-mono text-xl leading-tight font-semibold">{km}</span>
@@ -100,11 +103,12 @@ export function PlaceRow(props: Props) {
               >
                 {detour}
               </span>
-              {isInSeason(place.bestMonths, new Date().getMonth() + 1) && (
-                <span className="bg-brand-tint text-brand-dark rounded-full px-2 text-xs font-bold dark:bg-teal-950 dark:text-teal-200">
-                  In season
-                </span>
-              )}
+              {props.markSeason !== false &&
+                isInSeason(place.bestMonths, new Date().getMonth() + 1) && (
+                  <span className="bg-brand-tint text-brand-dark rounded-full px-2 text-xs font-bold dark:bg-teal-950 dark:text-teal-200">
+                    In season
+                  </span>
+                )}
               {place.trending && (
                 <span className="text-ghat-dark rounded-full bg-orange-100 px-2 text-xs font-bold dark:bg-orange-950 dark:text-orange-300">
                   Trending
@@ -123,9 +127,15 @@ export function PlaceRow(props: Props) {
               )}
               {bestTimeSummary(place.bestMonths, place.bestMonthsEstimated)}
             </span>
+            {place.thumbUrl && place.thumbCredit && (
+              // Every photo shown carries its credit (CLAUDE.md), here beside its thumbnail.
+              <span className="truncate text-[11px] text-stone-600 dark:text-stone-400">
+                {shortCredit(place.thumbCredit)}
+              </span>
+            )}
           </span>
           {place.thumbUrl && (
-            // Credit and licence are on the place's details, one tap away (docs/02).
+            // Its credit is the line under the place's facts.
             // eslint-disable-next-line @next/next/no-img-element -- photos come from many hosts
             <img
               src={place.thumbUrl}

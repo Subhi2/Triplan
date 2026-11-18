@@ -1,24 +1,15 @@
 import Link from "next/link";
 import { UpdatesBadge } from "@/components/community/UpdatesBadge";
-import { communityEnabled } from "@/lib/community/enabled";
 import { SITE_NAME } from "@/lib/site";
+import { SiteMenu } from "./SiteMenu";
+import { SITE_LINKS, type SiteSection } from "./siteLinks";
 
-const LINKS = [
-  { href: "/rides", label: "Famous rides" },
-  { href: "/group-rides", label: "Group rides", community: true },
-  { href: "/clubs", label: "Clubs", community: true },
-  { href: "/nearby", label: "Near me" },
-  { href: "/trips", label: "Your trips" },
-  { href: "/about", label: "About" },
-  { href: "/me", label: "Me", community: true },
-] as const;
+export { SITE_LINKS, type SiteSection } from "./siteLinks";
 
-export type SiteSection = (typeof LINKS)[number]["href"];
-
-/** The site's links, without clubs, group rides and Me when community is off. */
-export const SITE_LINKS = LINKS.filter((l) => communityEnabled || !("community" in l));
-
-/** The top bar of the content pages (rides, places, trips, about): the name and the main links. */
+/**
+ * The top bar of the content pages (rides, places, trips, about): the name and the site's links.
+ * Phones keep Plan a ride and Near me in view and put the rest behind "Menu".
+ */
 export function SiteNav({ current }: { current?: SiteSection }) {
   return (
     <nav aria-label="Main" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
@@ -28,24 +19,31 @@ export function SiteNav({ current }: { current?: SiteSection }) {
       >
         {SITE_NAME}
       </Link>
-      <ul className="flex flex-wrap items-center gap-x-1 text-sm font-bold">
-        {SITE_LINKS.map((l) => (
-          <li key={l.href}>
-            <Link
-              href={l.href}
-              aria-current={current === l.href ? "page" : undefined}
-              className={`inline-flex min-h-11 items-center rounded-lg px-2 hover:underline ${
-                current === l.href
-                  ? "text-stone-900 dark:text-stone-100"
-                  : "text-brand-dark dark:text-teal-300"
-              }`}
-            >
-              {l.label}
-              {l.href === "/me" && <UpdatesBadge />}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center gap-x-1">
+        <ul className="flex flex-wrap items-center gap-x-1 text-sm font-bold">
+          {SITE_LINKS.map((l) => (
+            <li key={l.href} className={l.primary ? "" : "hidden md:block"}>
+              <Link
+                href={l.href}
+                aria-current={current === l.href ? "page" : undefined}
+                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 hover:underline ${
+                  current === l.href
+                    ? "text-stone-900 dark:text-stone-100"
+                    : "text-brand-dark dark:text-teal-300"
+                }`}
+              >
+                {l.label}
+                {l.href === "/me" && <UpdatesBadge />}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <SiteMenu
+          className="md:hidden"
+          current={current}
+          links={SITE_LINKS.filter((l) => !l.primary)}
+        />
+      </div>
     </nav>
   );
 }

@@ -439,7 +439,10 @@ test("safety stops along the road, with call links and the hospital gap", async 
   const lines = page.getByRole("list", { name: "Helplines" });
   await expect(lines.getByRole("link", { name: /112/ })).toHaveAttribute("href", "tel:112");
   await expect(lines.getByRole("link", { name: /1033/ })).toHaveAttribute("href", "tel:1033");
+  // The kinds of stop are folded so the places lead; the helplines are not.
   const kinds = page.getByRole("group", { name: "Kinds of safety stop" });
+  await expect(kinds).toBeHidden();
+  await page.getByRole("button", { name: /Safety on the way/ }).click();
   await expect(kinds).toContainText("2 hospitals");
   await expect(kinds).toContainText("1 ATM");
   await kinds.getByRole("button", { name: /hospitals/ }).click();
@@ -776,7 +779,9 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   expect(await open.getAttribute("href")).not.toContain("waypoints");
 
   await page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }).check();
-  await expect(page.getByText("1 ticked")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Google Maps" }).getByText("1 place ticked", { exact: true }),
+  ).toBeVisible();
   await expect(open).toHaveAttribute("href", /waypoints=12\.9173%2C75\.7581/);
 
   // The place's own page on Google Maps, for photos and reviews: in its details, one tap from
@@ -843,13 +848,17 @@ test("time for stops ticks the best sights that fit, and a second tap clears the
   await expect(
     page.getByRole("checkbox", { name: "Tick Long Trek for Google Maps" }),
   ).not.toBeChecked();
-  await expect(page.getByText("2 ticked")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Google Maps" }).getByText("2 places ticked", { exact: true }),
+  ).toBeVisible();
 
   await times.getByRole("button", { name: "2 h" }).click();
   await expect(
     page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }),
   ).not.toBeChecked();
-  await expect(page.getByText("2 ticked")).toBeHidden();
+  await expect(
+    page.getByRole("region", { name: "Google Maps" }).getByText("2 places ticked", { exact: true }),
+  ).toBeHidden();
 });
 
 test("Popular keeps the well-known stops and Offbeat the lesser-known", async ({ page }) => {
@@ -874,6 +883,10 @@ test("Popular keeps the well-known stops and Offbeat the lesser-known", async ({
     .click();
 
   const list = page.getByRole("list", { name: "Places along the route" });
+  await page
+    .getByRole("group", { name: "Filter by category" })
+    .getByRole("button", { name: /^More/ })
+    .click();
   const mixes = page.getByRole("group", { name: "Popular or offbeat" });
   await expect(mixes.getByRole("button", { name: "Mixed" })).toHaveAttribute(
     "aria-pressed",
@@ -922,7 +935,7 @@ test("on phones the map comes with the trip, under a one-line header and over th
 
   // The form folds away: the map fills the screen, the header shows the trip, and the sheet the
   // routes.
-  await expect(page.getByText("Bengaluru → Kalasa")).toBeVisible();
+  await expect(page.getByText(/^Bengaluru.*Kalasa$/)).toBeVisible();
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   await expect(start).toBeHidden();
   await expect(sheet).not.toHaveAttribute("aria-hidden", "true");
@@ -931,17 +944,24 @@ test("on phones the map comes with the trip, under a one-line header and over th
   );
   for (const target of [
     page.getByRole("button", { name: "Edit trip" }),
-    page.getByRole("button", { name: "More" }),
+    page.getByRole("button", { name: "Menu" }),
   ]) {
     expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
   // The other screens stay reachable with a trip loaded.
-  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("button", { name: "Menu" }).click();
   for (const name of ["Famous rides", "Your trips", "About"]) {
     await expect(page.getByRole("link", { name })).toBeVisible();
   }
   await page.keyboard.press("Escape");
   await expect(page.getByRole("link", { name: "Famous rides" })).toBeHidden();
+
+  // "New trip" starts over: an empty planner, the vehicle kept.
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("link", { name: "New trip" }).click();
+  await expect(page).toHaveURL(/\/\?v=bike$/);
+  await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("");
+  await expect(page.getByRole("list", { name: "Route options" })).toHaveCount(0);
 });
 
 const pump = (name: string, kmFromStart: number): PlaceAlong => ({
@@ -1297,7 +1317,9 @@ test("suggests a break near each 2 hours, and a tap ticks it", async ({ page }) 
   const cup = page.getByRole("button", { name: "Break at Ghat Cafe, km 135" });
   await cup.click();
   await expect(cup).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText(
+    "1 place ticked · about",
+  );
 });
 
 test("every route card has a scenic score, and the most scenic slower one is labelled", async ({
@@ -1502,10 +1524,12 @@ test("a sunset stop near the end of the ride, with the time to leave by", async 
   await expect(check).toContainText("Sunset stop: Kanive Viewpoint");
   const stop = check.getByRole("list", { name: "Sunset stops" }).getByRole("button");
   await expect(stop).toContainText(/km 300 · sunset \d{1,2}:\d{2}/);
-  await expect(stop).toContainText(/Leave by \d{1,2}:\d{2}/);
+  await expect(stop).toContainText(/Start the ride by \d{1,2}:\d{2}/);
   await stop.click();
   await expect(stop).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText("1 ticked");
+  await expect(page.getByRole("region", { name: "Google Maps" })).toContainText(
+    "1 place ticked · about",
+  );
 });
 
 for (const vehicle of ["bike", "car"] as const) {

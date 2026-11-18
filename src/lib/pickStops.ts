@@ -1,5 +1,5 @@
 import { CATEGORIES, isCategorySlug } from "./categories";
-import { placeRank, type PlaceAlong } from "./places";
+import { placeRank, startSkipKm, type PlaceAlong } from "./places";
 
 // Best stops for my time (docs/02, "Best stops for my time"): the most worthwhile places that
 // fit the minutes the rider has for stops. Tourist trip design treats this as an orienteering
@@ -15,9 +15,8 @@ export const DETOUR_KMH = 40;
 export const IN_SEASON_BOOST = 1.3;
 /** At most one stop per this many minutes (always at least one): two good stops, not eight quick ones. */
 export const MIN_PER_STOP = 60;
-/** The start of the route is skipped (the rider has only just left): 10% of it, up to 25 km. */
-export const START_SKIP_SHARE = 0.1;
-export const START_SKIP_MAX_KM = 25;
+/** The start of the route is skipped (the rider has only just left): see `startSkipKm`. */
+export { START_SKIP_SHARE, START_SKIP_MAX_KM } from "./places";
 /** A stop on the way is near the road: the widest "Hide detours over" choice. */
 export const PICK_MAX_DETOUR_KM = 5;
 
@@ -61,7 +60,7 @@ export function pickStops(
   { month, maxStops, routeKm }: { month: number | null; maxStops: number; routeKm: number },
 ): StopPick {
   const budget = Math.floor(budgetMin);
-  const skipKm = Math.min(START_SKIP_MAX_KM, routeKm * START_SKIP_SHARE);
+  const skipKm = startSkipKm(routeKm);
   const options = places
     .filter(
       (p) => isSight(p.category) && p.kmFromStart >= skipKm && p.detourKm <= PICK_MAX_DETOUR_KM,

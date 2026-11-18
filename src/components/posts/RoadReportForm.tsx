@@ -188,7 +188,7 @@ export function RoadReportForm({ route }: { route: RouteOption }) {
               onChange={(e) => setNote(e.target.value)}
               maxLength={REPORT_NOTE_MAX}
               rows={2}
-              placeholder="One lane open, wait about 30 minutes…"
+              placeholder="What riders should know"
               className={`${field} py-2 font-normal`}
             />
           </label>

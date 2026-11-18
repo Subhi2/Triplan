@@ -19,6 +19,7 @@ import {
   PLACES_SOURCE,
   PlaceMarkers,
 } from "./PlaceMarkers";
+import { RIDE_PREVIEW_HIT_LAYER, RidePreviewLayer } from "./RidePreviewLayer";
 import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
 import { CursorDot } from "./CursorDot";
 import { MeDot } from "./MeDot";
@@ -35,6 +36,7 @@ const MAP_STYLE =
 const INITIAL_VIEW = { bounds: INDIA_BOUNDS, fitBoundsOptions: { padding: 16 } };
 const INTERACTIVE_LAYERS = [
   ...ROUTE_LAYER_IDS,
+  RIDE_PREVIEW_HIT_LAYER,
   PLACE_CLUSTERS_LAYER,
   PLACE_HIT_LAYER,
   PLACE_POINTS_LAYER,
@@ -121,6 +123,11 @@ export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification })
     }
     const layer = f.layer.id;
     const id: unknown = f.properties?.id;
+    const slug: unknown = f.properties?.slug;
+    if (layer === RIDE_PREVIEW_HIT_LAYER && typeof slug === "string") {
+      props.onSelectRidePreview?.(slug);
+      return;
+    }
     if (PLACE_TAP_LAYERS.includes(layer) && typeof id === "string") {
       props.onSelectPlace(id);
     } else if (layer === PLACE_CLUSTERS_LAYER && f.geometry.type === "Point") {
@@ -170,6 +177,9 @@ export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification })
     >
       {/* Touch screens pinch to zoom; the buttons would only cover the map. */}
       {!coarsePointer && <NavigationControl position="top-right" showCompass={false} />}
+      {props.ridePreviews && props.ridePreviews.length > 0 && (
+        <RidePreviewLayer rides={props.ridePreviews} />
+      )}
       <RouteLayer routes={routes} selectedId={props.selectedRouteId} />
       {props.servicePins && props.servicePins.length > 0 && (
         <ServicePins pins={props.servicePins} />

@@ -2,27 +2,25 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { communityEnabled } from "@/lib/community/enabled";
-
-const LINKS = [
-  { href: "/rides", label: "Famous rides" },
-  ...(communityEnabled
-    ? [
-        { href: "/group-rides", label: "Group rides" },
-        { href: "/clubs", label: "Clubs" },
-      ]
-    : []),
-  { href: "/trips", label: "Your trips" },
-  ...(communityEnabled ? [{ href: "/me", label: "Me" }] : []),
-  { href: "/about", label: "About" },
-];
+import { SITE_LINKS, type SiteLink, type SiteSection } from "./siteLinks";
 
 /**
- * The site's other screens behind one "More" button, for headers with no room for the links
- * (phones, and the planner once a trip is loaded). Closes on Escape, on a tap outside or on a link,
- * and gives focus back to the button.
+ * The site's screens behind one "Menu" button, for headers with no room for the links (phones,
+ * the planner and Near me). Same links and order as the content pages' bar (`siteLinks.ts`).
+ * Closes on Escape, on a tap outside or on a link, and gives focus back to the button.
  */
-export function SiteMenu({ className = "" }: { className?: string }) {
+export function SiteMenu({
+  className = "",
+  current,
+  links = SITE_LINKS,
+  lead,
+}: {
+  className?: string;
+  current?: SiteSection;
+  links?: readonly SiteLink[];
+  /** An action listed first, as a full page load (the planner's "New trip"). */
+  lead?: { href: string; label: string };
+}) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const button = useRef<HTMLButtonElement>(null);
@@ -56,19 +54,33 @@ export function SiteMenu({ className = "" }: { className?: string }) {
         onClick={() => setOpen((o) => !o)}
         className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 text-sm font-bold hover:underline dark:text-teal-300"
       >
-        More
+        Menu
       </button>
       {open && (
         <ul
           id={id}
           className="absolute right-0 z-30 mt-1 min-w-44 rounded-xl border border-stone-200 bg-(--surface) py-1 text-sm font-bold shadow-lg dark:border-stone-700"
         >
-          {LINKS.map((l) => (
+          {lead && (
+            <li className="border-b border-stone-200 pb-1 dark:border-stone-700">
+              {/* A plain link: a full load starts the planner empty, with no state carried over. */}
+              <a
+                href={lead.href}
+                className="text-brand-dark flex min-h-11 items-center px-4 hover:bg-stone-100 dark:text-teal-300 dark:hover:bg-stone-800"
+              >
+                {lead.label}
+              </a>
+            </li>
+          )}
+          {links.map((l) => (
             <li key={l.href}>
               <Link
                 href={l.href}
+                aria-current={current === l.href ? "page" : undefined}
                 onClick={() => setOpen(false)}
-                className="flex min-h-11 items-center px-4 hover:bg-stone-100 dark:hover:bg-stone-800"
+                className={`flex min-h-11 items-center px-4 hover:bg-stone-100 dark:hover:bg-stone-800 ${
+                  current === l.href ? "text-stone-900 dark:text-stone-100" : ""
+                }`}
               >
                 {l.label}
               </Link>

@@ -149,6 +149,11 @@ test("category chips and the detour toggle filter the list", async ({ page }) =>
     .click();
   await placeRows(page);
 
+  // Temples and the detour limit sit behind "More" (the leading chips are the sights).
+  await page
+    .getByRole("group", { name: "Filter by category" })
+    .getByRole("button", { name: /^More/ })
+    .click();
   await page.getByRole("button", { name: /^Temple/ }).click();
   const temples = await placeRows(page);
   expect(temples.every((r) => r.category === "Temple")).toBe(true);

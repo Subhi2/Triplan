@@ -282,7 +282,7 @@ export function HostRideForm({ trip, club }: { trip: SavedTrip | null; club: Clu
           maxLength={60}
           required
           className={field}
-          placeholder="Bengaluru"
+          placeholder="Town where you meet"
         />
       </label>
       <label className={label}>
@@ -292,7 +292,7 @@ export function HostRideForm({ trip, club }: { trip: SavedTrip | null; club: Clu
           onChange={(e) => setMeetNote(e.target.value)}
           maxLength={200}
           className={field}
-          placeholder="Shell pump after the Nice Road toll"
+          placeholder="The exact spot, like a fuel pump or landmark"
         />
       </label>
       <label className="-mt-3 inline-flex min-h-11 items-center gap-2 text-sm md:min-h-0">
@@ -376,7 +376,7 @@ export function HostRideForm({ trip, club }: { trip: SavedTrip | null; club: Clu
           maxLength={RIDE_ABOUT_MAX}
           rows={4}
           className={`${field} py-2`}
-          placeholder="Breakfast at Gowdru Hotel, back by dark. Full tank before the ghat."
+          placeholder="Plan for the day: stops, pace, when you'll be back"
         />
       </label>
       <label className={label}>

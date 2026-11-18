@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef } from "react";
 import { useCrown } from "@/components/motion/useCrown";
 import type { ListTurn } from "@/lib/listTurn";
+import { isInSeason } from "@/lib/months";
 import type { PlaceAlong } from "@/lib/places";
 import { PlaceRow, placeRowId } from "./PlaceRow";
 
@@ -23,6 +24,9 @@ interface Props {
 export function PlaceList(props: Props) {
   const { places, activeId, hoverId, onSelect, onHover, nights = [] } = props;
   const list = useRef<HTMLOListElement>(null);
+  // "In season" only tells something when some places are not: in November nearly all are.
+  const month = new Date().getMonth() + 1;
+  const markSeason = places.some((p) => !isInSeason(p.bestMonths, month));
   // Rows near the mouse slide aside and grow a teal rail.
   useCrown(list, "[data-place-row]", { axis: "y", radius: 90, lift: 6, shift: 5, rail: 3 });
   // Bring the active place into view, e.g. after its marker was clicked on the map.
@@ -62,6 +66,7 @@ export function PlaceList(props: Props) {
               onHover={(h) => onHover(h ? p.id : null)}
               picked={props.pickedIds.has(p.id)}
               onPickedChange={(picked) => props.onPickedChange(p, picked)}
+              markSeason={markSeason}
             />
           </Fragment>
         );

@@ -7,6 +7,15 @@ import type { GeocodeResult } from "@/lib/trip";
 
 /** Suggestions are fetched this long after the rider stops typing. */
 export const SUGGEST_DEBOUNCE_MS = 300;
+/**
+ * A suggestion's second line: its label without the name it starts with ("Kalasa, Kundagola
+ * taluku, Karnataka" under "Kalasa" reads "Kundagola taluku, Karnataka").
+ */
+export function suggestionDetail(name: string, label: string): string {
+  const prefix = `${name}, `;
+  return label.startsWith(prefix) ? label.slice(prefix.length) : label;
+}
+
 const MIN_PANEL_PX = 160;
 const PANEL_MARGIN_PX = 12;
 
@@ -227,8 +236,10 @@ export function StopInput({
               >
                 <div className="font-medium">{r.name}</div>
                 {r.label !== r.name && (
-                  <div className="truncate text-xs text-stone-500 dark:text-stone-400">
-                    {r.label}
+                  // Where it is, without the name again, on up to two lines: the taluk or
+                  // district is what tells three "Kalasa"s apart, so it must not be cut off.
+                  <div className="line-clamp-2 text-xs text-stone-500 dark:text-stone-400">
+                    {suggestionDetail(r.name, r.label)}
                   </div>
                 )}
               </li>

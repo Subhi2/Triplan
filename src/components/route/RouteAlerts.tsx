@@ -41,7 +41,7 @@ export function RouteAlerts({ alerts }: { alerts: RouteAlert[] }) {
   return (
     <section
       aria-label="Official alerts on the route"
-      className={`rounded-xl border-l-4 px-3 py-2 text-sm ${TONE[alertTone(worst.severity)]}`}
+      className={`rounded-xl border px-3 py-2 text-sm ${TONE[alertTone(worst.severity)]}`}
     >
       <button
         type="button"

@@ -12,10 +12,12 @@ import { RoadMixBar } from "@/components/trip/RoadMixBar";
 import { categoryStyle, PLACE_LIST_CATEGORIES } from "@/lib/categories";
 import { formatKm } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
-import { bestAlongRoute, detourLabel } from "@/lib/places";
+import { mediaSourceName, shortCredit } from "@/lib/media";
+import { bestAlongRoute, detourLabel, placeRank, type PlaceAlong } from "@/lib/places";
 import { monthRange, ridePlannerUrl, type Ride } from "@/lib/rides";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import { placesAlong, toPlaceAlong } from "@/server/services/corridorService";
+import { getPlaceDetail } from "@/server/services/placeDetailService";
 import { getRide } from "@/server/services/rideService";
 
 // Rides change only when seeded again, their places when OpenStreetMap is imported again.
@@ -87,12 +89,15 @@ export default async function RidePage({ params }: Props) {
   if (!found) notFound();
   const { ride, geometry } = found;
   const places = await placesAlong(geometry, 5_000, PLACE_LIST_CATEGORIES)
-    .then((rows) => bestAlongRoute(rows.map(toPlaceAlong)))
+    .then((rows) => bestAlongRoute(rows.map(toPlaceAlong), "mixed", ride.distanceKm))
     .catch(() => []);
   const line = geometry.coordinates as LngLat[];
+  const lead = await leadPhoto(places);
 
   return (
-    <main className={`mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 ${PHONE_ACTION_BAR_SPACE}`}>
+    <main
+      className={`mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 [&_header_p]:max-w-prose ${PHONE_ACTION_BAR_SPACE}`}
+    >
       <script
         type="application/ld+json"
         // JSON-LD must be inline; "<" is escaped so a name cannot close the script tag.
@@ -108,7 +113,7 @@ export default async function RidePage({ params }: Props) {
         >
           ← Famous rides
         </Link>
-        <h1 className="font-display text-3xl leading-tight font-extrabold tracking-tight md:text-4xl">
+        <h1 className="font-display text-4xl leading-none font-extrabold tracking-tight md:text-6xl">
           {ride.title}
         </h1>
         <p className="text-sm text-stone-600 dark:text-stone-400">
@@ -118,7 +123,42 @@ export default async function RidePage({ params }: Props) {
         <p className="text-base">{ride.blurb}</p>
       </header>
 
-      <RouteSketch line={line} className="bg-brand-tint h-56 w-full rounded-2xl dark:bg-teal-950" />
+      {lead ? (
+        <div className="grid gap-3 md:grid-cols-5">
+          <figure className="flex flex-col gap-1 md:col-span-3">
+            {/* Our own credited photo (Wikimedia Commons or a rider's), never Google's. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lead.photo.url}
+              alt={`${lead.place.name}${lead.photo.author ? `, photo by ${lead.photo.author}` : ""}`}
+              className="h-56 w-full rounded-2xl bg-stone-200 object-cover md:h-72 dark:bg-stone-800"
+            />
+            <figcaption className="text-xs text-stone-600 dark:text-stone-400">
+              <Link href={`/place/${lead.place.slug}`} className="font-bold hover:underline">
+                {lead.place.name}
+              </Link>{" "}
+              · km {Math.round(lead.place.kmFromStart)} · photo{" "}
+              {lead.photo.authorUrl ? (
+                <a href={lead.photo.authorUrl} rel="noopener noreferrer" className="underline">
+                  {lead.photo.author ?? "unknown author"}
+                </a>
+              ) : (
+                (lead.photo.author ?? "unknown author")
+              )}{" "}
+              · {lead.photo.license} · {mediaSourceName(lead.photo.source)}
+            </figcaption>
+          </figure>
+          <RouteSketch
+            line={line}
+            className="bg-brand-tint h-40 w-full rounded-2xl md:col-span-2 md:h-72 dark:bg-teal-950"
+          />
+        </div>
+      ) : (
+        <RouteSketch
+          line={line}
+          className="bg-brand-tint h-56 w-full rounded-2xl dark:bg-teal-950"
+        />
+      )}
 
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Fact label="Distance" value={ride.distanceKm} unit="km" />
@@ -152,7 +192,7 @@ export default async function RidePage({ params }: Props) {
       )}
 
       {ride.notes && (
-        <aside className="bg-marigold-tint rounded-xl px-4 py-3 text-sm text-stone-900">
+        <aside className="bg-marigold-tint rounded-xl px-4 py-3 text-sm text-stone-900 dark:bg-amber-950 dark:text-amber-100">
           <strong>Before you go:</strong> {ride.notes}
         </aside>
       )}
@@ -196,11 +236,27 @@ export default async function RidePage({ params }: Props) {
                     style={{ background: categoryStyle(p.category).color }}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-bold">{p.name}</span>
-                    <span className="text-xs text-stone-600 dark:text-stone-400">
+                    <span className="block truncate text-base font-bold">{p.name}</span>
+                    <span className="text-sm text-stone-600 dark:text-stone-400">
                       {categoryStyle(p.category).name} · {detourLabel(p.detourKm)}
                     </span>
+                    {p.thumbUrl && p.thumbCredit && (
+                      <span className="block truncate text-xs text-stone-600 dark:text-stone-400">
+                        {shortCredit(p.thumbCredit)}
+                      </span>
+                    )}
                   </span>
+                  {p.thumbUrl && (
+                    // Its credit is the line under the place's facts.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.thumbUrl}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-14 w-14 shrink-0 rounded-xl bg-stone-200 object-cover dark:bg-stone-800"
+                    />
+                  )}
                 </Link>
               </li>
             ))}
@@ -215,4 +271,18 @@ export default async function RidePage({ params }: Props) {
       <SiteFooter />
     </main>
   );
+}
+
+/**
+ * The photo at the top of the page: the most worthwhile place on the way that has a photo of
+ * its own, with the photo's credit. None when no place has one or the database is down.
+ */
+async function leadPhoto(places: PlaceAlong[]) {
+  const best = places
+    .filter((p) => p.thumbUrl)
+    .sort((a, b) => placeRank(b) - placeRank(a) || a.detourKm - b.detourKm)[0];
+  if (!best) return null;
+  const detail = await getPlaceDetail(best.slug).catch(() => null);
+  const photo = detail?.media[0];
+  return photo ? { place: best, photo } : null;
 }

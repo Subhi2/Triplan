@@ -53,9 +53,9 @@ interface Props {
 }
 
 function roleOf(index: number, count: number) {
-  if (index === 0) return { name: "Start", placeholder: "Where from? e.g. Bengaluru" };
-  if (index === count - 1) return { name: "Destination", placeholder: "Where to? e.g. Kalasa" };
-  return { name: `Stop ${index}`, placeholder: "Via town or place" };
+  if (index === 0) return { name: "Start", placeholder: "Where are you starting from?" };
+  if (index === count - 1) return { name: "Destination", placeholder: "Where are you going?" };
+  return { name: `Stop ${index}`, placeholder: "A town or place to ride through" };
 }
 
 function SortableStop(props: {
@@ -84,7 +84,7 @@ function SortableStop(props: {
       <button
         type="button"
         aria-label={`Reorder ${role.name}`}
-        className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded text-stone-400 hover:text-stone-700 active:cursor-grabbing dark:hover:text-stone-200"
+        className="-ml-1.5 flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded text-stone-400 hover:text-stone-700 active:cursor-grabbing dark:hover:text-stone-200"
         {...attributes}
         {...listeners}
       >

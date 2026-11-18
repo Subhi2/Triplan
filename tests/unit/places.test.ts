@@ -3,6 +3,7 @@ import { categoryStyle } from "@/lib/categories";
 import { bestTimeSummary, formatMonthRanges } from "@/lib/months";
 import {
   bestAlongRoute,
+  worthStop,
   detourLabel,
   placesAlongRequestSchema,
   popularity,
@@ -102,7 +103,7 @@ describe("bestAlongRoute", () => {
     ...p,
   });
 
-  it("keeps the 5 best places in each 10 km stretch, notable and weighty first", () => {
+  it("keeps the 3 best places worth a stop in each 10 km stretch, notable and weighty first", () => {
     const city = [
       place({ category: "attraction", kmFromStart: 1, detourKm: 0.2 }),
       place({ category: "attraction", kmFromStart: 2, detourKm: 0.3 }),
@@ -122,23 +123,61 @@ describe("bestAlongRoute", () => {
     const rural = place({ category: "waterfall", kmFromStart: 55, detourKm: 4.9 });
     const best = bestAlongRoute([...city, rural]);
 
-    expect(best).toHaveLength(6); // 5 from the city stretch + the lone rural waterfall
+    // City stretch: only the notable museum, notable fort and the heritage site are worth a stop.
+    expect(best).toHaveLength(4); // 3 from the city stretch + the lone rural waterfall
     expect(best.map((p) => p.name)).toEqual(
       expect.arrayContaining(["Notable museum", "Notable fort", rural.name]),
     );
-    expect(best.find((p) => p.kmFromStart === 7)).toBeUndefined(); // attraction, 4.9 km off
+    expect(best.find((p) => p.kmFromStart === 7)).toBeUndefined(); // unknown attraction
+    expect(best.find((p) => p.category === "lake")).toBeUndefined(); // unknown village tank
     const kms = best.map((p) => p.kmFromStart);
     expect(kms).toEqual([...kms].sort((a, b) => a - b)); // still ordered by km
   });
 
-  it("keeps everything on a quiet road", () => {
+  it("keeps everything worth a stop on a quiet road", () => {
     const quiet = [5, 25, 45, 65].map((km) => place({ category: "viewpoint", kmFromStart: km }));
     expect(bestAlongRoute(quiet)).toEqual(quiet);
   });
 
+  it("leaves a stretch of unknown roadside temples empty", () => {
+    const temples = [11, 12, 13].map((km) => place({ category: "temple", kmFromStart: km }));
+    const known = place({ category: "temple", kmFromStart: 14, ratingCount: 3 });
+    expect(bestAlongRoute([...temples, known])).toEqual([known]);
+  });
+
+  it("lists one sight once when it is mapped twice", () => {
+    const fall = place({ category: "waterfall", kmFromStart: 396, name: "Amboli waterfalls" });
+    const twin = place({ category: "waterfall", kmFromStart: 398, name: "Amboli Waterfall" });
+    const peak = place({ category: "peak", kmFromStart: 54, name: "Nijagal Betta" });
+    const trek = place({ category: "trek", kmFromStart: 54, name: "Nijagal Betta Trek" });
+    const far = place({ category: "waterfall", kmFromStart: 420, name: "Amboli Waterfall" });
+    const best = bestAlongRoute([peak, trek, fall, twin, far]);
+    expect(best.map((p) => p.kmFromStart)).toEqual([54, 396, 420]);
+  });
+
+  it("leaves out the city the rider is leaving: 10% of the route, at most 25 km", () => {
+    const statue = place({ category: "heritage", kmFromStart: 0, notable: true });
+    const park = place({ category: "fort", kmFromStart: 14 });
+    const fort = place({ category: "fort", kmFromStart: 244, notable: true });
+    expect(bestAlongRoute([statue, park, fort], "mixed", 330)).toEqual([fort]);
+    // A short ride skips less: 6.4 km of 64.
+    const falls = place({ category: "waterfall", kmFromStart: 7 });
+    expect(bestAlongRoute([falls], "mixed", 64)).toEqual([falls]);
+    // Without the route's length nothing is skipped.
+    expect(bestAlongRoute([statue])).toEqual([statue]);
+  });
+
+  it("knows which places are worth a stop", () => {
+    expect(worthStop(place({ category: "temple", kmFromStart: 1 }))).toBe(false);
+    expect(worthStop(place({ category: "temple", kmFromStart: 1, notable: true }))).toBe(true);
+    expect(worthStop(place({ category: "lake", kmFromStart: 1, thumbUrl: "x.jpg" }))).toBe(true);
+    expect(worthStop(place({ category: "viewpoint", kmFromStart: 1 }))).toBe(true);
+    expect(worthStop(place({ category: "food", kmFromStart: 1, ratingCount: 2 }))).toBe(false);
+  });
+
   describe("Popular ↔ Offbeat", () => {
-    // One stretch with 4 famous temples and 4 little-known places: 5 are kept.
-    const famous = [1, 2, 3, 4].map((km) =>
+    // Famous temples and little-known viewpoints, one per stretch so the cap stays out of it.
+    const famous = [1, 11, 21, 31].map((km) =>
       place({
         category: "temple",
         kmFromStart: km,
@@ -148,28 +187,37 @@ describe("bestAlongRoute", () => {
         name: `Famous ${km}`,
       }),
     );
-    const quiet = [5, 6, 7, 8].map((km) =>
+    const quiet = [5, 15, 25, 35].map((km) =>
       place({ category: "viewpoint", kmFromStart: km, name: `Quiet ${km}` }),
     );
     const names = (mix: "popular" | "mixed" | "offbeat") =>
       bestAlongRoute([...famous, ...quiet], mix).map((p) => p.name);
 
     it("Popular keeps only the well-known places", () => {
-      expect(names("popular")).toEqual(["Famous 1", "Famous 2", "Famous 3", "Famous 4"]);
+      expect(names("popular")).toEqual(["Famous 1", "Famous 11", "Famous 21", "Famous 31"]);
     });
 
     it("Offbeat keeps only the little-known places", () => {
-      expect(names("offbeat")).toEqual(["Quiet 5", "Quiet 6", "Quiet 7", "Quiet 8"]);
+      expect(names("offbeat")).toEqual(["Quiet 5", "Quiet 15", "Quiet 25", "Quiet 35"]);
     });
 
     it("Popular puts the best known first in a crowded stretch", () => {
+      const crowd = [2, 3, 4].map((km) =>
+        place({
+          category: "temple",
+          kmFromStart: km,
+          notable: true,
+          thumbUrl: "https://upload.wikimedia.org/x.jpg",
+          ratingCount: 40,
+          name: `Famous ${km}`,
+        }),
+      );
       const more = [7, 8, 9].map((km) =>
         place({ category: "temple", kmFromStart: km, notable: true, name: `Notable ${km}` }),
       );
-      // 7 well-known places, 5 kept: the 4 with photos and reviews beat 1 of the 3 notable only.
-      const popular = bestAlongRoute([...famous, ...more], "popular").map((p) => p.name);
-      expect(popular).toHaveLength(5);
-      expect(popular.filter((n) => n.startsWith("Famous"))).toHaveLength(4);
+      // 6 well-known places in km 0–10, 3 kept: those with photos and reviews beat notable only.
+      const popular = bestAlongRoute([...crowd, ...more], "popular").map((p) => p.name);
+      expect(popular).toEqual(["Famous 2", "Famous 3", "Famous 4"]);
     });
 
     it("Mixed is the default order", () => {

@@ -7,9 +7,11 @@ import {
   CHECKPOINT_M,
   KM_TOLERANCE,
   type Ride,
+  type RidePhoto,
   type RideSource,
   type RideSummary,
 } from "@/lib/rides";
+import { START_SKIP_MAX_KM, START_SKIP_SHARE } from "@/lib/places";
 import type { RoadMix } from "@/lib/trip";
 import { getDb } from "../db";
 import { ride } from "../db/schema";
@@ -209,4 +211,68 @@ export async function getRide(slug: string): Promise<{ ride: Ride; geometry: Lin
 export async function rideSlugs(): Promise<string[]> {
   const rows = await getDb().select({ slug: ride.slug }).from(ride).orderBy(asc(ride.position));
   return rows.map((r) => r.slug);
+}
+
+/** How near the road a ride card's photo place must be. */
+const RIDE_PHOTO_M = 3_000;
+
+/**
+ * One photo per ride, in one query: of the sights within 3 km of the road with a verified photo
+ * of our own (Wikimedia Commons or a rider's; never Google), the most worthwhile by category
+ * weight, then notable (curated, reviewed or on Wikidata). Food, coffee, fuel and stays
+ * (weight under 0.9) are left out, and so is the city the ride starts in.
+ */
+export async function ridePhotos(): Promise<Record<string, RidePhoto>> {
+  const rows = await getDb().execute<{
+    slug: string;
+    thumb_url: string;
+    place_name: string;
+    author: string | null;
+    license: string;
+    source: string;
+  }>(sql`
+    SELECT r.slug, pick.thumb_url, pick.place_name, pick.author, pick.license, pick.source
+    FROM ride r
+    CROSS JOIN LATERAL (
+      SELECT m.thumb_url, p.name AS place_name, m.author, m.license, m.source
+      FROM place p
+      JOIN category c ON c.id = p.category_id
+      JOIN LATERAL (
+        SELECT thumb_url, author, license, source
+        FROM media
+        WHERE place_id = p.id AND kind = 'image' AND status = 'verified'
+          AND thumb_url IS NOT NULL AND source <> 'google'
+        ORDER BY created_at
+        LIMIT 1
+      ) m ON true
+      WHERE p.status = 'verified' AND c.weight >= 0.9
+        AND ST_DWithin(p.location, r.route_geom, ${RIDE_PHOTO_M})
+        -- Not the city the rider leaves: as best stops, 10% of the ride, at most 25 km.
+        AND NOT ST_DWithin(
+          p.location,
+          ST_StartPoint(r.route_geom::geometry)::geography,
+          LEAST(${START_SKIP_MAX_KM * 1000}::float8, r.distance_m * ${START_SKIP_SHARE}::float8)
+        )
+      ORDER BY c.weight
+          + CASE WHEN p.source <> 'osm' OR p.wikidata_id IS NOT NULL OR p.rating_count > 0
+                 THEN 1 ELSE 0 END
+          -- Landscapes photograph well; a park or museum photo is often its signboard.
+          + CASE WHEN c.slug IN ('waterfall', 'viewpoint', 'pass', 'peak', 'fort', 'beach', 'lake')
+                 THEN 0.5 ELSE 0 END DESC,
+        p.rating_count DESC
+      LIMIT 1
+    ) pick
+  `);
+  return Object.fromEntries(
+    [...rows].map((r) => [
+      r.slug,
+      {
+        thumbUrl: r.thumb_url,
+        placeName: r.place_name,
+        author: r.author,
+        license: r.license,
+        source: r.source,
+      },
+    ]),
+  );
 }

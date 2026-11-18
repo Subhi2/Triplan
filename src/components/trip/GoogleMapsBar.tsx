@@ -1,11 +1,14 @@
 "use client";
 
+import { formatDuration } from "@/lib/format";
 import { MAX_GOOGLE_WAYPOINTS, type GoogleMapsTrip } from "@/lib/googleMaps";
 import { trackEvent } from "@/lib/track";
 
 interface Props {
   trip: GoogleMapsTrip;
   pickedCount: number;
+  /** Riding plus the ticked stops' detours and visits, in minutes; null without a route. */
+  totalMin: number | null;
   onClear: () => void;
   /** Downloads the trip as a GPX file, for OsmAnd, Organic Maps and GPS units. */
   onDownloadGpx: () => void;
@@ -16,7 +19,7 @@ interface Props {
  * via stops and the ticked places as stops in route order, or downloads it as GPX. The negative
  * bottom undoes the panel padding (and the safe area below it on phones).
  */
-export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Props) {
+export function GoogleMapsBar({ trip, pickedCount, totalMin, onClear, onDownloadGpx }: Props) {
   const tooMany = trip.url === null && trip.waypointCount > MAX_GOOGLE_WAYPOINTS;
   return (
     <div
@@ -24,12 +27,24 @@ export function GoogleMapsBar({ trip, pickedCount, onClear, onDownloadGpx }: Pro
       aria-label="Google Maps"
       className="sticky bottom-[calc(-1rem-env(safe-area-inset-bottom))] z-10 -mx-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-stone-200 bg-(--surface) px-4 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-sm dark:border-stone-800"
     >
-      <span className="min-w-0 flex-1 text-stone-600 dark:text-stone-400">
+      {/* Its own row above the buttons: the panel is narrow even on desktop (about 24rem). */}
+      <span className="min-w-0 basis-full text-stone-600 dark:text-stone-400">
         {pickedCount === 0 ? (
           "Tick places as stops"
         ) : (
           <>
-            {pickedCount} ticked ·{" "}
+            {/* "places ticked", not "stops": the Google Maps button also counts the via towns. */}
+            <span className="font-bold text-stone-900 dark:text-stone-100">
+              {pickedCount} {pickedCount === 1 ? "place" : "places"} ticked
+            </span>
+            {totalMin !== null && (
+              <>
+                {" "}
+                · about <span className="tabular font-mono">{formatDuration(totalMin)}</span> with
+                visits
+              </>
+            )}{" "}
+            ·{" "}
             <button
               type="button"
               onClick={onClear}

@@ -14,6 +14,8 @@ interface Props {
   cursorKm: number | null;
   onCursorChange: (km: number | null) => void;
   markKm?: number | null;
+  /** The heading's level: 3 under the planner's sections, 2 on a page of its own (a ride). */
+  headingLevel?: 2 | 3;
 }
 
 /** "853 m up in 16.0 km · 5.3% · to Valparai". */
@@ -23,7 +25,15 @@ export function climbSummary(c: Climb): string {
 }
 
 /** The selected route's ups and downs: totals, the chart, the big climbs, a table of heights. */
-export function RouteProfile({ state, ghats, cursorKm, onCursorChange, markKm }: Props) {
+export function RouteProfile({
+  state,
+  ghats,
+  cursorKm,
+  onCursorChange,
+  markKm,
+  headingLevel = 3,
+}: Props) {
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   if (!state || state.status === "none") return null;
   if (state.status === "error") {
     return state.retry ? (
@@ -33,9 +43,12 @@ export function RouteProfile({ state, ghats, cursorKm, onCursorChange, markKm }:
   return (
     <section aria-labelledby="profile-heading" className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 id="profile-heading" className="font-display text-[17px] font-bold tracking-tight">
+        <Heading
+          id="profile-heading"
+          className={`font-display font-bold tracking-tight ${headingLevel === 2 ? "text-xl" : "text-[17px]"}`}
+        >
           Ups and downs
-        </h3>
+        </Heading>
         {state.status === "ok" && <Totals profile={state.profile} />}
       </div>
       {state.status === "loading" ? (

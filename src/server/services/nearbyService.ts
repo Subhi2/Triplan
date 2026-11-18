@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { PhotoCredit } from "@/lib/media";
 import { PLACE_LIST_CATEGORIES } from "@/lib/categories";
 import { bearingDeg, type LngLat } from "@/lib/geo";
 import { estimateBestMonths } from "@/lib/guideDefaults";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/nearby";
 import { TRENDING_MIN_SCORE } from "@/lib/places";
 import { getDb } from "../db";
+import { photoCredits } from "./photoCredit";
 import {
   getRoutingTableProvider,
   MAX_TABLE_DESTINATIONS,
@@ -33,6 +35,7 @@ export interface PlaceNearRow {
   ratingCount: number;
   bestMonths: number[];
   thumbUrl: string | null;
+  thumbCredit?: PhotoCredit | null;
   trendingScore: number;
   notable: boolean;
   /** Category weight, +1 when curated, +0.5 with a Wikidata link (as places_along_route). */
@@ -70,6 +73,7 @@ export async function placesNearDb(
     sql`SELECT * FROM places_near_point(${origin[0]}, ${origin[1]}, ${Math.round(radiusM)},
           ${sql.param(categories)}::text[], ${Math.round(lim)})`,
   );
+  const credits = await photoCredits(rows.map((r) => r.thumb_url));
   return rows.map((r) => ({
     id: r.id,
     slug: r.slug,
@@ -81,6 +85,7 @@ export async function placesNearDb(
     ratingCount: r.rating_count,
     bestMonths: r.best_months,
     thumbUrl: r.thumb_url,
+    thumbCredit: (r.thumb_url && credits.get(r.thumb_url)) || null,
     trendingScore: r.trending_score,
     notable: r.notable,
     priority: Number(r.priority),
@@ -122,6 +127,7 @@ function toPlaceNear(origin: LngLat, row: PlaceNearRow): PlaceNear {
     bestMonths: estimated ? estimateBestMonths(row.category, row.location) : row.bestMonths,
     bestMonthsEstimated: estimated,
     thumbUrl: row.thumbUrl,
+    thumbCredit: row.thumbCredit ?? null,
     trending,
     notable: row.notable,
     fame: fameScore({ priority: row.priority, rating: row.ratingAvg, trending }),

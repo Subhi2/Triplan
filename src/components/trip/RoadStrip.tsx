@@ -76,7 +76,7 @@ export function RoadStrip({
         ))}
         {ghats.length > 0 && (
           <span
-            className="text-ghat-dark absolute top-0 text-[10px] font-bold tracking-wider dark:text-orange-300"
+            className="text-ghat-dark absolute top-0 text-[11px] font-bold tracking-wider dark:text-orange-300"
             aria-hidden
             style={{ left: pct(ghats[0]![0]) }}
           >

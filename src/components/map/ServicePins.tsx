@@ -4,6 +4,7 @@ import type { FeatureCollection, Point } from "geojson";
 import { Layer, Source } from "react-map-gl/maplibre";
 import { SAFETY_STYLE } from "@/lib/safety";
 import type { MapViewProps } from "./types";
+import { MAP_COLORS } from "./mapColors";
 
 /** Safety stops on the MapLibre map: small dots in their kind's colour, ringed in white. */
 export function ServicePins({ pins }: { pins: NonNullable<MapViewProps["servicePins"]> }) {
@@ -24,7 +25,7 @@ export function ServicePins({ pins }: { pins: NonNullable<MapViewProps["serviceP
           "circle-color": ["get", "color"],
           "circle-radius": 6,
           "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff",
+          "circle-stroke-color": MAP_COLORS.casing,
         }}
       />
     </Source>

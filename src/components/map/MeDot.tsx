@@ -1,3 +1,4 @@
+import { MAP_COLORS } from "./mapColors";
 /**
  * "You are here": a teal dot with a white ring, and a soft wedge pointing the way the rider is
  * moving when that is known. Used by both maps. The wedge turns without animation under reduced
@@ -14,7 +15,11 @@ export function MeDot({ headingDeg }: { headingDeg: number | null }) {
           style={{ transform: `rotate(${Math.round(headingDeg)}deg)` }}
         >
           {/* A 70° fan from the centre towards the top (north before rotation). */}
-          <path d="M24 24 L10.2 4.3 A24 24 0 0 1 37.8 4.3 Z" fill="#0f766e" fillOpacity="0.3" />
+          <path
+            d="M24 24 L10.2 4.3 A24 24 0 0 1 37.8 4.3 Z"
+            fill={MAP_COLORS.brand}
+            fillOpacity="0.3"
+          />
         </svg>
       )}
       <span className="bg-brand/20 absolute inset-2.5 rounded-full" />

@@ -96,7 +96,8 @@ for (const [name, trip] of Object.entries(TRIPS)) {
     const km = routes[0]!.distanceKm;
     const best = await kmMarkers(page);
     expect(best.length).toBeGreaterThan(15);
-    expect(best[0]).toBeLessThan(km * 0.1);
+    // The city the rider leaves (10% of the route, at most 25 km) is skipped; stops start soon after.
+    expect(best[0]).toBeLessThan(km * 0.2);
     expect(best.at(-1)).toBeGreaterThan(km * 0.9);
     await expect(page.getByRole("button", { name: /^Best stops/ })).toHaveAttribute(
       "aria-pressed",
@@ -109,8 +110,9 @@ for (const [name, trip] of Object.entries(TRIPS)) {
     const chips = page.getByRole("group", { name: "Filter by category" });
     await expect(chips.getByRole("button", { name: /^Fuel/ })).toHaveCount(0);
 
-    // Picking a category lists every place in it.
+    // Picking a category lists every place in it (temples may sit behind "More").
     const templeChip = chips.getByRole("button", { name: /^Temple/ });
+    if (!(await templeChip.isVisible())) await chips.getByRole("button", { name: /^More/ }).click();
     const templeCount = Number((await templeChip.innerText()).replace(/\D/g, ""));
     await templeChip.click();
     await expect(

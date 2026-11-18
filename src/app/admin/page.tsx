@@ -182,6 +182,7 @@ export default async function AdminPage({
                 <img
                   src={m.thumbUrl ?? m.url}
                   alt={`Photo of ${m.placeName} by ${m.author ?? "a rider"}`}
+                  loading="lazy"
                   className="aspect-video w-full rounded-md bg-stone-100 object-cover dark:bg-stone-800"
                 />
               </a>
