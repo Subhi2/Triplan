@@ -3,6 +3,7 @@
 //   pnpm db:seed-rides                     (every ride)
 //   pnpm db:seed-rides -- --only=pollachi-to-valparai
 //   pnpm db:seed-rides -- --dry-run        (route and check, write nothing)
+//   pnpm db:seed-rides -- --tiers-only     (only set each stored ride's tier; no routing)
 // Rides whose route misses a checkpoint or is far from the expected distance are reported and not
 // stored. One routing request per ride (cached), spaced out for the public OSRM server.
 import { readFile } from "node:fs/promises";
@@ -11,13 +12,17 @@ import { ridesFileSchema } from "../src/lib/rides";
 import { closeDb } from "../src/server/db";
 import { getRoutingProvider } from "../src/server/providers/routing";
 import { routeProfile } from "../src/server/services/elevationService";
-import { buildRide, upsertRide } from "../src/server/services/rideService";
+import { buildRide, setRideTier, upsertRide } from "../src/server/services/rideService";
 
 const PAUSE_MS = 2_000;
 
 const { values } = parseArgs({
   args: process.argv.slice(2).filter((a) => a !== "--"),
-  options: { only: { type: "string" }, "dry-run": { type: "boolean", default: false } },
+  options: {
+    only: { type: "string" },
+    "dry-run": { type: "boolean", default: false },
+    "tiers-only": { type: "boolean", default: false },
+  },
 });
 
 async function main() {
@@ -28,6 +33,14 @@ async function main() {
     slugs.add(r.slug);
   }
   const only = values.only?.split(",");
+  if (values["tiers-only"]) {
+    for (const r of rides) {
+      if (only && !only.includes(r.slug)) continue;
+      if (!values["dry-run"]) await setRideTier(r.slug, r.tier);
+      console.log(`${r.slug}: ${r.tier}`);
+    }
+    return;
+  }
   const deps = {
     routing: getRoutingProvider(),
     profile: (g: Parameters<typeof routeProfile>[0]) => routeProfile(g, null),

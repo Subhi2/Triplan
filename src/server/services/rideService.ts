@@ -8,6 +8,7 @@ import {
   KM_TOLERANCE,
   type Ride,
   type RidePhoto,
+  type RideTier,
   type RideSource,
   type RideSummary,
 } from "@/lib/rides";
@@ -99,6 +100,7 @@ export async function upsertRide(built: BuiltRide, position: number): Promise<vo
     region: source.region,
     vehicle: source.vehicle,
     tags: source.tags,
+    tier: source.tier,
     bestMonths: source.bestMonths,
     notes: source.notes,
     stops: source.stops,
@@ -128,6 +130,7 @@ function toRide(r: RideRow): Ride {
     region: r.region,
     vehicle: r.vehicle,
     tags: r.tags,
+    tier: r.tier === "legend" ? "legend" : "classic",
     bestMonths: r.bestMonths,
     notes: r.notes,
     stops: r.stops,
@@ -150,6 +153,7 @@ export async function listRides(): Promise<RideSummary[]> {
       region: ride.region,
       vehicle: ride.vehicle,
       tags: ride.tags,
+      tier: ride.tier,
       bestMonths: ride.bestMonths,
       stops: ride.stops,
       distanceM: ride.distanceM,
@@ -166,6 +170,7 @@ export async function listRides(): Promise<RideSummary[]> {
     region: r.region,
     vehicle: r.vehicle === "car" ? "car" : "bike",
     tags: r.tags,
+    tier: r.tier === "legend" ? "legend" : "classic",
     bestMonths: r.bestMonths,
     stops: r.stops,
     distanceKm: r.distanceM / 1000,
@@ -186,6 +191,7 @@ export async function getRide(slug: string): Promise<{ ride: Ride; geometry: Lin
       region: ride.region,
       vehicle: ride.vehicle,
       tags: ride.tags,
+      tier: ride.tier,
       bestMonths: ride.bestMonths,
       notes: ride.notes,
       stops: ride.stops,
@@ -202,7 +208,11 @@ export async function getRide(slug: string): Promise<{ ride: Ride; geometry: Lin
     .where(eq(ride.slug, slug));
   if (!row) return null;
   return {
-    ride: toRide({ ...row, vehicle: row.vehicle === "car" ? "car" : "bike" }),
+    ride: toRide({
+      ...row,
+      vehicle: row.vehicle === "car" ? "car" : "bike",
+      tier: row.tier === "legend" ? "legend" : "classic",
+    }),
     geometry: JSON.parse(row.line) as LineString,
   };
 }
@@ -275,4 +285,9 @@ export async function ridePhotos(): Promise<Record<string, RidePhoto>> {
       },
     ]),
   );
+}
+
+/** Sets a stored ride's tier without routing it again (a ride the table does not hold is skipped). */
+export async function setRideTier(slug: string, tier: RideTier): Promise<void> {
+  await getDb().update(ride).set({ tier }).where(eq(ride.slug, slug));
 }

@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/", label: "Plan a ride", primary: true },
   { href: "/nearby", label: "Near me", primary: true },
   { href: "/rides", label: "Famous rides" },
+  { href: "/bucket-list", label: "Bucket list", community: true },
   { href: "/trips", label: "Your trips" },
   { href: "/group-rides", label: "Group rides", community: true },
   { href: "/clubs", label: "Clubs", community: true },

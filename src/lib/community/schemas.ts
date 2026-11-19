@@ -193,3 +193,43 @@ export const MAX_OWNED_CLUBS = 3;
 export const MAX_DAYS_AHEAD = 180;
 /** A ride counts as past this long after its start (multi-day rides stay current a while). */
 export const RIDE_CURRENT_FOR_MS = 2 * 24 * 60 * 60_000;
+
+/** A rider's bucket-list mark on a famous ride: wants to ride it, or has ridden it. */
+export const RIDE_MARK_STATUSES = ["pending", "done"] as const;
+export type RideMarkStatus = (typeof RIDE_MARK_STATUSES)[number];
+export const RIDE_MARK_NOTE_MAX = 280;
+
+export const rideMarkSchema = z
+  .object({
+    rideSlug: z
+      .string()
+      .min(1)
+      .max(120)
+      .regex(/^[a-z0-9-]+$/),
+    status: z.enum(RIDE_MARK_STATUSES),
+    /** The day it was ridden (YYYY-MM-DD, not in the future); only for done rides. */
+    doneOn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .default(null),
+    note: z.string().trim().max(RIDE_MARK_NOTE_MAX).default(""),
+  })
+  .refine((m) => m.status === "done" || (m.doneOn === null && m.note === ""), {
+    message: "Only a done ride has a date or a note",
+  })
+  .refine((m) => m.doneOn === null || !Number.isNaN(Date.parse(m.doneOn)), {
+    message: "Not a date",
+  })
+  .refine((m) => m.doneOn === null || m.doneOn <= new Date().toISOString().slice(0, 10), {
+    message: "A ride cannot be done in the future",
+  });
+export type RideMarkInput = z.infer<typeof rideMarkSchema>;
+
+/** One mark as the rider sees it. */
+export interface RideMark {
+  rideSlug: string;
+  status: RideMarkStatus;
+  doneOn: string | null;
+  note: string;
+}

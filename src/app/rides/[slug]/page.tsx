@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { CountUp, type CountUnit } from "@/components/motion/CountUp";
+import { MarkRide } from "@/components/ride/MarkRide";
 import { RideActions } from "@/components/ride/RideActions";
+import { communityEnabled } from "@/lib/community/enabled";
 import { PHONE_ACTION_BAR_SPACE } from "@/components/site/PhoneActionBar";
 import { RouteSketch } from "@/components/ride/RouteSketch";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -113,6 +115,11 @@ export default async function RidePage({ params }: Props) {
         >
           ← Famous rides
         </Link>
+        {ride.tier === "legend" && (
+          <p className="text-ghat-dark text-xs font-bold tracking-wide uppercase dark:text-orange-300">
+            Legend · once in a lifetime
+          </p>
+        )}
         <h1 className="font-display text-4xl leading-none font-extrabold tracking-tight md:text-6xl">
           {ride.title}
         </h1>
@@ -170,6 +177,8 @@ export default async function RidePage({ params }: Props) {
           ride.profile && <Fact label="Highest" value={ride.profile.highest.m} unit="metres" />
         )}
       </dl>
+
+      {communityEnabled && <MarkRide rideSlug={ride.slug} />}
 
       <RideActions
         plannerUrl={ridePlannerUrl(ride)}

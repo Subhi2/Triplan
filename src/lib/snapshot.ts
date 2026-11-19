@@ -81,6 +81,7 @@ export const DEPENDENT_TABLES = [
   "club_member",
   "group_ride",
   "group_ride_member",
+  "ride_mark",
 ] as const;
 
 export const SNAPSHOT_LICENCE =
