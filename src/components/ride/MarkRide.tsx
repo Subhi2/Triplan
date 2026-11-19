@@ -153,6 +153,14 @@ function MarkRideBody({ rideSlug }: { rideSlug: string }) {
             >
               Edit
             </button>
+            <a
+              href={`/og/done?ride=${rideSlug}${mark.doneOn ? `&on=${mark.doneOn}` : ""}`}
+              target="_blank"
+              rel="noopener"
+              className={secondaryButton}
+            >
+              Share card
+            </a>
             <button
               type="button"
               disabled={busy}
