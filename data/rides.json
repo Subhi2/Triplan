@@ -1448,5 +1448,490 @@
     "expect": {
       "km": 235
     }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Pamban",
+        "location": [79.21268, 9.28203]
+      }
+    ],
+    "slug": "madurai-to-dhanushkodi",
+    "title": "Madurai to Dhanushkodi via Rameswaram",
+    "region": "Tamil Nadu",
+    "blurb": "Across the dry Ramanathapuram plain to the Pamban bridge, over the strait to Rameswaram's temple, then out along a thin spit of sand to the ruined town of Dhanushkodi at the island's tip.",
+    "tags": ["Pamban bridge", "coast", "pilgrimage"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The road past Dhanushkodi is closed to vehicles after dark and winds are strong on the spit; check opening times locally.",
+    "stops": [
+      {
+        "label": "Madurai",
+        "location": [78.1141, 9.92612]
+      },
+      {
+        "label": "Pamban",
+        "location": [79.21268, 9.28203]
+      },
+      {
+        "label": "Rameswaram",
+        "location": [79.31256, 9.28447]
+      },
+      {
+        "label": "Dhanushkodi",
+        "location": [79.41567, 9.17938]
+      }
+    ],
+    "expect": {
+      "km": 194
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kumily",
+        "location": [77.1671, 9.6068]
+      }
+    ],
+    "slug": "munnar-to-thekkady-via-kumily",
+    "title": "Munnar to Thekkady via Kumily",
+    "region": "Kerala",
+    "blurb": "From Munnar's tea slopes over the Western Ghats into Idukki's spice country, down to Kumily and Thekkady beside the Periyar reserve.",
+    "tags": ["tea estates", "spice country", "Western Ghats"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3],
+    "notes": "Mist and heavy rain from June to August make the Ghat sections slippery; elephants sometimes cross near Periyar.",
+    "stops": [
+      {
+        "label": "Munnar",
+        "location": [77.06009, 10.087]
+      },
+      {
+        "label": "Kumily",
+        "location": [77.1671, 9.6068]
+      },
+      {
+        "label": "Thekkady",
+        "location": [77.18114, 9.5805]
+      }
+    ],
+    "expect": {
+      "km": 87
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Hosapete",
+        "location": [76.38723, 15.26649]
+      }
+    ],
+    "slug": "bengaluru-to-hampi",
+    "title": "Bengaluru to Hampi",
+    "region": "Karnataka",
+    "blurb": "North on NH48 past Chitradurga's fort town to Hosapete, then the last few kilometres into Hampi's boulder-strewn ruins of the Vijayanagara capital.",
+    "tags": ["highway", "Vijayanagara", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Summers are very hot; roadside food is limited between Chitradurga and Hosapete.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Hosapete",
+        "location": [76.38723, 15.26649]
+      },
+      {
+        "label": "Hampi",
+        "location": [76.46102, 15.3358]
+      }
+    ],
+    "expect": {
+      "km": 340
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Hubballi",
+        "location": [75.13798, 15.35184]
+      }
+    ],
+    "slug": "hampi-to-gokarna",
+    "title": "Hampi to Gokarna",
+    "region": "Karnataka",
+    "blurb": "From Hampi's ruins across the Deccan plateau to Hubballi, then down through the forests of the Western Ghats to Gokarna's temple town and its beaches.",
+    "tags": ["plateau to coast", "Western Ghats", "beaches"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "The Ghat section through the Uttara Kannada forests has sharp bends and few fuel pumps; fill up in Hubballi.",
+    "stops": [
+      {
+        "label": "Hampi",
+        "location": [76.46102, 15.3358]
+      },
+      {
+        "label": "Hubballi",
+        "location": [75.13798, 15.35184]
+      },
+      {
+        "label": "Gokarna",
+        "location": [74.31844, 14.54396]
+      }
+    ],
+    "expect": {
+      "km": 330
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Murudeshwar",
+        "location": [74.48834, 14.09595]
+      }
+    ],
+    "slug": "gokarna-to-udupi-via-murudeshwar",
+    "title": "Gokarna to Udupi via Murudeshwar",
+    "region": "Karnataka",
+    "blurb": "The coast road south from Gokarna to Murudeshwar's seaside temple and its tall Shiva statue, then past river mouths and beaches to Udupi.",
+    "tags": ["coast", "beaches", "temples"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "NH66 is being widened in places, so expect diversions and dust; the monsoon from June to September brings heavy rain and rough seas.",
+    "stops": [
+      {
+        "label": "Gokarna",
+        "location": [74.31844, 14.54396]
+      },
+      {
+        "label": "Murudeshwar",
+        "location": [74.48834, 14.09595]
+      },
+      {
+        "label": "Udupi",
+        "location": [74.74732, 13.34192]
+      }
+    ],
+    "expect": {
+      "km": 175
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Sakleshpur",
+        "location": [75.785, 12.943]
+      }
+    ],
+    "slug": "bengaluru-to-kukke-subramanya",
+    "title": "Bengaluru to Kukke Subramanya via Shiradi Ghat",
+    "region": "Karnataka",
+    "blurb": "Past Hassan and Sakleshpur, then down the forested Shiradi Ghat to the Kumaradhara valley and the temple town of Kukke Subramanya.",
+    "tags": ["Shiradi Ghat", "forest", "pilgrimage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Shiradi Ghat has been closed or limited to light vehicles during monsoon repairs; check its status before leaving.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Hassan",
+        "location": [76.0996, 13.0068]
+      },
+      {
+        "label": "Sakleshpur",
+        "location": [75.785, 12.943]
+      },
+      {
+        "label": "Kukke Subramanya",
+        "location": [75.61583, 12.66342]
+      }
+    ],
+    "expect": {
+      "km": 275
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "shivamogga-to-jog-falls",
+    "title": "Shivamogga to Jog Falls",
+    "region": "Karnataka",
+    "blurb": "West from Shivamogga through the Sharavathi valley's forest and arecanut gardens to Jog Falls, where the river drops about 250 m in four streams.",
+    "tags": ["waterfall", "Sharavathi", "forest"],
+    "bestMonths": [7, 8, 9, 10, 11],
+    "notes": "The falls are at their strongest after the monsoon and thin out by March.",
+    "stops": [
+      {
+        "label": "Shivamogga",
+        "location": [75.57498, 13.93261]
+      },
+      {
+        "label": "Jog Falls",
+        "location": [74.81231, 14.2293]
+      }
+    ],
+    "expect": {
+      "km": 105
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kalasa",
+        "location": [75.356, 13.234]
+      }
+    ],
+    "slug": "chikkamagaluru-to-kudremukh",
+    "title": "Chikkamagaluru to Kudremukh via Kalasa",
+    "region": "Karnataka",
+    "blurb": "From Chikkamagaluru's coffee hills through Mudigere's estates to Kalasa, then along the Bhadra valley's forest road to Kudremukh and its grassy peak.",
+    "tags": ["coffee country", "Bhadra valley", "peak"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Entering Kudremukh National Park needs a forest permit and leeches are common in the monsoon.",
+    "stops": [
+      {
+        "label": "Chikkamagaluru",
+        "location": [75.772, 13.3161]
+      },
+      {
+        "label": "Kalasa",
+        "location": [75.356, 13.234]
+      },
+      {
+        "label": "Kudremukh",
+        "location": [75.25103, 13.21907]
+      }
+    ],
+    "expect": {
+      "km": 95
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Coonoor",
+        "location": [76.79653, 11.34594]
+      }
+    ],
+    "slug": "coimbatore-to-ooty-via-coonoor",
+    "title": "Coimbatore to Ooty via Coonoor",
+    "region": "Tamil Nadu",
+    "blurb": "Across the plain to Mettupalayam, then the Coonoor ghat road with its hairpins through tea slopes, and on to Ooty's lake town.",
+    "tags": ["Nilgiris", "ghat road", "tea estates"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3],
+    "notes": "Weekend traffic on the Coonoor ghat is heavy, and monsoon rain can bring down trees and loose rock.",
+    "stops": [
+      {
+        "label": "Coimbatore",
+        "location": [76.96284, 11.00181]
+      },
+      {
+        "label": "Mettupalayam",
+        "location": [76.93565, 11.30594]
+      },
+      {
+        "label": "Coonoor",
+        "location": [76.79653, 11.34594]
+      },
+      {
+        "label": "Ooty",
+        "location": [76.68681, 11.40347]
+      }
+    ],
+    "expect": {
+      "km": 108
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Salem",
+        "location": [78.15818, 11.6552]
+      }
+    ],
+    "slug": "bengaluru-to-yercaud",
+    "title": "Bengaluru to Yercaud",
+    "region": "Tamil Nadu",
+    "blurb": "South on NH44 through Hosur to Salem, then up the Shevaroy hills on a short, twisty climb to Yercaud's lake and coffee gardens.",
+    "tags": ["Shevaroy hills", "hairpins", "weekend ride"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The climb to Yercaud is narrow, with buses and trucks; avoid riding them in heavy fog.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Hosur",
+        "location": [77.83095, 12.73288]
+      },
+      {
+        "label": "Salem",
+        "location": [78.15818, 11.6552]
+      },
+      {
+        "label": "Yercaud",
+        "location": [78.20754, 11.78521]
+      }
+    ],
+    "expect": {
+      "km": 235
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "visakhapatnam-to-araku-valley",
+    "title": "Visakhapatnam to Araku Valley",
+    "region": "Andhra Pradesh",
+    "blurb": "From the Visakhapatnam coast up through the Eastern Ghats' forest and ghat road, with viewpoints and tunnels along the way, to Araku's coffee plantations.",
+    "tags": ["Eastern Ghats", "coffee", "ghat road"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Fog is common on the ghat in winter mornings; the monsoon from June to September can bring landslides.",
+    "stops": [
+      {
+        "label": "Visakhapatnam",
+        "location": [83.29213, 17.69355]
+      },
+      {
+        "label": "Araku Valley",
+        "location": [82.88058, 18.32344]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "chennai-to-tirupati",
+    "title": "Chennai to Tirupati",
+    "region": "Tamil Nadu and Andhra Pradesh",
+    "blurb": "A fast run north across the coastal plain from Chennai into Andhra Pradesh, ending at Tirupati below the Tirumala hills and their famous temple.",
+    "tags": ["highway", "pilgrimage", "plains"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Heavy truck traffic on the national highway; Tirumala itself is a separate ghat road with its own timings for two-wheelers.",
+    "stops": [
+      {
+        "label": "Chennai",
+        "location": [80.27019, 13.08369]
+      },
+      {
+        "label": "Tirupati",
+        "location": [79.42317, 13.63164]
+      }
+    ],
+    "expect": {
+      "km": 150
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [],
+    "slug": "thiruvananthapuram-to-kanyakumari",
+    "title": "Thiruvananthapuram to Kanyakumari",
+    "region": "Kerala and Tamil Nadu",
+    "blurb": "South from Kerala's capital through coconut country and across the state border to Kanyakumari, where the Arabian Sea, Bay of Bengal and Indian Ocean meet at India's southern tip.",
+    "tags": ["land's end", "coast", "sunrise"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Kanyakumari is crowded at sunrise and sunset, especially on weekends and festivals.",
+    "stops": [
+      {
+        "label": "Thiruvananthapuram",
+        "location": [76.94755, 8.48823]
+      },
+      {
+        "label": "Kanyakumari",
+        "location": [77.54993, 8.07925]
+      }
+    ],
+    "expect": {
+      "km": 90
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Halebidu",
+        "location": [75.99188, 13.2168]
+      }
+    ],
+    "slug": "shravanabelagola-to-belur-hoysala-circuit",
+    "title": "Shravanabelagola to Belur: the Hoysala circuit",
+    "region": "Karnataka",
+    "blurb": "From the giant Jain statue at Shravanabelagola through Hassan to the Hoysala temples of Halebidu and Belur, finely carved in soapstone in the 12th century.",
+    "tags": ["Hoysala temples", "heritage", "short ride"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "The Shravanabelagola climb is barefoot on hot stone in the afternoon; temples close in the early evening.",
+    "stops": [
+      {
+        "label": "Shravanabelagola",
+        "location": [76.48701, 12.85813]
+      },
+      {
+        "label": "Hassan",
+        "location": [76.0996, 13.0068]
+      },
+      {
+        "label": "Halebidu",
+        "location": [75.99188, 13.2168]
+      },
+      {
+        "label": "Belur",
+        "location": [75.865, 13.165]
+      }
+    ],
+    "expect": {
+      "km": 120
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bengaluru-to-nandi-hills",
+    "title": "Bengaluru to Nandi Hills",
+    "region": "Karnataka",
+    "blurb": "A short early-morning run north past Devanahalli to the Nandi Hills climb, with a steady ascent to the hilltop sunrise point above the plains.",
+    "tags": ["sunrise ride", "short ride", "hill climb"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Gates open before dawn but fog is thick on winter mornings; weekends are very crowded.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Nandi Hills",
+        "location": [77.68075, 13.36046]
+      }
+    ],
+    "expect": {
+      "km": 65
+    }
   }
 ]
