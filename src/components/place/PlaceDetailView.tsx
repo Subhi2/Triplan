@@ -212,7 +212,10 @@ export function PlaceDetailView({
       </header>
 
       {place.media.length > 0 ? (
-        <ul className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1" aria-label="Photos">
+        <ul
+          className="-mx-1 flex snap-x scroll-px-1 gap-2 overflow-x-auto px-1 pb-1"
+          aria-label="Photos"
+        >
           {place.media.map((m) => (
             <li key={m.url} className="w-72 shrink-0 snap-start">
               <figure>
@@ -379,7 +382,7 @@ export function PlaceDetailView({
                   href={v.url}
                   rel={external}
                   target="_blank"
-                  className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
+                  className="text-brand inline-flex min-h-11 items-center underline md:min-h-0 dark:text-teal-300"
                 >
                   {v.title ?? v.url}
                 </a>
@@ -400,7 +403,7 @@ export function PlaceDetailView({
             href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`}
             rel={external}
             target="_blank"
-            className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
+            className="text-brand inline-flex min-h-11 items-center underline md:min-h-0 dark:text-teal-300"
           >
             Directions
           </a>
@@ -412,7 +415,7 @@ export function PlaceDetailView({
             }
             rel={external}
             target="_blank"
-            className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
+            className="text-brand inline-flex min-h-11 items-center underline md:min-h-0 dark:text-teal-300"
           >
             OpenStreetMap
           </a>
@@ -421,7 +424,7 @@ export function PlaceDetailView({
               href={place.osm.wikipediaUrl}
               rel={external}
               target="_blank"
-              className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
+              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0 dark:text-teal-300"
             >
               Wikipedia
             </a>
@@ -431,7 +434,7 @@ export function PlaceDetailView({
               href={place.osm.website}
               rel={external}
               target="_blank"
-              className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
+              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0 dark:text-teal-300"
             >
               Website
             </a>

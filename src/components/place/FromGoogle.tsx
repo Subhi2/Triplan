@@ -139,7 +139,7 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
 
       {fill.photos.length > 0 && (
         <ul
-          className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1"
+          className="-mx-1 flex snap-x scroll-px-1 gap-2 overflow-x-auto px-1 pb-1"
           aria-label="Photos from Google"
         >
           {fill.photos.map((p, i) => (
@@ -210,7 +210,7 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
               href={fill.googleMapsUri}
               rel={external}
               target="_blank"
-              className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
+              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0 dark:text-teal-300"
             >
               See all on Google Maps
             </a>
