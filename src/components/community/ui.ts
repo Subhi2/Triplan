@@ -14,8 +14,7 @@ export const linkButton =
 
 export const chip =
   "inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-sm whitespace-nowrap md:min-h-9";
-export const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
-export const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
+export { chipOff, chipOn } from "@/components/ui/chips";
 
 export const field =
   "min-h-11 w-full rounded-lg border border-stone-300 bg-(--surface) px-2 text-base md:min-h-9 md:text-sm dark:border-stone-700";

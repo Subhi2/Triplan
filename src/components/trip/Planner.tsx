@@ -72,6 +72,7 @@ import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { FeatureShelf } from "./FeatureShelf";
 import { TripSaveBar } from "./TripSaveBar";
+import { chipOff } from "@/components/ui/chips";
 
 // Panels that show only once a route is on screen (or only with the AI key) load then, not with
 // the planner: the chart, the day split, safety stops, the ride check and the story poster.
@@ -1407,7 +1408,7 @@ function StepBar() {
                 ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
                 : i < at
                   ? "bg-brand-tint text-brand-dark dark:bg-teal-950 dark:text-teal-200"
-                  : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700"
+                  : chipOff
             }`}
           >
             <span aria-hidden className="tabular font-mono text-xs">

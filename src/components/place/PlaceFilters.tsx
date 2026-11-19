@@ -4,6 +4,7 @@ import { useState } from "react";
 import { categoryStyle, CATEGORIES, isCategorySlug } from "@/lib/categories";
 import { DETOUR_LIMITS_KM, LIST_MIXES, type ListMix } from "@/lib/places";
 import type { DetourLimitKm } from "@/lib/tripUrl";
+import { chipOff, chipOn } from "@/components/ui/chips";
 
 interface Props {
   counts: [category: string, count: number][]; // categories present on this route
@@ -22,8 +23,6 @@ export const LEADING_CATEGORIES = 4;
 
 const chip =
   "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
-const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
-const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 
 const MIX_LABELS: Record<ListMix, string> = {
   popular: "Popular",

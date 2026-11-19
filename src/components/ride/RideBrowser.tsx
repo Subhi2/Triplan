@@ -9,12 +9,11 @@ import { RIDE_AREAS, rideArea, type RideArea, type RidePhoto, type RideSummary }
 import { rideInList, type RideListKey } from "@/lib/rideLists";
 import { RideListChips } from "./RideListChips";
 import { RideCarousel } from "./RideCarousel";
+import { chipOff, chipOn } from "@/components/ui/chips";
 
 // The same chips as the place filters.
 const chip =
   "inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-sm whitespace-nowrap md:min-h-9";
-const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
-const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 
 /** The famous rides with filters: where in India, and good in which month. */
 export function RideBrowser({

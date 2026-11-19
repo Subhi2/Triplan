@@ -3,6 +3,7 @@
 import { VehicleToggle } from "@/components/ui/VehicleToggle";
 import { REACH_LABELS, REACH_MINUTES, type ReachMinutes } from "@/lib/nearby";
 import type { Vehicle } from "@/lib/trip";
+import { chipOff, chipOn } from "@/components/ui/chips";
 
 interface Props {
   within: ReachMinutes;
@@ -13,8 +14,6 @@ interface Props {
 
 const chip =
   "inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-sm whitespace-nowrap md:min-h-9";
-const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
-const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 
 /** How far: 30 min / 1 h / 2 h / Half day on the road, by bike or car. */
 export function ReachChips(props: Props) {
