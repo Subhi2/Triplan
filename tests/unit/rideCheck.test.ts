@@ -81,6 +81,17 @@ describe("planDaylight (Bengaluru → Kalasa, 3 October 2026)", () => {
     expect(ride("2026-10-03T09:00:00Z").verdict).toBe("dark"); // arrive 20:00 IST
   });
 
+  it("an arrival in the small hours is dark, not judged against the coming evening's sunset", () => {
+    // Leave 20:30 IST, 5 h of riding and 30 min of breaks: arrive 02:00 IST the next morning.
+    const plan = ride("2026-10-03T15:00:00Z");
+    expect(plan.arriveAt.toISOString()).toBe("2026-10-03T20:30:00.000Z");
+    expect(plan.verdict).toBe("dark");
+    // The sunset it is measured against is the one it has already passed.
+    expect(plan.sunsetAtEnd.getTime()).toBeLessThan(plan.arriveAt.getTime());
+    // An arrival after sunrise on the same trip is a day arrival again.
+    expect(ride("2026-10-03T23:30:00Z").verdict).toBe("day"); // 05:00 IST + 5 h 30 min = 10:30 IST
+  });
+
   it("flags a start before sunrise and a very long day", () => {
     expect(ride("2026-10-02T23:30:00Z").startsInDark).toBe(true); // 05:00 IST
     expect(ride("2026-10-03T00:30:00Z", 600).longDay).toBe(true);
