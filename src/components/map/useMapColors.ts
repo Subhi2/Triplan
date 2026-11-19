@@ -4,18 +4,21 @@ import { useEffect, useState } from "react";
 import { MAP_COLORS, MAP_COLORS_DARK, type MapPalette } from "./mapColors";
 
 /**
- * The colours for lines and pins on the Google map, which turns dark with the site (data-theme on
- * <html>). The MapLibre map keeps its light style in both themes and so keeps MAP_COLORS. Only
- * used where the browser renders the map, so the page's theme is known on the first render.
+ * The site's theme (data-theme on <html>), following the toggle. Only used where the browser
+ * renders the map, so the page's theme is known on the first render.
  */
-export function useMapColors(): MapPalette {
-  const read = () =>
-    document.documentElement.dataset.theme === "dark" ? MAP_COLORS_DARK : MAP_COLORS;
-  const [colors, setColors] = useState<MapPalette>(read);
+export function useMapTheme(): "light" | "dark" {
+  const read = () => (document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+  const [theme, setTheme] = useState<"light" | "dark">(read);
   useEffect(() => {
-    const watch = new MutationObserver(() => setColors(read()));
+    const watch = new MutationObserver(() => setTheme(read()));
     watch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => watch.disconnect();
   }, []);
-  return colors;
+  return theme;
+}
+
+/** The colours for lines and pins on the Google map, which turns dark with the site. */
+export function useMapColors(): MapPalette {
+  return useMapTheme() === "dark" ? MAP_COLORS_DARK : MAP_COLORS;
 }

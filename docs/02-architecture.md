@@ -379,7 +379,7 @@ Up to eight photos per ride in `ride_photo`, picked by `pnpm db:import-ride-phot
 
 ## Light and dark
 
-`data-theme` ("light" or "dark") on `<html>`, set before the first paint by the script in `layout.tsx` (`THEME_SCRIPT`, `src/lib/theme.ts`) from `localStorage` ("theme") or the device. Tailwind's `dark:` variant and the colour tokens in `globals.css` follow it. `ThemeToggle` is in `SiteNav`, the planner and Near me headers, and the Menu. The Google map is made with the colour scheme in force and made again when it changes (`GoogleMapView`); its lines take `useMapColors`. Rules and what was checked: `08-design.md`, "Light and dark".
+`data-theme` ("light" or "dark") on `<html>`, set before the first paint by the script in `layout.tsx` (`THEME_SCRIPT`, `src/lib/theme.ts`) from `localStorage` ("theme") or the device. Tailwind's `dark:` variant and the colour tokens in `globals.css` follow it. `ThemeToggle` is in `SiteNav`, the planner and Near me headers, and the Menu. The Google map is made with the colour scheme in force and made again when it changes (`GoogleMapView`); its lines take `useMapColors`. The MapLibre map (`MapView`) uses OpenFreeMap's "dark" style in dark mode and passes the dark palette to its layers through `MapPaletteContext`. Rules and what was checked: `08-design.md`, "Light and dark".
 
 ## Ride story
 

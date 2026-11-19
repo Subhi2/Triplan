@@ -97,6 +97,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
 DATABASE_URL=
+NEXT_PUBLIC_MAP_STYLE_DARK_URL=   # MapLibre style for dark mode; empty = OpenFreeMap "dark" (always light when a custom style URL is set)
 NEXT_PUBLIC_MAP_STYLE_URL=        # MapLibre style JSON URL
 NEXT_PUBLIC_TERRAIN_TILES_URL=    # Terrarium tiles for the profile and 3D terrain; empty = AWS Terrain Tiles
 NEXT_PUBLIC_SITE_URL=             # public address for share cards and the sitemap

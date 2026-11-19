@@ -5,7 +5,7 @@ import { Layer, Source } from "react-map-gl/maplibre";
 import type { LngLat } from "@/lib/geo";
 import type { RouteOption } from "@/lib/trip";
 import { linePart, useDrawIn } from "./useDrawIn";
-import { MAP_COLORS } from "./mapColors";
+import { useMapPalette } from "./mapPalette";
 
 export const ROUTE_LAYER_IDS = ["routes-alt", "routes-selected"];
 
@@ -16,6 +16,7 @@ interface Props {
 
 /** All route options: the selected one thick, the others thin and dashed (and clickable). */
 export function RouteLayer({ routes, selectedId }: Props) {
+  const colors = useMapPalette();
   // The picked route draws itself along the road.
   const progress = useDrawIn(routes.some((r) => r.id === selectedId) ? (selectedId ?? "") : "");
   const data: FeatureCollection<LineString, { id: string; selected: boolean }> = {
@@ -40,21 +41,21 @@ export function RouteLayer({ routes, selectedId }: Props) {
         type="line"
         filter={["==", ["get", "selected"], false]}
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": MAP_COLORS.altRoute, "line-width": 3, "line-dasharray": [2, 2] }}
+        paint={{ "line-color": colors.altRoute, "line-width": 3, "line-dasharray": [2, 2] }}
       />
       <Layer
         id="routes-selected-casing"
         type="line"
         filter={["==", ["get", "selected"], true]}
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": MAP_COLORS.casing, "line-width": 9 }}
+        paint={{ "line-color": colors.casing, "line-width": 9 }}
       />
       <Layer
         id="routes-selected"
         type="line"
         filter={["==", ["get", "selected"], true]}
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": MAP_COLORS.brand, "line-width": 5 }}
+        paint={{ "line-color": colors.brand, "line-width": 5 }}
       />
     </Source>
   );

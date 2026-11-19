@@ -13,7 +13,12 @@ export { SITE_LINKS, type SiteSection } from "./siteLinks";
  */
 export function SiteNav({ current }: { current?: SiteSection }) {
   return (
-    <nav aria-label="Main" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+    <nav
+      aria-label="Main"
+      // A container, so the links show in full only where the bar itself is wide enough (about 830
+      // px): content pages are 640 to 1024 px wide on any screen, and a full bar wrapped onto two rows.
+      className="@container flex flex-wrap items-center justify-between gap-x-4 gap-y-1"
+    >
       <div className="flex items-center gap-x-1">
         <Link
           href="/"
@@ -21,13 +26,13 @@ export function SiteNav({ current }: { current?: SiteSection }) {
         >
           {SITE_NAME}
         </Link>
-        {/* Phones have it in the Menu. */}
-        <ThemeToggle className="hidden md:inline-flex" />
+        {/* A narrow bar has it in the Menu. */}
+        <ThemeToggle className="@max-[52rem]:hidden" />
       </div>
       <div className="flex items-center gap-x-1">
         <ul className="flex flex-wrap items-center gap-x-1 text-sm font-bold">
           {SITE_LINKS.map((l) => (
-            <li key={l.href} className={l.primary ? "" : "hidden md:block"}>
+            <li key={l.href} className={l.primary ? "" : "hidden @[52rem]:block"}>
               <Link
                 href={l.href}
                 aria-current={current === l.href ? "page" : undefined}
@@ -44,7 +49,7 @@ export function SiteNav({ current }: { current?: SiteSection }) {
           ))}
         </ul>
         <SiteMenu
-          className="md:hidden"
+          className="@[52rem]:hidden"
           current={current}
           links={SITE_LINKS.filter((l) => !l.primary)}
         />

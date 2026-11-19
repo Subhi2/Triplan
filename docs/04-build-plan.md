@@ -264,13 +264,13 @@ Decided 2026-11-19: cover as many of India's famous rides as we can, let riders 
 4. **Badges and share card.** `src/lib/badges.ts`; `/og/done`.
 5. **Map.** A map of India on the bucket list with the rides coloured by mark.
 6. **Photos.** `ride_photo` (0028), `pnpm db:import-ride-photos`, `RideCarousel` on every ride card and page, the table in the snapshot.
-7. **Light and dark.** The toggle, `data-theme`, the Google map following it, and a contrast audit of every page (`08`).
+7. **Light and dark.** The toggle, `data-theme`, both maps following it (the Google scheme and OpenFreeMap's dark style), a nav that moves links into the Menu where the bar is narrow (container query), and a contrast and phone-width audit of every page (`08`).
 
 **Done when:** a rider with a nickname marks a ride done on its page and sees it counted on `/bucket-list` and `/me`, lit on the map and in a badge; every ride card scrolls through up to eight credited photos with the route over the corner; the whole site reads in both light and dark; `NEXT_DIST_DIR=.next-build pnpm build` passes.
 
 **Passes the new-features check** (`CLAUDE.md`, "Choosing new features"): rides, marks, badges and lists are our own data; photos are Commons files under CC BY, CC BY-SA, CC0 or public domain, found once by an import we run (the Commons API is used only then, never by a page), shown with credit from Commons servers that any reader may use; no app review or approval is needed; the toggle is browser-only.
 
-**Not built / left open:** rides in Bihar and the Andaman and Nicobar Islands (no stop coordinates found); a "Central" filter (Madhya Pradesh and Chhattisgarh rides sit under West and East and North-east); a dark style for the MapLibre map (it stays light in dark mode); ride photos are picked by title words, so a few will not match their road.
+**Not built / left open:** rides in Bihar and the Andaman and Nicobar Islands (no stop coordinates found); a "Central" filter (Madhya Pradesh and Chhattisgarh rides sit under West and East and North-east); the 3D ride preview keeps its light map in dark mode; ride photos are picked by title words, so a few will not match their road.
 
 ## Phase 5 · Community content
 

@@ -19,7 +19,10 @@ export const MAP_COLORS = {
 } as const;
 
 /** The same roles with string values, so a palette can be swapped for another. */
-export type MapPalette = { [K in keyof typeof MAP_COLORS]: string };
+export type MapPalette = { [K in keyof typeof MAP_COLORS]: string } & {
+  /** A thin dark line under a line with no casing, on a dark map. */
+  edge?: string;
+};
 
 /**
  * The Google map's dark scheme: its land is dark teal-green, where the light-mode teal line all
