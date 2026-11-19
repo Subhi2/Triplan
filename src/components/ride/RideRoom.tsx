@@ -315,7 +315,7 @@ export function RideRoom({ room, routeId, title, follow }: Props) {
             <li key={r.id} className="flex min-h-11 items-center justify-between gap-2 py-1.5">
               <span className="font-bold">
                 {r.name}
-                {r.me && <span className="font-normal text-stone-600"> (you)</span>}
+                {r.me && <span className="font-normal text-stone-600 dark:text-stone-400"> (you)</span>}
               </span>
               <span className="text-sm text-stone-600 dark:text-stone-400">
                 {r.me

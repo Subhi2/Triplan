@@ -128,6 +128,15 @@
   color-scheme: light;
 }
 
+/* Form fields keep a border that reads at 3:1 against the page in both themes (WCAG 1.4.11):
+   stone-300 on white, and stone-700 on the dark surface, were about 1.5:1. Unlayered, so it wins
+   over each field's own border-colour utilities. */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"], [type="file"]),
+select,
+textarea {
+  border-color: var(--color-stone-500);
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -167,6 +176,15 @@ body {
   );
   background-size: 200% 100%;
   animation: var(--animate-shimmer);
+}
+/* On the dark page the loading blocks dim too, instead of flashing bright. */
+:root[data-theme="dark"] .shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-stone-800) 0%,
+    var(--color-stone-700) 50%,
+    var(--color-stone-800) 100%
+  );
 }
 
 /* Pointer proximity (useCrown): cards and rows near the mouse lean towards it, glowing faintly;

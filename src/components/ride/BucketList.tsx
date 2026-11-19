@@ -188,7 +188,7 @@ function BucketListBody({
         <p className="text-sm text-stone-600 dark:text-stone-400">
           <span className="font-bold text-teal-700 dark:text-teal-300">Teal</span> done (
           <span className="tabular font-mono">{done}</span>),{" "}
-          <span className="font-bold text-amber-700 dark:text-amber-400">amber</span> want to ride (
+          <span className="font-bold text-amber-800 dark:text-amber-400">amber</span> want to ride (
           <span className="tabular font-mono">{wanted}</span>), grey not yet. Tap a road to open the
           ride.
         </p>

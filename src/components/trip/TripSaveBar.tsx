@@ -46,7 +46,7 @@ async function send(
 const primary =
   "bg-brand hover:bg-brand-dark inline-flex min-h-11 shrink-0 items-center rounded-md px-3 font-medium whitespace-nowrap md:min-h-0 md:py-1 text-white disabled:cursor-not-allowed disabled:opacity-50";
 const link =
-  "text-brand inline-flex min-h-11 items-center font-medium hover:underline md:min-h-0 disabled:text-stone-400 disabled:no-underline";
+  "text-brand dark:text-teal-300 inline-flex min-h-11 items-center font-medium hover:underline md:min-h-0 disabled:text-stone-400 disabled:no-underline";
 
 /**
  * Save the trip, rename it, save changes to it or save it as a new trip, and share its link:
@@ -257,7 +257,7 @@ export function TripSaveBar({ saved, plan, defaultTitle, onSaved }: Props) {
         </p>
       )}
       {/* Always rendered: a live region added at the same time as its text is often not read. */}
-      <p role="status" className="text-brand">
+      <p role="status" className="text-brand dark:text-teal-300">
         {notice}
       </p>
     </section>

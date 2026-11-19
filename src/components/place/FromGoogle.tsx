@@ -210,7 +210,7 @@ export function FromGoogle({ slug, placeName, ownPhotos, ownReviews, headingLeve
               href={fill.googleMapsUri}
               rel={external}
               target="_blank"
-              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
+              className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
             >
               See all on Google Maps
             </a>

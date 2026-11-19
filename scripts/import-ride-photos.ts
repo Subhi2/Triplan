@@ -17,14 +17,15 @@ const { values } = parseArgs({
 const time = () => new Date().toTimeString().slice(0, 8);
 
 async function main() {
-  const { rides, photos, empty } = await importRidePhotos(getWikimediaProvider(), {
+  const { rides, photos, empty, failed } = await importRidePhotos(getWikimediaProvider(), {
     only: values.only?.split(","),
     force: values.force,
     log: (line) => console.log(`${time()} ${line}`),
   });
   console.log(
     `${time()} Done: ${photos} photos for ${rides} rides.` +
-      (empty.length ? ` No photo found for: ${empty.join(", ")}` : ""),
+      (empty.length ? ` No photo found for: ${empty.join(", ")}.` : "") +
+      (failed.length ? ` Failed, run again: ${failed.join(", ")}.` : ""),
   );
 }
 

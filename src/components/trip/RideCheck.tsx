@@ -454,7 +454,7 @@ export function RideCheck({
               </span>
             </span>
           )}
-          <span aria-hidden className="ml-auto text-stone-500">
+          <span aria-hidden className="ml-auto text-stone-500 dark:text-stone-400">
             {open ? "▴" : "▾"}
           </span>
         </button>

@@ -73,6 +73,31 @@ async function storeGallery(slug: string, picks: PhotoCandidate[]): Promise<void
   });
 }
 
+/** The longest title list, once encoded, put in one imageinfo address (Commons answers 414 above ~8 kB). */
+const MAX_TITLES_QUERY_CHARS = 4_500;
+
+/** Titles in groups that fit one request: at most COMMONS_BATCH, and a short enough address. */
+export function batchTitles(titles: string[]): string[][] {
+  const batches: string[][] = [];
+  let current: string[] = [];
+  let chars = 0;
+  for (const t of titles) {
+    const len = encodeURIComponent(t).length + 3; // the "|" between titles, encoded
+    if (
+      current.length > 0 &&
+      (current.length >= COMMONS_BATCH || chars + len > MAX_TITLES_QUERY_CHARS)
+    ) {
+      batches.push(current);
+      current = [];
+      chars = 0;
+    }
+    current.push(t);
+    chars += len;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
 export interface RidePhotoImportOptions {
   only?: string[];
   /** Rebuild galleries that already exist. */
@@ -85,7 +110,7 @@ export interface RidePhotoImportOptions {
 export async function importRidePhotos(
   provider: WikimediaProvider,
   { only, force = false, pauseMs = 1_100, log = () => {} }: RidePhotoImportOptions = {},
-): Promise<{ rides: number; photos: number; empty: string[] }> {
+): Promise<{ rides: number; photos: number; empty: string[]; failed: string[] }> {
   const rides = await getDb().execute<RideRow>(sql`
     SELECT slug, distance_m AS "distanceM",
            ST_AsGeoJSON(ST_Simplify(route_geom::geometry, 0.0005), 5) AS line
@@ -103,34 +128,41 @@ export async function importRidePhotos(
   let done = 0;
   let photos = 0;
   const empty: string[] = [];
+  const failed: string[] = [];
   for (const r of rides) {
-    const line = (JSON.parse(r.line) as { coordinates: LngLat[] }).coordinates;
-    const hits = new Map<string, CommonsGeoFile>();
-    for (const p of samplePoints(line, r.distanceM)) {
-      for (const hit of await provider.filesNear(p, RADIUS_M)) {
-        if (!hits.has(hit.file)) hits.set(hit.file, hit);
+    try {
+      const line = (JSON.parse(r.line) as { coordinates: LngLat[] }).coordinates;
+      const hits = new Map<string, CommonsGeoFile>();
+      for (const p of samplePoints(line, r.distanceM)) {
+        for (const hit of await provider.filesNear(p, RADIUS_M)) {
+          if (!hits.has(hit.file)) hits.set(hit.file, hit);
+        }
+        await wait(pauseMs);
       }
-      await wait(pauseMs);
-    }
-    // Cheap title checks before asking Commons for each file's credit and size.
-    const titles = [...hits.keys()].filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
-    const images = new Map<string, CommonsImage>();
-    for (let i = 0; i < titles.length; i += COMMONS_BATCH) {
-      for (const [file, image] of await provider.imageInfo(titles.slice(i, i + COMMONS_BATCH))) {
-        images.set(file, image);
+      // Cheap title checks before asking Commons for each file's credit and size.
+      const titles = [...hits.keys()].filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
+      const images = new Map<string, CommonsImage>();
+      for (const batch of batchTitles(titles)) {
+        for (const [file, image] of await provider.imageInfo(batch)) images.set(file, image);
+        await wait(pauseMs);
       }
-      await wait(pauseMs);
+      const picks = pickGallery(
+        toCandidates([...hits.values()], images, line),
+        r.distanceM / 1000,
+        GALLERY_MAX,
+      );
+      await storeGallery(r.slug, picks);
+      done++;
+      photos += picks.length;
+      if (picks.length === 0) empty.push(r.slug);
+      log(`${r.slug}: ${picks.length} photos (from ${titles.length} files near the road)`);
+    } catch (err) {
+      // One ride's failure (a busy server, an odd answer) must not stop the rest; run again to retry.
+      failed.push(r.slug);
+      log(
+        `${r.slug}: failed, will be tried again next run (${err instanceof Error ? err.message : String(err)})`,
+      );
     }
-    const picks = pickGallery(
-      toCandidates([...hits.values()], images, line),
-      r.distanceM / 1000,
-      GALLERY_MAX,
-    );
-    await storeGallery(r.slug, picks);
-    done++;
-    photos += picks.length;
-    if (picks.length === 0) empty.push(r.slug);
-    log(`${r.slug}: ${picks.length} photos (from ${titles.length} files near the road)`);
   }
-  return { rides: done, photos, empty };
+  return { rides: done, photos, empty, failed };
 }

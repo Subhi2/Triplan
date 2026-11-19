@@ -245,10 +245,10 @@ export function StopInput({
               </li>
             ))}
             {status === "idle" && results.length === 0 && (
-              <li className="px-3 py-2 text-stone-500">No matches</li>
+              <li className="px-3 py-2 text-stone-500 dark:text-stone-400">No matches</li>
             )}
           </ul>
-          <div className="shrink-0 space-y-0.5 border-t border-stone-200 px-3 py-2 text-xs text-stone-500 dark:border-stone-700">
+          <div className="shrink-0 space-y-0.5 border-t border-stone-200 px-3 py-2 text-xs text-stone-500 dark:text-stone-400 dark:border-stone-700">
             {status === "loading" ? (
               <p>{results.length > 0 ? "Searching more places…" : "Searching…"}</p>
             ) : status === "error" ? (

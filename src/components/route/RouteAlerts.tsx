@@ -6,7 +6,7 @@ import { alertLine, alertTone, type RouteAlert } from "@/lib/alerts";
 const TONE = {
   bad: "border-ghat bg-marigold-tint text-stone-900 dark:bg-orange-950 dark:text-orange-50",
   warn: "border-marigold bg-marigold-tint text-stone-900 dark:bg-amber-950 dark:text-amber-50",
-  muted: "border-stone-300 bg-stone-100 text-stone-900 dark:bg-stone-800 dark:text-stone-100",
+  muted: "border-stone-300 dark:border-stone-700 bg-stone-100 text-stone-900 dark:bg-stone-800 dark:text-stone-100",
 } as const;
 
 function WarningIcon() {

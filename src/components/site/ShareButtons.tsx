@@ -81,7 +81,7 @@ export function ShareButtons({ title, text, path, linkClassName, onNotice }: Pro
         </>
       )}
       {!onNotice && ownNotice && (
-        <span role="status" className="text-brand text-sm">
+        <span role="status" className="text-brand dark:text-teal-300 text-sm">
           {ownNotice}
         </span>
       )}

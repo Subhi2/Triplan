@@ -90,7 +90,7 @@ export function OriginBar(props: Props) {
           {props.locate.message}
         </p>
       )}
-      <div className="flex items-center gap-3 text-xs text-stone-500">
+      <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400">
         <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
         or
         <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
