@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import type { LngLat } from "@/lib/geo";
 import type { RouteOption } from "@/lib/trip";
 import { linePart, useDrawIn } from "../useDrawIn";
-import { MAP_COLORS } from "../mapColors";
+import { useMapColors } from "../useMapColors";
 
 interface Props {
   routes: RouteOption[];
@@ -19,6 +19,7 @@ const path = (r: RouteOption) => latLngs(r.geometry.coordinates as LngLat[]);
 /** All route options: the selected one thick, the others thin and dashed (and clickable). */
 export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
   const map = useMap();
+  const colors = useMapColors();
   const selectedLines = useRef<google.maps.Polyline[]>([]);
   const selected = routes.find((r) => r.id === selectedId) ?? null;
   // The picked route draws itself along the road.
@@ -37,7 +38,7 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
         const casing = new google.maps.Polyline({
           map,
           path: path(r),
-          strokeColor: MAP_COLORS.casing,
+          strokeColor: colors.casing,
           strokeWeight: 9,
           strokeOpacity: 1,
           zIndex: 20,
@@ -46,7 +47,7 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
         const line = new google.maps.Polyline({
           map,
           path: path(r),
-          strokeColor: MAP_COLORS.brand,
+          strokeColor: colors.brand,
           strokeWeight: 5,
           strokeOpacity: 1,
           zIndex: 21,
@@ -67,7 +68,7 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
               icon: {
                 path: "M 0,-1 0,1",
                 strokeOpacity: 1,
-                strokeColor: MAP_COLORS.altRoute,
+                strokeColor: colors.altRoute,
                 scale: 3,
               },
               offset: "0",
@@ -86,7 +87,7 @@ export function GoogleRoutes({ routes, selectedId, onSelect }: Props) {
         l.setMap(null);
       }
     };
-  }, [map, routes, selectedId]);
+  }, [map, routes, selectedId, colors]);
 
   useEffect(() => {
     if (!selected) return;
