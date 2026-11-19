@@ -7,6 +7,8 @@ import { CrownList } from "@/components/motion/CrownList";
 import { MONTH_SHORT } from "@/lib/months";
 import { mediaSourceName } from "@/lib/media";
 import { RIDE_AREAS, rideArea, type RideArea, type RidePhoto, type RideSummary } from "@/lib/rides";
+import { rideInList, type RideListKey } from "@/lib/rideLists";
+import { RideListChips } from "./RideListChips";
 import { RouteSketch } from "./RouteSketch";
 
 // The same chips as the place filters.
@@ -26,6 +28,7 @@ export function RideBrowser({
 }) {
   const [area, setArea] = useState<RideArea | null>(null);
   const [month, setMonth] = useState<number | null>(null);
+  const [list, setList] = useState<RideListKey | null>(null);
   // Only the areas that have rides.
   const areas = useMemo(
     () => RIDE_AREAS.filter((a) => rides.some((r) => rideArea(r.region) === a)),
@@ -34,7 +37,8 @@ export function RideBrowser({
   const shown = rides.filter(
     (r) =>
       (area === null || rideArea(r.region) === area) &&
-      (month === null || r.bestMonths.includes(month)),
+      (month === null || r.bestMonths.includes(month)) &&
+      (list === null || rideInList(r, list)),
   );
 
   return (
@@ -67,6 +71,7 @@ export function RideBrowser({
           </select>
         </label>
       </div>
+      <RideListChips rides={rides} value={list} onChange={setList} />
       {shown.length === 0 ? (
         <p className="text-stone-600 dark:text-stone-400">
           No famous ride fits that yet.{" "}
@@ -75,6 +80,7 @@ export function RideBrowser({
             onClick={() => {
               setArea(null);
               setMonth(null);
+              setList(null);
             }}
             className="text-brand-dark inline-flex min-h-11 items-center font-bold hover:underline md:min-h-0 dark:text-teal-300"
           >

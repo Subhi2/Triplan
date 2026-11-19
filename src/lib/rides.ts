@@ -85,6 +85,8 @@ export interface RideSummary {
   durationMin: number;
   ascentM: number | null;
   hairpins: number;
+  /** The highest point on the route in metres, when its elevation profile is stored. */
+  highestM: number | null;
   line: LngLat[];
 }
 

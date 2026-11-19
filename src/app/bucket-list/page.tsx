@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteNav } from "@/components/site/SiteNav";
 import { communityEnabled } from "@/lib/community/enabled";
 import { SITE_NAME } from "@/lib/site";
-import { listRides } from "@/server/services/rideService";
+import { listRides, ridePhotos } from "@/server/services/rideService";
 
 // The ride list changes only when rides are seeded; each rider's marks load in the browser.
 export const revalidate = 86400;
@@ -18,7 +18,11 @@ export const metadata: Metadata = {
 
 export default async function BucketListPage() {
   if (!communityEnabled) notFound();
-  const rides = await listRides().catch(() => []);
+  const [rides, photos] = await Promise.all([
+    listRides().catch(() => []),
+    // Photos are a nicety: without them the cards keep their route sketches.
+    ridePhotos().catch(() => ({})),
+  ]);
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
       <SiteNav current="/bucket-list" />
@@ -34,7 +38,7 @@ export default async function BucketListPage() {
       {rides.length === 0 ? (
         <p className="text-stone-600 dark:text-stone-400">No rides yet.</p>
       ) : (
-        <BucketList rides={rides} />
+        <BucketList rides={rides} photos={photos} />
       )}
       <SiteFooter />
     </main>

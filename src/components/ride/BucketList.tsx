@@ -9,7 +9,11 @@ import { INDIA_BOUNDS, type MapFrame, type MapRidePreview } from "@/components/m
 import { useRideMarks } from "@/components/community/useRideMarks";
 import { card, chip, chipOff, chipOn, muted, secondaryButton } from "@/components/community/ui";
 import { badgesFor } from "@/lib/badges";
-import { rideArea, RIDE_AREAS, type RideArea, type RideSummary } from "@/lib/rides";
+import { mediaSourceName } from "@/lib/media";
+import { rideArea, RIDE_AREAS, type RideArea, type RidePhoto, type RideSummary } from "@/lib/rides";
+import { CountUp } from "@/components/motion/CountUp";
+import { rideInList, type RideListKey } from "@/lib/rideLists";
+import { RideListChips } from "./RideListChips";
 import { RouteSketch } from "./RouteSketch";
 
 /** The map opens on India (the same box the planner starts with). */
@@ -24,19 +28,33 @@ const SHOWS: { key: Show; label: string }[] = [
 ];
 
 /** Every famous ride with the rider's own Done / Want-to-ride marks and how far they have got. */
-export function BucketList({ rides }: { rides: RideSummary[] }) {
+export function BucketList({
+  rides,
+  photos = {},
+}: {
+  rides: RideSummary[];
+  /** The same credited photo per ride as the famous rides page. */
+  photos?: Record<string, RidePhoto>;
+}) {
   return (
     <RiderProvider>
-      <BucketListBody rides={rides} />
+      <BucketListBody rides={rides} photos={photos} />
     </RiderProvider>
   );
 }
 
-function BucketListBody({ rides }: { rides: RideSummary[] }) {
+function BucketListBody({
+  rides,
+  photos,
+}: {
+  rides: RideSummary[];
+  photos: Record<string, RidePhoto>;
+}) {
   const { me, marks, loading, save, remove } = useRideMarks();
   const router = useRouter();
   const [show, setShow] = useState<Show>("all");
   const [area, setArea] = useState<RideArea | null>(null);
+  const [list, setList] = useState<RideListKey | null>(null);
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +78,8 @@ function BucketListBody({ rides }: { rides: RideSummary[] }) {
     (r) =>
       (show === "all" ||
         (show === "legend" ? r.tier === "legend" : marks[r.slug]?.status === show)) &&
-      (area === null || rideArea(r.region) === area),
+      (area === null || rideArea(r.region) === area) &&
+      (list === null || rideInList(r, list)),
   );
 
   // The map draws the rides that match the filters: done in teal, wanted in amber, the rest faded.
@@ -201,6 +220,8 @@ function BucketListBody({ rides }: { rides: RideSummary[] }) {
         ))}
       </div>
 
+      <RideListChips rides={rides} value={list} onChange={setList} />
+
       {error && (
         <p role="alert" className="text-sm font-bold text-red-700 dark:text-red-400">
           {error}
@@ -222,10 +243,29 @@ function BucketListBody({ rides }: { rides: RideSummary[] }) {
             return (
               <li key={r.slug} className={`${card} flex min-w-0 flex-col gap-2 p-3`}>
                 <Link href={`/rides/${r.slug}`} className="flex flex-col gap-2">
-                  <RouteSketch
-                    line={r.line}
-                    className="bg-brand-tint h-24 w-full rounded-lg dark:bg-teal-950"
-                  />
+                  {photos[r.slug] ? (
+                    <span className="relative block">
+                      {/* Our own credited photo (credit below), never Google's. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photos[r.slug]!.thumbUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-36 w-full rounded-lg bg-stone-200 object-cover dark:bg-stone-800"
+                      />
+                      {/* The ride's path over the photo's corner, as on the famous rides page. */}
+                      <RouteSketch
+                        line={r.line}
+                        className="bg-brand-tint/95 absolute right-2 bottom-2 h-14 w-20 rounded-lg dark:bg-teal-950/95"
+                      />
+                    </span>
+                  ) : (
+                    <RouteSketch
+                      line={r.line}
+                      className="bg-brand-tint h-36 w-full rounded-lg dark:bg-teal-950"
+                    />
+                  )}
                   <span className="font-display text-base leading-tight font-bold hover:underline">
                     {status === "done" && <span aria-hidden>✓ </span>}
                     {r.title}
@@ -237,6 +277,21 @@ function BucketListBody({ rides }: { rides: RideSummary[] }) {
                   </span>
                 )}
                 <span className={`${muted} text-sm`}>{r.region}</span>
+                {photos[r.slug] && (
+                  <span className="line-clamp-2 text-xs text-stone-600 dark:text-stone-400">
+                    {photos[r.slug]!.placeName} · photo {photos[r.slug]!.author ?? "unknown"} ·{" "}
+                    {photos[r.slug]!.license} · {mediaSourceName(photos[r.slug]!.source)}
+                  </span>
+                )}
+                <span className="tabular flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm">
+                  <CountUp value={r.distanceKm} unit="km" fromServer />
+                  <CountUp value={r.durationMin} unit="duration" fromServer />
+                  {r.hairpins > 0 && (
+                    <span className="text-ghat-dark font-semibold dark:text-orange-300">
+                      <CountUp value={r.hairpins} fromServer /> hairpins
+                    </span>
+                  )}
+                </span>
                 {me && (
                   <div className="mt-auto flex flex-wrap gap-2">
                     <button

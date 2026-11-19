@@ -160,6 +160,7 @@ export async function listRides(): Promise<RideSummary[]> {
       durationS: ride.durationS,
       ascentM: ride.ascentM,
       hairpins: ride.hairpins,
+      highestM: sql<number | null>`(${ride.profile}->'highest'->>'m')::int`,
       line: sql<string>`ST_AsGeoJSON(ST_Simplify(${ride.routeGeom}::geometry, 0.01), 4)`,
     })
     .from(ride)
@@ -177,6 +178,7 @@ export async function listRides(): Promise<RideSummary[]> {
     durationMin: Math.round(r.durationS / 60),
     ascentM: r.ascentM,
     hairpins: r.hairpins,
+    highestM: r.highestM,
     line: (JSON.parse(r.line) as LineString).coordinates as LngLat[],
   }));
 }
