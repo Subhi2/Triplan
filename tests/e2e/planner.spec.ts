@@ -953,6 +953,13 @@ test("on phones the map comes with the trip, under a one-line header and over th
   for (const name of ["Famous rides", "Your trips", "About"]) {
     await expect(page.getByRole("link", { name })).toBeVisible();
   }
+  // The list's foot takes a tap: it opens above the sheet, not under it (a trial click fails
+  // when another element would receive the tap).
+  await page.getByRole("link", { name: "About" }).click({ trial: true });
+  await expect(page.getByRole("link", { name: "Near me" })).toHaveAttribute(
+    "href",
+    "/nearby?v=bike",
+  );
   await page.keyboard.press("Escape");
   await expect(page.getByRole("link", { name: "Famous rides" })).toBeHidden();
 
