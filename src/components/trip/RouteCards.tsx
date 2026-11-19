@@ -64,7 +64,9 @@ export function RouteCards({
                     : "border border-stone-200 px-3.5 py-3 hover:border-stone-400 hover:bg-(--surface) dark:border-stone-700"
                 }`}
               >
-                <span className="flex items-baseline justify-between gap-2">
+                {/* The time drops under the name, still on the right, when both do not fit:
+                    in the narrow laptop panel the name broke as "via / Chikkamagaluru". */}
+                <span className="flex flex-wrap items-baseline justify-between gap-x-2">
                   <span className={`font-bold ${selected ? "text-base" : "text-[15px]"}`}>
                     {r.viaLabel}
                     {r.id === scenicId && (
@@ -74,7 +76,7 @@ export function RouteCards({
                     )}
                   </span>
                   <span
-                    className={`tabular font-mono text-sm font-semibold whitespace-nowrap ${
+                    className={`tabular ml-auto font-mono text-sm font-semibold whitespace-nowrap ${
                       selected ? "" : "text-stone-600 dark:text-stone-300"
                     }`}
                   >
