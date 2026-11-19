@@ -8,6 +8,8 @@ export const MAP_COLORS = {
   brand: "#0f766e",
   /** Cluster counts. */
   brandText: "#115e59",
+  /** A ride the rider wants to do (bucket list map): marigold. */
+  pending: "#d97706",
   /** Route options not picked: dashed, warm grey from the paper palette. */
   altRoute: "#8c877c",
   /** The casing under the route and around pins. */

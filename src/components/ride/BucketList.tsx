@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { NicknamePrompt, RiderProvider } from "@/components/community/RiderGate";
+import { DynamicMapLibreView } from "@/components/map/DynamicMapView";
+import { INDIA_BOUNDS, type MapFrame, type MapRidePreview } from "@/components/map/types";
 import { useRideMarks } from "@/components/community/useRideMarks";
 import { card, chip, chipOff, chipOn, muted, secondaryButton } from "@/components/community/ui";
 import { badgesFor } from "@/lib/badges";
 import { rideArea, RIDE_AREAS, type RideArea, type RideSummary } from "@/lib/rides";
 import { RouteSketch } from "./RouteSketch";
+
+/** The map opens on India (the same box the planner starts with). */
+const INDIA_FRAME: MapFrame = { key: "india", points: [...INDIA_BOUNDS] };
 
 type Show = "all" | "pending" | "done" | "legend";
 const SHOWS: { key: Show; label: string }[] = [
@@ -28,6 +34,7 @@ export function BucketList({ rides }: { rides: RideSummary[] }) {
 
 function BucketListBody({ rides }: { rides: RideSummary[] }) {
   const { me, marks, loading, save, remove } = useRideMarks();
+  const router = useRouter();
   const [show, setShow] = useState<Show>("all");
   const [area, setArea] = useState<RideArea | null>(null);
   const [asking, setAsking] = useState(false);
@@ -55,6 +62,21 @@ function BucketListBody({ rides }: { rides: RideSummary[] }) {
         (show === "legend" ? r.tier === "legend" : marks[r.slug]?.status === show)) &&
       (area === null || rideArea(r.region) === area),
   );
+
+  // The map draws the rides that match the filters: done in teal, wanted in amber, the rest faded.
+  // Rebuilt only when the set or a mark changes, so the map does not redraw on every keystroke.
+  const previewKey = shown.map((r) => `${r.slug}:${marks[r.slug]?.status ?? "none"}`).join(",");
+  const previews = useMemo<MapRidePreview[]>(
+    () =>
+      previewKey
+        ? previewKey.split(",").map((entry) => {
+            const [slug, state] = entry.split(":") as [string, "done" | "pending" | "none"];
+            return { slug, line: rides.find((r) => r.slug === slug)?.line ?? [], state };
+          })
+        : [],
+    [previewKey, rides],
+  );
+  const wanted = rides.filter((r) => marks[r.slug]?.status === "pending").length;
 
   async function toggle(slug: string, status: "pending" | "done") {
     setError(null);
@@ -126,6 +148,32 @@ function BucketListBody({ rides }: { rides: RideSummary[] }) {
             )}
           </div>
         )}
+      </section>
+
+      <section aria-label="Map of India with your rides" className="flex flex-col gap-2">
+        <div className="h-72 w-full overflow-hidden rounded-2xl border border-stone-200 md:h-[26rem] dark:border-stone-700">
+          <DynamicMapLibreView
+            routes={[]}
+            selectedRouteId={null}
+            onSelectRoute={() => {}}
+            stops={[]}
+            places={[]}
+            activePlaceId={null}
+            hoverPlaceId={null}
+            onSelectPlace={() => {}}
+            onHoverPlace={() => {}}
+            frame={INDIA_FRAME}
+            ridePreviews={previews}
+            onSelectRidePreview={(slug) => router.push(`/rides/${slug}`)}
+          />
+        </div>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          <span className="font-bold text-teal-700 dark:text-teal-300">Teal</span> done (
+          <span className="tabular font-mono">{done}</span>),{" "}
+          <span className="font-bold text-amber-700 dark:text-amber-400">amber</span> want to ride (
+          <span className="tabular font-mono">{wanted}</span>), grey not yet. Tap a road to open the
+          ride.
+        </p>
       </section>
 
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter rides">

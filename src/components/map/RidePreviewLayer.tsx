@@ -13,12 +13,12 @@ export const RIDE_PREVIEW_HIT_LAYER = "ride-previews-hit";
  * A tap on one opens it (MapView's click handler, by `slug`).
  */
 export function RidePreviewLayer({ rides }: { rides: MapRidePreview[] }) {
-  const data: FeatureCollection<LineString, { slug: string }> = {
+  const data: FeatureCollection<LineString, { slug: string; state: string }> = {
     type: "FeatureCollection",
     features: rides.map((r) => ({
       type: "Feature",
       geometry: { type: "LineString", coordinates: r.line },
-      properties: { slug: r.slug },
+      properties: { slug: r.slug, state: r.state ?? "plain" },
     })),
   };
   return (
@@ -27,7 +27,19 @@ export function RidePreviewLayer({ rides }: { rides: MapRidePreview[] }) {
         id="ride-previews"
         type="line"
         layout={{ "line-cap": "round", "line-join": "round" }}
-        paint={{ "line-color": MAP_COLORS.brand, "line-width": 4, "line-opacity": 0.85 }}
+        paint={{
+          "line-color": [
+            "match",
+            ["get", "state"],
+            "pending",
+            MAP_COLORS.pending,
+            "none",
+            MAP_COLORS.altRoute,
+            MAP_COLORS.brand,
+          ],
+          "line-width": ["match", ["get", "state"], "done", 5, "none", 3.5, 4],
+          "line-opacity": ["match", ["get", "state"], "none", 0.8, "plain", 0.85, 1],
+        }}
       />
       <Layer
         id={RIDE_PREVIEW_HIT_LAYER}
