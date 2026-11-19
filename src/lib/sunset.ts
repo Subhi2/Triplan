@@ -28,11 +28,6 @@ export interface SunsetStop {
   leaveBy: Date;
 }
 
-/** Noon of the same calendar day in the runtime's time zone, so SunCalc picks the right day. */
-function noonOf(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
-}
-
 /**
  * For each day (or the whole ride), the best viewpoint, peak, beach or lake in its last quarter
  * and within 5 km of the road, with its sunset and the time to leave to be there 30 minutes
@@ -57,7 +52,9 @@ export function planSunsetStops(places: PlaceAlong[], timing: RideTiming): Sunse
     const detourMs = (best.detourKm / DETOUR_KMH) * 60 * 60_000;
     const arriveAt = new Date(arrivalAt(best.kmFromStart, timing).getTime() + detourMs);
     const [lng, lat] = best.location;
-    const sunset = SunCalc.getTimes(noonOf(arriveAt), lat, lng).sunset;
+    // SunCalc answers for the solar day nearest the instant, so the arrival itself picks the right
+    // day at the stop whatever time zone the device is in.
+    const sunset = SunCalc.getTimes(arriveAt, lat, lng).sunset;
     const dayStart = timing.departAt.getTime() + day * DAY_MS;
     const shift = sunset.getTime() - SUNSET_EARLY_MIN * 60_000 - arriveAt.getTime();
     stops.push({ place: best, day, arriveAt, sunset, leaveBy: new Date(dayStart + shift) });
