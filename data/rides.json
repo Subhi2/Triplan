@@ -2406,5 +2406,416 @@
     "expect": {
       "km": 175
     }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Lachung",
+        "location": [88.74259, 27.68971]
+      }
+    ],
+    "slug": "gangtok-to-yumthang-via-lachung",
+    "title": "Gangtok to Yumthang via Lachung",
+    "region": "Sikkim",
+    "blurb": "North along the Teesta river into North Sikkim, through Mangan and Chungthang to Lachung, then up the valley to Yumthang, where rhododendrons cover the slopes in spring.",
+    "tags": ["North Sikkim", "Teesta valley", "rhododendrons"],
+    "bestMonths": [3, 4, 5, 10, 11],
+    "notes": "North Sikkim needs a permit arranged through a registered operator, and landslides often close the road; check conditions before you go.",
+    "stops": [
+      {
+        "label": "Gangtok",
+        "location": [88.61227, 27.32905]
+      },
+      {
+        "label": "Lachung",
+        "location": [88.74259, 27.68971]
+      },
+      {
+        "label": "Yumthang",
+        "location": [88.70332, 27.80426]
+      }
+    ],
+    "expect": {
+      "km": 140
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "gangtok-to-nathu-la",
+    "title": "Gangtok to Nathu La",
+    "region": "Sikkim",
+    "blurb": "A steep climb east of Gangtok past Tsomgo Lake to Nathu La on the Tibet border, at about 4,300 m, with army posts and snow for much of the year.",
+    "tags": ["border pass", "high pass", "snow"],
+    "bestMonths": [5, 6, 9, 10],
+    "notes": "A permit is required, arranged through a registered operator, and the pass is open only on some days of the week; weather often closes the road.",
+    "stops": [
+      {
+        "label": "Gangtok",
+        "location": [88.61227, 27.32905]
+      },
+      {
+        "label": "Nathu La",
+        "location": [88.8309, 27.38683]
+      }
+    ],
+    "expect": {
+      "km": 55
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "siliguri-to-gangtok",
+    "title": "Siliguri to Gangtok",
+    "region": "West Bengal and Sikkim",
+    "blurb": "From the Siliguri plain into the Teesta gorge, up through Rangpo and the Sikkim border to Gangtok on its ridge.",
+    "tags": ["Teesta gorge", "mountains", "highway"],
+    "bestMonths": [3, 4, 5, 10, 11, 12],
+    "notes": "Landslides on NH10 along the Teesta are common in the monsoon and can block the road for days.",
+    "stops": [
+      {
+        "label": "Siliguri",
+        "location": [88.43099, 26.71641]
+      },
+      {
+        "label": "Gangtok",
+        "location": [88.61227, 27.32905]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "siliguri-to-kalimpong",
+    "title": "Siliguri to Kalimpong",
+    "region": "West Bengal",
+    "blurb": "From Siliguri up the Sevoke road beside the Teesta, over the river at Coronation Bridge, then up to Kalimpong's ridge with its monasteries, nurseries and views of Kanchenjunga.",
+    "tags": ["Teesta valley", "monasteries", "hill town"],
+    "bestMonths": [3, 4, 5, 10, 11, 12],
+    "notes": "Coronation Bridge and the Sevoke road are prone to landslides in the monsoon.",
+    "stops": [
+      {
+        "label": "Siliguri",
+        "location": [88.43099, 26.71641]
+      },
+      {
+        "label": "Kalimpong",
+        "location": [88.47237, 27.07029]
+      }
+    ],
+    "expect": {
+      "km": 70
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "kolkata-to-digha",
+    "title": "Kolkata to Digha",
+    "region": "West Bengal",
+    "blurb": "South-west from Kolkata across the Hooghly and Rupnarayan rivers through Kolaghat and Contai to Digha, a long, flat beach on the Bay of Bengal.",
+    "tags": ["coast", "beach", "easy"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Weekend and holiday traffic is heavy near Kolaghat and Digha; the sea is rough in the monsoon.",
+    "stops": [
+      {
+        "label": "Kolkata",
+        "location": [88.3639, 22.57265]
+      },
+      {
+        "label": "Digha",
+        "location": [87.50694, 21.62246]
+      }
+    ],
+    "expect": {
+      "km": 185
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "kolkata-to-bishnupur",
+    "title": "Kolkata to Bishnupur",
+    "region": "West Bengal",
+    "blurb": "West from Kolkata through Bardhaman's rice country to Bishnupur, a town of terracotta temples built by the Malla kings.",
+    "tags": ["terracotta temples", "heritage", "plains"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Summers are very hot; the Bishnupur Mela is held in December.",
+    "stops": [
+      {
+        "label": "Kolkata",
+        "location": [88.3639, 22.57265]
+      },
+      {
+        "label": "Bishnupur",
+        "location": [87.31463, 23.07573]
+      }
+    ],
+    "expect": {
+      "km": 145
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "guwahati-to-kaziranga",
+    "title": "Guwahati to Kaziranga",
+    "region": "Assam",
+    "blurb": "East along the Brahmaputra's valley on NH715 through Nagaon to Kaziranga, where one-horned rhinos graze in tall grassland beside the highway.",
+    "tags": ["Kaziranga", "rhino", "Brahmaputra valley"],
+    "bestMonths": [11, 12, 1, 2, 3, 4],
+    "notes": "The park is closed from May to October; animals cross NH715 near the park, so slow down.",
+    "stops": [
+      {
+        "label": "Guwahati",
+        "location": [91.75394, 26.1806]
+      },
+      {
+        "label": "Kaziranga",
+        "location": [93.29081, 26.58097]
+      }
+    ],
+    "expect": {
+      "km": 215
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "guwahati-to-shillong",
+    "title": "Guwahati to Shillong",
+    "region": "Assam and Meghalaya",
+    "blurb": "South from Guwahati up the Khasi hills on a smooth highway, past Umiam Lake's reservoir, to Shillong, the Scotland of the East.",
+    "tags": ["Khasi hills", "Umiam Lake", "highway"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 4],
+    "notes": "Fog and rain slow the climb; heavy truck traffic on weekdays.",
+    "stops": [
+      {
+        "label": "Guwahati",
+        "location": [91.75394, 26.1806]
+      },
+      {
+        "label": "Shillong",
+        "location": [91.88279, 25.57599]
+      }
+    ],
+    "expect": {
+      "km": 100
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mawlynnong",
+        "location": [91.91551, 25.20195]
+      }
+    ],
+    "slug": "shillong-to-dawki-via-mawlynnong",
+    "title": "Shillong to Dawki via Mawlynnong",
+    "region": "Meghalaya",
+    "blurb": "South through the Khasi hills to Mawlynnong's tidy village, then down to Dawki and the Umngot river, whose water is clear enough to see the stones below the boats.",
+    "tags": ["Khasi hills", "clean village", "Umngot river"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Dawki is on the Bangladesh border; carry ID and check which areas are open to visitors. The Umngot river is lowest and clearest in winter.",
+    "stops": [
+      {
+        "label": "Shillong",
+        "location": [91.88279, 25.57599]
+      },
+      {
+        "label": "Mawlynnong",
+        "location": [91.91551, 25.20195]
+      },
+      {
+        "label": "Dawki",
+        "location": [92.02157, 25.18563]
+      }
+    ],
+    "expect": {
+      "km": 100
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "itanagar-to-ziro",
+    "title": "Itanagar to Ziro",
+    "region": "Arunachal Pradesh",
+    "blurb": "West from Itanagar over forested ridges to the Ziro valley, a plateau of rice paddies and fish ponds cultivated by the Apatani people.",
+    "tags": ["Ziro valley", "Apatani villages", "paddy fields"],
+    "bestMonths": [3, 4, 5, 9, 10, 11],
+    "notes": "Indian citizens from outside Arunachal need an Inner Line Permit, which is available online.",
+    "stops": [
+      {
+        "label": "Itanagar",
+        "location": [93.62373, 27.09797]
+      },
+      {
+        "label": "Ziro",
+        "location": [93.81536, 27.53867]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kohima",
+        "location": [94.10192, 25.66188]
+      }
+    ],
+    "slug": "dimapur-to-imphal-via-kohima",
+    "title": "Dimapur to Imphal via Kohima",
+    "region": "Nagaland and Manipur",
+    "blurb": "South from Dimapur's plains up to Kohima on its ridge, then along the old Imphal road over the hills of Manipur to the valley and the capital.",
+    "tags": ["Naga hills", "WWII history", "hill road"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Landslides and army convoys slow NH2; Nagaland needs an Inner Line Permit for visitors from outside the state.",
+    "stops": [
+      {
+        "label": "Dimapur",
+        "location": [93.7217, 25.91174]
+      },
+      {
+        "label": "Kohima",
+        "location": [94.10192, 25.66188]
+      },
+      {
+        "label": "Imphal",
+        "location": [93.93644, 24.79912]
+      }
+    ],
+    "expect": {
+      "km": 215
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "aizawl-to-champhai",
+    "title": "Aizawl to Champhai",
+    "region": "Mizoram",
+    "blurb": "East from Aizawl on a mountain road with steep drops and sweeping views to Champhai, a plateau town near the Myanmar border with Mizoram's largest paddy plain.",
+    "tags": ["Mizo hills", "mountain road", "border town"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Indian citizens from outside Mizoram need an Inner Line Permit; landslides are common in the monsoon.",
+    "stops": [
+      {
+        "label": "Aizawl",
+        "location": [92.71799, 23.72776]
+      },
+      {
+        "label": "Champhai",
+        "location": [93.31989, 23.47872]
+      }
+    ],
+    "expect": {
+      "km": 190
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Puri",
+        "location": [85.82525, 19.80761]
+      }
+    ],
+    "slug": "bhubaneswar-to-puri-and-konark",
+    "title": "Bhubaneswar to Puri and Konark",
+    "region": "Odisha",
+    "blurb": "South-east from Bhubaneswar to Puri's Jagannath temple and beach, then north-east along the Marine Drive coast road to the Sun Temple at Konark.",
+    "tags": ["Marine Drive", "temples", "coast"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The Marine Drive between Puri and Konark has stray cattle and gets crowded at weekends and festivals.",
+    "stops": [
+      {
+        "label": "Bhubaneswar",
+        "location": [85.83945, 20.2603]
+      },
+      {
+        "label": "Puri",
+        "location": [85.82525, 19.80761]
+      },
+      {
+        "label": "Konark",
+        "location": [86.09231, 19.88994]
+      }
+    ],
+    "expect": {
+      "km": 110
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "ranchi-to-netarhat",
+    "title": "Ranchi to Netarhat",
+    "region": "Jharkhand",
+    "blurb": "From Ranchi across the Chotanagpur plateau through Lohardaga to Netarhat, a hill station known for its sunrise and sunset points and pine forest.",
+    "tags": ["Chotanagpur plateau", "hill station", "forest"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The last stretch to Netarhat winds through forest with few fuel stops.",
+    "stops": [
+      {
+        "label": "Ranchi",
+        "location": [85.32504, 23.37005]
+      },
+      {
+        "label": "Netarhat",
+        "location": [84.26776, 23.4746]
+      }
+    ],
+    "expect": {
+      "km": 155
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "raipur-to-jagdalpur",
+    "title": "Raipur to Jagdalpur",
+    "region": "Chhattisgarh",
+    "blurb": "South from Raipur through Dhamtari and Kanker, over the Keshkal ghat into Bastar's forest to Jagdalpur, the gateway to Chitrakote Falls.",
+    "tags": ["Bastar", "Keshkal ghat", "forest"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Bastar has some areas where local advice on safety is needed; stay on the main highway and travel in daylight.",
+    "stops": [
+      {
+        "label": "Raipur",
+        "location": [81.6337, 21.23809]
+      },
+      {
+        "label": "Jagdalpur",
+        "location": [82.02357, 19.08708]
+      }
+    ],
+    "expect": {
+      "km": 300
+    }
   }
 ]
