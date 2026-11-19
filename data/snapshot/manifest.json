@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "createdAt": "2026-11-19T07:35:41.532Z",
-  "migration": "0027_ride_tier",
+  "createdAt": "2026-11-19T10:01:00.256Z",
+  "migration": "0028_ride_photo",
   "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url). open_place rows are from Overture Places (Overture Maps Foundation, overturemaps.org) under the licence in each row (CDLA-Permissive-2.0, Apache-2.0 for Foursquare, CC0-1.0): see LICENCE.md, NOTICE-Foursquare.txt and the LICENSE-*.txt files.",
   "tables": [
     {
@@ -68,8 +68,8 @@
         "description_checked_at"
       ],
       "rows": 99372,
-      "bytes": 13747510,
-      "sha256": "866ee0e374fb95d8e2cfc648087a38ad9e0017427f4064c337be42013c8c4fd1"
+      "bytes": 13747526,
+      "sha256": "633053cae420612a94407c0878f5f11b896f8e70c6cd0104970898505430f67f"
     },
     {
       "name": "place_guide",
@@ -161,6 +161,27 @@
       "rows": 100,
       "bytes": 5156481,
       "sha256": "6a41f2a1a8574f7e117961d5b497243335d620a9192c5b625fc87b13624ffb5f"
+    },
+    {
+      "name": "ride_photo",
+      "file": "ride_photo.ndjson.gz",
+      "columns": [
+        "ride_slug",
+        "position",
+        "file",
+        "url",
+        "thumb_url",
+        "page_url",
+        "caption",
+        "author",
+        "license",
+        "km_from_start",
+        "width",
+        "height"
+      ],
+      "rows": 681,
+      "bytes": 56539,
+      "sha256": "428d831905c549eccc1e6a6daa7696d2c91f0ac5daf99f8d9e86ea650851fd6c"
     },
     {
       "name": "service_point",
