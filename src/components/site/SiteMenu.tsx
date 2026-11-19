@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
+import { UpdatesCount, useUpdatesCount } from "@/components/community/UpdatesBadge";
 import { SITE_LINKS, type SiteLink, type SiteSection } from "./siteLinks";
 import { MoonIcon, SunIcon, useTheme } from "./ThemeToggle";
 
@@ -34,6 +35,9 @@ export function SiteMenu({
   const id = useId();
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLUListElement>(null);
+  // With "Me" in the list, its count shows on the button too: a rider on a phone sees a host's
+  // decision without opening the Menu.
+  const updates = useUpdatesCount(links.some((l) => l.href === "/me"));
 
   useEffect(() => {
     if (!open) return;
@@ -73,6 +77,7 @@ export function SiteMenu({
         className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 text-sm font-bold hover:underline dark:text-teal-300"
       >
         Menu
+        <UpdatesCount count={updates} />
       </button>
       <ul
         ref={menu}
@@ -115,6 +120,7 @@ export function SiteMenu({
               }`}
             >
               {l.label}
+              {l.href === "/me" && <UpdatesCount count={updates} />}
             </Link>
           </li>
         ))}

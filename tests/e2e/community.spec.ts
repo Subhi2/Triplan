@@ -42,6 +42,20 @@ async function rider(browser: Browser): Promise<Page> {
   return page;
 }
 
+/**
+ * A join request solves a proof of work in the browser before it is sent (about a second, much
+ * longer while the dev server compiles the route), so its answer gets the posts' longer wait.
+ */
+const POW_WAIT = { timeout: 30_000 };
+
+/** On phones "Me" is behind the Menu, whose button carries the same count: open it first. */
+async function showMe(page: Page) {
+  const menu = page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("button", { name: /^Menu/ });
+  if (await menu.isVisible()) await menu.click();
+}
+
 async function pickNickname(page: Page, name: string) {
   await page.getByLabel(/Your nickname/).fill(name);
   await page.getByRole("button", { name: "Continue" }).click();
@@ -76,7 +90,7 @@ test("host a ride, let a rider in, waitlist the next, and move them up when a se
     await pickNickname(asha, `${tag} Asha`);
     await asha.getByLabel(/A note for the host/).fill("Classic 350");
     await asha.getByRole("button", { name: "Send" }).click();
-    await expect(asha.getByText("You asked to join. The host will decide.")).toBeVisible();
+    await expect(asha.getByText("You asked to join. The host will decide.")).toBeVisible(POW_WAIT);
     await expect(asha.getByText("Shell pump after the toll")).toHaveCount(0);
 
     // The host lets her in.
@@ -105,7 +119,7 @@ test("host a ride, let a rider in, waitlist the next, and move them up when a se
     await ravi.getByRole("button", { name: "Join the waitlist" }).click();
     await pickNickname(ravi, `${tag} Ravi`);
     await ravi.getByRole("button", { name: "Send" }).click();
-    await expect(ravi.getByText("Request sent. The host will decide.")).toBeVisible();
+    await expect(ravi.getByText("Request sent. The host will decide.")).toBeVisible(POW_WAIT);
     await host.reload();
     await host
       .locator(`[data-rider="${tag} Ravi"]`)
@@ -126,12 +140,20 @@ test("host a ride, let a rider in, waitlist the next, and move them up when a se
 
     // The decision shows as a badge on "Me" until he opens it.
     await ravi.goto("/group-rides");
+    const menu = ravi
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("button", { name: /^Menu/ });
+    if (await menu.isVisible()) {
+      await expect(menu.locator("[data-updates]")).toBeVisible();
+    }
+    await showMe(ravi);
     await expect(ravi.getByRole("link", { name: /^Me/ }).locator("[data-updates]")).toBeVisible();
     await ravi.getByRole("link", { name: /^Me/ }).click();
     await expect(
       ravi.locator(`[data-group-ride]`).filter({ hasText: `${tag} Kalasa run` }),
     ).toBeVisible();
     await ravi.goto("/group-rides");
+    await showMe(ravi);
     await expect(ravi.getByRole("link", { name: /^Me/ })).toBeVisible();
     await expect(ravi.locator("[data-updates]")).toHaveCount(0);
   } finally {
@@ -170,7 +192,7 @@ test("start a club, ask to join, get approved, and see the members-only link", a
     // With a nickname picked, the request form opens straight away.
     await pickNickname(meera, `${tag} Meera`);
     await meera.getByRole("button", { name: "Send request" }).click();
-    await expect(meera.getByText("You asked to join.")).toBeVisible();
+    await expect(meera.getByText("You asked to join.")).toBeVisible(POW_WAIT);
     await expect(meera.getByRole("link", { name: /WhatsApp group/ })).toHaveCount(0);
 
     await owner.reload();
