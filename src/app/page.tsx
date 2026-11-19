@@ -6,10 +6,15 @@ import { SITE_NAME, tripHeadline } from "@/lib/site";
 import { parseTripUrl } from "@/lib/tripUrl";
 import { aiEnabled } from "@/server/providers/llm";
 import { powKey } from "@/server/services/proofOfWork";
-import { listRides } from "@/server/services/rideService";
+import { listRides, ridePhotos } from "@/server/services/rideService";
 
 /** Famous rides for "Try a famous ride", read at most hourly; none if the database is down. */
 const famousRides = unstable_cache(() => listRides().catch(() => []), ["famous-rides"], {
+  revalidate: 3600,
+});
+
+/** One of our own credited photos per ride, for the same cards. */
+const famousRidePhotos = unstable_cache(() => ridePhotos().catch(() => ({})), ["famous-ride-photos"], {
   revalidate: 3600,
 });
 
@@ -44,11 +49,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function HomePage() {
-  const rides = await famousRides();
+  const [rides, photos] = await Promise.all([famousRides(), famousRidePhotos()]);
   // useSearchParams in Planner needs a Suspense boundary.
   return (
     <Suspense>
-      <Planner famousRides={rides} aiEnabled={aiEnabled()} postsOpen={powKey() !== null} />
+      <Planner famousRides={rides} famousRidePhotos={photos}aiEnabled={aiEnabled()} postsOpen={powKey() !== null} />
     </Suspense>
   );
 }

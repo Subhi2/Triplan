@@ -47,7 +47,7 @@ import {
 } from "@/lib/places";
 import { defaultDeparture, fromDateTimeLocal } from "@/lib/rideCheck";
 import type { SafetyKind } from "@/lib/safety";
-import { ridePlannerUrl, type RideSummary } from "@/lib/rides";
+import { ridePlannerUrl, type RidePhoto, type RideSummary } from "@/lib/rides";
 import { tripHeadline } from "@/lib/site";
 import { planSunsetStops } from "@/lib/sunset";
 import { trackEvent } from "@/lib/track";
@@ -113,6 +113,8 @@ interface Props {
   savedTrip?: SavedTrip | null;
   /** Rides offered as "Try a famous ride" while there is no trip. */
   famousRides?: RideSummary[];
+  /** A credited photo per ride slug, where we have one. */
+  famousRidePhotos?: Record<string, RidePhoto>;
   /** Whether "plan in plain words" is switched on (the AI key is set). */
   aiEnabled?: boolean;
   /** Riders can post road reports (ALTCHA_HMAC_KEY is set on the server). */
@@ -122,6 +124,7 @@ interface Props {
 export function Planner({
   savedTrip = null,
   famousRides = [],
+  famousRidePhotos = {},
   aiEnabled = false,
   postsOpen = false,
 }: Props) {
@@ -1250,7 +1253,7 @@ export function Planner({
           <>
             {aiEnabled && <PlainWordsBox near={mapBias.center} />}
             <FeatureShelf vehicle={vehicle} onRideOpened={openRide} />
-            <FamousRidesStrip rides={famousRides} />
+            <FamousRidesStrip rides={famousRides} photos={famousRidePhotos} />
             <p className="flex gap-3 text-xs text-stone-600 dark:text-stone-400">
               <Link
                 href="/about"
