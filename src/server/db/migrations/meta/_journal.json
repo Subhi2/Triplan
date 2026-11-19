@@ -183,6 +183,27 @@
       "when": 1793856365236,
       "tag": "0025_lock_self_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795071462794,
+      "tag": "0026_ride_mark",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1795071780390,
+      "tag": "0027_ride_tier",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795074390280,
+      "tag": "0028_ride_photo",
+      "breakpoints": true
     }
   ]
 }

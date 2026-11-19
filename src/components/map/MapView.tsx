@@ -23,14 +23,22 @@ import { RIDE_PREVIEW_HIT_LAYER, RidePreviewLayer } from "./RidePreviewLayer";
 import { ROUTE_LAYER_IDS, RouteLayer } from "./RouteLayer";
 import { CursorDot } from "./CursorDot";
 import { MeDot } from "./MeDot";
+import { MapPaletteContext } from "./mapPalette";
+import { MAP_COLORS, MAP_COLORS_DARK } from "./mapColors";
+import { useMapTheme } from "./useMapColors";
 import { ServicePins } from "./ServicePins";
 import { bounds, frameKey, framePoints, INDIA_BOUNDS, type MapViewProps } from "./types";
 
 export type { MapStop } from "./types";
 
 // OpenFreeMap needs no API key. Set NEXT_PUBLIC_MAP_STYLE_URL to use MapTiler or another style.
-const MAP_STYLE =
-  process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/liberty";
+const CUSTOM_STYLE = process.env.NEXT_PUBLIC_MAP_STYLE_URL;
+const LIGHT_MAP_STYLE = CUSTOM_STYLE || "https://tiles.openfreemap.org/styles/liberty";
+// The dark style for dark mode: set NEXT_PUBLIC_MAP_STYLE_DARK_URL to use another; with a custom
+// light style and no dark one the map stays light, since OpenFreeMap's dark would not match it.
+const DARK_MAP_STYLE =
+  process.env.NEXT_PUBLIC_MAP_STYLE_DARK_URL ||
+  (CUSTOM_STYLE ? "" : "https://tiles.openfreemap.org/styles/dark");
 
 // Before a trip is chosen, frame India (places are imported for every state).
 const INITIAL_VIEW = { bounds: INDIA_BOUNDS, fitBoundsOptions: { padding: 16 } };
@@ -52,6 +60,8 @@ export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification })
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const hovered = useRef<string | null>(null);
   const coarsePointer = useMediaQuery("(pointer: coarse)");
+  // Dark page, dark map: unless this map has its own style (a saved pack) or no dark style is set.
+  const darkMap = useMapTheme() === "dark" && DARK_MAP_STYLE !== "" && !props.mapStyle;
   // With reduced motion, the camera jumps instead of flying (docs/08, "Motion").
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const ms = (duration: number) => (reduceMotion ? 0 : duration);
@@ -145,91 +155,93 @@ export function MapView(props: MapViewProps & { mapStyle?: StyleSpecification })
   const highlightIds = [activePlaceId, props.hoverPlaceId].filter((x): x is string => !!x);
 
   return (
-    <Map
-      ref={mapRef}
-      initialViewState={INITIAL_VIEW}
-      mapStyle={props.mapStyle ?? MAP_STYLE}
-      attributionControl={{ compact: true }}
-      style={{ width: "100%", height: "100%" }}
-      interactiveLayerIds={INTERACTIVE_LAYERS}
-      cursor={cursor}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => {
-        setCursor(undefined);
-        setHover(null);
-      }}
-      onClick={(e) => void handleClick(e)}
-      onLoad={(e) => {
-        frameMap(0);
-        const c = e.target.getCenter();
-        props.onViewChange?.([c.lng, c.lat], e.target.getZoom());
-      }}
-      onMoveStart={(e) => {
-        // Only the rider's own moves carry the input event.
-        if (e.originalEvent) touched.current = true;
-      }}
-      onResize={() => {
-        if (!touched.current) frameMap(0);
-      }}
-      onMoveEnd={(e) =>
-        props.onViewChange?.([e.viewState.longitude, e.viewState.latitude], e.viewState.zoom)
-      }
-    >
-      {/* Touch screens pinch to zoom; the buttons would only cover the map. */}
-      {!coarsePointer && <NavigationControl position="top-right" showCompass={false} />}
-      {props.ridePreviews && props.ridePreviews.length > 0 && (
-        <RidePreviewLayer rides={props.ridePreviews} />
-      )}
-      <RouteLayer routes={routes} selectedId={props.selectedRouteId} />
-      {props.servicePins && props.servicePins.length > 0 && (
-        <ServicePins pins={props.servicePins} />
-      )}
-      <PlaceMarkers places={places} highlightIds={highlightIds} />
-      {stops.map((s, i) => (
-        <Marker key={s.id} longitude={s.location[0]} latitude={s.location[1]} anchor="center">
-          <div
-            title={s.label}
-            className={`flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white px-1 text-xs font-bold text-white shadow ${
-              s.role === "via" ? "bg-slate-600" : "bg-brand"
-            }`}
-          >
-            {s.role === "start" ? "A" : s.role === "end" ? "B" : i}
-          </div>
-        </Marker>
-      ))}
-      {props.me && (
-        <Marker longitude={props.me.location[0]} latitude={props.me.location[1]} anchor="center">
-          <MeDot headingDeg={props.me.headingDeg} />
-        </Marker>
-      )}
-      {props.riders?.map((r) => (
-        <Marker key={r.id} longitude={r.location[0]} latitude={r.location[1]} anchor="center">
-          <div
-            title={r.me ? `${r.name} (you)` : r.name}
-            data-rider={r.name}
-            className={`flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-white px-1.5 text-sm font-bold text-white shadow-md ${
-              r.me ? "bg-brand" : r.stale ? "bg-stone-400" : "bg-slate-700"
-            }`}
-          >
-            {r.name.slice(0, 1).toUpperCase()}
-          </div>
-        </Marker>
-      ))}
-      {props.regroup && (
-        <Marker longitude={props.regroup[0]} latitude={props.regroup[1]} anchor="bottom">
-          <div
-            data-regroup
-            className="bg-marigold rounded-md border-2 border-white px-2 py-0.5 text-xs font-bold text-white shadow-md"
-          >
-            Regroup
-          </div>
-        </Marker>
-      )}
-      {props.cursor && (
-        <Marker longitude={props.cursor[0]} latitude={props.cursor[1]} anchor="center">
-          <CursorDot />
-        </Marker>
-      )}
-    </Map>
+    <MapPaletteContext value={darkMap ? MAP_COLORS_DARK : MAP_COLORS}>
+      <Map
+        ref={mapRef}
+        initialViewState={INITIAL_VIEW}
+        mapStyle={props.mapStyle ?? (darkMap ? DARK_MAP_STYLE : LIGHT_MAP_STYLE)}
+        attributionControl={{ compact: true }}
+        style={{ width: "100%", height: "100%" }}
+        interactiveLayerIds={INTERACTIVE_LAYERS}
+        cursor={cursor}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => {
+          setCursor(undefined);
+          setHover(null);
+        }}
+        onClick={(e) => void handleClick(e)}
+        onLoad={(e) => {
+          frameMap(0);
+          const c = e.target.getCenter();
+          props.onViewChange?.([c.lng, c.lat], e.target.getZoom());
+        }}
+        onMoveStart={(e) => {
+          // Only the rider's own moves carry the input event.
+          if (e.originalEvent) touched.current = true;
+        }}
+        onResize={() => {
+          if (!touched.current) frameMap(0);
+        }}
+        onMoveEnd={(e) =>
+          props.onViewChange?.([e.viewState.longitude, e.viewState.latitude], e.viewState.zoom)
+        }
+      >
+        {/* Touch screens pinch to zoom; the buttons would only cover the map. */}
+        {!coarsePointer && <NavigationControl position="top-right" showCompass={false} />}
+        {props.ridePreviews && props.ridePreviews.length > 0 && (
+          <RidePreviewLayer rides={props.ridePreviews} />
+        )}
+        <RouteLayer routes={routes} selectedId={props.selectedRouteId} />
+        {props.servicePins && props.servicePins.length > 0 && (
+          <ServicePins pins={props.servicePins} />
+        )}
+        <PlaceMarkers places={places} highlightIds={highlightIds} />
+        {stops.map((s, i) => (
+          <Marker key={s.id} longitude={s.location[0]} latitude={s.location[1]} anchor="center">
+            <div
+              title={s.label}
+              className={`flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white px-1 text-xs font-bold text-white shadow ${
+                s.role === "via" ? "bg-slate-600" : "bg-brand"
+              }`}
+            >
+              {s.role === "start" ? "A" : s.role === "end" ? "B" : i}
+            </div>
+          </Marker>
+        ))}
+        {props.me && (
+          <Marker longitude={props.me.location[0]} latitude={props.me.location[1]} anchor="center">
+            <MeDot headingDeg={props.me.headingDeg} />
+          </Marker>
+        )}
+        {props.riders?.map((r) => (
+          <Marker key={r.id} longitude={r.location[0]} latitude={r.location[1]} anchor="center">
+            <div
+              title={r.me ? `${r.name} (you)` : r.name}
+              data-rider={r.name}
+              className={`flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-white px-1.5 text-sm font-bold text-white shadow-md ${
+                r.me ? "bg-brand" : r.stale ? "bg-stone-400" : "bg-slate-700"
+              }`}
+            >
+              {r.name.slice(0, 1).toUpperCase()}
+            </div>
+          </Marker>
+        ))}
+        {props.regroup && (
+          <Marker longitude={props.regroup[0]} latitude={props.regroup[1]} anchor="bottom">
+            <div
+              data-regroup
+              className="bg-marigold rounded-md border-2 border-white px-2 py-0.5 text-xs font-bold text-white shadow-md"
+            >
+              Regroup
+            </div>
+          </Marker>
+        )}
+        {props.cursor && (
+          <Marker longitude={props.cursor[0]} latitude={props.cursor[1]} anchor="center">
+            <CursorDot />
+          </Marker>
+        )}
+      </Map>
+    </MapPaletteContext>
   );
 }

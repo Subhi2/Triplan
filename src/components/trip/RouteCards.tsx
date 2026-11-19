@@ -171,7 +171,7 @@ function RouteFacts({
       {hairpins > 0 && (
         <span className="text-ghat-dark inline-flex items-center gap-1 font-bold dark:text-orange-300">
           {scenic && (
-            <span aria-hidden className="font-normal text-stone-500">
+            <span aria-hidden className="font-normal text-stone-500 dark:text-stone-400">
               ·{" "}
             </span>
           )}

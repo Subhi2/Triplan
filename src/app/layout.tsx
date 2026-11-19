@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Atkinson_Hyperlegible, Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 import { SITE_NAME, siteUrl } from "@/lib/site";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 // "Ghat Road" type (docs/08-design.md): Atkinson Hyperlegible reads well on a phone in sunlight,
@@ -60,7 +61,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${body.variable} ${heading.variable} ${numbers.variable}`}>
+    // data-theme is set by the script below before React loads, so the attribute differs from the
+    // server's markup on purpose.
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${body.variable} ${heading.variable} ${numbers.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-dvh antialiased">
         {children}
         {/* Page views without cookies; reported only on Vercel (docs/02, "Usage numbers"). */}

@@ -76,6 +76,8 @@ export interface MapViewProps {
 export interface MapRidePreview {
   slug: string;
   line: LngLat[];
+  /** The bucket list's mark: done and want-to-ride rides stand out, "none" ones fade. */
+  state?: "done" | "pending" | "none";
 }
 
 /** Before a trip is chosen, frame India (places are imported for every state). */

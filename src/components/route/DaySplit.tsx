@@ -33,7 +33,7 @@ function HoursSelect({ value, onChange }: { value: RideHours; onChange: (h: Ride
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value) as RideHours)}
-        className="min-h-11 rounded-lg bg-stone-100 px-2 text-base md:min-h-9 md:text-sm dark:bg-stone-800"
+        className="min-h-11 rounded-lg border bg-stone-100 px-2 text-base md:min-h-9 md:text-sm dark:bg-stone-800"
       >
         {RIDE_HOURS.map((h) => (
           <option key={h} value={h}>

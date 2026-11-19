@@ -5,9 +5,10 @@ import { useMemo, useState } from "react";
 import { CountUp } from "@/components/motion/CountUp";
 import { CrownList } from "@/components/motion/CrownList";
 import { MONTH_SHORT } from "@/lib/months";
-import { mediaSourceName } from "@/lib/media";
 import { RIDE_AREAS, rideArea, type RideArea, type RidePhoto, type RideSummary } from "@/lib/rides";
-import { RouteSketch } from "./RouteSketch";
+import { rideInList, type RideListKey } from "@/lib/rideLists";
+import { RideListChips } from "./RideListChips";
+import { RideCarousel } from "./RideCarousel";
 
 // The same chips as the place filters.
 const chip =
@@ -22,10 +23,11 @@ export function RideBrowser({
 }: {
   rides: RideSummary[];
   /** A photo per ride slug, where one of our own exists near its road. */
-  photos?: Record<string, RidePhoto>;
+  photos?: Record<string, RidePhoto[]>;
 }) {
   const [area, setArea] = useState<RideArea | null>(null);
   const [month, setMonth] = useState<number | null>(null);
+  const [list, setList] = useState<RideListKey | null>(null);
   // Only the areas that have rides.
   const areas = useMemo(
     () => RIDE_AREAS.filter((a) => rides.some((r) => rideArea(r.region) === a)),
@@ -34,7 +36,8 @@ export function RideBrowser({
   const shown = rides.filter(
     (r) =>
       (area === null || rideArea(r.region) === area) &&
-      (month === null || r.bestMonths.includes(month)),
+      (month === null || r.bestMonths.includes(month)) &&
+      (list === null || rideInList(r, list)),
   );
 
   return (
@@ -67,6 +70,7 @@ export function RideBrowser({
           </select>
         </label>
       </div>
+      <RideListChips rides={rides} value={list} onChange={setList} />
       {shown.length === 0 ? (
         <p className="text-stone-600 dark:text-stone-400">
           No famous ride fits that yet.{" "}
@@ -75,6 +79,7 @@ export function RideBrowser({
             onClick={() => {
               setArea(null);
               setMonth(null);
+              setList(null);
             }}
             className="text-brand-dark inline-flex min-h-11 items-center font-bold hover:underline md:min-h-0 dark:text-teal-300"
           >
@@ -107,40 +112,12 @@ export function RideBrowser({
                 data-ride-card
                 className="crown crown-glow group flex h-full flex-col gap-3 rounded-2xl border border-stone-200 bg-(--surface) p-4 hover:border-stone-400 dark:border-stone-700"
               >
-                {photos[r.slug] ? (
-                  <span className="relative block">
-                    {/* Our own credited photo (credit under the title), never Google's. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photos[r.slug]!.thumbUrl}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="h-36 w-full rounded-xl bg-stone-200 object-cover dark:bg-stone-800"
-                    />
-                    {/* The route's shape stays: a small sketch over the photo's corner. */}
-                    <RouteSketch
-                      line={r.line}
-                      className="bg-brand-tint/95 absolute right-2 bottom-2 h-14 w-20 rounded-lg dark:bg-teal-950/95"
-                    />
-                  </span>
-                ) : (
-                  <RouteSketch
-                    line={r.line}
-                    className="bg-brand-tint h-36 w-full rounded-xl dark:bg-teal-950"
-                  />
-                )}
+                <RideCarousel photos={photos[r.slug] ?? []} line={r.line} size="card" />
                 <span className="flex min-w-0 flex-col gap-1">
                   <span className="font-display text-lg leading-tight font-bold group-hover:underline">
                     {r.title}
                   </span>
                   <span className="text-sm text-stone-600 dark:text-stone-400">{r.region}</span>
-                  {photos[r.slug] && (
-                    <span className="line-clamp-2 text-xs text-stone-600 dark:text-stone-400">
-                      {photos[r.slug]!.placeName} · photo {photos[r.slug]!.author ?? "unknown"} ·{" "}
-                      {photos[r.slug]!.license} · {mediaSourceName(photos[r.slug]!.source)}
-                    </span>
-                  )}
                 </span>
                 <span className="tabular mt-auto flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm">
                   <CountUp value={r.distanceKm} unit="km" fromServer />

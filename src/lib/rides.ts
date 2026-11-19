@@ -10,6 +10,10 @@ import { serializeTripUrl, type UrlStop } from "./tripUrl";
 // data/rides.json, routed once by `pnpm db:seed-rides` into the ride table. Never hard-coded in
 // app logic: pages and the planner read whatever rides the table holds.
 
+/** "legend" rides are the once-in-a-lifetime ones; the rest are "classic". */
+export const RIDE_TIERS = ["classic", "legend"] as const;
+export type RideTier = (typeof RIDE_TIERS)[number];
+
 const stopSchema = z.object({ label: z.string().min(1).max(80), location: lngLatSchema });
 
 export const rideSourceSchema = z.object({
@@ -19,6 +23,7 @@ export const rideSourceSchema = z.object({
   region: z.string().min(2).max(60),
   vehicle: z.enum(VEHICLES),
   tags: z.array(z.string().min(2).max(30)).max(4),
+  tier: z.enum(RIDE_TIERS).default("classic"),
   bestMonths: z.array(z.number().int().min(1).max(12)).min(1).max(12),
   notes: z.string().max(400).nullable().default(null),
   stops: z.array(stopSchema).min(2).max(7),
@@ -44,6 +49,7 @@ export interface Ride {
   region: string;
   vehicle: Vehicle;
   tags: string[];
+  tier: RideTier;
   bestMonths: number[];
   notes: string | null;
   stops: UrlStop[];
@@ -64,6 +70,10 @@ export interface RidePhoto {
   author: string | null;
   license: string;
   source: string;
+  /** The 960 px version, for the ride page; cards use `thumbUrl`. */
+  url?: string;
+  /** The photo's page on Commons, where the full credit is. */
+  pageUrl?: string;
 }
 
 export interface RideSummary {
@@ -72,12 +82,15 @@ export interface RideSummary {
   region: string;
   vehicle: Vehicle;
   tags: string[];
+  tier: RideTier;
   bestMonths: number[];
   stops: UrlStop[];
   distanceKm: number;
   durationMin: number;
   ascentM: number | null;
   hairpins: number;
+  /** The highest point on the route in metres, when its elevation profile is stored. */
+  highestM: number | null;
   line: LngLat[];
 }
 

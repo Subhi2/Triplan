@@ -3,6 +3,7 @@ import type { LngLat } from "@/lib/geo";
 import { fetchJson, ProviderError } from "../http";
 import {
   COMMONS_BATCH,
+  GEOSEARCH_LIMIT,
   WIKIDATA_BATCH,
   type CommonsImage,
   type WikidataItem,
@@ -67,6 +68,16 @@ export const imageInfoSchema = z.object({
             )
             .optional(),
         }),
+      ),
+    })
+    .optional(),
+});
+
+export const geoSearchSchema = z.object({
+  query: z
+    .object({
+      geosearch: z.array(
+        z.object({ title: z.string(), lat: z.number(), lon: z.number(), dist: z.number() }),
       ),
     })
     .optional(),
@@ -267,6 +278,32 @@ export function createWikimediaProvider(
         '?item rdfs:label ?label . FILTER(lang(?label) = "en") ' +
         "FILTER NOT EXISTS { ?item wdt:P1082 [] } FILTER NOT EXISTS { ?item wdt:P31 wd:Q5 } }";
       return parseBoxItems(await sparql(boxSchema, query, 90_000));
+    },
+
+    async filesNear([lng, lat], radiusM) {
+      const params = new URLSearchParams({
+        action: "query",
+        format: "json",
+        formatversion: "2",
+        list: "geosearch",
+        gscoord: `${lat}|${lng}`,
+        gsradius: String(Math.min(Math.max(Math.round(radiusM), 10), 10_000)),
+        gsnamespace: "6",
+        gslimit: String(GEOSEARCH_LIMIT),
+      });
+      const { status, data } = await fetchJson(
+        "commons",
+        `${COMMONS_API}?${params.toString()}`,
+        geoSearchSchema,
+        { headers },
+        30_000,
+      );
+      if (status !== 200) throw new ProviderError(`Commons HTTP ${status}`, "commons", status);
+      return (data.query?.geosearch ?? []).map((g) => ({
+        file: g.title,
+        location: [g.lon, g.lat] as LngLat,
+        distM: g.dist,
+      }));
     },
 
     async imageInfo(files) {

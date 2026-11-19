@@ -1,14 +1,21 @@
 import Link from "next/link";
 import { CountUp } from "@/components/motion/CountUp";
 import { CrownList } from "@/components/motion/CrownList";
-import { ridePlannerUrl, type RideSummary } from "@/lib/rides";
-import { RouteSketch } from "./RouteSketch";
+import { ridePlannerUrl, type RidePhoto, type RideSummary } from "@/lib/rides";
+import { RideCarousel } from "./RideCarousel";
 
 /**
  * "Try a famous ride" on the empty planner: rides that open in the planner with one tap, so a
  * first-time visitor sees what the app does.
  */
-export function FamousRidesStrip({ rides }: { rides: RideSummary[] }) {
+export function FamousRidesStrip({
+  rides,
+  photos = {},
+}: {
+  rides: RideSummary[];
+  /** A credited photo per ride slug, where one of our own exists near its road. */
+  photos?: Record<string, RidePhoto[]>;
+}) {
   if (rides.length === 0) return null;
   return (
     <section aria-labelledby="try-a-ride" className="flex flex-col gap-2">
@@ -36,9 +43,11 @@ export function FamousRidesStrip({ rides }: { rides: RideSummary[] }) {
               data-ride={r.slug}
               className="crown crown-glow flex h-full flex-col gap-1.5 rounded-xl border border-stone-200 bg-(--surface) p-2 hover:border-stone-400 dark:border-stone-700"
             >
-              <RouteSketch
+              <RideCarousel
+                photos={photos[r.slug] ?? []}
                 line={r.line}
-                className="bg-brand-tint h-16 w-full rounded-lg dark:bg-teal-950"
+                size="compact"
+                swipe={false}
               />
               <span className="line-clamp-2 text-sm leading-tight font-bold">{r.title}</span>
               <span className="tabular mt-auto font-mono text-xs text-stone-600 dark:text-stone-400">

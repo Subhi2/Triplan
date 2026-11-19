@@ -8,6 +8,7 @@ import {
   KM_TOLERANCE,
   type Ride,
   type RidePhoto,
+  type RideTier,
   type RideSource,
   type RideSummary,
 } from "@/lib/rides";
@@ -99,6 +100,7 @@ export async function upsertRide(built: BuiltRide, position: number): Promise<vo
     region: source.region,
     vehicle: source.vehicle,
     tags: source.tags,
+    tier: source.tier,
     bestMonths: source.bestMonths,
     notes: source.notes,
     stops: source.stops,
@@ -128,6 +130,7 @@ function toRide(r: RideRow): Ride {
     region: r.region,
     vehicle: r.vehicle,
     tags: r.tags,
+    tier: r.tier === "legend" ? "legend" : "classic",
     bestMonths: r.bestMonths,
     notes: r.notes,
     stops: r.stops,
@@ -150,12 +153,14 @@ export async function listRides(): Promise<RideSummary[]> {
       region: ride.region,
       vehicle: ride.vehicle,
       tags: ride.tags,
+      tier: ride.tier,
       bestMonths: ride.bestMonths,
       stops: ride.stops,
       distanceM: ride.distanceM,
       durationS: ride.durationS,
       ascentM: ride.ascentM,
       hairpins: ride.hairpins,
+      highestM: sql<number | null>`(${ride.profile}->'highest'->>'m')::int`,
       line: sql<string>`ST_AsGeoJSON(ST_Simplify(${ride.routeGeom}::geometry, 0.01), 4)`,
     })
     .from(ride)
@@ -166,12 +171,14 @@ export async function listRides(): Promise<RideSummary[]> {
     region: r.region,
     vehicle: r.vehicle === "car" ? "car" : "bike",
     tags: r.tags,
+    tier: r.tier === "legend" ? "legend" : "classic",
     bestMonths: r.bestMonths,
     stops: r.stops,
     distanceKm: r.distanceM / 1000,
     durationMin: Math.round(r.durationS / 60),
     ascentM: r.ascentM,
     hairpins: r.hairpins,
+    highestM: r.highestM,
     line: (JSON.parse(r.line) as LineString).coordinates as LngLat[],
   }));
 }
@@ -186,6 +193,7 @@ export async function getRide(slug: string): Promise<{ ride: Ride; geometry: Lin
       region: ride.region,
       vehicle: ride.vehicle,
       tags: ride.tags,
+      tier: ride.tier,
       bestMonths: ride.bestMonths,
       notes: ride.notes,
       stops: ride.stops,
@@ -202,7 +210,11 @@ export async function getRide(slug: string): Promise<{ ride: Ride; geometry: Lin
     .where(eq(ride.slug, slug));
   if (!row) return null;
   return {
-    ride: toRide({ ...row, vehicle: row.vehicle === "car" ? "car" : "bike" }),
+    ride: toRide({
+      ...row,
+      vehicle: row.vehicle === "car" ? "car" : "bike",
+      tier: row.tier === "legend" ? "legend" : "classic",
+    }),
     geometry: JSON.parse(row.line) as LineString,
   };
 }
@@ -275,4 +287,79 @@ export async function ridePhotos(): Promise<Record<string, RidePhoto>> {
       },
     ]),
   );
+}
+
+/** Sets a stored ride's tier without routing it again (a ride the table does not hold is skipped). */
+export async function setRideTier(slug: string, tier: RideTier): Promise<void> {
+  await getDb().update(ride).set({ tier }).where(eq(ride.slug, slug));
+}
+
+/**
+ * Every ride's photo gallery, in order along the road: the Commons photos picked by
+ * `pnpm db:import-ride-photos`, or, for a ride without any yet, its single best place photo.
+ */
+export async function rideGalleries(): Promise<Record<string, RidePhoto[]>> {
+  const [rows, single] = await Promise.all([
+    getDb().execute<{
+      ride_slug: string;
+      thumb_url: string;
+      url: string;
+      page_url: string;
+      caption: string;
+      author: string | null;
+      license: string;
+    }>(sql`
+      SELECT ride_slug, thumb_url, url, page_url, caption, author, license
+      FROM ride_photo ORDER BY ride_slug, position`),
+    ridePhotos().catch(() => ({}) as Record<string, RidePhoto>),
+  ]);
+  const out: Record<string, RidePhoto[]> = {};
+  for (const r of rows) {
+    (out[r.ride_slug] ??= []).push({
+      thumbUrl: r.thumb_url,
+      url: r.url,
+      pageUrl: r.page_url,
+      placeName: r.caption,
+      author: r.author,
+      license: r.license,
+      source: "wikimedia",
+    });
+  }
+  for (const [slug, photo] of Object.entries(single)) out[slug] ??= [photo];
+  return out;
+}
+
+/** One ride's photo gallery in order along the road; empty until its photos have been imported. */
+export async function rideGallery(slug: string): Promise<RidePhoto[]> {
+  const rows = await getDb().execute<{
+    thumb_url: string;
+    url: string;
+    page_url: string;
+    caption: string;
+    author: string | null;
+    license: string;
+  }>(sql`
+    SELECT thumb_url, url, page_url, caption, author, license
+    FROM ride_photo WHERE ride_slug = ${slug} ORDER BY position`);
+  return [...rows].map((r) => ({
+    thumbUrl: r.thumb_url,
+    url: r.url,
+    pageUrl: r.page_url,
+    placeName: r.caption,
+    author: r.author,
+    license: r.license,
+    source: "wikimedia",
+  }));
+}
+
+/** Just what badges need from every ride (no route lines): slug, region and tier. */
+export async function rideBadgeData(): Promise<{ slug: string; region: string; tier: RideTier }[]> {
+  const rows = await getDb()
+    .select({ slug: ride.slug, region: ride.region, tier: ride.tier })
+    .from(ride);
+  return rows.map((r) => ({
+    slug: r.slug,
+    region: r.region,
+    tier: r.tier === "legend" ? "legend" : "classic",
+  }));
 }

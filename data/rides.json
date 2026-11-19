@@ -145,6 +145,7 @@
     "blurb": "Temple town to the Agumbe ghat, a short climb of hairpins through rainforest to one of India's wettest villages and its sunset point, then down through the Malnad to Shivamogga.",
     "region": "Karnataka",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Agumbe Ghat", "rainforest", "sunset"],
     "bestMonths": [9, 10, 11, 12, 1, 2],
     "notes": "The ghat is narrow and closed to heavy vehicles in the monsoon.",
@@ -179,6 +180,7 @@
     "blurb": "The long way south: Konkan villages, sea forts, beaches and river crossings by Ratnagiri and Malvan before the road reaches Goa.",
     "region": "Maharashtra",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Konkan coast", "beaches", "sea forts"],
     "bestMonths": [10, 11, 12, 1, 2, 3],
     "notes": "Highway widening is still going on in places; the coastal stretches near Ratnagiri and Malvan are slower but quieter.",
@@ -300,6 +302,7 @@
     "blurb": "From the backwaters through rubber and spice country to Adimali, then up into the tea gardens and waterfalls of the Kannan Devan hills.",
     "region": "Kerala",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["tea gardens", "waterfalls", "Western Ghats"],
     "bestMonths": [9, 10, 11, 12, 1, 2, 3, 4, 5],
     "notes": "Mist cuts visibility on the ghat in the evenings, especially in the monsoon.",
@@ -450,6 +453,7 @@
     "blurb": "The classic high-altitude ride: through the Atal Tunnel into Lahaul, past Keylong and Sarchu, and over the high passes of the Zanskar range down to Leh.",
     "region": "Himachal Pradesh and Ladakh",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["high passes", "Atal Tunnel", "Ladakh"],
     "bestMonths": [6, 7, 8, 9],
     "notes": "Open roughly June to October. The passes are above 5,000 m: acclimatise a day at Keylong or Jispa, and carry fuel for the long stretch without pumps after Tandi. The elevation profile reads the hill above the Atal Tunnel, so it shows a bump there.",
@@ -488,6 +492,7 @@
     "blurb": "Apple orchards at Narkanda, then the Sutlej gorge through Kinnaur on roads cut into cliffs, past Nako's lake into the cold desert of Spiti.",
     "region": "Himachal Pradesh",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Kinnaur", "Spiti", "cliff roads"],
     "bestMonths": [5, 6, 7, 8, 9, 10],
     "notes": "Landslides are common around Malling and Nako, and the road beyond Reckong Peo is partly unpaved.",
@@ -530,6 +535,7 @@
     "blurb": "Across Rajasthan from the Pink City by Ajmer and the blue city of Jodhpur, the land drying into dunes before Jaisalmer's golden fort.",
     "region": "Rajasthan",
     "vehicle": "car",
+    "tier": "legend",
     "tags": ["Thar desert", "forts", "long ride"],
     "bestMonths": [10, 11, 12, 1, 2, 3],
     "notes": "Very hot from April to June; carry water, and fill up in Jodhpur and Pokaran.",
@@ -562,6 +568,7 @@
     "blurb": "Over the Brahmaputra plains to Tezpur, then up into Arunachal by Bomdila and Dirang and over Sela Pass at 4,170 m to the monastery town of Tawang.",
     "region": "Assam and Arunachal Pradesh",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Sela Pass", "Arunachal", "monasteries"],
     "bestMonths": [3, 4, 5, 10, 11],
     "notes": "Indian visitors need an Inner Line Permit for Arunachal Pradesh; Sela Pass can close with snow in winter.",
@@ -604,6 +611,7 @@
     "blurb": "From the plains straight up the Himalayan foothills by Kurseong, sharing the bends with the toy train, to tea gardens and a view of Kanchenjunga.",
     "region": "West Bengal",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Himalayan foothills", "toy train", "tea"],
     "bestMonths": [3, 4, 5, 10, 11, 12],
     "notes": "Hill Cart Road shares its bends with the toy train; Rohini Road is the quicker climb.",
@@ -730,6 +738,7 @@
     "blurb": "Up from Leh in loops to Khardung La at about 5,350 m, one of the highest roads riders can take, and down to the sand dunes and monastery of Diskit in the Nubra Valley.",
     "region": "Ladakh",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Khardung La", "Nubra", "high pass"],
     "bestMonths": [6, 7, 8, 9],
     "notes": "Nubra needs an Inner Line Permit. Spend two days in Leh first: the pass is over 5,300 m.",
@@ -760,6 +769,7 @@
     "blurb": "East from Leh past Karu, over Chang La at about 5,360 m, through Tangtse and along the long blue lake of Pangong Tso to Spangmik.",
     "region": "Ladakh",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Chang La", "Pangong Tso", "high pass"],
     "bestMonths": [6, 7, 8, 9],
     "notes": "Pangong needs an Inner Line Permit. Streams can flood the road on summer afternoons; cross early.",
@@ -794,6 +804,7 @@
     "blurb": "From the Kashmir valley by Sonamarg over Zoji La, then through Drass and Kargil and over Namika La and Fotu La to Leh: the classic way into Ladakh.",
     "region": "Jammu and Kashmir and Ladakh",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Zoji La", "Kargil", "high passes"],
     "bestMonths": [6, 7, 8, 9],
     "notes": "Zoji La opens from about May to November; near the top the road is broken and muddy, and it closes for snow.",
@@ -832,6 +843,7 @@
     "blurb": "South from Shillong across the rolling Khasi Hills to Sohra on the edge of the plateau, among the wettest places on earth, with waterfalls and living root bridges below.",
     "region": "Meghalaya",
     "vehicle": "bike",
+    "tier": "legend",
     "tags": ["Cherrapunji", "waterfalls", "Khasi Hills"],
     "bestMonths": [10, 11, 12, 1, 2, 3],
     "notes": "In the monsoon the falls are at their biggest, but the road is wet and often in cloud.",
@@ -872,6 +884,2308 @@
     "checkpoints": [],
     "expect": {
       "km": 38
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Kunzum La",
+        "location": [77.63507, 32.39457]
+      }
+    ],
+    "slug": "kaza-to-manali-via-kunzum-la",
+    "title": "Kaza to Manali via Kunzum La",
+    "region": "Himachal Pradesh",
+    "blurb": "The second half of the Spiti circuit: Losar, the Kunzum La pass at about 4,500 m, the Chandratal turn-off and the long unpaved descent along the Chandra river to Manali.",
+    "tags": ["Spiti circuit", "high pass", "unpaved"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Closed by snow for most of the year; ask locally about water crossings and landslides between Kunzum La and Batal before you start.",
+    "stops": [
+      {
+        "label": "Kaza",
+        "location": [78.07226, 32.22438]
+      },
+      {
+        "label": "Losar",
+        "location": [77.75326, 32.33872]
+      },
+      {
+        "label": "Kunzum La",
+        "location": [77.63507, 32.39457]
+      },
+      {
+        "label": "Manali",
+        "location": [77.18729, 32.24546]
+      }
+    ],
+    "expect": {
+      "km": 200
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Sangla",
+        "location": [78.26373, 31.42588]
+      }
+    ],
+    "slug": "shimla-to-chitkul-via-sangla",
+    "title": "Shimla to Chitkul via Sangla",
+    "region": "Himachal Pradesh",
+    "blurb": "Apple country at Narkanda, the Sutlej at Rampur, then up the Baspa valley through Sangla's orchards to Chitkul, the last village on the old road to Tibet.",
+    "tags": ["Kinnaur", "Baspa valley", "villages"],
+    "bestMonths": [4, 5, 6, 9, 10],
+    "notes": "The Sangla to Chitkul road is narrow and often damaged by landslides; snow can close it from December to March.",
+    "stops": [
+      {
+        "label": "Shimla",
+        "location": [77.17079, 31.10404]
+      },
+      {
+        "label": "Narkanda",
+        "location": [77.46127, 31.25475]
+      },
+      {
+        "label": "Rampur Bushahr",
+        "location": [77.63021, 31.44866]
+      },
+      {
+        "label": "Sangla",
+        "location": [78.26373, 31.42588]
+      },
+      {
+        "label": "Chitkul",
+        "location": [78.43591, 31.35179]
+      }
+    ],
+    "expect": {
+      "km": 240
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kullu",
+        "location": [77.10892, 31.9579]
+      }
+    ],
+    "slug": "manali-to-kasol-via-kullu",
+    "title": "Manali to Kasol via Kullu",
+    "region": "Himachal Pradesh",
+    "blurb": "Down the Beas valley past Kullu and Bhuntar, then up the Parvati valley to Kasol: deodar forest, riverside cafes and Manikaran's hot springs a little further on.",
+    "tags": ["Beas valley", "Parvati valley", "river road"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "The Parvati valley road is narrow with heavy tourist traffic in May, June and on weekends.",
+    "stops": [
+      {
+        "label": "Manali",
+        "location": [77.18729, 32.24546]
+      },
+      {
+        "label": "Kullu",
+        "location": [77.10892, 31.9579]
+      },
+      {
+        "label": "Bhuntar",
+        "location": [77.14362, 31.88752]
+      },
+      {
+        "label": "Kasol",
+        "location": [77.3166, 32.01043]
+      }
+    ],
+    "expect": {
+      "km": 90
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "dharamshala-to-khajjiar",
+    "title": "Dharamshala to Khajjiar",
+    "region": "Himachal Pradesh",
+    "blurb": "From the Dhauladhar foothills at Dharamshala through Chamba country to Dalhousie and the Khajjiar meadow ringed by deodars, with a small lake at its centre.",
+    "tags": ["Dhauladhar", "deodar forest", "hill station"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Fog is common from July to September; fuel up in Dharamshala or Dalhousie.",
+    "stops": [
+      {
+        "label": "Dharamshala",
+        "location": [76.31967, 32.2143]
+      },
+      {
+        "label": "Dalhousie",
+        "location": [75.97975, 32.53605]
+      },
+      {
+        "label": "Khajjiar",
+        "location": [76.058, 32.54641]
+      }
+    ],
+    "expect": {
+      "km": 138
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Solan",
+        "location": [77.10236, 30.90776]
+      }
+    ],
+    "slug": "chandigarh-to-shimla",
+    "title": "Chandigarh to Shimla",
+    "region": "Himachal Pradesh",
+    "blurb": "The classic way up to Shimla: plains to Kalka, then the four-lane climb through Solan's pines to the old summer capital of British India.",
+    "tags": ["hill station", "highway", "easy"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Weekend and holiday traffic is heavy beyond Solan; Shimla restricts vehicles on parts of the Mall.",
+    "stops": [
+      {
+        "label": "Chandigarh",
+        "location": [76.77971, 30.73344]
+      },
+      {
+        "label": "Kalka",
+        "location": [76.9395, 30.838]
+      },
+      {
+        "label": "Solan",
+        "location": [77.10236, 30.90776]
+      },
+      {
+        "label": "Shimla",
+        "location": [77.17079, 31.10404]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Rudraprayag",
+        "location": [78.98072, 30.28656]
+      },
+      {
+        "label": "Joshimath",
+        "location": [79.56126, 30.55558]
+      }
+    ],
+    "slug": "rishikesh-to-badrinath",
+    "title": "Rishikesh to Badrinath",
+    "region": "Uttarakhand",
+    "blurb": "Up the Ganga and the Alaknanda through the five prayags and Joshimath to Badrinath, one of the four Char Dham shrines, with landslide gaps and mountain views the whole way.",
+    "tags": ["Char Dham", "Alaknanda", "pilgrimage"],
+    "bestMonths": [5, 6, 9, 10],
+    "notes": "The road is cut by landslides each monsoon, and Badrinath's temple is shut from about November to April. Check road status before leaving Rishikesh.",
+    "stops": [
+      {
+        "label": "Rishikesh",
+        "location": [78.29162, 30.10865]
+      },
+      {
+        "label": "Devprayag",
+        "location": [78.59858, 30.14614]
+      },
+      {
+        "label": "Rudraprayag",
+        "location": [78.98072, 30.28656]
+      },
+      {
+        "label": "Joshimath",
+        "location": [79.56126, 30.55558]
+      },
+      {
+        "label": "Badrinath",
+        "location": [79.49303, 30.74233]
+      }
+    ],
+    "expect": {
+      "km": 295
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Guptkashi",
+        "location": [79.08178, 30.52832]
+      }
+    ],
+    "slug": "rishikesh-to-sonprayag",
+    "title": "Rishikesh to Sonprayag for Kedarnath",
+    "region": "Uttarakhand",
+    "blurb": "The Char Dham road up the Alaknanda to Rudraprayag, then along the Mandakini through Guptkashi to Sonprayag, where the walk to Kedarnath begins.",
+    "tags": ["Char Dham", "Mandakini", "pilgrimage"],
+    "bestMonths": [5, 6, 9, 10],
+    "notes": "Landslides block the Mandakini road often in the monsoon; Kedarnath itself is a walk or helicopter from Gaurikund, just beyond Sonprayag.",
+    "stops": [
+      {
+        "label": "Rishikesh",
+        "location": [78.29162, 30.10865]
+      },
+      {
+        "label": "Devprayag",
+        "location": [78.59858, 30.14614]
+      },
+      {
+        "label": "Rudraprayag",
+        "location": [78.98072, 30.28656]
+      },
+      {
+        "label": "Guptkashi",
+        "location": [79.08178, 30.52832]
+      },
+      {
+        "label": "Sonprayag",
+        "location": [78.99866, 30.63171]
+      }
+    ],
+    "expect": {
+      "km": 225
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Nainital",
+        "location": [79.46087, 29.39053]
+      }
+    ],
+    "slug": "kathgodam-to-ranikhet-via-nainital",
+    "title": "Kathgodam to Ranikhet via Nainital",
+    "region": "Uttarakhand",
+    "blurb": "From the railhead at Kathgodam up to Nainital's lake, over the ridge to Khairna on the Kosi river and on to Ranikhet's pine and oak slopes with Himalayan views.",
+    "tags": ["Kumaon", "lakes", "pine forest"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Nainital's lake road has a one-way system and parking is scarce in May and June.",
+    "stops": [
+      {
+        "label": "Kathgodam",
+        "location": [79.54374, 29.26623]
+      },
+      {
+        "label": "Nainital",
+        "location": [79.46087, 29.39053]
+      },
+      {
+        "label": "Khairna",
+        "location": [79.4793, 29.49508]
+      },
+      {
+        "label": "Ranikhet",
+        "location": [79.42812, 29.64374]
+      }
+    ],
+    "expect": {
+      "km": 100
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Thal",
+        "location": [80.13916, 29.8272]
+      }
+    ],
+    "slug": "almora-to-munsiyari",
+    "title": "Almora to Munsiyari",
+    "region": "Uttarakhand",
+    "blurb": "Across Kumaon through Thal to Munsiyari, a village facing the Panchachuli peaks, on a road that climbs and drops through oak forest and terraced fields.",
+    "tags": ["Kumaon", "Panchachuli", "villages"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "The last stretch past Thal is narrow with few fuel pumps; fill up in Almora or Bageshwar.",
+    "stops": [
+      {
+        "label": "Almora",
+        "location": [79.66326, 29.6017]
+      },
+      {
+        "label": "Thal",
+        "location": [80.13916, 29.8272]
+      },
+      {
+        "label": "Munsiyari",
+        "location": [80.23453, 30.06546]
+      }
+    ],
+    "expect": {
+      "km": 200
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "dehradun-to-mussoorie-and-dhanaulti",
+    "title": "Dehradun to Mussoorie and Dhanaulti",
+    "region": "Uttarakhand",
+    "blurb": "A short climb from the Doon valley to Mussoorie's ridge, then on through deodar forest to Dhanaulti, a quiet clearing with views of the snow peaks on clear days.",
+    "tags": ["hill station", "deodar forest", "short ride"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Weekend traffic into Mussoorie is heavy; start early and expect fog from July to September.",
+    "stops": [
+      {
+        "label": "Dehradun",
+        "location": [78.04368, 30.32556]
+      },
+      {
+        "label": "Mussoorie",
+        "location": [78.07829, 30.4569]
+      },
+      {
+        "label": "Dhanaulti",
+        "location": [78.24552, 30.42472]
+      }
+    ],
+    "expect": {
+      "km": 60
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "srinagar-to-sonamarg",
+    "title": "Srinagar to Sonamarg",
+    "region": "Jammu and Kashmir",
+    "blurb": "Up the Sind valley from Srinagar through Ganderbal to Sonamarg, a wide meadow below glaciers, where the road to Zoji La begins.",
+    "tags": ["Sind valley", "meadows", "glaciers"],
+    "bestMonths": [4, 5, 6, 7, 8, 9, 10],
+    "notes": "Sonamarg gets heavy snow from December to March; check that the road is open before leaving.",
+    "stops": [
+      {
+        "label": "Srinagar",
+        "location": [74.82044, 34.07474]
+      },
+      {
+        "label": "Sonamarg",
+        "location": [75.29656, 34.30239]
+      }
+    ],
+    "expect": {
+      "km": 85
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Anantnag",
+        "location": [75.14551, 33.73688]
+      }
+    ],
+    "slug": "srinagar-to-pahalgam",
+    "title": "Srinagar to Pahalgam",
+    "region": "Jammu and Kashmir",
+    "blurb": "South through Kashmir's saffron fields and apple orchards past Anantnag, then up the Lidder river to Pahalgam, a green valley ringed by pine-covered slopes.",
+    "tags": ["Lidder valley", "saffron fields", "river road"],
+    "bestMonths": [4, 5, 6, 7, 8, 9, 10],
+    "notes": "Saffron blooms in the Pampore fields in October and November.",
+    "stops": [
+      {
+        "label": "Srinagar",
+        "location": [74.82044, 34.07474]
+      },
+      {
+        "label": "Anantnag",
+        "location": [75.14551, 33.73688]
+      },
+      {
+        "label": "Pahalgam",
+        "location": [75.32265, 34.0322]
+      }
+    ],
+    "expect": {
+      "km": 95
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Ramban",
+        "location": [75.24044, 33.2387]
+      },
+      {
+        "label": "Banihal",
+        "location": [75.19549, 33.43789]
+      }
+    ],
+    "slug": "jammu-to-srinagar-via-banihal",
+    "title": "Jammu to Srinagar via Banihal",
+    "region": "Jammu and Kashmir",
+    "blurb": "The national highway from Jammu through Udhampur and Ramban, up the Chenab gorge and under the Pir Panjal at Banihal, then down into the Kashmir valley.",
+    "tags": ["Pir Panjal", "Chenab gorge", "highway"],
+    "bestMonths": [4, 5, 6, 9, 10],
+    "notes": "Landslides and snow can close the highway for days; check traffic advisories before you start, and expect convoys on some stretches.",
+    "stops": [
+      {
+        "label": "Jammu",
+        "location": [74.85809, 32.71856]
+      },
+      {
+        "label": "Ramban",
+        "location": [75.24044, 33.2387]
+      },
+      {
+        "label": "Banihal",
+        "location": [75.19549, 33.43789]
+      },
+      {
+        "label": "Anantnag",
+        "location": [75.14551, 33.73688]
+      },
+      {
+        "label": "Srinagar",
+        "location": [74.82044, 34.07474]
+      }
+    ],
+    "expect": {
+      "km": 270
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Chumathang",
+        "location": [78.33429, 33.35888]
+      },
+      {
+        "label": "Nyoma",
+        "location": [78.64966, 33.20548]
+      }
+    ],
+    "slug": "leh-to-hanle-via-chumathang",
+    "title": "Leh to Hanle via Chumathang",
+    "region": "Ladakh",
+    "blurb": "Up the Indus to Upshi, then south through Chumathang's hot springs and Nyoma to Hanle, a remote village under one of the darkest skies in India, near its observatory.",
+    "tags": ["Indus valley", "remote", "dark sky"],
+    "bestMonths": [5, 6, 7, 8, 9],
+    "notes": "An Inner Line Permit is needed for this stretch and fuel is scarce beyond Upshi; carry spare fuel and plan for altitude of over 4,000 m.",
+    "stops": [
+      {
+        "label": "Leh",
+        "location": [77.58481, 34.1642]
+      },
+      {
+        "label": "Upshi",
+        "location": [77.81363, 33.8302]
+      },
+      {
+        "label": "Chumathang",
+        "location": [78.33429, 33.35888]
+      },
+      {
+        "label": "Nyoma",
+        "location": [78.64966, 33.20548]
+      },
+      {
+        "label": "Hanle",
+        "location": [78.98321, 32.77148]
+      }
+    ],
+    "expect": {
+      "km": 270
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Rangdum",
+        "location": [76.372, 34.03619]
+      }
+    ],
+    "slug": "kargil-to-padum-via-pensi-la",
+    "title": "Kargil to Padum via Pensi La",
+    "region": "Ladakh",
+    "blurb": "Up the Suru valley under the Nun Kun peaks to Rangdum's monastery, over Pensi La and down to Padum, the main town of Zanskar.",
+    "tags": ["Zanskar", "Suru valley", "high pass"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Pensi La is shut by snow from about November to May; there is very little fuel or food between Kargil and Padum.",
+    "stops": [
+      {
+        "label": "Kargil",
+        "location": [76.12558, 34.5593]
+      },
+      {
+        "label": "Rangdum",
+        "location": [76.372, 34.03619]
+      },
+      {
+        "label": "Pensi La",
+        "location": [76.35821, 33.86428]
+      },
+      {
+        "label": "Padum",
+        "location": [76.87818, 33.46914]
+      }
+    ],
+    "expect": {
+      "km": 235
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Pamban",
+        "location": [79.21268, 9.28203]
+      }
+    ],
+    "slug": "madurai-to-dhanushkodi",
+    "title": "Madurai to Dhanushkodi via Rameswaram",
+    "region": "Tamil Nadu",
+    "blurb": "Across the dry Ramanathapuram plain to the Pamban bridge, over the strait to Rameswaram's temple, then out along a thin spit of sand to the ruined town of Dhanushkodi at the island's tip.",
+    "tags": ["Pamban bridge", "coast", "pilgrimage"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The road past Dhanushkodi is closed to vehicles after dark and winds are strong on the spit; check opening times locally.",
+    "stops": [
+      {
+        "label": "Madurai",
+        "location": [78.1141, 9.92612]
+      },
+      {
+        "label": "Pamban",
+        "location": [79.21268, 9.28203]
+      },
+      {
+        "label": "Rameswaram",
+        "location": [79.31256, 9.28447]
+      },
+      {
+        "label": "Dhanushkodi",
+        "location": [79.41567, 9.17938]
+      }
+    ],
+    "expect": {
+      "km": 194
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kumily",
+        "location": [77.1671, 9.6068]
+      }
+    ],
+    "slug": "munnar-to-thekkady-via-kumily",
+    "title": "Munnar to Thekkady via Kumily",
+    "region": "Kerala",
+    "blurb": "From Munnar's tea slopes over the Western Ghats into Idukki's spice country, down to Kumily and Thekkady beside the Periyar reserve.",
+    "tags": ["tea estates", "spice country", "Western Ghats"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3],
+    "notes": "Mist and heavy rain from June to August make the Ghat sections slippery; elephants sometimes cross near Periyar.",
+    "stops": [
+      {
+        "label": "Munnar",
+        "location": [77.06009, 10.087]
+      },
+      {
+        "label": "Kumily",
+        "location": [77.1671, 9.6068]
+      },
+      {
+        "label": "Thekkady",
+        "location": [77.18114, 9.5805]
+      }
+    ],
+    "expect": {
+      "km": 87
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Hosapete",
+        "location": [76.38723, 15.26649]
+      }
+    ],
+    "slug": "bengaluru-to-hampi",
+    "title": "Bengaluru to Hampi",
+    "region": "Karnataka",
+    "blurb": "North on NH48 past Chitradurga's fort town to Hosapete, then the last few kilometres into Hampi's boulder-strewn ruins of the Vijayanagara capital.",
+    "tags": ["highway", "Vijayanagara", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Summers are very hot; roadside food is limited between Chitradurga and Hosapete.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Hosapete",
+        "location": [76.38723, 15.26649]
+      },
+      {
+        "label": "Hampi",
+        "location": [76.46102, 15.3358]
+      }
+    ],
+    "expect": {
+      "km": 340
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Hubballi",
+        "location": [75.13798, 15.35184]
+      }
+    ],
+    "slug": "hampi-to-gokarna",
+    "title": "Hampi to Gokarna",
+    "region": "Karnataka",
+    "blurb": "From Hampi's ruins across the Deccan plateau to Hubballi, then down through the forests of the Western Ghats to Gokarna's temple town and its beaches.",
+    "tags": ["plateau to coast", "Western Ghats", "beaches"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "The Ghat section through the Uttara Kannada forests has sharp bends and few fuel pumps; fill up in Hubballi.",
+    "stops": [
+      {
+        "label": "Hampi",
+        "location": [76.46102, 15.3358]
+      },
+      {
+        "label": "Hubballi",
+        "location": [75.13798, 15.35184]
+      },
+      {
+        "label": "Gokarna",
+        "location": [74.31844, 14.54396]
+      }
+    ],
+    "expect": {
+      "km": 330
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Murudeshwar",
+        "location": [74.48834, 14.09595]
+      }
+    ],
+    "slug": "gokarna-to-udupi-via-murudeshwar",
+    "title": "Gokarna to Udupi via Murudeshwar",
+    "region": "Karnataka",
+    "blurb": "The coast road south from Gokarna to Murudeshwar's seaside temple and its tall Shiva statue, then past river mouths and beaches to Udupi.",
+    "tags": ["coast", "beaches", "temples"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "NH66 is being widened in places, so expect diversions and dust; the monsoon from June to September brings heavy rain and rough seas.",
+    "stops": [
+      {
+        "label": "Gokarna",
+        "location": [74.31844, 14.54396]
+      },
+      {
+        "label": "Murudeshwar",
+        "location": [74.48834, 14.09595]
+      },
+      {
+        "label": "Udupi",
+        "location": [74.74732, 13.34192]
+      }
+    ],
+    "expect": {
+      "km": 175
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Sakleshpur",
+        "location": [75.785, 12.943]
+      }
+    ],
+    "slug": "bengaluru-to-kukke-subramanya",
+    "title": "Bengaluru to Kukke Subramanya via Shiradi Ghat",
+    "region": "Karnataka",
+    "blurb": "Past Hassan and Sakleshpur, then down the forested Shiradi Ghat to the Kumaradhara valley and the temple town of Kukke Subramanya.",
+    "tags": ["Shiradi Ghat", "forest", "pilgrimage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Shiradi Ghat has been closed or limited to light vehicles during monsoon repairs; check its status before leaving.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Hassan",
+        "location": [76.0996, 13.0068]
+      },
+      {
+        "label": "Sakleshpur",
+        "location": [75.785, 12.943]
+      },
+      {
+        "label": "Kukke Subramanya",
+        "location": [75.61583, 12.66342]
+      }
+    ],
+    "expect": {
+      "km": 275
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "shivamogga-to-jog-falls",
+    "title": "Shivamogga to Jog Falls",
+    "region": "Karnataka",
+    "blurb": "West from Shivamogga through the Sharavathi valley's forest and arecanut gardens to Jog Falls, where the river drops about 250 m in four streams.",
+    "tags": ["waterfall", "Sharavathi", "forest"],
+    "bestMonths": [7, 8, 9, 10, 11],
+    "notes": "The falls are at their strongest after the monsoon and thin out by March.",
+    "stops": [
+      {
+        "label": "Shivamogga",
+        "location": [75.57498, 13.93261]
+      },
+      {
+        "label": "Jog Falls",
+        "location": [74.81231, 14.2293]
+      }
+    ],
+    "expect": {
+      "km": 105
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kalasa",
+        "location": [75.356, 13.234]
+      }
+    ],
+    "slug": "chikkamagaluru-to-kudremukh",
+    "title": "Chikkamagaluru to Kudremukh via Kalasa",
+    "region": "Karnataka",
+    "blurb": "From Chikkamagaluru's coffee hills through Mudigere's estates to Kalasa, then along the Bhadra valley's forest road to Kudremukh and its grassy peak.",
+    "tags": ["coffee country", "Bhadra valley", "peak"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Entering Kudremukh National Park needs a forest permit and leeches are common in the monsoon.",
+    "stops": [
+      {
+        "label": "Chikkamagaluru",
+        "location": [75.772, 13.3161]
+      },
+      {
+        "label": "Kalasa",
+        "location": [75.356, 13.234]
+      },
+      {
+        "label": "Kudremukh",
+        "location": [75.25103, 13.21907]
+      }
+    ],
+    "expect": {
+      "km": 95
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Coonoor",
+        "location": [76.79653, 11.34594]
+      }
+    ],
+    "slug": "coimbatore-to-ooty-via-coonoor",
+    "title": "Coimbatore to Ooty via Coonoor",
+    "region": "Tamil Nadu",
+    "blurb": "Across the plain to Mettupalayam, then the Coonoor ghat road with its hairpins through tea slopes, and on to Ooty's lake town.",
+    "tags": ["Nilgiris", "ghat road", "tea estates"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3],
+    "notes": "Weekend traffic on the Coonoor ghat is heavy, and monsoon rain can bring down trees and loose rock.",
+    "stops": [
+      {
+        "label": "Coimbatore",
+        "location": [76.96284, 11.00181]
+      },
+      {
+        "label": "Mettupalayam",
+        "location": [76.93565, 11.30594]
+      },
+      {
+        "label": "Coonoor",
+        "location": [76.79653, 11.34594]
+      },
+      {
+        "label": "Ooty",
+        "location": [76.68681, 11.40347]
+      }
+    ],
+    "expect": {
+      "km": 108
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Salem",
+        "location": [78.15818, 11.6552]
+      }
+    ],
+    "slug": "bengaluru-to-yercaud",
+    "title": "Bengaluru to Yercaud",
+    "region": "Tamil Nadu",
+    "blurb": "South on NH44 through Hosur to Salem, then up the Shevaroy hills on a short, twisty climb to Yercaud's lake and coffee gardens.",
+    "tags": ["Shevaroy hills", "hairpins", "weekend ride"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The climb to Yercaud is narrow, with buses and trucks; avoid riding them in heavy fog.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Hosur",
+        "location": [77.83095, 12.73288]
+      },
+      {
+        "label": "Salem",
+        "location": [78.15818, 11.6552]
+      },
+      {
+        "label": "Yercaud",
+        "location": [78.20754, 11.78521]
+      }
+    ],
+    "expect": {
+      "km": 235
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "visakhapatnam-to-araku-valley",
+    "title": "Visakhapatnam to Araku Valley",
+    "region": "Andhra Pradesh",
+    "blurb": "From the Visakhapatnam coast up through the Eastern Ghats' forest and ghat road, with viewpoints and tunnels along the way, to Araku's coffee plantations.",
+    "tags": ["Eastern Ghats", "coffee", "ghat road"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Fog is common on the ghat in winter mornings; the monsoon from June to September can bring landslides.",
+    "stops": [
+      {
+        "label": "Visakhapatnam",
+        "location": [83.29213, 17.69355]
+      },
+      {
+        "label": "Araku Valley",
+        "location": [82.88058, 18.32344]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "chennai-to-tirupati",
+    "title": "Chennai to Tirupati",
+    "region": "Tamil Nadu and Andhra Pradesh",
+    "blurb": "A fast run north across the coastal plain from Chennai into Andhra Pradesh, ending at Tirupati below the Tirumala hills and their famous temple.",
+    "tags": ["highway", "pilgrimage", "plains"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Heavy truck traffic on the national highway; Tirumala itself is a separate ghat road with its own timings for two-wheelers.",
+    "stops": [
+      {
+        "label": "Chennai",
+        "location": [80.27019, 13.08369]
+      },
+      {
+        "label": "Tirupati",
+        "location": [79.42317, 13.63164]
+      }
+    ],
+    "expect": {
+      "km": 150
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [],
+    "slug": "thiruvananthapuram-to-kanyakumari",
+    "title": "Thiruvananthapuram to Kanyakumari",
+    "region": "Kerala and Tamil Nadu",
+    "blurb": "South from Kerala's capital through coconut country and across the state border to Kanyakumari, where the Arabian Sea, Bay of Bengal and Indian Ocean meet at India's southern tip.",
+    "tags": ["land's end", "coast", "sunrise"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Kanyakumari is crowded at sunrise and sunset, especially on weekends and festivals.",
+    "stops": [
+      {
+        "label": "Thiruvananthapuram",
+        "location": [76.94755, 8.48823]
+      },
+      {
+        "label": "Kanyakumari",
+        "location": [77.54993, 8.07925]
+      }
+    ],
+    "expect": {
+      "km": 90
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Halebidu",
+        "location": [75.99188, 13.2168]
+      }
+    ],
+    "slug": "shravanabelagola-to-belur-hoysala-circuit",
+    "title": "Shravanabelagola to Belur: the Hoysala circuit",
+    "region": "Karnataka",
+    "blurb": "From the giant Jain statue at Shravanabelagola through Hassan to the Hoysala temples of Halebidu and Belur, finely carved in soapstone in the 12th century.",
+    "tags": ["Hoysala temples", "heritage", "short ride"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "The Shravanabelagola climb is barefoot on hot stone in the afternoon; temples close in the early evening.",
+    "stops": [
+      {
+        "label": "Shravanabelagola",
+        "location": [76.48701, 12.85813]
+      },
+      {
+        "label": "Hassan",
+        "location": [76.0996, 13.0068]
+      },
+      {
+        "label": "Halebidu",
+        "location": [75.99188, 13.2168]
+      },
+      {
+        "label": "Belur",
+        "location": [75.865, 13.165]
+      }
+    ],
+    "expect": {
+      "km": 120
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bengaluru-to-nandi-hills",
+    "title": "Bengaluru to Nandi Hills",
+    "region": "Karnataka",
+    "blurb": "A short early-morning run north past Devanahalli to the Nandi Hills climb, with a steady ascent to the hilltop sunrise point above the plains.",
+    "tags": ["sunrise ride", "short ride", "hill climb"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Gates open before dawn but fog is thick on winter mornings; weekends are very crowded.",
+    "stops": [
+      {
+        "label": "Bengaluru",
+        "location": [77.5946, 12.9716]
+      },
+      {
+        "label": "Nandi Hills",
+        "location": [77.68075, 13.36046]
+      }
+    ],
+    "expect": {
+      "km": 65
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Panchgani",
+        "location": [73.79927, 17.92395]
+      }
+    ],
+    "slug": "pune-to-mahabaleshwar-via-panchgani",
+    "title": "Pune to Mahabaleshwar via Panchgani",
+    "region": "Maharashtra",
+    "blurb": "Out of Pune over the Kath ghat to Wai, then up the Krishna valley to Panchgani's table land and on to Mahabaleshwar's strawberry farms and viewpoints.",
+    "tags": ["hill station", "Sahyadri", "viewpoints"],
+    "bestMonths": [6, 7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "Weekends are crowded and the plateau is wrapped in fog during the monsoon; the road is closed to buses at some viewpoints.",
+    "stops": [
+      {
+        "label": "Pune",
+        "location": [73.85451, 18.52137]
+      },
+      {
+        "label": "Wai",
+        "location": [73.8913, 17.95199]
+      },
+      {
+        "label": "Panchgani",
+        "location": [73.79927, 17.92395]
+      },
+      {
+        "label": "Mahabaleshwar",
+        "location": [73.65758, 17.92428]
+      }
+    ],
+    "expect": {
+      "km": 125
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "pune-to-bhimashankar",
+    "title": "Pune to Bhimashankar",
+    "region": "Maharashtra",
+    "blurb": "North from Pune through Khed's farmland into the Sahyadri forest, climbing to Bhimashankar's temple and wildlife sanctuary at the head of the Bhima river.",
+    "tags": ["Sahyadri", "forest", "pilgrimage"],
+    "bestMonths": [7, 8, 9, 10, 11, 12],
+    "notes": "The last climb is narrow and slick in the monsoon; Giant squirrels live in the sanctuary and the temple queue is long on Mondays and festivals.",
+    "stops": [
+      {
+        "label": "Pune",
+        "location": [73.85451, 18.52137]
+      },
+      {
+        "label": "Bhimashankar",
+        "location": [73.53576, 19.072]
+      }
+    ],
+    "expect": {
+      "km": 125
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kasara",
+        "location": [73.47465, 19.64462]
+      }
+    ],
+    "slug": "mumbai-to-nashik-via-kasara-ghat",
+    "title": "Mumbai to Nashik via Kasara Ghat",
+    "region": "Maharashtra",
+    "blurb": "Up the Thane plain to the Kasara ghat, a climb into the Sahyadri with long views, then past Igatpuri's rock peaks and down to Nashik's river ghats and vineyards.",
+    "tags": ["Kasara ghat", "Igatpuri", "vineyards"],
+    "bestMonths": [7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "Kasara ghat has heavy truck traffic and fog in the monsoon; fuel up before the climb.",
+    "stops": [
+      {
+        "label": "Mumbai",
+        "location": [72.8692, 19.055]
+      },
+      {
+        "label": "Kasara",
+        "location": [73.47465, 19.64462]
+      },
+      {
+        "label": "Igatpuri",
+        "location": [73.56514, 19.69525]
+      },
+      {
+        "label": "Nashik",
+        "location": [73.79024, 20.01125]
+      }
+    ],
+    "expect": {
+      "km": 170
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Alibag",
+        "location": [72.87655, 18.64984]
+      }
+    ],
+    "slug": "mumbai-to-murud-via-alibag",
+    "title": "Mumbai to Murud via Alibag",
+    "region": "Maharashtra",
+    "blurb": "Down the Konkan coast through Alibag's beaches to Murud, where Janjira, a sea fort, stands on a rock just off the shore.",
+    "tags": ["Konkan coast", "sea fort", "beaches"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Janjira Fort is reached by sail boat and closes during the monsoon from June to September.",
+    "stops": [
+      {
+        "label": "Mumbai",
+        "location": [72.8692, 19.055]
+      },
+      {
+        "label": "Alibag",
+        "location": [72.87655, 18.64984]
+      },
+      {
+        "label": "Murud",
+        "location": [72.96048, 18.32204]
+      }
+    ],
+    "expect": {
+      "km": 150
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Ellora Caves",
+        "location": [75.17669, 20.02677]
+      }
+    ],
+    "slug": "chhatrapati-sambhajinagar-to-ajanta-via-ellora",
+    "title": "Sambhajinagar to Ajanta via Ellora",
+    "region": "Maharashtra",
+    "blurb": "Out of Aurangabad to Ellora's rock-cut temples, then across the Deccan plateau to the Ajanta caves, where Buddhist monasteries are cut into a horseshoe cliff.",
+    "tags": ["rock-cut caves", "UNESCO", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Ellora's caves are closed on Tuesdays and Ajanta's on Mondays; check opening days before you set out.",
+    "stops": [
+      {
+        "label": "Chhatrapati Sambhajinagar",
+        "location": [75.33902, 19.87726]
+      },
+      {
+        "label": "Ellora",
+        "location": [75.17669, 20.02677]
+      },
+      {
+        "label": "Ajanta Caves",
+        "location": [75.70079, 20.55252]
+      }
+    ],
+    "expect": {
+      "km": 129
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "panaji-to-palolem",
+    "title": "Panaji to Palolem",
+    "region": "Goa",
+    "blurb": "South from Panaji along Goa's coastal belt to Palolem's crescent beach, past churches, paddy fields and rivers.",
+    "tags": ["coast", "beaches", "churches"],
+    "bestMonths": [11, 12, 1, 2, 3],
+    "notes": "Holiday traffic builds up around Margao in December and January; the beach shacks close in the monsoon.",
+    "stops": [
+      {
+        "label": "Panaji",
+        "location": [73.82821, 15.49899]
+      },
+      {
+        "label": "Palolem",
+        "location": [74.02195, 15.0128]
+      }
+    ],
+    "expect": {
+      "km": 75
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mapusa",
+        "location": [73.81021, 15.59085]
+      }
+    ],
+    "slug": "panaji-to-arambol",
+    "title": "Panaji to Arambol",
+    "region": "Goa",
+    "blurb": "North through Mapusa's market town and the beach belt to Arambol, a quiet shore with a freshwater lake and cliffs at its far end.",
+    "tags": ["coast", "beaches", "easy"],
+    "bestMonths": [11, 12, 1, 2, 3],
+    "notes": "Roads are narrow with heavy scooter traffic in season; the beach shacks close in the monsoon.",
+    "stops": [
+      {
+        "label": "Panaji",
+        "location": [73.82821, 15.49899]
+      },
+      {
+        "label": "Mapusa",
+        "location": [73.81021, 15.59085]
+      },
+      {
+        "label": "Arambol",
+        "location": [73.70576, 15.67932]
+      }
+    ],
+    "expect": {
+      "km": 35
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Bhuj",
+        "location": [69.66834, 23.24724]
+      }
+    ],
+    "slug": "ahmedabad-to-dhordo-rann-of-kutch",
+    "title": "Ahmedabad to Dhordo and the Rann of Kutch",
+    "region": "Gujarat",
+    "blurb": "Across Saurashtra's plain and over the Little Rann to Bhuj, then north on a straight road through the Banni grasslands to Dhordo, at the edge of the white salt desert.",
+    "tags": ["Rann of Kutch", "salt desert", "long straights"],
+    "bestMonths": [11, 12, 1, 2],
+    "notes": "The salt flats are walkable only in winter; entry to the White Rann needs a permit available at Dhordo, and the Rann Utsav tent city runs from about November to February.",
+    "stops": [
+      {
+        "label": "Ahmedabad",
+        "location": [72.58006, 23.02154]
+      },
+      {
+        "label": "Bhuj",
+        "location": [69.66834, 23.24724]
+      },
+      {
+        "label": "Dhordo",
+        "location": [69.51056, 23.75849]
+      }
+    ],
+    "expect": {
+      "km": 450
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Junagadh",
+        "location": [70.45825, 21.52204]
+      }
+    ],
+    "slug": "rajkot-to-sasan-gir",
+    "title": "Rajkot to Sasan Gir",
+    "region": "Gujarat",
+    "blurb": "From Rajkot through Junagadh's old city to Sasan Gir, the home of the Asiatic lion, on flat Saurashtra roads with dry teak forest at the end.",
+    "tags": ["Gir forest", "wildlife", "Saurashtra"],
+    "bestMonths": [11, 12, 1, 2, 3],
+    "notes": "Gir National Park is closed from mid-June to mid-October and safari permits need booking ahead.",
+    "stops": [
+      {
+        "label": "Rajkot",
+        "location": [70.80284, 22.30533]
+      },
+      {
+        "label": "Junagadh",
+        "location": [70.45825, 21.52204]
+      },
+      {
+        "label": "Sasan Gir",
+        "location": [70.59719, 21.16856]
+      }
+    ],
+    "expect": {
+      "km": 160
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Porbandar",
+        "location": [69.611, 21.6409]
+      }
+    ],
+    "slug": "dwarka-to-somnath-via-porbandar",
+    "title": "Dwarka to Somnath via Porbandar",
+    "region": "Gujarat",
+    "blurb": "Along Saurashtra's western coast from Dwarka's temple town to Porbandar, Gandhi's birthplace, and on to the seaside temple at Somnath.",
+    "tags": ["coast", "pilgrimage", "Saurashtra"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Wind and heat are strong on the open coast road; fuel and food stops are widely spaced.",
+    "stops": [
+      {
+        "label": "Dwarka",
+        "location": [68.96714, 22.24247]
+      },
+      {
+        "label": "Porbandar",
+        "location": [69.611, 21.6409]
+      },
+      {
+        "label": "Somnath Temple",
+        "location": [70.40109, 20.88797]
+      }
+    ],
+    "expect": {
+      "km": 235
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "udaipur-to-kumbhalgarh",
+    "title": "Udaipur to Kumbhalgarh",
+    "region": "Rajasthan",
+    "blurb": "From Udaipur's lakes through the Aravalli hills to Kumbhalgarh, a fort with a wall running for kilometres along the ridge.",
+    "tags": ["Aravalli", "fort", "hills"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Hills are green after the monsoon and very dry by April; the fort wall walk can be hot at midday.",
+    "stops": [
+      {
+        "label": "Udaipur",
+        "location": [73.68626, 24.57872]
+      },
+      {
+        "label": "Kumbhalgarh",
+        "location": [73.58275, 25.14805]
+      }
+    ],
+    "expect": {
+      "km": 85
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "udaipur-to-mount-abu",
+    "title": "Udaipur to Mount Abu",
+    "region": "Rajasthan",
+    "blurb": "South-west from Udaipur through Aravalli foothills to Abu Road, then the winding climb to Mount Abu, Rajasthan's only hill station.",
+    "tags": ["Aravalli", "hill station", "hill climb"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 7, 8],
+    "notes": "The climb from Abu Road has tight bends with trucks and buses; Mount Abu is crowded on weekends and in summer.",
+    "stops": [
+      {
+        "label": "Udaipur",
+        "location": [73.68626, 24.57872]
+      },
+      {
+        "label": "Mount Abu",
+        "location": [72.70819, 24.59243]
+      }
+    ],
+    "expect": {
+      "km": 165
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Ajmer",
+        "location": [74.639, 26.4691]
+      }
+    ],
+    "slug": "jaipur-to-pushkar-via-ajmer",
+    "title": "Jaipur to Pushkar via Ajmer",
+    "region": "Rajasthan",
+    "blurb": "West on the Ajmer highway from Jaipur through Kishangarh, over the Nag Pahar hill by Ajmer, to Pushkar's sacred lake and its desert-edge camel fair ground.",
+    "tags": ["highway", "pilgrimage", "desert edge"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The Pushkar camel fair in November fills every room; the climb over Nag Pahar has heavy trucks.",
+    "stops": [
+      {
+        "label": "Jaipur",
+        "location": [75.81898, 26.91546]
+      },
+      {
+        "label": "Ajmer",
+        "location": [74.639, 26.4691]
+      },
+      {
+        "label": "Pushkar",
+        "location": [74.55785, 26.48765]
+      }
+    ],
+    "expect": {
+      "km": 145
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bhopal-to-pachmarhi",
+    "title": "Bhopal to Pachmarhi",
+    "region": "Madhya Pradesh",
+    "blurb": "South-east from Bhopal across the Narmada valley to Pipariya, then up the Satpura range to Pachmarhi, a hill town with caves, pools and a tiger reserve.",
+    "tags": ["Satpura", "hill station", "forest"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3],
+    "notes": "Pachmarhi's lakes and caves are crowded on weekends; the jungle roads close during the monsoon in some years.",
+    "stops": [
+      {
+        "label": "Bhopal",
+        "location": [77.40199, 23.25849]
+      },
+      {
+        "label": "Pachmarhi",
+        "location": [78.43605, 22.47368]
+      }
+    ],
+    "expect": {
+      "km": 195
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Orchha",
+        "location": [78.64025, 25.35287]
+      }
+    ],
+    "slug": "jhansi-to-khajuraho-via-orchha",
+    "title": "Jhansi to Khajuraho via Orchha",
+    "region": "Madhya Pradesh",
+    "blurb": "From Jhansi to Orchha's riverside palaces and temples, then across Bundelkhand to Khajuraho, where the famous temples carry carvings on every wall.",
+    "tags": ["Bundelkhand", "heritage", "temples"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Summers are fiercely hot; Khajuraho is quietest from October to March when the dance festival also runs in February.",
+    "stops": [
+      {
+        "label": "Jhansi",
+        "location": [78.58001, 25.45025]
+      },
+      {
+        "label": "Orchha",
+        "location": [78.64025, 25.35287]
+      },
+      {
+        "label": "Khajuraho",
+        "location": [79.92598, 24.85151]
+      }
+    ],
+    "expect": {
+      "km": 175
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Lachung",
+        "location": [88.74259, 27.68971]
+      }
+    ],
+    "slug": "gangtok-to-yumthang-via-lachung",
+    "title": "Gangtok to Yumthang via Lachung",
+    "region": "Sikkim",
+    "blurb": "North along the Teesta river into North Sikkim, through Mangan and Chungthang to Lachung, then up the valley to Yumthang, where rhododendrons cover the slopes in spring.",
+    "tags": ["North Sikkim", "Teesta valley", "rhododendrons"],
+    "bestMonths": [3, 4, 5, 10, 11],
+    "notes": "North Sikkim needs a permit arranged through a registered operator, and landslides often close the road; check conditions before you go.",
+    "stops": [
+      {
+        "label": "Gangtok",
+        "location": [88.61227, 27.32905]
+      },
+      {
+        "label": "Lachung",
+        "location": [88.74259, 27.68971]
+      },
+      {
+        "label": "Yumthang",
+        "location": [88.70332, 27.80426]
+      }
+    ],
+    "expect": {
+      "km": 140
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "gangtok-to-nathu-la",
+    "title": "Gangtok to Nathu La",
+    "region": "Sikkim",
+    "blurb": "A steep climb east of Gangtok past Tsomgo Lake to Nathu La on the Tibet border, at about 4,300 m, with army posts and snow for much of the year.",
+    "tags": ["border pass", "high pass", "snow"],
+    "bestMonths": [5, 6, 9, 10],
+    "notes": "A permit is required, arranged through a registered operator, and the pass is open only on some days of the week; weather often closes the road.",
+    "stops": [
+      {
+        "label": "Gangtok",
+        "location": [88.61227, 27.32905]
+      },
+      {
+        "label": "Nathu La",
+        "location": [88.8309, 27.38683]
+      }
+    ],
+    "expect": {
+      "km": 55
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "siliguri-to-gangtok",
+    "title": "Siliguri to Gangtok",
+    "region": "West Bengal and Sikkim",
+    "blurb": "From the Siliguri plain into the Teesta gorge, up through Rangpo and the Sikkim border to Gangtok on its ridge.",
+    "tags": ["Teesta gorge", "mountains", "highway"],
+    "bestMonths": [3, 4, 5, 10, 11, 12],
+    "notes": "Landslides on NH10 along the Teesta are common in the monsoon and can block the road for days.",
+    "stops": [
+      {
+        "label": "Siliguri",
+        "location": [88.43099, 26.71641]
+      },
+      {
+        "label": "Gangtok",
+        "location": [88.61227, 27.32905]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "siliguri-to-kalimpong",
+    "title": "Siliguri to Kalimpong",
+    "region": "West Bengal",
+    "blurb": "From Siliguri up the Sevoke road beside the Teesta, over the river at Coronation Bridge, then up to Kalimpong's ridge with its monasteries, nurseries and views of Kanchenjunga.",
+    "tags": ["Teesta valley", "monasteries", "hill town"],
+    "bestMonths": [3, 4, 5, 10, 11, 12],
+    "notes": "Coronation Bridge and the Sevoke road are prone to landslides in the monsoon.",
+    "stops": [
+      {
+        "label": "Siliguri",
+        "location": [88.43099, 26.71641]
+      },
+      {
+        "label": "Kalimpong",
+        "location": [88.47237, 27.07029]
+      }
+    ],
+    "expect": {
+      "km": 70
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "kolkata-to-digha",
+    "title": "Kolkata to Digha",
+    "region": "West Bengal",
+    "blurb": "South-west from Kolkata across the Hooghly and Rupnarayan rivers through Kolaghat and Contai to Digha, a long, flat beach on the Bay of Bengal.",
+    "tags": ["coast", "beach", "easy"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Weekend and holiday traffic is heavy near Kolaghat and Digha; the sea is rough in the monsoon.",
+    "stops": [
+      {
+        "label": "Kolkata",
+        "location": [88.3639, 22.57265]
+      },
+      {
+        "label": "Digha",
+        "location": [87.50694, 21.62246]
+      }
+    ],
+    "expect": {
+      "km": 185
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "kolkata-to-bishnupur",
+    "title": "Kolkata to Bishnupur",
+    "region": "West Bengal",
+    "blurb": "West from Kolkata through Bardhaman's rice country to Bishnupur, a town of terracotta temples built by the Malla kings.",
+    "tags": ["terracotta temples", "heritage", "plains"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Summers are very hot; the Bishnupur Mela is held in December.",
+    "stops": [
+      {
+        "label": "Kolkata",
+        "location": [88.3639, 22.57265]
+      },
+      {
+        "label": "Bishnupur",
+        "location": [87.31463, 23.07573]
+      }
+    ],
+    "expect": {
+      "km": 145
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "guwahati-to-kaziranga",
+    "title": "Guwahati to Kaziranga",
+    "region": "Assam",
+    "blurb": "East along the Brahmaputra's valley on NH715 through Nagaon to Kaziranga, where one-horned rhinos graze in tall grassland beside the highway.",
+    "tags": ["Kaziranga", "rhino", "Brahmaputra valley"],
+    "bestMonths": [11, 12, 1, 2, 3, 4],
+    "notes": "The park is closed from May to October; animals cross NH715 near the park, so slow down.",
+    "stops": [
+      {
+        "label": "Guwahati",
+        "location": [91.75394, 26.1806]
+      },
+      {
+        "label": "Kaziranga",
+        "location": [93.29081, 26.58097]
+      }
+    ],
+    "expect": {
+      "km": 215
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "guwahati-to-shillong",
+    "title": "Guwahati to Shillong",
+    "region": "Assam and Meghalaya",
+    "blurb": "South from Guwahati up the Khasi hills on a smooth highway, past Umiam Lake's reservoir, to Shillong, the Scotland of the East.",
+    "tags": ["Khasi hills", "Umiam Lake", "highway"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 4],
+    "notes": "Fog and rain slow the climb; heavy truck traffic on weekdays.",
+    "stops": [
+      {
+        "label": "Guwahati",
+        "location": [91.75394, 26.1806]
+      },
+      {
+        "label": "Shillong",
+        "location": [91.88279, 25.57599]
+      }
+    ],
+    "expect": {
+      "km": 100
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mawlynnong",
+        "location": [91.91551, 25.20195]
+      }
+    ],
+    "slug": "shillong-to-dawki-via-mawlynnong",
+    "title": "Shillong to Dawki via Mawlynnong",
+    "region": "Meghalaya",
+    "blurb": "South through the Khasi hills to Mawlynnong's tidy village, then down to Dawki and the Umngot river, whose water is clear enough to see the stones below the boats.",
+    "tags": ["Khasi hills", "clean village", "Umngot river"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Dawki is on the Bangladesh border; carry ID and check which areas are open to visitors. The Umngot river is lowest and clearest in winter.",
+    "stops": [
+      {
+        "label": "Shillong",
+        "location": [91.88279, 25.57599]
+      },
+      {
+        "label": "Mawlynnong",
+        "location": [91.91551, 25.20195]
+      },
+      {
+        "label": "Dawki",
+        "location": [92.02157, 25.18563]
+      }
+    ],
+    "expect": {
+      "km": 100
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "itanagar-to-ziro",
+    "title": "Itanagar to Ziro",
+    "region": "Arunachal Pradesh",
+    "blurb": "West from Itanagar over forested ridges to the Ziro valley, a plateau of rice paddies and fish ponds cultivated by the Apatani people.",
+    "tags": ["Ziro valley", "Apatani villages", "paddy fields"],
+    "bestMonths": [3, 4, 5, 9, 10, 11],
+    "notes": "Indian citizens from outside Arunachal need an Inner Line Permit, which is available online.",
+    "stops": [
+      {
+        "label": "Itanagar",
+        "location": [93.62373, 27.09797]
+      },
+      {
+        "label": "Ziro",
+        "location": [93.81536, 27.53867]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kohima",
+        "location": [94.10192, 25.66188]
+      }
+    ],
+    "slug": "dimapur-to-imphal-via-kohima",
+    "title": "Dimapur to Imphal via Kohima",
+    "region": "Nagaland and Manipur",
+    "blurb": "South from Dimapur's plains up to Kohima on its ridge, then along the old Imphal road over the hills of Manipur to the valley and the capital.",
+    "tags": ["Naga hills", "WWII history", "hill road"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Landslides and army convoys slow NH2; Nagaland needs an Inner Line Permit for visitors from outside the state.",
+    "stops": [
+      {
+        "label": "Dimapur",
+        "location": [93.7217, 25.91174]
+      },
+      {
+        "label": "Kohima",
+        "location": [94.10192, 25.66188]
+      },
+      {
+        "label": "Imphal",
+        "location": [93.93644, 24.79912]
+      }
+    ],
+    "expect": {
+      "km": 215
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "aizawl-to-champhai",
+    "title": "Aizawl to Champhai",
+    "region": "Mizoram",
+    "blurb": "East from Aizawl on a mountain road with steep drops and sweeping views to Champhai, a plateau town near the Myanmar border with Mizoram's largest paddy plain.",
+    "tags": ["Mizo hills", "mountain road", "border town"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Indian citizens from outside Mizoram need an Inner Line Permit; landslides are common in the monsoon.",
+    "stops": [
+      {
+        "label": "Aizawl",
+        "location": [92.71799, 23.72776]
+      },
+      {
+        "label": "Champhai",
+        "location": [93.31989, 23.47872]
+      }
+    ],
+    "expect": {
+      "km": 190
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Puri",
+        "location": [85.82525, 19.80761]
+      }
+    ],
+    "slug": "bhubaneswar-to-puri-and-konark",
+    "title": "Bhubaneswar to Puri and Konark",
+    "region": "Odisha",
+    "blurb": "South-east from Bhubaneswar to Puri's Jagannath temple and beach, then north-east along the Marine Drive coast road to the Sun Temple at Konark.",
+    "tags": ["Marine Drive", "temples", "coast"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The Marine Drive between Puri and Konark has stray cattle and gets crowded at weekends and festivals.",
+    "stops": [
+      {
+        "label": "Bhubaneswar",
+        "location": [85.83945, 20.2603]
+      },
+      {
+        "label": "Puri",
+        "location": [85.82525, 19.80761]
+      },
+      {
+        "label": "Konark",
+        "location": [86.09231, 19.88994]
+      }
+    ],
+    "expect": {
+      "km": 110
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "ranchi-to-netarhat",
+    "title": "Ranchi to Netarhat",
+    "region": "Jharkhand",
+    "blurb": "From Ranchi across the Chotanagpur plateau through Lohardaga to Netarhat, a hill station known for its sunrise and sunset points and pine forest.",
+    "tags": ["Chotanagpur plateau", "hill station", "forest"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The last stretch to Netarhat winds through forest with few fuel stops.",
+    "stops": [
+      {
+        "label": "Ranchi",
+        "location": [85.32504, 23.37005]
+      },
+      {
+        "label": "Netarhat",
+        "location": [84.26776, 23.4746]
+      }
+    ],
+    "expect": {
+      "km": 155
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "raipur-to-jagdalpur",
+    "title": "Raipur to Jagdalpur",
+    "region": "Chhattisgarh",
+    "blurb": "South from Raipur through Dhamtari and Kanker, over the Keshkal ghat into Bastar's forest to Jagdalpur, the gateway to Chitrakote Falls.",
+    "tags": ["Bastar", "Keshkal ghat", "forest"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Bastar has some areas where local advice on safety is needed; stay on the main highway and travel in daylight.",
+    "stops": [
+      {
+        "label": "Raipur",
+        "location": [81.6337, 21.23809]
+      },
+      {
+        "label": "Jagdalpur",
+        "location": [82.02357, 19.08708]
+      }
+    ],
+    "expect": {
+      "km": 300
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Umaria",
+        "location": [80.83614, 23.52466]
+      }
+    ],
+    "slug": "jabalpur-to-bandhavgarh",
+    "title": "Jabalpur to Bandhavgarh",
+    "region": "Madhya Pradesh",
+    "blurb": "East from Jabalpur across the Vindhya plateau through Umaria to Tala, the main gate of Bandhavgarh, a tiger reserve of sal forest and rocky hills.",
+    "tags": ["Bandhavgarh", "tiger reserve", "plateau"],
+    "bestMonths": [11, 12, 1, 2, 3, 4, 5],
+    "notes": "The park is closed from July to September and safari permits need booking ahead; summers are very hot.",
+    "stops": [
+      {
+        "label": "Jabalpur",
+        "location": [79.93245, 23.17015]
+      },
+      {
+        "label": "Umaria",
+        "location": [80.83614, 23.52466]
+      },
+      {
+        "label": "Tala",
+        "location": [81.0101, 23.73147]
+      }
+    ],
+    "expect": {
+      "km": 200
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mandla",
+        "location": [80.37208, 22.59781]
+      }
+    ],
+    "slug": "jabalpur-to-kanha",
+    "title": "Jabalpur to Kanha",
+    "region": "Madhya Pradesh",
+    "blurb": "South-east from Jabalpur along the Narmada's valley to Mandla, then through sal forest on a quiet state highway to Mukki, a gate of Kanha National Park.",
+    "tags": ["Kanha", "tiger reserve", "Narmada valley"],
+    "bestMonths": [11, 12, 1, 2, 3, 4, 5],
+    "notes": "The park is closed from July to September; safari permits need booking ahead, and nights are cold in winter.",
+    "stops": [
+      {
+        "label": "Jabalpur",
+        "location": [79.93245, 23.17015]
+      },
+      {
+        "label": "Mandla",
+        "location": [80.37208, 22.59781]
+      },
+      {
+        "label": "Mukki",
+        "location": [80.67312, 22.15463]
+      }
+    ],
+    "expect": {
+      "km": 180
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "indore-to-mandu",
+    "title": "Indore to Mandu",
+    "region": "Madhya Pradesh",
+    "blurb": "South-west from Indore across the Malwa plateau to Mandu, a ruined hill city of sultanate palaces, tombs and baobab trees above the Narmada plain.",
+    "tags": ["Malwa plateau", "ruined fort city", "heritage"],
+    "bestMonths": [7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "Mandu is greenest and busiest just after the monsoon; summers are very hot and shade is scarce.",
+    "stops": [
+      {
+        "label": "Indore",
+        "location": [75.8682, 22.72036]
+      },
+      {
+        "label": "Mandu",
+        "location": [75.39731, 22.34734]
+      }
+    ],
+    "expect": {
+      "km": 95
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Maheshwar",
+        "location": [75.58735, 22.17744]
+      }
+    ],
+    "slug": "indore-to-omkareshwar-via-maheshwar",
+    "title": "Indore to Omkareshwar via Maheshwar",
+    "region": "Madhya Pradesh",
+    "blurb": "South from Indore to Maheshwar's riverside ghats and palace on the Narmada, then east along the river to Omkareshwar, an island temple shaped like the sacred Om.",
+    "tags": ["Narmada", "temples", "ghats"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Both towns are crowded on Mondays and festival days; Maheshwar is known for its handloom saris.",
+    "stops": [
+      {
+        "label": "Indore",
+        "location": [75.8682, 22.72036]
+      },
+      {
+        "label": "Maheshwar",
+        "location": [75.58735, 22.17744]
+      },
+      {
+        "label": "Omkareshwar",
+        "location": [76.14957, 22.24298]
+      }
+    ],
+    "expect": {
+      "km": 162
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "indore-to-ujjain",
+    "title": "Indore to Ujjain",
+    "region": "Madhya Pradesh",
+    "blurb": "A short run north from Indore to Ujjain, one of India's seven sacred cities, on the banks of the Shipra with the Mahakaleshwar temple at its heart.",
+    "tags": ["pilgrimage", "Shipra river", "short ride"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Mahakaleshwar's queues are long on Mondays and during Shivratri; the Simhastha fair is held once every twelve years.",
+    "stops": [
+      {
+        "label": "Indore",
+        "location": [75.8682, 22.72036]
+      },
+      {
+        "label": "Ujjain",
+        "location": [75.77166, 23.18851]
+      }
+    ],
+    "expect": {
+      "km": 55
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bhopal-to-ujjain",
+    "title": "Bhopal to Ujjain",
+    "region": "Madhya Pradesh",
+    "blurb": "West from Bhopal across the Malwa plateau through Sehore and Shajapur to Ujjain, past farmland and small towns on a well-kept national highway.",
+    "tags": ["Malwa plateau", "highway", "pilgrimage"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Truck traffic is heavy on the highway; summers are very hot.",
+    "stops": [
+      {
+        "label": "Bhopal",
+        "location": [77.40199, 23.25849]
+      },
+      {
+        "label": "Ujjain",
+        "location": [75.77166, 23.18851]
+      }
+    ],
+    "expect": {
+      "km": 190
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bhopal-to-sanchi",
+    "title": "Bhopal to Sanchi",
+    "region": "Madhya Pradesh",
+    "blurb": "A short run north-east from Bhopal to Sanchi, whose hilltop stupas, built from the 3rd century BCE, are among the oldest stone structures in India.",
+    "tags": ["Buddhist stupas", "UNESCO", "short ride"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Visit early in the day to avoid the midday heat, and check the site’s opening hours.",
+    "stops": [
+      {
+        "label": "Bhopal",
+        "location": [77.40199, 23.25849]
+      },
+      {
+        "label": "Sanchi",
+        "location": [77.74062, 23.48705]
+      }
+    ],
+    "expect": {
+      "km": 50
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Datia",
+        "location": [78.45823, 25.66894]
+      }
+    ],
+    "slug": "gwalior-to-orchha-via-datia",
+    "title": "Gwalior to Orchha via Datia",
+    "region": "Madhya Pradesh",
+    "blurb": "South from Gwalior's hilltop fort through Datia and its seven-storey palace to Orchha, where chhatris line the Betwa river below the old palaces.",
+    "tags": ["forts and palaces", "Bundelkhand", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Summers are fiercely hot; Orchha's Ram Raja Temple is busiest on festivals.",
+    "stops": [
+      {
+        "label": "Gwalior",
+        "location": [78.15736, 26.20372]
+      },
+      {
+        "label": "Datia",
+        "location": [78.45823, 25.66894]
+      },
+      {
+        "label": "Orchha",
+        "location": [78.64025, 25.35287]
+      }
+    ],
+    "expect": {
+      "km": 120
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "satna-to-chitrakoot",
+    "title": "Satna to Chitrakoot",
+    "region": "Madhya Pradesh",
+    "blurb": "North from Satna to Chitrakoot, a pilgrimage town on the Mandakini river where the Vindhya hills meet the Ganga plain, with ghats and hill temples.",
+    "tags": ["Mandakini river", "pilgrimage", "Vindhya hills"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Crowds peak on Amavasya days; the border with Uttar Pradesh runs through the town.",
+    "stops": [
+      {
+        "label": "Satna",
+        "location": [80.83257, 24.57513]
+      },
+      {
+        "label": "Chitrakoot",
+        "location": [80.86913, 25.17439]
+      }
+    ],
+    "expect": {
+      "km": 85
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bilaspur-to-amarkantak",
+    "title": "Bilaspur to Amarkantak",
+    "region": "Chhattisgarh",
+    "blurb": "East from Bilaspur up onto the Maikal hills to Amarkantak, where the Narmada rises in a temple tank amid sal forest at about 1,000 m.",
+    "tags": ["Maikal hills", "Narmada source", "forest"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Mist and fog are common in winter; fuel up in Bilaspur, as stops are few on the hill section.",
+    "stops": [
+      {
+        "label": "Bilaspur",
+        "location": [82.14765, 22.07856]
+      },
+      {
+        "label": "Amarkantak",
+        "location": [81.75884, 22.67047]
+      }
+    ],
+    "expect": {
+      "km": 120
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mahasamund",
+        "location": [82.09866, 21.1101]
+      }
+    ],
+    "slug": "raipur-to-sirpur",
+    "title": "Raipur to Sirpur",
+    "region": "Chhattisgarh",
+    "blurb": "East from Raipur through Mahasamund to Sirpur on the Mahanadi, an old capital whose brick temples and Buddhist monasteries date back about 1,400 years.",
+    "tags": ["Mahanadi", "brick temples", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Summers are very hot and there is little shade at the ruins.",
+    "stops": [
+      {
+        "label": "Raipur",
+        "location": [81.6337, 21.23809]
+      },
+      {
+        "label": "Mahasamund",
+        "location": [82.09866, 21.1101]
+      },
+      {
+        "label": "Sirpur",
+        "location": [82.18469, 21.34702]
+      }
+    ],
+    "expect": {
+      "km": 102
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "nagpur-to-tadoba",
+    "title": "Nagpur to Tadoba",
+    "region": "Maharashtra",
+    "blurb": "South-east from Nagpur through Chimur's teak forest to Moharli, the busiest gate of Tadoba-Andhari, Maharashtra's oldest tiger reserve.",
+    "tags": ["Tadoba", "tiger reserve", "teak forest"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 4, 5],
+    "notes": "The reserve is closed on one weekday and for most zones from July to September; check closing days and book safari slots ahead.",
+    "stops": [
+      {
+        "label": "Nagpur",
+        "location": [79.08206, 21.14981]
+      },
+      {
+        "label": "Moharli",
+        "location": [79.33381, 20.18863]
+      }
+    ],
+    "expect": {
+      "km": 150
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "amravati-to-chikhaldara",
+    "title": "Amravati to Chikhaldara",
+    "region": "Maharashtra",
+    "blurb": "North from Amravati over the Satpura foothills to Chikhaldara, Vidarbha's only hill station, with a coffee plantation, valley viewpoints and the Melghat tiger reserve around it.",
+    "tags": ["Satpura", "hill station", "Melghat"],
+    "bestMonths": [7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "The last climb is winding and narrow; check forest-section timings with the Melghat reserve before you go.",
+    "stops": [
+      {
+        "label": "Amravati",
+        "location": [77.75885, 20.93162]
+      },
+      {
+        "label": "Chikhaldara",
+        "location": [77.32888, 21.40158]
+      }
+    ],
+    "expect": {
+      "km": 95
     }
   }
 ]

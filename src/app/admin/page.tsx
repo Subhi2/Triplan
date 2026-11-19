@@ -110,7 +110,7 @@ export default async function AdminPage({
             "If this address is an admin's, a sign-in link is on its way. Open it on this device."}
           {link === "failed" && "That link did not work or has expired. Ask for a new one."}
         </p>
-        <Link href="/" className="text-brand text-sm underline">
+        <Link href="/" className="text-brand dark:text-teal-300 text-sm underline">
           Back to {SITE_NAME}
         </Link>
       </main>

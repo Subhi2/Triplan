@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import type { BadgeRide } from "@/lib/badges";
 import { COMMUNITY_LOCAL_AUTH } from "@/lib/community/enabled";
 import { NICKNAME_MAX, nicknameSchema } from "@/lib/community/schemas";
 import type { MeOverview } from "@/lib/community/views";
 import { ClubCard, GroupRideCard } from "./Cards";
+import { RideProgress } from "./RideProgress";
 import { NicknamePrompt, useRider } from "./RiderGate";
 import {
   communityFetch,
@@ -92,7 +94,13 @@ function EmailForm({
  * "Me" (docs/02, "Community (G6)"): the rider's nickname, their clubs and rides, keeping the device
  * account with an email (or signing in to a kept one), and deleting it.
  */
-export function MePanel({ linkFailed }: { linkFailed: boolean }) {
+export function MePanel({
+  linkFailed,
+  badgeRides = [],
+}: {
+  linkFailed: boolean;
+  badgeRides?: BadgeRide[];
+}) {
   const { me, loading, setMe } = useRider();
   const [overview, setOverview] = useState<MeOverview | null>(null);
   const [rename, setRename] = useState("");
@@ -203,6 +211,8 @@ export function MePanel({ linkFailed }: { linkFailed: boolean }) {
           </button>
         </form>
       </section>
+
+      <RideProgress rides={badgeRides} />
 
       <section aria-label="Rides you host" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

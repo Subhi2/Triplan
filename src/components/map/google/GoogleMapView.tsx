@@ -6,6 +6,7 @@ import {
   APIProvider,
   Map,
 } from "@vis.gl/react-google-maps";
+import { useEffect, useState } from "react";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { GOOGLE_MAP_ID, GOOGLE_MAPS_BROWSER_KEY } from "@/lib/google";
 import { CursorDot } from "../CursorDot";
@@ -19,6 +20,25 @@ import { useGoogleFraming } from "./useGoogleFraming";
 
 const [[west, south], [east, north]] = INDIA_BOUNDS;
 
+type MapScheme = "LIGHT" | "DARK";
+
+/**
+ * The map's colours follow the site's light or dark choice (data-theme on <html>), not only the
+ * device's setting, so the map never stays dark on a light page. This view only renders in the
+ * browser, so the page's theme is known on the first render.
+ */
+function useMapScheme(): MapScheme {
+  const read = (): MapScheme =>
+    document.documentElement.dataset.theme === "dark" ? "DARK" : "LIGHT";
+  const [scheme, setScheme] = useState<MapScheme>(read);
+  useEffect(() => {
+    const watch = new MutationObserver(() => setScheme(read()));
+    watch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => watch.disconnect();
+  }, []);
+  return scheme;
+}
+
 /**
  * The Google map, used when the Google key is set (docs/02, "Google Maps Platform"): Google
  * photos and reviews may only be shown with a Google map. Same props as the MapLibre MapView.
@@ -27,16 +47,19 @@ const [[west, south], [east, north]] = INDIA_BOUNDS;
 export function GoogleMapView(props: MapViewProps) {
   const coarsePointer = useMediaQuery("(pointer: coarse)");
   const bottomInset = props.bottomInset ?? 0;
+  const scheme = useMapScheme();
 
   return (
     <APIProvider apiKey={GOOGLE_MAPS_BROWSER_KEY} language="en" region="IN">
       {/* The map ends where the sheet begins, so Google's logo and terms stay in view (they
           must not be covered). */}
       <div className="w-full" style={{ height: `calc(100% - ${bottomInset}px)` }}>
+        {/* Google reads the colour scheme when a map is made, so a change makes a new map. */}
         <Map
+          key={scheme}
           mapId={GOOGLE_MAP_ID}
           defaultBounds={{ west, south, east, north, padding: 16 }}
-          colorScheme="FOLLOW_SYSTEM"
+          colorScheme={scheme}
           // One finger pans, as on the MapLibre map (no "use two fingers" overlay).
           gestureHandling="greedy"
           // Touch screens pinch to zoom; the buttons would only cover the map.

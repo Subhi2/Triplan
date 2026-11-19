@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import { SiteMenu } from "@/components/site/SiteMenu";
 import { SITE_LINKS } from "@/components/site/siteLinks";
+import { ThemeToggle } from "@/components/site/ThemeToggle";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import type { CorridorKm, Vehicle } from "@/lib/trip";
 
@@ -75,7 +76,9 @@ export function PlannerHeader({
           <CrosshairIcon size={18} />
           {!compact && "Near me"}
         </Link>
+        {!compact && <ThemeToggle />}
         <SiteMenu
+          showTheme={compact}
           links={SITE_LINKS.filter((l) => l.href !== "/" && l.href !== "/nearby")}
           lead={hasTrip ? { href: `/?v=${vehicle}`, label: "New trip" } : undefined}
         />

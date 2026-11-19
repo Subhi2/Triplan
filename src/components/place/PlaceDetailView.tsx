@@ -379,7 +379,7 @@ export function PlaceDetailView({
                   href={v.url}
                   rel={external}
                   target="_blank"
-                  className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
+                  className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
                 >
                   {v.title ?? v.url}
                 </a>
@@ -400,7 +400,7 @@ export function PlaceDetailView({
             href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`}
             rel={external}
             target="_blank"
-            className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
+            className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
           >
             Directions
           </a>
@@ -412,7 +412,7 @@ export function PlaceDetailView({
             }
             rel={external}
             target="_blank"
-            className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
+            className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
           >
             OpenStreetMap
           </a>
@@ -421,7 +421,7 @@ export function PlaceDetailView({
               href={place.osm.wikipediaUrl}
               rel={external}
               target="_blank"
-              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
+              className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
             >
               Wikipedia
             </a>
@@ -431,7 +431,7 @@ export function PlaceDetailView({
               href={place.osm.website}
               rel={external}
               target="_blank"
-              className="text-brand inline-flex min-h-11 items-center underline md:min-h-0"
+              className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center underline md:min-h-0"
             >
               Website
             </a>

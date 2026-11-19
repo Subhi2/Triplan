@@ -57,7 +57,7 @@ export function DeviceTrips() {
         <button
           type="button"
           onClick={() => setAttempt((n) => n + 1)}
-          className="text-brand inline-flex min-h-11 items-center font-medium hover:underline md:min-h-0"
+          className="text-brand dark:text-teal-300 inline-flex min-h-11 items-center font-medium hover:underline md:min-h-0"
         >
           Try again
         </button>

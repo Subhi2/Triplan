@@ -4,7 +4,7 @@ import type { FeatureCollection, Point } from "geojson";
 import { Layer, Source } from "react-map-gl/maplibre";
 import { categoryStyle } from "@/lib/categories";
 import type { PlacePin } from "./types";
-import { MAP_COLORS } from "./mapColors";
+import { useMapPalette } from "./mapPalette";
 
 export const PLACE_POINTS_LAYER = "place-points";
 export const PLACE_CLUSTERS_LAYER = "place-clusters";
@@ -30,6 +30,7 @@ function toFeatures(places: PlacePin[]): FeatureCollection<Point, PlaceProps> {
 
 /** Place markers coloured by category, clustered at low zoom, plus a ring on hovered/active places. */
 export function PlaceMarkers({ places, highlightIds }: Props) {
+  const colors = useMapPalette();
   const highlighted = places.filter((p) => highlightIds.includes(p.id));
 
   return (
@@ -48,11 +49,11 @@ export function PlaceMarkers({ places, highlightIds }: Props) {
           filter={["has", "point_count"]}
           paint={{
             // White with a teal ring: clusters stay readable without hiding the teal route.
-            "circle-color": MAP_COLORS.casing,
+            "circle-color": colors.casing,
             "circle-opacity": 0.95,
             "circle-radius": ["step", ["get", "point_count"], 11, 10, 14, 50, 17],
             "circle-stroke-width": 2,
-            "circle-stroke-color": MAP_COLORS.brand,
+            "circle-stroke-color": colors.brand,
           }}
         />
         <Layer
@@ -65,7 +66,7 @@ export function PlaceMarkers({ places, highlightIds }: Props) {
             "text-size": 12,
             "text-allow-overlap": true,
           }}
-          paint={{ "text-color": MAP_COLORS.brandText }}
+          paint={{ "text-color": colors.brandText }}
         />
         <Layer
           id={PLACE_HIT_LAYER}
@@ -81,7 +82,7 @@ export function PlaceMarkers({ places, highlightIds }: Props) {
             "circle-color": ["get", "color"],
             "circle-radius": 7,
             "circle-stroke-width": 2,
-            "circle-stroke-color": MAP_COLORS.casing,
+            "circle-stroke-color": colors.casing,
           }}
         />
       </Source>
@@ -93,7 +94,7 @@ export function PlaceMarkers({ places, highlightIds }: Props) {
             "circle-color": ["get", "color"],
             "circle-radius": 10,
             "circle-stroke-width": 3,
-            "circle-stroke-color": MAP_COLORS.active,
+            "circle-stroke-color": colors.active,
           }}
         />
       </Source>

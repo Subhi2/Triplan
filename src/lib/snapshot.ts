@@ -15,6 +15,7 @@ export const SNAPSHOT_TABLES = [
   "place_carry",
   "media",
   "ride",
+  "ride_photo",
   "service_point",
   "open_place",
   "district",
@@ -55,6 +56,7 @@ const SNAPSHOT_ORDER: Record<SnapshotTable, string> = {
   place_carry: "place_id, item_id",
   media: "id",
   ride: "position, slug",
+  ride_photo: "ride_slug, position",
   service_point: "osm_id",
   open_place: "id",
   district: "osm_id",
@@ -81,6 +83,7 @@ export const DEPENDENT_TABLES = [
   "club_member",
   "group_ride",
   "group_ride_member",
+  "ride_mark",
 ] as const;
 
 export const SNAPSHOT_LICENCE =

@@ -239,6 +239,7 @@ CREATE TABLE ride (
   vehicle     vehicle NOT NULL DEFAULT 'bike',
   tags        text[] NOT NULL DEFAULT '{}',
   best_months smallint[] NOT NULL DEFAULT '{}',
+  tier        text NOT NULL DEFAULT 'classic' CHECK (tier IN ('classic','legend')),  -- 0027: 'legend' = once in a lifetime
   notes       text,                          -- permits, closures, seasons
   stops       jsonb NOT NULL,                -- [{label, location: [lng, lat]}], start to end
   route_geom  geography(LineString, 4326) NOT NULL,
@@ -251,6 +252,38 @@ CREATE TABLE ride (
   hairpins    smallint NOT NULL DEFAULT 0,
   position    smallint NOT NULL DEFAULT 0,   -- gallery order
   seeded_at   timestamptz NOT NULL DEFAULT now()
+);
+
+-- Ride photos (migration 0028) --------------------------------------------------
+-- Up to 8 Wikimedia Commons photos per famous ride, picked along its road by
+-- `pnpm db:import-ride-photos`. Public, in the snapshot. No FK to ride: seeding a ride keeps them.
+CREATE TABLE ride_photo (
+  ride_slug     text NOT NULL,
+  position      smallint NOT NULL,           -- 0 first, in order along the road
+  file          text NOT NULL,               -- "File:Jog Falls at Shimoga.jpg"
+  url           text NOT NULL,               -- 960 px, on the Commons servers
+  thumb_url     text NOT NULL,               -- 330 px
+  page_url      text NOT NULL,               -- the file page: full credit and licence
+  caption       text NOT NULL,
+  author        text,
+  license       text NOT NULL,
+  km_from_start real NOT NULL,
+  width         smallint NOT NULL,
+  height        smallint NOT NULL,
+  PRIMARY KEY (ride_slug, position)
+);
+
+-- Ride bucket list (migration 0026) ---------------------------------------------
+-- A rider's famous rides: want to ride (pending) or ridden (done). Private to the rider, never in
+-- the snapshot, row level security on with no policies (only the server reads it). No FK to ride.
+CREATE TABLE ride_mark (
+  rider_id   uuid NOT NULL REFERENCES rider(id) ON DELETE CASCADE,
+  ride_slug  text NOT NULL,
+  status     text NOT NULL CHECK (status IN ('pending','done')),
+  done_on    date,                           -- only for done
+  note       text NOT NULL DEFAULT '',       -- the rider's own, at most 280 characters
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (rider_id, ride_slug)
 );
 
 -- Service points (migration 0015) -----------------------------------------------

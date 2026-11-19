@@ -18,7 +18,7 @@ function TurnArrow({ turnDeg }: { turnDeg: number }) {
     <svg
       aria-hidden
       viewBox="0 0 40 40"
-      className="text-brand h-10 w-10 shrink-0 motion-safe:transition-transform motion-safe:duration-300"
+      className="text-brand dark:text-teal-300 h-10 w-10 shrink-0 motion-safe:transition-transform motion-safe:duration-300"
       style={{ transform: `rotate(${Math.round(turnDeg)}deg)` }}
     >
       <circle cx="20" cy="20" r="19" className="fill-brand-tint dark:fill-teal-950" />

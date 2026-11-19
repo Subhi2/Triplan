@@ -309,27 +309,54 @@ export const tripStop = pgTable(
 // Hand-picked rides from data/rides.json, routed once by `pnpm db:seed-rides` (docs/02, "Famous
 // rides"). Public and read-only.
 
-export const ride = pgTable("ride", {
-  slug: text("slug").primaryKey(),
-  title: text("title").notNull(),
-  blurb: text("blurb").notNull(),
-  region: text("region").notNull(),
-  vehicle: vehicle("vehicle").notNull().default("bike"),
-  tags: text("tags").array().notNull().default(emptyArray),
-  bestMonths: smallint("best_months").array().notNull().default(emptyArray), // 1-12
-  notes: text("notes"), // permits, closures, seasons
-  stops: jsonb("stops").$type<{ label: string; location: [number, number] }[]>().notNull(),
-  routeGeom: geographyLine("route_geom").notNull(),
-  distanceM: integer("distance_m").notNull(),
-  durationS: integer("duration_s").notNull(),
-  roadMix: jsonb("road_mix").$type<RoadMix | null>(),
-  curvature: jsonb("curvature").$type<RouteCurvature | null>(),
-  profile: jsonb("profile").$type<ElevationProfile | null>(),
-  ascentM: integer("ascent_m"),
-  hairpins: smallint("hairpins").notNull().default(0),
-  position: smallint("position").notNull().default(0), // gallery order
-  seededAt: timestamp("seeded_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const ride = pgTable(
+  "ride",
+  {
+    slug: text("slug").primaryKey(),
+    title: text("title").notNull(),
+    blurb: text("blurb").notNull(),
+    region: text("region").notNull(),
+    vehicle: vehicle("vehicle").notNull().default("bike"),
+    tags: text("tags").array().notNull().default(emptyArray),
+    tier: text("tier").notNull().default("classic"), // classic | legend
+    bestMonths: smallint("best_months").array().notNull().default(emptyArray), // 1-12
+    notes: text("notes"), // permits, closures, seasons
+    stops: jsonb("stops").$type<{ label: string; location: [number, number] }[]>().notNull(),
+    routeGeom: geographyLine("route_geom").notNull(),
+    distanceM: integer("distance_m").notNull(),
+    durationS: integer("duration_s").notNull(),
+    roadMix: jsonb("road_mix").$type<RoadMix | null>(),
+    curvature: jsonb("curvature").$type<RouteCurvature | null>(),
+    profile: jsonb("profile").$type<ElevationProfile | null>(),
+    ascentM: integer("ascent_m"),
+    hairpins: smallint("hairpins").notNull().default(0),
+    position: smallint("position").notNull().default(0), // gallery order
+    seededAt: timestamp("seeded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("ride_tier_check", sql`${t.tier} IN ('classic', 'legend')`)],
+);
+
+// A famous ride's photo gallery: up to eight Wikimedia Commons photos picked along its road by
+// `pnpm db:import-ride-photos`. Shown from Commons' own servers with their credit, never copied.
+// No foreign key to ride, so seeding a ride again keeps its photos.
+export const ridePhoto = pgTable(
+  "ride_photo",
+  {
+    rideSlug: text("ride_slug").notNull(),
+    position: smallint("position").notNull(), // 0 = first, in order along the road
+    file: text("file").notNull(), // "File:Jog Falls at Shimoga.jpg"
+    url: text("url").notNull(), // 960 px wide
+    thumbUrl: text("thumb_url").notNull(), // 330 px wide
+    pageUrl: text("page_url").notNull(), // the file's page on Commons: full credit and licence
+    caption: text("caption").notNull(),
+    author: text("author"),
+    license: text("license").notNull(),
+    kmFromStart: real("km_from_start").notNull(),
+    width: smallint("width").notNull(),
+    height: smallint("height").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.rideSlug, t.position] })],
+);
 
 // Write limits ------------------------------------------------------------------
 // With no sign-in, saving and renaming trips is limited per visitor: a salted hash of the IP
@@ -553,6 +580,26 @@ export const rider = pgTable("rider", {
   createdAt: createdAt(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// A rider's bucket list of famous rides: want to ride (pending) or ridden (done). Private to the
+// rider; no foreign key to ride, so reseeding rides never drops marks. Not in the snapshot.
+export const rideMark = pgTable(
+  "ride_mark",
+  {
+    riderId: uuid("rider_id")
+      .notNull()
+      .references(() => rider.id, { onDelete: "cascade" }),
+    rideSlug: text("ride_slug").notNull(),
+    status: text("status").notNull(), // pending | done
+    doneOn: date("done_on"),
+    note: text("note").notNull().default(""),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.riderId, t.rideSlug] }),
+    check("ride_mark_status_check", sql`${t.status} IN ('pending', 'done')`),
+  ],
+);
 
 export const club = pgTable(
   "club",

@@ -27,6 +27,14 @@ Chart marks have their own tokens, `--chart-road` (`#0D9488`, dark `#13A494`) an
 
 The whole `stone` scale is remapped to these warm tones, so `stone-*` classes anywhere take the palette. Dark mode keeps working through the same scale (`--background` stone-950, `--surface` stone-900). Category colours stay in `src/lib/categories.ts`.
 
+## Light and dark (checked 2026-11-19)
+
+- **Switch.** `data-theme` on `<html>` ("light" or "dark"), set before the first paint by the script in `layout.tsx` (`src/lib/theme.ts`) from the rider's choice in `localStorage` ("theme") or, without one, the device. The sun/moon `ThemeToggle` sits by the name in `SiteNav`, in the planner and Near me headers, and in the phone Menu. Tailwind's `dark:` variant follows the attribute (`@custom-variant` in `globals.css`), never only `prefers-color-scheme`.
+- **Rules.** Every text, tint and border colour has a `dark:` pair: plain `text-brand` needs `dark:text-teal-300`, `text-stone-500` needs `dark:text-stone-400`. Text is 4.5:1 (3:1 when large) in both themes. Form fields take a `stone-500` border from one rule in `globals.css` (3:1 against both pages); a field with no border must still differ from its surface. `.shimmer` dims in dark.
+- **Maps.** Both follow the toggle. The Google map is made again when it changes (Google reads the scheme once) and its lines use `useMapColors`. The MapLibre map switches to OpenFreeMap's "dark" style (`NEXT_PUBLIC_MAP_STYLE_DARK_URL`; with a custom light style and no dark one it stays light) and its layers take the palette from `MapPaletteContext`. In dark mode both draw lines bright mint (`MAP_COLORS_DARK`: mint, amber, light grey, with a dark edge under ride lines). A saved offline pack keeps its own light style and light colours.
+- **Left light on purpose.** The 3D ride preview (its own map style) and the story poster are self-contained light surfaces; the share cards are images.
+- **Checked with** a script that measured every visible text node and field against its real background in both themes on each page, planner states and dialogs; rerun it after changing colours.
+
 ## Type (`src/app/layout.tsx`, next/font)
 
 | Role | Font | Class | Sizes |
