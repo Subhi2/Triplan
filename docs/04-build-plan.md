@@ -124,7 +124,7 @@ Decided 2026-10-02: give the app an identity people can see and share ("see ever
 7. **3D ride preview**: a full-screen MapLibre view that flies along the route over 3D terrain, slower in ghats, with a heads-up display (km, height, climb) and place cards as it passes them. Play, pause, scrub, speed. No autoplay under reduced motion.
 8. **Ride story poster** `GET /og/story`: a 1080×1920 image (route shape, km, time, climb, hairpins, top stops) to share to Instagram stories or WhatsApp status from the phone's share sheet.
 9. **Save the preview as a video**: the 3D preview recorded in the browser (MP4 where the browser can, WebM otherwise) with its credits drawn in.
-10. **Famous rides data**: table `ride` (migration 0013), `data/rides.json` with about 20 well-known rides, `pnpm rides:lookup` for coordinates, `pnpm db:seed-rides` that routes each ride once, checks it passes its checkpoints, and stores the route with its profile and hairpins.
+10. **Famous rides data**: table `ride` (migration 0013), `data/rides.json` with about 20 well-known rides (100 since G7), `pnpm rides:lookup` for coordinates, `pnpm db:seed-rides` that routes each ride once, checks it passes its checkpoints, and stores the route with its profile and hairpins.
 11. **Famous ride pages** `/rides` and `/rides/[slug]` (stats, profile, places, best months, Plan this ride, Preview in 3D, JSON-LD, share card, sitemap), and "Try a famous ride" on the empty planner.
 12. **Site navigation, About, 404 and error pages**: About tells the story, how it works, the stack, and every data source with its licence.
 13. **Usage numbers**: table `usage_daily` (migration 0014) counting routes planned per day; Vercel Web Analytics; "N rides planned · M places · K trips saved" on About.
@@ -253,6 +253,24 @@ Decided 2026-11-05 (`07`, "G6"): riders host rides and run clubs themselves, wit
 9. **Clean-up.** Join notes and idle device accounts in the daily clean-up, the admin's takedown by link, the community tables out of the snapshot, docs.
 
 **Done when:** a host puts up a one-seat ride and lets a rider in, who then sees the meeting point and Ride together; the next rider waitlists and moves up when the first leaves an open ride; a club approves a request and the member sees its WhatsApp link (`tests/e2e/community.spec.ts`, desktop and 375 px).
+
+## Growth G7 · Ride bucket list and 100 rides
+
+Decided 2026-11-19: cover as many of India's famous rides as we can, let riders mark each one done or wanted, and encourage riding each once. Rules in `02`, "Famous rides", "Ride photos" and "Ride bucket list".
+
+1. **Catalogue.** `data/rides.json` grows from 27 to 100 rides, region by region (Himalaya, South, West, East and North-east, Central), each routed by `pnpm db:seed-rides` after a dry run and checked against its checkpoints; coordinates from `pnpm rides:lookup`.
+2. **Marks.** `ride_mark` (migration 0026), `/api/me/rides`, `MarkRide` on ride pages, `/bucket-list`, the Me card.
+3. **Legend tier and lists.** `ride.tier` (0027), `--tiers-only`, curated list chips from `src/lib/rideLists.ts`.
+4. **Badges and share card.** `src/lib/badges.ts`; `/og/done`.
+5. **Map.** A map of India on the bucket list with the rides coloured by mark.
+6. **Photos.** `ride_photo` (0028), `pnpm db:import-ride-photos`, `RideCarousel` on every ride card and page, the table in the snapshot.
+7. **Light and dark.** The toggle, `data-theme`, the Google map following it, and a contrast audit of every page (`08`).
+
+**Done when:** a rider with a nickname marks a ride done on its page and sees it counted on `/bucket-list` and `/me`, lit on the map and in a badge; every ride card scrolls through up to eight credited photos with the route over the corner; the whole site reads in both light and dark; `NEXT_DIST_DIR=.next-build pnpm build` passes.
+
+**Passes the new-features check** (`CLAUDE.md`, "Choosing new features"): rides, marks, badges and lists are our own data; photos are Commons files under CC BY, CC BY-SA, CC0 or public domain, found once by an import we run (the Commons API is used only then, never by a page), shown with credit from Commons servers that any reader may use; no app review or approval is needed; the toggle is browser-only.
+
+**Not built / left open:** rides in Bihar and the Andaman and Nicobar Islands (no stop coordinates found); a "Central" filter (Madhya Pradesh and Chhattisgarh rides sit under West and East and North-east); a dark style for the MapLibre map (it stays light in dark mode); ride photos are picked by title words, so a few will not match their road.
 
 ## Phase 5 · Community content
 

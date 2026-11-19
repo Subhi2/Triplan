@@ -355,11 +355,31 @@ Rides are planned in groups, and in India the plan goes to a WhatsApp group, so 
 
 ## Famous rides
 
-A hand-picked list of about 25 well-known Indian rides, kept as data (`data/rides.json`, validated by `rideSourceSchema` in `src/lib/rides.ts`), never in app logic: the pages and the planner show whatever the `ride` table holds.
+A hand-picked list of 100 well-known Indian rides (every region, added region by region), kept as data (`data/rides.json`, validated by `rideSourceSchema` in `src/lib/rides.ts`), never in app logic: the pages and the planner show whatever the `ride` table holds.
 
 - **Coordinates** come from `pnpm rides:lookup -- "<name>" --state="<state>"`: our own places first (towns, peaks, viewpoints), then Nominatim at one request a second. Never typed from memory. Each ride lists its stops (vias force the road riders mean) and checkpoints the route must pass.
 - **`pnpm db:seed-rides`** (`--only=`, `--dry-run`) routes each ride once through the normal routing provider (cached and throttled; alternatives are asked for with two stops, as the planner does, which also warms its cache), keeps the first option that passes every checkpoint within 3 km (bypasses miss town centres by 1–2 km), lands within 15% of the expected distance and has at least the expected hairpins, computes its road mix, curvature and elevation profile, and upserts it (`src/server/services/rideService.ts`). A ride that fails is reported and not stored, so a wrong road is never shown. The public OSRM server does not route the Kalhatti ghat, so it is not in the list.
 - **Pages** (`/rides`, `/rides/[slug]`, revalidated daily) read the table; their places come from the corridor search when the page is made, so they follow the OpenStreetMap import.
+- **Tier and lists.** `tier` in each ride record is `classic` or `legend` (the once-in-a-lifetime rides; `pnpm db:seed-rides -- --tiers-only` sets it without routing). The curated lists (`src/lib/rideLists.ts`: Himalaya, High passes, Hairpin roads, Coast, Easy rides, Long hauls) are worked out from each ride's own numbers (region, highest point, hairpins, distance, tags), never tagged by hand, so a new ride lands in the right lists. `RideListChips` shows them with counts on `/rides` and `/bucket-list`.
+
+### Ride photos (gallery)
+
+Up to eight photos per ride in `ride_photo`, picked by `pnpm db:import-ride-photos` (`src/server/services/ridePhotoImportService.ts`, choice rules in `src/lib/ridePhotos.ts`). Only Wikimedia Commons, so every photo has an author, a licence and a file page and nothing is copied: `url` (960 px) and `thumb_url` (330 px) point at the Commons servers.
+
+- **Finding.** Commons geosearch (`filesNear`, files with coordinates within 6 km) from a point every 15 km along the road, then `imageInfo` for credit, licence and size, in groups sized by encoded length (Commons answers 414 above about 8 kB). One request about a second apart; a ride takes 30 to 90 seconds, the whole list about an hour and a half. A ride that fails is reported and left for the next run; finished rides are skipped (`--force` rebuilds).
+- **Choosing** (`pickGallery`). Licence CC BY, CC BY-SA, CC0 or public domain (never NC or ND); landscape, at least 900 px wide; a title that is not a map, sign, person, ceremony, building or bare camera number; not within the first or last 7% (at most 12 km) of the ride, where the start and end towns are. Photos whose title names something to see (waterfall, ghat, pass, lake, fort, temple, valley...) come first, the best of each equal stretch of the road, never two with one title stem; others only fill up to four.
+- **Showing** (`RideCarousel`): a strip that scrolls sideways with snap (arrows on hover with a mouse; arrows only inside the home strip, which itself scrolls), dots, the ride's path over the corner and the credit of the photo in view. `rideGalleries()` serves the lists (falling back to the single best place photo for a ride with no gallery); `rideGallery(slug)` the ride page. Titles are matched by words, so some photos will still be off; improve the rules and run with `--force`.
+
+### Ride bucket list
+
+- **Marks.** `ride_mark` (rider, ride slug, `pending` or `done`, optional day and note up to 280 characters), written through `GET/PUT/DELETE /api/me/rides` (`rideMarkService.ts`, `rideMarkSchema` in `src/lib/community/schemas.ts`) for a rider with a nickname, rate-limited like the other community writes. No foreign key to `ride`, so seeding a ride again keeps the marks. Never in the snapshot.
+- **Screens.** `MarkRide` on a ride page, `BucketList` on `/bucket-list` (progress bar, badges, filters, cards like the rides page's, and a MapLibre map of India drawing the rides that match the filters: `RidePreviewLayer` with a per-ride `state`, always the MapLibre map and its light style), `RideProgress` on `/me`. `useRideMarks` holds the rider's marks.
+- **Badges** (`src/lib/badges.ts`) are worked out from the done rides each time, not stored: counts 1, 5, 10, 25; Legends 1, 3 and all; three rides in a part of India.
+- **Share card.** `GET /og/done?ride=<slug>&on=<YYYY-MM-DD>` draws the ride's 1200x630 card with `TripCard` ("Ridden", "· Legend", the day if it is a real past day). Our own route and numbers only.
+
+## Light and dark
+
+`data-theme` ("light" or "dark") on `<html>`, set before the first paint by the script in `layout.tsx` (`THEME_SCRIPT`, `src/lib/theme.ts`) from `localStorage` ("theme") or the device. Tailwind's `dark:` variant and the colour tokens in `globals.css` follow it. `ThemeToggle` is in `SiteNav`, the planner and Near me headers, and the Menu. The Google map is made with the colour scheme in force and made again when it changes (`GoogleMapView`); its lines take `useMapColors`. Rules and what was checked: `08-design.md`, "Light and dark".
 
 ## Ride story
 
@@ -570,7 +590,7 @@ Fuel stations, food and coffee for the break planner and the fuel gap. Our OpenS
 
 ## One-command data setup
 
-A fresh clone gets every place, photo credit, famous ride, service point, district and road rule with `pnpm db:setup`, instead of hours of throttled Overpass, Wikimedia and OSRM calls.
+A fresh clone gets every place, photo credit, famous ride (with its gallery photos), service point, district and road rule with `pnpm db:setup`, instead of hours of throttled Overpass, Wikimedia and OSRM calls.
 
 - **Snapshot** (`data/snapshot/`, committed, about 27 MB): one gzipped JSON-lines file per table and `manifest.json` (format, when it was made, the newest migration, the licence, and per table its columns, rows, bytes and sha256). Tables, in load order: `category`, `carry_item`, `place`, `place_guide`, `place_carry`, `media`, `ride`, `service_point`, `open_place`, `district`, `road_rule` (`src/lib/snapshot.ts`; the last three since G5). `open_place` rows keep Overture's licences, with their texts and Foursquare's notice beside the files.
 - **Left out**: places not verified or closed; media that are not verified or are users' uploads; Google place ids and check times, and who created or verified a row (written as null). Never trips, reviews, profiles, rate limits, usage counters, caches or Google usage.

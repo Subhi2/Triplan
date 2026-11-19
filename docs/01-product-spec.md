@@ -76,11 +76,13 @@ Privacy: the position is taken only on a tap, rounded to about 100 m before it l
 17. **Elevation profile** of the selected route: total climb and descent, the highest point, and each big climb ("climbs 853 m in 16 km to Valparai"). Scrubbing the chart moves a marker along the route on the map.
 18. **3D ride preview**: the camera rides the route over 3D terrain, slower through ghats, with km, height and the places as it passes them. It can be saved as a video for Instagram or WhatsApp.
 19. **Ride story**: a tall poster of the trip (route, km, time, climb, hairpins, top stops) shared from the phone's share sheet.
-20. **Famous rides** (`/rides`): about 25 well-known Indian rides, filtered by part of India and by month, each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. The empty planner offers them as "Try a famous ride".
+20. **Famous rides** (`/rides`): 100 well-known Indian rides across every region, filtered by part of India, by month and by curated list (Himalaya, High passes, Hairpin roads, Coast, Easy rides, Long hauls), each with its own page (route, profile, hairpins, places, best months), one tap to open in the planner or preview in 3D. About 20 are "Legend" rides, the once-in-a-lifetime ones. Every ride shows up to eight photos along its road in a strip that scrolls sideways, with the ride's path over the corner and each photo's credit. The empty planner offers them as "Try a famous ride".
 21. **Plan in plain words** (when the AI key is set): "2-day monsoon ride from Pune with waterfalls, under 250 km" fills the planner. Typed text is sent to the AI provider to read it, and is never stored.
 22. **Safety stops** along the route: hospitals, police, ATMs, puncture and repair shops, with how many there are per 50 km and the longest stretch without a hospital.
 23. **Multi-day split**: riding hours per day, an overnight town near each split with stays nearby, the place list in Day 1 / Day 2 sections, one GPX track per day.
 24. **About** (`/about`): the story, how it works, every data source and its licence, and live numbers (rides planned, places, trips saved).
+25. **Ride bucket list** (`/bucket-list`, and a card on `/me`): a rider with a nickname marks each famous ride "Want to ride" or "I've ridden it" (with an optional date and a private note) on its page or the list. The list shows an "x of N done" bar, a map of India (done rides teal, wanted amber, the rest grey; a tap opens the ride), filters (All, Want to ride, Done, Legends, part of India, curated list) and badges worked out from the done rides (first ride, 5, 10, 25, Legend, 3 Legends, Every Legend, an explorer badge per part of India). A done ride gives a share card ("Ridden · Legend · 14 Jul 2025" with the route and numbers). Marks are private to the rider.
+26. **Light and dark**: a toggle (sun or moon) by the name on every page, in the planner and Near me headers, and in the phone Menu. The choice is kept in the browser; without one the device's setting applies. The Google map follows it.
 
 For developers: one command (`pnpm db:setup`) loads a fresh database with all our public data from the latest data snapshot.
 
@@ -167,7 +169,7 @@ Weather on the ride and the fuel range check were built in G1; alerts and the of
 5. **Admin** (`/admin/*`): moderation queues, discovery queue.
 6. **Sign in** (`/login`), for admins only.
 7. **Near me** (`/nearby`): the chooser (Use my location / type a place / pick on the map), time and vehicle chips, the list and the map; on phones the list is in the bottom sheet. Ride mode ("Ahead of you") covers the screen.
-8. **Famous rides** (`/rides`, `/rides/[slug]`).
+8. **Famous rides** (`/rides`, `/rides/[slug]`) and the **Ride bucket list** (`/bucket-list`).
 9. **About** (`/about`).
 10. **3D ride preview**: covers the screen over the planner or a ride page.
 11. **Ride together** (`/ride/[room]`): the group's map with each rider's nickname, the regroup pin and "Stop sharing"; the follow link opens the same map without sharing.
@@ -204,6 +206,9 @@ The prototype at https://claude.ai/artifact/7Sic9yRggEb2jTPXcWAimD shows the int
 - The 3D preview opens without asking for anything, flies the whole route, keeps the map and terrain credits on screen (and in the saved video), and does not move on its own under reduced motion.
 - The story poster for a route opens as a 1080×1920 PNG and shares from a phone's share sheet.
 - `/rides` lists every famous ride; each page shows its route and opens it in the planner with the same stops.
+- A ride's photos scroll sideways on its card and page, each with author, licence and a link to its file page; a ride with no photo shows its route drawing.
+- With a nickname, "I've ridden it" on a ride page adds it to `/bucket-list`; the count, badges and map there and on `/me` follow it. Without a nickname the first tap asks for one. Nobody else can read a rider's marks.
+- The theme toggle switches every page between light and dark without a flash on load, and text and form fields keep their contrast (4.5:1 and 3:1) in both.
 - Without `ANTHROPIC_API_KEY` there is no "plan in plain words" box and no AI call.
 - On an empty database, `pnpm db:setup` loads the snapshot and the place count matches its manifest.
 - Works at 375 px width with 44 px touch targets.

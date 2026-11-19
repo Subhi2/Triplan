@@ -52,7 +52,8 @@ pnpm db:import-photos                          # Wikimedia Commons photos (--rec
 pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptions, credited
 pnpm db:link-wikidata                          # link places to Wikidata by name and distance (--dry-run)
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
-pnpm db:seed-rides    # route and store the famous rides in data/rides.json
+pnpm db:seed-rides    # route and store the famous rides in data/rides.json (--tiers-only sets each ride's tier, no routing)
+pnpm db:import-ride-photos                     # up to 8 Wikimedia Commons photos along each famous ride (--only=, --force)
 pnpm db:import-districts                       # India's districts with LGD codes, for official alerts (G5)
 pnpm db:seed-road-rules                        # night bans, permits, e-passes and fees in data/road-rules.json (G5)
 pnpm db:import-open-places -- --region=<key|all>   # fuel, food and coffee from Overture Places into open_place (G5)
@@ -139,4 +140,7 @@ NEXT_PUBLIC_COMMUNITY_AUTH=       # tests only: "local" uses signed test account
 - A rider's GPX file is read in the browser; only the line leaves the phone, with 500 m cut from each end (G5).
 - Offline packs take tiles only from our own PMTiles file (`NEXT_PUBLIC_OFFLINE_TILES_URL`), never from OpenFreeMap or another public tile server: at most 3,000 tiles or 50 MB per pack, 4 requests at a time (G5). The service worker still never stores `/api/` answers; the page writes packs.
 - Clubs and group rides (G6): a ride's exact meeting point, WhatsApp link and room id go only to riders a host let in, a club's WhatsApp link and members list only to its members; who may do what lives only in `src/lib/community/roles.ts`. Riders show by nickname only. No approval queue: platform admins only take down by link.
+- A famous ride's gallery photos come only from Wikimedia Commons (geosearch along its road, `pnpm db:import-ride-photos`), shown from Commons with author, licence and file page; only CC BY, CC BY-SA, CC0 and public-domain files (nothing NC or ND). Never Google photos, never copied files.
+- Bucket-list marks (`ride_mark`) belong to the rider alone: never in the snapshot, never public. The "I rode this" card (`/og/done`) shows our own route and numbers only: no nickname, note or photo.
+- Dark mode follows `data-theme` on `<html>` (`src/lib/theme.ts`, `docs/08-design.md`, "Light and dark"): every text and border colour needs its `dark:` pair, form fields keep the `globals.css` border rule, and the Google map's lines use `useMapColors`.
 - YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).
