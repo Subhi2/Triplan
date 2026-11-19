@@ -84,11 +84,7 @@ export interface DaylightPlan {
 }
 
 const MINUTE = 60_000;
-
-/** Noon of the same calendar day in the runtime's time zone, so SunCalc picks the right day. */
-function noonOf(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
-}
+const DAY = 24 * 60 * MINUTE;
 
 export function planDaylight({
   departAt,
@@ -103,8 +99,16 @@ export function planDaylight({
 }): DaylightPlan {
   const breakMin = breakMinutes(rideMin);
   const arriveAt = new Date(departAt.getTime() + (rideMin + breakMin) * MINUTE);
-  const dawnAtStart = SunCalc.getTimes(noonOf(departAt), start[1], start[0]).dawn;
-  const sunsetAtEnd = SunCalc.getTimes(noonOf(arriveAt), end[1], end[0]).sunset;
+  // SunCalc answers for the solar day whose noon is nearest the instant it is given, so passing
+  // the departure and arrival themselves picks the right day at each place whatever time zone the
+  // device is in (a calendar day built from the device's clock picked the wrong one abroad).
+  const dawnAtStart = SunCalc.getTimes(departAt, start[1], start[0]).dawn;
+  const atEnd = SunCalc.getTimes(arriveAt, end[1], end[0]);
+  // Arriving before first light is after the previous evening's sunset: dark, not "day".
+  const sunsetAtEnd =
+    arriveAt.getTime() < atEnd.dawn.getTime()
+      ? SunCalc.getTimes(new Date(arriveAt.getTime() - DAY), end[1], end[0]).sunset
+      : atEnd.sunset;
   const latestStart = new Date(
     sunsetAtEnd.getTime() - (DAYLIGHT_MARGIN_MIN + rideMin + breakMin) * MINUTE,
   );
