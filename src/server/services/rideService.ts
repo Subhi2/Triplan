@@ -351,3 +351,15 @@ export async function rideGallery(slug: string): Promise<RidePhoto[]> {
     source: "wikimedia",
   }));
 }
+
+/** Just what badges need from every ride (no route lines): slug, region and tier. */
+export async function rideBadgeData(): Promise<{ slug: string; region: string; tier: RideTier }[]> {
+  const rows = await getDb()
+    .select({ slug: ride.slug, region: ride.region, tier: ride.tier })
+    .from(ride);
+  return rows.map((r) => ({
+    slug: r.slug,
+    region: r.region,
+    tier: r.tier === "legend" ? "legend" : "classic",
+  }));
+}
