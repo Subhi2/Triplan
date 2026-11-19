@@ -885,5 +885,568 @@
     "expect": {
       "km": 38
     }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Kunzum La",
+        "location": [77.63507, 32.39457]
+      }
+    ],
+    "slug": "kaza-to-manali-via-kunzum-la",
+    "title": "Kaza to Manali via Kunzum La",
+    "region": "Himachal Pradesh",
+    "blurb": "The second half of the Spiti circuit: Losar, the Kunzum La pass at about 4,500 m, the Chandratal turn-off and the long unpaved descent along the Chandra river to Manali.",
+    "tags": ["Spiti circuit", "high pass", "unpaved"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Closed by snow for most of the year; ask locally about water crossings and landslides between Kunzum La and Batal before you start.",
+    "stops": [
+      {
+        "label": "Kaza",
+        "location": [78.07226, 32.22438]
+      },
+      {
+        "label": "Losar",
+        "location": [77.75326, 32.33872]
+      },
+      {
+        "label": "Kunzum La",
+        "location": [77.63507, 32.39457]
+      },
+      {
+        "label": "Manali",
+        "location": [77.18729, 32.24546]
+      }
+    ],
+    "expect": {
+      "km": 200
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Sangla",
+        "location": [78.26373, 31.42588]
+      }
+    ],
+    "slug": "shimla-to-chitkul-via-sangla",
+    "title": "Shimla to Chitkul via Sangla",
+    "region": "Himachal Pradesh",
+    "blurb": "Apple country at Narkanda, the Sutlej at Rampur, then up the Baspa valley through Sangla's orchards to Chitkul, the last village on the old road to Tibet.",
+    "tags": ["Kinnaur", "Baspa valley", "villages"],
+    "bestMonths": [4, 5, 6, 9, 10],
+    "notes": "The Sangla to Chitkul road is narrow and often damaged by landslides; snow can close it from December to March.",
+    "stops": [
+      {
+        "label": "Shimla",
+        "location": [77.17079, 31.10404]
+      },
+      {
+        "label": "Narkanda",
+        "location": [77.46127, 31.25475]
+      },
+      {
+        "label": "Rampur Bushahr",
+        "location": [77.63021, 31.44866]
+      },
+      {
+        "label": "Sangla",
+        "location": [78.26373, 31.42588]
+      },
+      {
+        "label": "Chitkul",
+        "location": [78.43591, 31.35179]
+      }
+    ],
+    "expect": {
+      "km": 240
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kullu",
+        "location": [77.10892, 31.9579]
+      }
+    ],
+    "slug": "manali-to-kasol-via-kullu",
+    "title": "Manali to Kasol via Kullu",
+    "region": "Himachal Pradesh",
+    "blurb": "Down the Beas valley past Kullu and Bhuntar, then up the Parvati valley to Kasol: deodar forest, riverside cafes and Manikaran's hot springs a little further on.",
+    "tags": ["Beas valley", "Parvati valley", "river road"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "The Parvati valley road is narrow with heavy tourist traffic in May, June and on weekends.",
+    "stops": [
+      {
+        "label": "Manali",
+        "location": [77.18729, 32.24546]
+      },
+      {
+        "label": "Kullu",
+        "location": [77.10892, 31.9579]
+      },
+      {
+        "label": "Bhuntar",
+        "location": [77.14362, 31.88752]
+      },
+      {
+        "label": "Kasol",
+        "location": [77.3166, 32.01043]
+      }
+    ],
+    "expect": {
+      "km": 90
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "dharamshala-to-khajjiar",
+    "title": "Dharamshala to Khajjiar",
+    "region": "Himachal Pradesh",
+    "blurb": "From the Dhauladhar foothills at Dharamshala through Chamba country to Dalhousie and the Khajjiar meadow ringed by deodars, with a small lake at its centre.",
+    "tags": ["Dhauladhar", "deodar forest", "hill station"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Fog is common from July to September; fuel up in Dharamshala or Dalhousie.",
+    "stops": [
+      {
+        "label": "Dharamshala",
+        "location": [76.31967, 32.2143]
+      },
+      {
+        "label": "Dalhousie",
+        "location": [75.97975, 32.53605]
+      },
+      {
+        "label": "Khajjiar",
+        "location": [76.058, 32.54641]
+      }
+    ],
+    "expect": {
+      "km": 138
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Solan",
+        "location": [77.10236, 30.90776]
+      }
+    ],
+    "slug": "chandigarh-to-shimla",
+    "title": "Chandigarh to Shimla",
+    "region": "Himachal Pradesh",
+    "blurb": "The classic way up to Shimla: plains to Kalka, then the four-lane climb through Solan's pines to the old summer capital of British India.",
+    "tags": ["hill station", "highway", "easy"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Weekend and holiday traffic is heavy beyond Solan; Shimla restricts vehicles on parts of the Mall.",
+    "stops": [
+      {
+        "label": "Chandigarh",
+        "location": [76.77971, 30.73344]
+      },
+      {
+        "label": "Kalka",
+        "location": [76.9395, 30.838]
+      },
+      {
+        "label": "Solan",
+        "location": [77.10236, 30.90776]
+      },
+      {
+        "label": "Shimla",
+        "location": [77.17079, 31.10404]
+      }
+    ],
+    "expect": {
+      "km": 115
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Rudraprayag",
+        "location": [78.98072, 30.28656]
+      },
+      {
+        "label": "Joshimath",
+        "location": [79.56126, 30.55558]
+      }
+    ],
+    "slug": "rishikesh-to-badrinath",
+    "title": "Rishikesh to Badrinath",
+    "region": "Uttarakhand",
+    "blurb": "Up the Ganga and the Alaknanda through the five prayags and Joshimath to Badrinath, one of the four Char Dham shrines, with landslide gaps and mountain views the whole way.",
+    "tags": ["Char Dham", "Alaknanda", "pilgrimage"],
+    "bestMonths": [5, 6, 9, 10],
+    "notes": "The road is cut by landslides each monsoon, and Badrinath's temple is shut from about November to April. Check road status before leaving Rishikesh.",
+    "stops": [
+      {
+        "label": "Rishikesh",
+        "location": [78.29162, 30.10865]
+      },
+      {
+        "label": "Devprayag",
+        "location": [78.59858, 30.14614]
+      },
+      {
+        "label": "Rudraprayag",
+        "location": [78.98072, 30.28656]
+      },
+      {
+        "label": "Joshimath",
+        "location": [79.56126, 30.55558]
+      },
+      {
+        "label": "Badrinath",
+        "location": [79.49303, 30.74233]
+      }
+    ],
+    "expect": {
+      "km": 295
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Guptkashi",
+        "location": [79.08178, 30.52832]
+      }
+    ],
+    "slug": "rishikesh-to-sonprayag",
+    "title": "Rishikesh to Sonprayag for Kedarnath",
+    "region": "Uttarakhand",
+    "blurb": "The Char Dham road up the Alaknanda to Rudraprayag, then along the Mandakini through Guptkashi to Sonprayag, where the walk to Kedarnath begins.",
+    "tags": ["Char Dham", "Mandakini", "pilgrimage"],
+    "bestMonths": [5, 6, 9, 10],
+    "notes": "Landslides block the Mandakini road often in the monsoon; Kedarnath itself is a walk or helicopter from Gaurikund, just beyond Sonprayag.",
+    "stops": [
+      {
+        "label": "Rishikesh",
+        "location": [78.29162, 30.10865]
+      },
+      {
+        "label": "Devprayag",
+        "location": [78.59858, 30.14614]
+      },
+      {
+        "label": "Rudraprayag",
+        "location": [78.98072, 30.28656]
+      },
+      {
+        "label": "Guptkashi",
+        "location": [79.08178, 30.52832]
+      },
+      {
+        "label": "Sonprayag",
+        "location": [78.99866, 30.63171]
+      }
+    ],
+    "expect": {
+      "km": 225
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Nainital",
+        "location": [79.46087, 29.39053]
+      }
+    ],
+    "slug": "kathgodam-to-ranikhet-via-nainital",
+    "title": "Kathgodam to Ranikhet via Nainital",
+    "region": "Uttarakhand",
+    "blurb": "From the railhead at Kathgodam up to Nainital's lake, over the ridge to Khairna on the Kosi river and on to Ranikhet's pine and oak slopes with Himalayan views.",
+    "tags": ["Kumaon", "lakes", "pine forest"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Nainital's lake road has a one-way system and parking is scarce in May and June.",
+    "stops": [
+      {
+        "label": "Kathgodam",
+        "location": [79.54374, 29.26623]
+      },
+      {
+        "label": "Nainital",
+        "location": [79.46087, 29.39053]
+      },
+      {
+        "label": "Khairna",
+        "location": [79.4793, 29.49508]
+      },
+      {
+        "label": "Ranikhet",
+        "location": [79.42812, 29.64374]
+      }
+    ],
+    "expect": {
+      "km": 100
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Thal",
+        "location": [80.13916, 29.8272]
+      }
+    ],
+    "slug": "almora-to-munsiyari",
+    "title": "Almora to Munsiyari",
+    "region": "Uttarakhand",
+    "blurb": "Across Kumaon through Thal to Munsiyari, a village facing the Panchachuli peaks, on a road that climbs and drops through oak forest and terraced fields.",
+    "tags": ["Kumaon", "Panchachuli", "villages"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "The last stretch past Thal is narrow with few fuel pumps; fill up in Almora or Bageshwar.",
+    "stops": [
+      {
+        "label": "Almora",
+        "location": [79.66326, 29.6017]
+      },
+      {
+        "label": "Thal",
+        "location": [80.13916, 29.8272]
+      },
+      {
+        "label": "Munsiyari",
+        "location": [80.23453, 30.06546]
+      }
+    ],
+    "expect": {
+      "km": 200
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "dehradun-to-mussoorie-and-dhanaulti",
+    "title": "Dehradun to Mussoorie and Dhanaulti",
+    "region": "Uttarakhand",
+    "blurb": "A short climb from the Doon valley to Mussoorie's ridge, then on through deodar forest to Dhanaulti, a quiet clearing with views of the snow peaks on clear days.",
+    "tags": ["hill station", "deodar forest", "short ride"],
+    "bestMonths": [3, 4, 5, 6, 9, 10, 11],
+    "notes": "Weekend traffic into Mussoorie is heavy; start early and expect fog from July to September.",
+    "stops": [
+      {
+        "label": "Dehradun",
+        "location": [78.04368, 30.32556]
+      },
+      {
+        "label": "Mussoorie",
+        "location": [78.07829, 30.4569]
+      },
+      {
+        "label": "Dhanaulti",
+        "location": [78.24552, 30.42472]
+      }
+    ],
+    "expect": {
+      "km": 60
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "srinagar-to-sonamarg",
+    "title": "Srinagar to Sonamarg",
+    "region": "Jammu and Kashmir",
+    "blurb": "Up the Sind valley from Srinagar through Ganderbal to Sonamarg, a wide meadow below glaciers, where the road to Zoji La begins.",
+    "tags": ["Sind valley", "meadows", "glaciers"],
+    "bestMonths": [4, 5, 6, 7, 8, 9, 10],
+    "notes": "Sonamarg gets heavy snow from December to March; check that the road is open before leaving.",
+    "stops": [
+      {
+        "label": "Srinagar",
+        "location": [74.82044, 34.07474]
+      },
+      {
+        "label": "Sonamarg",
+        "location": [75.29656, 34.30239]
+      }
+    ],
+    "expect": {
+      "km": 85
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Anantnag",
+        "location": [75.14551, 33.73688]
+      }
+    ],
+    "slug": "srinagar-to-pahalgam",
+    "title": "Srinagar to Pahalgam",
+    "region": "Jammu and Kashmir",
+    "blurb": "South through Kashmir's saffron fields and apple orchards past Anantnag, then up the Lidder river to Pahalgam, a green valley ringed by pine-covered slopes.",
+    "tags": ["Lidder valley", "saffron fields", "river road"],
+    "bestMonths": [4, 5, 6, 7, 8, 9, 10],
+    "notes": "Saffron blooms in the Pampore fields in October and November.",
+    "stops": [
+      {
+        "label": "Srinagar",
+        "location": [74.82044, 34.07474]
+      },
+      {
+        "label": "Anantnag",
+        "location": [75.14551, 33.73688]
+      },
+      {
+        "label": "Pahalgam",
+        "location": [75.32265, 34.0322]
+      }
+    ],
+    "expect": {
+      "km": 95
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Ramban",
+        "location": [75.24044, 33.2387]
+      },
+      {
+        "label": "Banihal",
+        "location": [75.19549, 33.43789]
+      }
+    ],
+    "slug": "jammu-to-srinagar-via-banihal",
+    "title": "Jammu to Srinagar via Banihal",
+    "region": "Jammu and Kashmir",
+    "blurb": "The national highway from Jammu through Udhampur and Ramban, up the Chenab gorge and under the Pir Panjal at Banihal, then down into the Kashmir valley.",
+    "tags": ["Pir Panjal", "Chenab gorge", "highway"],
+    "bestMonths": [4, 5, 6, 9, 10],
+    "notes": "Landslides and snow can close the highway for days; check traffic advisories before you start, and expect convoys on some stretches.",
+    "stops": [
+      {
+        "label": "Jammu",
+        "location": [74.85809, 32.71856]
+      },
+      {
+        "label": "Ramban",
+        "location": [75.24044, 33.2387]
+      },
+      {
+        "label": "Banihal",
+        "location": [75.19549, 33.43789]
+      },
+      {
+        "label": "Anantnag",
+        "location": [75.14551, 33.73688]
+      },
+      {
+        "label": "Srinagar",
+        "location": [74.82044, 34.07474]
+      }
+    ],
+    "expect": {
+      "km": 270
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Chumathang",
+        "location": [78.33429, 33.35888]
+      },
+      {
+        "label": "Nyoma",
+        "location": [78.64966, 33.20548]
+      }
+    ],
+    "slug": "leh-to-hanle-via-chumathang",
+    "title": "Leh to Hanle via Chumathang",
+    "region": "Ladakh",
+    "blurb": "Up the Indus to Upshi, then south through Chumathang's hot springs and Nyoma to Hanle, a remote village under one of the darkest skies in India, near its observatory.",
+    "tags": ["Indus valley", "remote", "dark sky"],
+    "bestMonths": [5, 6, 7, 8, 9],
+    "notes": "An Inner Line Permit is needed for this stretch and fuel is scarce beyond Upshi; carry spare fuel and plan for altitude of over 4,000 m.",
+    "stops": [
+      {
+        "label": "Leh",
+        "location": [77.58481, 34.1642]
+      },
+      {
+        "label": "Upshi",
+        "location": [77.81363, 33.8302]
+      },
+      {
+        "label": "Chumathang",
+        "location": [78.33429, 33.35888]
+      },
+      {
+        "label": "Nyoma",
+        "location": [78.64966, 33.20548]
+      },
+      {
+        "label": "Hanle",
+        "location": [78.98321, 32.77148]
+      }
+    ],
+    "expect": {
+      "km": 270
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Rangdum",
+        "location": [76.372, 34.03619]
+      }
+    ],
+    "slug": "kargil-to-padum-via-pensi-la",
+    "title": "Kargil to Padum via Pensi La",
+    "region": "Ladakh",
+    "blurb": "Up the Suru valley under the Nun Kun peaks to Rangdum's monastery, over Pensi La and down to Padum, the main town of Zanskar.",
+    "tags": ["Zanskar", "Suru valley", "high pass"],
+    "bestMonths": [6, 7, 8, 9],
+    "notes": "Pensi La is shut by snow from about November to May; there is very little fuel or food between Kargil and Padum.",
+    "stops": [
+      {
+        "label": "Kargil",
+        "location": [76.12558, 34.5593]
+      },
+      {
+        "label": "Rangdum",
+        "location": [76.372, 34.03619]
+      },
+      {
+        "label": "Pensi La",
+        "location": [76.35821, 33.86428]
+      },
+      {
+        "label": "Padum",
+        "location": [76.87818, 33.46914]
+      }
+    ],
+    "expect": {
+      "km": 235
+    }
   }
 ]

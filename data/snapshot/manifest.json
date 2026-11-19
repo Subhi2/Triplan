@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "createdAt": "2026-10-23T06:09:16.894Z",
-  "migration": "0022_open_place",
+  "createdAt": "2026-11-19T07:15:25.630Z",
+  "migration": "0027_ride_tier",
   "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url). open_place rows are from Overture Places (Overture Maps Foundation, overturemaps.org) under the licence in each row (CDLA-Permissive-2.0, Apache-2.0 for Foursquare, CC0-1.0): see LICENCE.md, NOTICE-Foursquare.txt and the LICENSE-*.txt files.",
   "tables": [
     {
@@ -68,8 +68,8 @@
         "description_checked_at"
       ],
       "rows": 99372,
-      "bytes": 13747191,
-      "sha256": "bd80799e47e3c529c1f90d9b65d43ef5c1c6e86e1b40f6c111e4029a3156cced"
+      "bytes": 13747510,
+      "sha256": "866ee0e374fb95d8e2cfc648087a38ad9e0017427f4064c337be42013c8c4fd1"
     },
     {
       "name": "place_guide",
@@ -126,11 +126,12 @@
         "height",
         "status",
         "uploaded_by",
-        "created_at"
+        "created_at",
+        "device_hash"
       ],
-      "rows": 3036,
-      "bytes": 345873,
-      "sha256": "83e00ca473acfba0209e98c6b3911d665be7fe60458d5a7fc516a3b99b953ec9"
+      "rows": 3037,
+      "bytes": 346999,
+      "sha256": "0d6e66add65dd6b542acd23494e9fb99105f395e33522eda65a45b1415e41da3"
     },
     {
       "name": "ride",
@@ -154,11 +155,12 @@
         "ascent_m",
         "hairpins",
         "position",
-        "seeded_at"
+        "seeded_at",
+        "tier"
       ],
-      "rows": 27,
-      "bytes": 1842972,
-      "sha256": "a333b9fe02ca85beba663e630705bde0b25d18231d837e489180d9f0f57c619e"
+      "rows": 42,
+      "bytes": 2854722,
+      "sha256": "67d7fc4b540f420dffad778c903e19c59ab9228603e6dbc33518004b80edfc98"
     },
     {
       "name": "service_point",
