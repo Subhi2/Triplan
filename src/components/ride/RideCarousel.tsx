@@ -58,7 +58,7 @@ export function RideCarousel({
   };
   const current = photos[Math.min(index, photos.length - 1)]!;
   // Arrows show on hover with a mouse; always where the strip cannot be swiped.
-  const arrow = `absolute top-1/2 z-10 ${swipe ? "hidden group-hover/carousel:flex" : "flex"} h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-lg text-white hover:bg-black/70 focus-visible:flex`;
+  const arrow = `absolute top-1/2 z-10 ${swipe ? "hidden group-hover/carousel:flex" : "flex"} h-11 w-11 md:h-9 md:w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-lg text-white hover:bg-black/70 focus-visible:flex`;
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>

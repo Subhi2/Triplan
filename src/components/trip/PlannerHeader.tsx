@@ -76,9 +76,9 @@ export function PlannerHeader({
           <CrosshairIcon size={18} />
           {!compact && "Near me"}
         </Link>
-        <ThemeToggle />
+        {!compact && <ThemeToggle />}
         <SiteMenu
-          showTheme={false}
+          showTheme={compact}
           links={SITE_LINKS.filter((l) => l.href !== "/" && l.href !== "/nearby")}
           lead={hasTrip ? { href: `/?v=${vehicle}`, label: "New trip" } : undefined}
         />

@@ -242,7 +242,7 @@ function BucketListBody({
             return (
               <li key={r.slug} className={`${card} flex min-w-0 flex-col gap-2 p-3`}>
                 <RideCarousel photos={photos[r.slug] ?? []} line={r.line} size="card" linkCredit />
-                <Link href={`/rides/${r.slug}`} className="flex flex-col gap-2">
+                <Link href={`/rides/${r.slug}`} className="flex min-h-11 items-center">
                   <span className="font-display text-base leading-tight font-bold hover:underline">
                     {status === "done" && <span aria-hidden>✓ </span>}
                     {r.title}
