@@ -765,7 +765,9 @@ test("save the trip with its route, then see changes that are not saved", async 
   expect((await patch).headers()["authorization"]).toBe("Bearer test-edit-token");
 });
 
-test("tick places and open the trip in Google Maps with them as stops", async ({ page }) => {
+test("tick places and open the trip in Google Maps with them as stops", async ({
+  page,
+}, testInfo) => {
   await mockApis(page, []);
   await mockPlace(page);
   await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
@@ -780,6 +782,11 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   });
   await expect(open).toHaveAttribute("href", /maps\/dir\/\?api=1&origin=12\.9716%2C77\.5946/);
   expect(await open.getAttribute("href")).not.toContain("waypoints");
+  if (testInfo.project.name === "desktop") {
+    // The bar ends on screen, at the foot of the places column (it once hung 1rem below it).
+    const bar = await page.getByRole("region", { name: "Google Maps" }).boundingBox();
+    expect(bar!.y + bar!.height).toBeLessThanOrEqual(page.viewportSize()!.height + 0.5);
+  }
 
   await page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }).check();
   await expect(

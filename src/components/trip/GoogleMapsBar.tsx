@@ -16,8 +16,8 @@ interface Props {
 
 /**
  * Stays at the bottom of the panel: opens the trip in Google Maps, ready to navigate, with its
- * via stops and the ticked places as stops in route order, or downloads it as GPX. The negative
- * bottom undoes the panel padding (and the safe area below it on phones).
+ * via stops and the ticked places as stops in route order, or downloads it as GPX. It sits flush
+ * with the bottom of whichever panel holds it (`panel-foot`, from the panel's --panel-pb).
  */
 export function GoogleMapsBar({ trip, pickedCount, totalMin, onClear, onDownloadGpx }: Props) {
   const tooMany = trip.url === null && trip.waypointCount > MAX_GOOGLE_WAYPOINTS;
@@ -25,7 +25,7 @@ export function GoogleMapsBar({ trip, pickedCount, totalMin, onClear, onDownload
     <div
       role="region"
       aria-label="Google Maps"
-      className="sticky bottom-[calc(-1rem-env(safe-area-inset-bottom))] z-10 -mx-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-stone-200 bg-(--surface) px-4 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-sm dark:border-stone-800"
+      className="panel-foot panel-bleed z-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-stone-200 bg-(--surface) pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-sm dark:border-stone-800"
     >
       {/* Its own row above the buttons: the panel is narrow even on desktop (about 24rem). */}
       <span className="min-w-0 basis-full text-stone-600 dark:text-stone-400">

@@ -1197,7 +1197,9 @@ export function Planner({
         className={`flex shrink-0 flex-col gap-3 ${
           floatingHeader
             ? "absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-2xl border border-stone-200/80 bg-(--surface)/85 py-1.5 pr-1.5 pl-4 shadow-sm backdrop-blur-md dark:border-stone-700/80"
-            : "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none lg:w-[24rem] dark:md:border-stone-800"
+            : // The panel states its padding for the bars that reach its edges (globals.css),
+              // and keeps room for its scroll bar so the form does not shift as one appears.
+              "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:[scrollbar-gutter:stable] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none md:[--panel-pb:1.5rem] md:[--panel-px:1.5rem] lg:w-[24rem] dark:md:border-stone-800"
         } ${typing ? "z-30" : "z-10"}`}
       >
         <div className="relative">
@@ -1271,7 +1273,7 @@ export function Planner({
       {secondColumn && (
         <aside
           aria-label={placePanel ? "Place" : "Places along the road"}
-          className="relative w-[26rem] shrink-0 overflow-y-auto border-r border-stone-200 bg-(--surface) px-4 pt-6 dark:border-stone-800"
+          className="relative w-[26rem] shrink-0 [scrollbar-gutter:stable] overflow-y-auto border-r border-stone-200 bg-(--surface) px-(--panel-px) pt-6 pb-(--panel-pb) [--panel-pb:1.5rem] [--panel-px:1rem] dark:border-stone-800"
         >
           {secondColumn}
         </aside>
@@ -1384,7 +1386,7 @@ function StepBar() {
     <nav
       ref={bar}
       aria-label="Steps"
-      className="sticky top-0 z-10 -mx-4 flex gap-1 bg-(--surface) px-4 py-2 shadow-[0_1px_0_var(--color-stone-200)] dark:shadow-[0_1px_0_var(--color-stone-800)]"
+      className="panel-bleed sticky top-0 z-10 flex gap-1 bg-(--surface) py-2 shadow-[0_1px_0_var(--color-stone-200)] dark:shadow-[0_1px_0_var(--color-stone-800)]"
     >
       {STEPS.map((st, i) => {
         const here = i === at;

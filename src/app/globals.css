@@ -246,6 +246,20 @@ html:has(dialog:modal) {
   }
 }
 
+/* Bars inside a scrolling panel (the phone sheet, the side panels) that reach its edges. Each
+   panel states its padding as --panel-px and --panel-pb, so a bar lines up in every panel
+   instead of guessing one panel's padding (a fixed -1rem left the Google Maps bar hanging below
+   the laptop's places column, and short of the edges on tablets). */
+@utility panel-bleed {
+  margin-inline: calc(-1 * var(--panel-px, 1rem));
+  padding-inline: var(--panel-px, 1rem);
+}
+/* Stays at the foot of the panel, flush with its bottom edge, over the panel's own padding. */
+@utility panel-foot {
+  position: sticky;
+  bottom: calc(-1 * var(--panel-pb, 0px));
+}
+
 /* A list still on screen while its new contents load: dimmed and not clickable. */
 @utility refreshing {
   opacity: 0.45;
