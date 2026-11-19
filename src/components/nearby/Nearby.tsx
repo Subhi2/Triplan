@@ -9,6 +9,7 @@ import type { MapFrame, MapStop } from "@/components/map/types";
 import { PlacePanel } from "@/components/place/PlacePanel";
 import { ShareButtons } from "@/components/site/ShareButtons";
 import { SiteMenu } from "@/components/site/SiteMenu";
+import { ThemeToggle } from "@/components/site/ThemeToggle";
 import type { MapBias } from "@/components/trip/StopInput";
 import { BottomSheet, SHEET_SNAPS, type SheetSnap } from "@/components/ui/BottomSheet";
 import { RetryAlert } from "@/components/ui/RetryAlert";
@@ -452,7 +453,10 @@ export function Nearby() {
             </div>
           </div>
           <nav aria-label="Main" className="shrink-0">
-            <SiteMenu current="/nearby" />
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <SiteMenu current="/nearby" showTheme={false} />
+            </div>
           </nav>
         </header>
         {isDesktop && <div className="mt-3">{panel}</div>}
