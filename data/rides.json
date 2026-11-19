@@ -2817,5 +2817,375 @@
     "expect": {
       "km": 300
     }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Umaria",
+        "location": [80.83614, 23.52466]
+      }
+    ],
+    "slug": "jabalpur-to-bandhavgarh",
+    "title": "Jabalpur to Bandhavgarh",
+    "region": "Madhya Pradesh",
+    "blurb": "East from Jabalpur across the Vindhya plateau through Umaria to Tala, the main gate of Bandhavgarh, a tiger reserve of sal forest and rocky hills.",
+    "tags": ["Bandhavgarh", "tiger reserve", "plateau"],
+    "bestMonths": [11, 12, 1, 2, 3, 4, 5],
+    "notes": "The park is closed from July to September and safari permits need booking ahead; summers are very hot.",
+    "stops": [
+      {
+        "label": "Jabalpur",
+        "location": [79.93245, 23.17015]
+      },
+      {
+        "label": "Umaria",
+        "location": [80.83614, 23.52466]
+      },
+      {
+        "label": "Tala",
+        "location": [81.0101, 23.73147]
+      }
+    ],
+    "expect": {
+      "km": 200
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mandla",
+        "location": [80.37208, 22.59781]
+      }
+    ],
+    "slug": "jabalpur-to-kanha",
+    "title": "Jabalpur to Kanha",
+    "region": "Madhya Pradesh",
+    "blurb": "South-east from Jabalpur along the Narmada's valley to Mandla, then through sal forest on a quiet state highway to Mukki, a gate of Kanha National Park.",
+    "tags": ["Kanha", "tiger reserve", "Narmada valley"],
+    "bestMonths": [11, 12, 1, 2, 3, 4, 5],
+    "notes": "The park is closed from July to September; safari permits need booking ahead, and nights are cold in winter.",
+    "stops": [
+      {
+        "label": "Jabalpur",
+        "location": [79.93245, 23.17015]
+      },
+      {
+        "label": "Mandla",
+        "location": [80.37208, 22.59781]
+      },
+      {
+        "label": "Mukki",
+        "location": [80.67312, 22.15463]
+      }
+    ],
+    "expect": {
+      "km": 180
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "indore-to-mandu",
+    "title": "Indore to Mandu",
+    "region": "Madhya Pradesh",
+    "blurb": "South-west from Indore across the Malwa plateau to Mandu, a ruined hill city of sultanate palaces, tombs and baobab trees above the Narmada plain.",
+    "tags": ["Malwa plateau", "ruined fort city", "heritage"],
+    "bestMonths": [7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "Mandu is greenest and busiest just after the monsoon; summers are very hot and shade is scarce.",
+    "stops": [
+      {
+        "label": "Indore",
+        "location": [75.8682, 22.72036]
+      },
+      {
+        "label": "Mandu",
+        "location": [75.39731, 22.34734]
+      }
+    ],
+    "expect": {
+      "km": 95
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Maheshwar",
+        "location": [75.58735, 22.17744]
+      }
+    ],
+    "slug": "indore-to-omkareshwar-via-maheshwar",
+    "title": "Indore to Omkareshwar via Maheshwar",
+    "region": "Madhya Pradesh",
+    "blurb": "South from Indore to Maheshwar's riverside ghats and palace on the Narmada, then east along the river to Omkareshwar, an island temple shaped like the sacred Om.",
+    "tags": ["Narmada", "temples", "ghats"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Both towns are crowded on Mondays and festival days; Maheshwar is known for its handloom saris.",
+    "stops": [
+      {
+        "label": "Indore",
+        "location": [75.8682, 22.72036]
+      },
+      {
+        "label": "Maheshwar",
+        "location": [75.58735, 22.17744]
+      },
+      {
+        "label": "Omkareshwar",
+        "location": [76.14957, 22.24298]
+      }
+    ],
+    "expect": {
+      "km": 162
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "indore-to-ujjain",
+    "title": "Indore to Ujjain",
+    "region": "Madhya Pradesh",
+    "blurb": "A short run north from Indore to Ujjain, one of India's seven sacred cities, on the banks of the Shipra with the Mahakaleshwar temple at its heart.",
+    "tags": ["pilgrimage", "Shipra river", "short ride"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Mahakaleshwar's queues are long on Mondays and during Shivratri; the Simhastha fair is held once every twelve years.",
+    "stops": [
+      {
+        "label": "Indore",
+        "location": [75.8682, 22.72036]
+      },
+      {
+        "label": "Ujjain",
+        "location": [75.77166, 23.18851]
+      }
+    ],
+    "expect": {
+      "km": 55
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bhopal-to-ujjain",
+    "title": "Bhopal to Ujjain",
+    "region": "Madhya Pradesh",
+    "blurb": "West from Bhopal across the Malwa plateau through Sehore and Shajapur to Ujjain, past farmland and small towns on a well-kept national highway.",
+    "tags": ["Malwa plateau", "highway", "pilgrimage"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Truck traffic is heavy on the highway; summers are very hot.",
+    "stops": [
+      {
+        "label": "Bhopal",
+        "location": [77.40199, 23.25849]
+      },
+      {
+        "label": "Ujjain",
+        "location": [75.77166, 23.18851]
+      }
+    ],
+    "expect": {
+      "km": 190
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bhopal-to-sanchi",
+    "title": "Bhopal to Sanchi",
+    "region": "Madhya Pradesh",
+    "blurb": "A short run north-east from Bhopal to Sanchi, whose hilltop stupas, built from the 3rd century BCE, are among the oldest stone structures in India.",
+    "tags": ["Buddhist stupas", "UNESCO", "short ride"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Visit early in the day to avoid the midday heat, and check the site’s opening hours.",
+    "stops": [
+      {
+        "label": "Bhopal",
+        "location": [77.40199, 23.25849]
+      },
+      {
+        "label": "Sanchi",
+        "location": [77.74062, 23.48705]
+      }
+    ],
+    "expect": {
+      "km": 50
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Datia",
+        "location": [78.45823, 25.66894]
+      }
+    ],
+    "slug": "gwalior-to-orchha-via-datia",
+    "title": "Gwalior to Orchha via Datia",
+    "region": "Madhya Pradesh",
+    "blurb": "South from Gwalior's hilltop fort through Datia and its seven-storey palace to Orchha, where chhatris line the Betwa river below the old palaces.",
+    "tags": ["forts and palaces", "Bundelkhand", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Summers are fiercely hot; Orchha's Ram Raja Temple is busiest on festivals.",
+    "stops": [
+      {
+        "label": "Gwalior",
+        "location": [78.15736, 26.20372]
+      },
+      {
+        "label": "Datia",
+        "location": [78.45823, 25.66894]
+      },
+      {
+        "label": "Orchha",
+        "location": [78.64025, 25.35287]
+      }
+    ],
+    "expect": {
+      "km": 120
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "satna-to-chitrakoot",
+    "title": "Satna to Chitrakoot",
+    "region": "Madhya Pradesh",
+    "blurb": "North from Satna to Chitrakoot, a pilgrimage town on the Mandakini river where the Vindhya hills meet the Ganga plain, with ghats and hill temples.",
+    "tags": ["Mandakini river", "pilgrimage", "Vindhya hills"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Crowds peak on Amavasya days; the border with Uttar Pradesh runs through the town.",
+    "stops": [
+      {
+        "label": "Satna",
+        "location": [80.83257, 24.57513]
+      },
+      {
+        "label": "Chitrakoot",
+        "location": [80.86913, 25.17439]
+      }
+    ],
+    "expect": {
+      "km": 85
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bilaspur-to-amarkantak",
+    "title": "Bilaspur to Amarkantak",
+    "region": "Chhattisgarh",
+    "blurb": "East from Bilaspur up onto the Maikal hills to Amarkantak, where the Narmada rises in a temple tank amid sal forest at about 1,000 m.",
+    "tags": ["Maikal hills", "Narmada source", "forest"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Mist and fog are common in winter; fuel up in Bilaspur, as stops are few on the hill section.",
+    "stops": [
+      {
+        "label": "Bilaspur",
+        "location": [82.14765, 22.07856]
+      },
+      {
+        "label": "Amarkantak",
+        "location": [81.75884, 22.67047]
+      }
+    ],
+    "expect": {
+      "km": 120
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mahasamund",
+        "location": [82.09866, 21.1101]
+      }
+    ],
+    "slug": "raipur-to-sirpur",
+    "title": "Raipur to Sirpur",
+    "region": "Chhattisgarh",
+    "blurb": "East from Raipur through Mahasamund to Sirpur on the Mahanadi, an old capital whose brick temples and Buddhist monasteries date back about 1,400 years.",
+    "tags": ["Mahanadi", "brick temples", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Summers are very hot and there is little shade at the ruins.",
+    "stops": [
+      {
+        "label": "Raipur",
+        "location": [81.6337, 21.23809]
+      },
+      {
+        "label": "Mahasamund",
+        "location": [82.09866, 21.1101]
+      },
+      {
+        "label": "Sirpur",
+        "location": [82.18469, 21.34702]
+      }
+    ],
+    "expect": {
+      "km": 102
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "nagpur-to-tadoba",
+    "title": "Nagpur to Tadoba",
+    "region": "Maharashtra",
+    "blurb": "South-east from Nagpur through Chimur's teak forest to Moharli, the busiest gate of Tadoba-Andhari, Maharashtra's oldest tiger reserve.",
+    "tags": ["Tadoba", "tiger reserve", "teak forest"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 4, 5],
+    "notes": "The reserve is closed on one weekday and for most zones from July to September; check closing days and book safari slots ahead.",
+    "stops": [
+      {
+        "label": "Nagpur",
+        "location": [79.08206, 21.14981]
+      },
+      {
+        "label": "Moharli",
+        "location": [79.33381, 20.18863]
+      }
+    ],
+    "expect": {
+      "km": 150
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "amravati-to-chikhaldara",
+    "title": "Amravati to Chikhaldara",
+    "region": "Maharashtra",
+    "blurb": "North from Amravati over the Satpura foothills to Chikhaldara, Vidarbha's only hill station, with a coffee plantation, valley viewpoints and the Melghat tiger reserve around it.",
+    "tags": ["Satpura", "hill station", "Melghat"],
+    "bestMonths": [7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "The last climb is winding and narrow; check forest-section timings with the Melghat reserve before you go.",
+    "stops": [
+      {
+        "label": "Amravati",
+        "location": [77.75885, 20.93162]
+      },
+      {
+        "label": "Chikhaldara",
+        "location": [77.32888, 21.40158]
+      }
+    ],
+    "expect": {
+      "km": 95
+    }
   }
 ]
