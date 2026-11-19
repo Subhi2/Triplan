@@ -28,6 +28,13 @@ export interface WikidataPlaceItem {
   location: LngLat;
 }
 
+/** A file on Commons that has coordinates near a point (Commons geosearch). */
+export interface CommonsGeoFile {
+  file: string; // "File:Jog Falls at Shimoga.jpg"
+  location: LngLat;
+  distM: number; // from the point searched
+}
+
 export interface WikimediaProvider {
   /** Main image, whether it is a person, and coordinates of each item, by id ("Q672241"). */
   items(wikidataIds: string[]): Promise<Map<string, WikidataItem>>;
@@ -38,7 +45,12 @@ export interface WikimediaProvider {
   itemsInBox(box: [number, number, number, number]): Promise<WikidataPlaceItem[]>;
   /** Credit, licence and sized URLs for Commons files, by file title; missing files are left out. */
   imageInfo(files: string[]): Promise<Map<string, CommonsImage>>;
+  /** Files on Commons with coordinates within `radiusM` (at most 10,000) of a point, nearest first. */
+  filesNear(point: LngLat, radiusM: number): Promise<CommonsGeoFile[]>;
 }
+
+/** Files per geosearch request (the API's limit for an anonymous client). */
+export const GEOSEARCH_LIMIT = 50;
 
 /** Wikidata ids per image query, and Commons titles per imageinfo request (the API's limit). */
 export const WIKIDATA_BATCH = 200;

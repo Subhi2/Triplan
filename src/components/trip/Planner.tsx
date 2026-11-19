@@ -114,7 +114,7 @@ interface Props {
   /** Rides offered as "Try a famous ride" while there is no trip. */
   famousRides?: RideSummary[];
   /** A credited photo per ride slug, where we have one. */
-  famousRidePhotos?: Record<string, RidePhoto>;
+  famousRidePhotos?: Record<string, RidePhoto[]>;
   /** Whether "plan in plain words" is switched on (the AI key is set). */
   aiEnabled?: boolean;
   /** Riders can post road reports (ALTCHA_HMAC_KEY is set on the server). */
@@ -1349,7 +1349,8 @@ function StepBar() {
     // The sheet (or side panel) scrolls in its own box: watch steps against that box, not the
     // window, where the map takes the upper part on phones.
     let root: HTMLElement | null = bar.current?.parentElement ?? null;
-    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY)) root = root.parentElement;
+    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY))
+      root = root.parentElement;
     const bottom = () =>
       !!root && root.scrollTop > 0 && root.scrollTop + root.clientHeight >= root.scrollHeight - 8;
     const seen = new Map<string, boolean>();

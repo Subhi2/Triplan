@@ -336,6 +336,28 @@ export const ride = pgTable(
   (t) => [check("ride_tier_check", sql`${t.tier} IN ('classic', 'legend')`)],
 );
 
+// A famous ride's photo gallery: up to eight Wikimedia Commons photos picked along its road by
+// `pnpm db:import-ride-photos`. Shown from Commons' own servers with their credit, never copied.
+// No foreign key to ride, so seeding a ride again keeps its photos.
+export const ridePhoto = pgTable(
+  "ride_photo",
+  {
+    rideSlug: text("ride_slug").notNull(),
+    position: smallint("position").notNull(), // 0 = first, in order along the road
+    file: text("file").notNull(), // "File:Jog Falls at Shimoga.jpg"
+    url: text("url").notNull(), // 960 px wide
+    thumbUrl: text("thumb_url").notNull(), // 330 px wide
+    pageUrl: text("page_url").notNull(), // the file's page on Commons: full credit and licence
+    caption: text("caption").notNull(),
+    author: text("author"),
+    license: text("license").notNull(),
+    kmFromStart: real("km_from_start").notNull(),
+    width: smallint("width").notNull(),
+    height: smallint("height").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.rideSlug, t.position] })],
+);
+
 // Write limits ------------------------------------------------------------------
 // With no sign-in, saving and renaming trips is limited per visitor: a salted hash of the IP
 // address (never the address itself), counted per one-hour window.

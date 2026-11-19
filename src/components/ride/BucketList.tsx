@@ -9,12 +9,11 @@ import { INDIA_BOUNDS, type MapFrame, type MapRidePreview } from "@/components/m
 import { useRideMarks } from "@/components/community/useRideMarks";
 import { card, chip, chipOff, chipOn, muted, secondaryButton } from "@/components/community/ui";
 import { badgesFor } from "@/lib/badges";
-import { mediaSourceName } from "@/lib/media";
 import { rideArea, RIDE_AREAS, type RideArea, type RidePhoto, type RideSummary } from "@/lib/rides";
 import { CountUp } from "@/components/motion/CountUp";
 import { rideInList, type RideListKey } from "@/lib/rideLists";
 import { RideListChips } from "./RideListChips";
-import { RouteSketch } from "./RouteSketch";
+import { RideCarousel } from "./RideCarousel";
 
 /** The map opens on India (the same box the planner starts with). */
 const INDIA_FRAME: MapFrame = { key: "india", points: [...INDIA_BOUNDS] };
@@ -34,7 +33,7 @@ export function BucketList({
 }: {
   rides: RideSummary[];
   /** The same credited photo per ride as the famous rides page. */
-  photos?: Record<string, RidePhoto>;
+  photos?: Record<string, RidePhoto[]>;
 }) {
   return (
     <RiderProvider>
@@ -48,7 +47,7 @@ function BucketListBody({
   photos,
 }: {
   rides: RideSummary[];
-  photos: Record<string, RidePhoto>;
+  photos: Record<string, RidePhoto[]>;
 }) {
   const { me, marks, loading, save, remove } = useRideMarks();
   const router = useRouter();
@@ -242,30 +241,8 @@ function BucketListBody({
             const status = marks[r.slug]?.status;
             return (
               <li key={r.slug} className={`${card} flex min-w-0 flex-col gap-2 p-3`}>
+                <RideCarousel photos={photos[r.slug] ?? []} line={r.line} size="card" linkCredit />
                 <Link href={`/rides/${r.slug}`} className="flex flex-col gap-2">
-                  {photos[r.slug] ? (
-                    <span className="relative block">
-                      {/* Our own credited photo (credit below), never Google's. */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photos[r.slug]!.thumbUrl}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="h-36 w-full rounded-lg bg-stone-200 object-cover dark:bg-stone-800"
-                      />
-                      {/* The ride's path over the photo's corner, as on the famous rides page. */}
-                      <RouteSketch
-                        line={r.line}
-                        className="bg-brand-tint/95 absolute right-2 bottom-2 h-14 w-20 rounded-lg dark:bg-teal-950/95"
-                      />
-                    </span>
-                  ) : (
-                    <RouteSketch
-                      line={r.line}
-                      className="bg-brand-tint h-36 w-full rounded-lg dark:bg-teal-950"
-                    />
-                  )}
                   <span className="font-display text-base leading-tight font-bold hover:underline">
                     {status === "done" && <span aria-hidden>✓ </span>}
                     {r.title}
@@ -277,12 +254,6 @@ function BucketListBody({
                   </span>
                 )}
                 <span className={`${muted} text-sm`}>{r.region}</span>
-                {photos[r.slug] && (
-                  <span className="line-clamp-2 text-xs text-stone-600 dark:text-stone-400">
-                    {photos[r.slug]!.placeName} · photo {photos[r.slug]!.author ?? "unknown"} ·{" "}
-                    {photos[r.slug]!.license} · {mediaSourceName(photos[r.slug]!.source)}
-                  </span>
-                )}
                 <span className="tabular flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm">
                   <CountUp value={r.distanceKm} unit="km" fromServer />
                   <CountUp value={r.durationMin} unit="duration" fromServer />

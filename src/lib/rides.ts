@@ -70,6 +70,10 @@ export interface RidePhoto {
   author: string | null;
   license: string;
   source: string;
+  /** The 960 px version, for the ride page; cards use `thumbUrl`. */
+  url?: string;
+  /** The photo's page on Commons, where the full credit is. */
+  pageUrl?: string;
 }
 
 export interface RideSummary {

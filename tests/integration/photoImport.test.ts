@@ -36,6 +36,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Wikimedia photo import", () => {
     },
     imageInfo: async (files) => new Map(files.map((f) => [f, image])),
     itemsInBox: async () => [],
+    filesNear: async () => [],
   };
   let ids: string[] = [];
 

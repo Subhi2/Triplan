@@ -293,3 +293,61 @@ export async function ridePhotos(): Promise<Record<string, RidePhoto>> {
 export async function setRideTier(slug: string, tier: RideTier): Promise<void> {
   await getDb().update(ride).set({ tier }).where(eq(ride.slug, slug));
 }
+
+/**
+ * Every ride's photo gallery, in order along the road: the Commons photos picked by
+ * `pnpm db:import-ride-photos`, or, for a ride without any yet, its single best place photo.
+ */
+export async function rideGalleries(): Promise<Record<string, RidePhoto[]>> {
+  const [rows, single] = await Promise.all([
+    getDb().execute<{
+      ride_slug: string;
+      thumb_url: string;
+      url: string;
+      page_url: string;
+      caption: string;
+      author: string | null;
+      license: string;
+    }>(sql`
+      SELECT ride_slug, thumb_url, url, page_url, caption, author, license
+      FROM ride_photo ORDER BY ride_slug, position`),
+    ridePhotos().catch(() => ({}) as Record<string, RidePhoto>),
+  ]);
+  const out: Record<string, RidePhoto[]> = {};
+  for (const r of rows) {
+    (out[r.ride_slug] ??= []).push({
+      thumbUrl: r.thumb_url,
+      url: r.url,
+      pageUrl: r.page_url,
+      placeName: r.caption,
+      author: r.author,
+      license: r.license,
+      source: "wikimedia",
+    });
+  }
+  for (const [slug, photo] of Object.entries(single)) out[slug] ??= [photo];
+  return out;
+}
+
+/** One ride's photo gallery in order along the road; empty until its photos have been imported. */
+export async function rideGallery(slug: string): Promise<RidePhoto[]> {
+  const rows = await getDb().execute<{
+    thumb_url: string;
+    url: string;
+    page_url: string;
+    caption: string;
+    author: string | null;
+    license: string;
+  }>(sql`
+    SELECT thumb_url, url, page_url, caption, author, license
+    FROM ride_photo WHERE ride_slug = ${slug} ORDER BY position`);
+  return [...rows].map((r) => ({
+    thumbUrl: r.thumb_url,
+    url: r.url,
+    pageUrl: r.page_url,
+    placeName: r.caption,
+    author: r.author,
+    license: r.license,
+    source: "wikimedia",
+  }));
+}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { CountUp, type CountUnit } from "@/components/motion/CountUp";
+import { RideCarousel } from "@/components/ride/RideCarousel";
 import { MarkRide } from "@/components/ride/MarkRide";
 import { RideActions } from "@/components/ride/RideActions";
 import { communityEnabled } from "@/lib/community/enabled";
@@ -20,7 +21,7 @@ import { monthRange, ridePlannerUrl, type Ride } from "@/lib/rides";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import { placesAlong, toPlaceAlong } from "@/server/services/corridorService";
 import { getPlaceDetail } from "@/server/services/placeDetailService";
-import { getRide } from "@/server/services/rideService";
+import { getRide, rideGallery } from "@/server/services/rideService";
 
 // Rides change only when seeded again, their places when OpenStreetMap is imported again.
 export const revalidate = 86400;
@@ -94,7 +95,8 @@ export default async function RidePage({ params }: Props) {
     .then((rows) => bestAlongRoute(rows.map(toPlaceAlong), "mixed", ride.distanceKm))
     .catch(() => []);
   const line = geometry.coordinates as LngLat[];
-  const lead = await leadPhoto(places);
+  const gallery = await rideGallery(ride.slug).catch(() => []);
+  const lead = gallery.length > 0 ? null : await leadPhoto(places);
 
   return (
     <main
@@ -130,7 +132,21 @@ export default async function RidePage({ params }: Props) {
         <p className="text-base">{ride.blurb}</p>
       </header>
 
-      {lead ? (
+      {gallery.length > 0 ? (
+        <div className="grid gap-3 md:grid-cols-5">
+          <RideCarousel
+            photos={gallery}
+            line={line}
+            size="hero"
+            linkCredit
+            className="md:col-span-3"
+          />
+          <RouteSketch
+            line={line}
+            className="bg-brand-tint h-40 w-full rounded-2xl md:col-span-2 md:h-80 dark:bg-teal-950"
+          />
+        </div>
+      ) : lead ? (
         <div className="grid gap-3 md:grid-cols-5">
           <figure className="flex flex-col gap-1 md:col-span-3">
             {/* Our own credited photo (Wikimedia Commons or a rider's), never Google's. */}

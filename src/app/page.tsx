@@ -6,7 +6,7 @@ import { SITE_NAME, tripHeadline } from "@/lib/site";
 import { parseTripUrl } from "@/lib/tripUrl";
 import { aiEnabled } from "@/server/providers/llm";
 import { powKey } from "@/server/services/proofOfWork";
-import { listRides, ridePhotos } from "@/server/services/rideService";
+import { listRides, rideGalleries } from "@/server/services/rideService";
 
 /** Famous rides for "Try a famous ride", read at most hourly; none if the database is down. */
 const famousRides = unstable_cache(() => listRides().catch(() => []), ["famous-rides"], {
@@ -14,9 +14,13 @@ const famousRides = unstable_cache(() => listRides().catch(() => []), ["famous-r
 });
 
 /** One of our own credited photos per ride, for the same cards. */
-const famousRidePhotos = unstable_cache(() => ridePhotos().catch(() => ({})), ["famous-ride-photos"], {
-  revalidate: 3600,
-});
+const famousRidePhotos = unstable_cache(
+  () => rideGalleries().catch(() => ({})),
+  ["famous-ride-photos"],
+  {
+    revalidate: 3600,
+  },
+);
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -53,7 +57,12 @@ export default async function HomePage() {
   // useSearchParams in Planner needs a Suspense boundary.
   return (
     <Suspense>
-      <Planner famousRides={rides} famousRidePhotos={photos}aiEnabled={aiEnabled()} postsOpen={powKey() !== null} />
+      <Planner
+        famousRides={rides}
+        famousRidePhotos={photos}
+        aiEnabled={aiEnabled()}
+        postsOpen={powKey() !== null}
+      />
     </Suspense>
   );
 }
