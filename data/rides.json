@@ -1933,5 +1933,478 @@
     "expect": {
       "km": 65
     }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Panchgani",
+        "location": [73.79927, 17.92395]
+      }
+    ],
+    "slug": "pune-to-mahabaleshwar-via-panchgani",
+    "title": "Pune to Mahabaleshwar via Panchgani",
+    "region": "Maharashtra",
+    "blurb": "Out of Pune over the Kath ghat to Wai, then up the Krishna valley to Panchgani's table land and on to Mahabaleshwar's strawberry farms and viewpoints.",
+    "tags": ["hill station", "Sahyadri", "viewpoints"],
+    "bestMonths": [6, 7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "Weekends are crowded and the plateau is wrapped in fog during the monsoon; the road is closed to buses at some viewpoints.",
+    "stops": [
+      {
+        "label": "Pune",
+        "location": [73.85451, 18.52137]
+      },
+      {
+        "label": "Wai",
+        "location": [73.8913, 17.95199]
+      },
+      {
+        "label": "Panchgani",
+        "location": [73.79927, 17.92395]
+      },
+      {
+        "label": "Mahabaleshwar",
+        "location": [73.65758, 17.92428]
+      }
+    ],
+    "expect": {
+      "km": 125
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "pune-to-bhimashankar",
+    "title": "Pune to Bhimashankar",
+    "region": "Maharashtra",
+    "blurb": "North from Pune through Khed's farmland into the Sahyadri forest, climbing to Bhimashankar's temple and wildlife sanctuary at the head of the Bhima river.",
+    "tags": ["Sahyadri", "forest", "pilgrimage"],
+    "bestMonths": [7, 8, 9, 10, 11, 12],
+    "notes": "The last climb is narrow and slick in the monsoon; Giant squirrels live in the sanctuary and the temple queue is long on Mondays and festivals.",
+    "stops": [
+      {
+        "label": "Pune",
+        "location": [73.85451, 18.52137]
+      },
+      {
+        "label": "Bhimashankar",
+        "location": [73.53576, 19.072]
+      }
+    ],
+    "expect": {
+      "km": 125
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Kasara",
+        "location": [73.47465, 19.64462]
+      }
+    ],
+    "slug": "mumbai-to-nashik-via-kasara-ghat",
+    "title": "Mumbai to Nashik via Kasara Ghat",
+    "region": "Maharashtra",
+    "blurb": "Up the Thane plain to the Kasara ghat, a climb into the Sahyadri with long views, then past Igatpuri's rock peaks and down to Nashik's river ghats and vineyards.",
+    "tags": ["Kasara ghat", "Igatpuri", "vineyards"],
+    "bestMonths": [7, 8, 9, 10, 11, 12, 1, 2],
+    "notes": "Kasara ghat has heavy truck traffic and fog in the monsoon; fuel up before the climb.",
+    "stops": [
+      {
+        "label": "Mumbai",
+        "location": [72.8692, 19.055]
+      },
+      {
+        "label": "Kasara",
+        "location": [73.47465, 19.64462]
+      },
+      {
+        "label": "Igatpuri",
+        "location": [73.56514, 19.69525]
+      },
+      {
+        "label": "Nashik",
+        "location": [73.79024, 20.01125]
+      }
+    ],
+    "expect": {
+      "km": 170
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Alibag",
+        "location": [72.87655, 18.64984]
+      }
+    ],
+    "slug": "mumbai-to-murud-via-alibag",
+    "title": "Mumbai to Murud via Alibag",
+    "region": "Maharashtra",
+    "blurb": "Down the Konkan coast through Alibag's beaches to Murud, where Janjira, a sea fort, stands on a rock just off the shore.",
+    "tags": ["Konkan coast", "sea fort", "beaches"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Janjira Fort is reached by sail boat and closes during the monsoon from June to September.",
+    "stops": [
+      {
+        "label": "Mumbai",
+        "location": [72.8692, 19.055]
+      },
+      {
+        "label": "Alibag",
+        "location": [72.87655, 18.64984]
+      },
+      {
+        "label": "Murud",
+        "location": [72.96048, 18.32204]
+      }
+    ],
+    "expect": {
+      "km": 150
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Ellora Caves",
+        "location": [75.17669, 20.02677]
+      }
+    ],
+    "slug": "chhatrapati-sambhajinagar-to-ajanta-via-ellora",
+    "title": "Sambhajinagar to Ajanta via Ellora",
+    "region": "Maharashtra",
+    "blurb": "Out of Aurangabad to Ellora's rock-cut temples, then across the Deccan plateau to the Ajanta caves, where Buddhist monasteries are cut into a horseshoe cliff.",
+    "tags": ["rock-cut caves", "UNESCO", "heritage"],
+    "bestMonths": [10, 11, 12, 1, 2],
+    "notes": "Ellora's caves are closed on Tuesdays and Ajanta's on Mondays; check opening days before you set out.",
+    "stops": [
+      {
+        "label": "Chhatrapati Sambhajinagar",
+        "location": [75.33902, 19.87726]
+      },
+      {
+        "label": "Ellora",
+        "location": [75.17669, 20.02677]
+      },
+      {
+        "label": "Ajanta Caves",
+        "location": [75.70079, 20.55252]
+      }
+    ],
+    "expect": {
+      "km": 129
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "panaji-to-palolem",
+    "title": "Panaji to Palolem",
+    "region": "Goa",
+    "blurb": "South from Panaji along Goa's coastal belt to Palolem's crescent beach, past churches, paddy fields and rivers.",
+    "tags": ["coast", "beaches", "churches"],
+    "bestMonths": [11, 12, 1, 2, 3],
+    "notes": "Holiday traffic builds up around Margao in December and January; the beach shacks close in the monsoon.",
+    "stops": [
+      {
+        "label": "Panaji",
+        "location": [73.82821, 15.49899]
+      },
+      {
+        "label": "Palolem",
+        "location": [74.02195, 15.0128]
+      }
+    ],
+    "expect": {
+      "km": 75
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Mapusa",
+        "location": [73.81021, 15.59085]
+      }
+    ],
+    "slug": "panaji-to-arambol",
+    "title": "Panaji to Arambol",
+    "region": "Goa",
+    "blurb": "North through Mapusa's market town and the beach belt to Arambol, a quiet shore with a freshwater lake and cliffs at its far end.",
+    "tags": ["coast", "beaches", "easy"],
+    "bestMonths": [11, 12, 1, 2, 3],
+    "notes": "Roads are narrow with heavy scooter traffic in season; the beach shacks close in the monsoon.",
+    "stops": [
+      {
+        "label": "Panaji",
+        "location": [73.82821, 15.49899]
+      },
+      {
+        "label": "Mapusa",
+        "location": [73.81021, 15.59085]
+      },
+      {
+        "label": "Arambol",
+        "location": [73.70576, 15.67932]
+      }
+    ],
+    "expect": {
+      "km": 35
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "legend",
+    "checkpoints": [
+      {
+        "label": "Bhuj",
+        "location": [69.66834, 23.24724]
+      }
+    ],
+    "slug": "ahmedabad-to-dhordo-rann-of-kutch",
+    "title": "Ahmedabad to Dhordo and the Rann of Kutch",
+    "region": "Gujarat",
+    "blurb": "Across Saurashtra's plain and over the Little Rann to Bhuj, then north on a straight road through the Banni grasslands to Dhordo, at the edge of the white salt desert.",
+    "tags": ["Rann of Kutch", "salt desert", "long straights"],
+    "bestMonths": [11, 12, 1, 2],
+    "notes": "The salt flats are walkable only in winter; entry to the White Rann needs a permit available at Dhordo, and the Rann Utsav tent city runs from about November to February.",
+    "stops": [
+      {
+        "label": "Ahmedabad",
+        "location": [72.58006, 23.02154]
+      },
+      {
+        "label": "Bhuj",
+        "location": [69.66834, 23.24724]
+      },
+      {
+        "label": "Dhordo",
+        "location": [69.51056, 23.75849]
+      }
+    ],
+    "expect": {
+      "km": 450
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Junagadh",
+        "location": [70.45825, 21.52204]
+      }
+    ],
+    "slug": "rajkot-to-sasan-gir",
+    "title": "Rajkot to Sasan Gir",
+    "region": "Gujarat",
+    "blurb": "From Rajkot through Junagadh's old city to Sasan Gir, the home of the Asiatic lion, on flat Saurashtra roads with dry teak forest at the end.",
+    "tags": ["Gir forest", "wildlife", "Saurashtra"],
+    "bestMonths": [11, 12, 1, 2, 3],
+    "notes": "Gir National Park is closed from mid-June to mid-October and safari permits need booking ahead.",
+    "stops": [
+      {
+        "label": "Rajkot",
+        "location": [70.80284, 22.30533]
+      },
+      {
+        "label": "Junagadh",
+        "location": [70.45825, 21.52204]
+      },
+      {
+        "label": "Sasan Gir",
+        "location": [70.59719, 21.16856]
+      }
+    ],
+    "expect": {
+      "km": 160
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Porbandar",
+        "location": [69.611, 21.6409]
+      }
+    ],
+    "slug": "dwarka-to-somnath-via-porbandar",
+    "title": "Dwarka to Somnath via Porbandar",
+    "region": "Gujarat",
+    "blurb": "Along Saurashtra's western coast from Dwarka's temple town to Porbandar, Gandhi's birthplace, and on to the seaside temple at Somnath.",
+    "tags": ["coast", "pilgrimage", "Saurashtra"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Wind and heat are strong on the open coast road; fuel and food stops are widely spaced.",
+    "stops": [
+      {
+        "label": "Dwarka",
+        "location": [68.96714, 22.24247]
+      },
+      {
+        "label": "Porbandar",
+        "location": [69.611, 21.6409]
+      },
+      {
+        "label": "Somnath Temple",
+        "location": [70.40109, 20.88797]
+      }
+    ],
+    "expect": {
+      "km": 235
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "udaipur-to-kumbhalgarh",
+    "title": "Udaipur to Kumbhalgarh",
+    "region": "Rajasthan",
+    "blurb": "From Udaipur's lakes through the Aravalli hills to Kumbhalgarh, a fort with a wall running for kilometres along the ridge.",
+    "tags": ["Aravalli", "fort", "hills"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Hills are green after the monsoon and very dry by April; the fort wall walk can be hot at midday.",
+    "stops": [
+      {
+        "label": "Udaipur",
+        "location": [73.68626, 24.57872]
+      },
+      {
+        "label": "Kumbhalgarh",
+        "location": [73.58275, 25.14805]
+      }
+    ],
+    "expect": {
+      "km": 85
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "udaipur-to-mount-abu",
+    "title": "Udaipur to Mount Abu",
+    "region": "Rajasthan",
+    "blurb": "South-west from Udaipur through Aravalli foothills to Abu Road, then the winding climb to Mount Abu, Rajasthan's only hill station.",
+    "tags": ["Aravalli", "hill station", "hill climb"],
+    "bestMonths": [10, 11, 12, 1, 2, 3, 7, 8],
+    "notes": "The climb from Abu Road has tight bends with trucks and buses; Mount Abu is crowded on weekends and in summer.",
+    "stops": [
+      {
+        "label": "Udaipur",
+        "location": [73.68626, 24.57872]
+      },
+      {
+        "label": "Mount Abu",
+        "location": [72.70819, 24.59243]
+      }
+    ],
+    "expect": {
+      "km": 165
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Ajmer",
+        "location": [74.639, 26.4691]
+      }
+    ],
+    "slug": "jaipur-to-pushkar-via-ajmer",
+    "title": "Jaipur to Pushkar via Ajmer",
+    "region": "Rajasthan",
+    "blurb": "West on the Ajmer highway from Jaipur through Kishangarh, over the Nag Pahar hill by Ajmer, to Pushkar's sacred lake and its desert-edge camel fair ground.",
+    "tags": ["highway", "pilgrimage", "desert edge"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "The Pushkar camel fair in November fills every room; the climb over Nag Pahar has heavy trucks.",
+    "stops": [
+      {
+        "label": "Jaipur",
+        "location": [75.81898, 26.91546]
+      },
+      {
+        "label": "Ajmer",
+        "location": [74.639, 26.4691]
+      },
+      {
+        "label": "Pushkar",
+        "location": [74.55785, 26.48765]
+      }
+    ],
+    "expect": {
+      "km": 145
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "bhopal-to-pachmarhi",
+    "title": "Bhopal to Pachmarhi",
+    "region": "Madhya Pradesh",
+    "blurb": "South-east from Bhopal across the Narmada valley to Pipariya, then up the Satpura range to Pachmarhi, a hill town with caves, pools and a tiger reserve.",
+    "tags": ["Satpura", "hill station", "forest"],
+    "bestMonths": [9, 10, 11, 12, 1, 2, 3],
+    "notes": "Pachmarhi's lakes and caves are crowded on weekends; the jungle roads close during the monsoon in some years.",
+    "stops": [
+      {
+        "label": "Bhopal",
+        "location": [77.40199, 23.25849]
+      },
+      {
+        "label": "Pachmarhi",
+        "location": [78.43605, 22.47368]
+      }
+    ],
+    "expect": {
+      "km": 195
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [
+      {
+        "label": "Orchha",
+        "location": [78.64025, 25.35287]
+      }
+    ],
+    "slug": "jhansi-to-khajuraho-via-orchha",
+    "title": "Jhansi to Khajuraho via Orchha",
+    "region": "Madhya Pradesh",
+    "blurb": "From Jhansi to Orchha's riverside palaces and temples, then across Bundelkhand to Khajuraho, where the famous temples carry carvings on every wall.",
+    "tags": ["Bundelkhand", "heritage", "temples"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Summers are fiercely hot; Khajuraho is quietest from October to March when the dance festival also runs in February.",
+    "stops": [
+      {
+        "label": "Jhansi",
+        "location": [78.58001, 25.45025]
+      },
+      {
+        "label": "Orchha",
+        "location": [78.64025, 25.35287]
+      },
+      {
+        "label": "Khajuraho",
+        "location": [79.92598, 24.85151]
+      }
+    ],
+    "expect": {
+      "km": 175
+    }
   }
 ]
