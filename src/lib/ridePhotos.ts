@@ -103,6 +103,45 @@ const NOT_A_VIEW_WORDS = [
   "idol",
   "idols",
   "statue",
+  // Towns and their buildings: a photo near the start city says little about the road.
+  "bank",
+  "stadium",
+  "building",
+  "buildings",
+  "complex",
+  "junction",
+  "circle",
+  "flyover",
+  "apartment",
+  "apartments",
+  "university",
+  "airport",
+  "metro",
+  "tower",
+  "towers",
+  "shopping",
+  "traffic",
+  "cinema",
+  "theatre",
+  "club",
+  "extension",
+  "stairs",
+  "steps",
+  "construction",
+  "garbage",
+  "kitchen",
+  "charity",
+  "museum",
+  "church",
+  "mosque",
+  "bus",
+  "car",
+  "cars",
+  "truck",
+  "lorry",
+  "auto",
+  "rickshaw",
+  "aerial",
 ];
 /** Whole words only: "man" must not match "Manali". Built without backslashes on purpose. */
 const NOT_A_VIEW = new RegExp(
@@ -112,7 +151,7 @@ const NOT_A_VIEW = new RegExp(
 
 /** Titles that name something worth seeing from the road. */
 const SCENIC =
-  /\b(waterfall|waterfalls|falls|view|views|valley|lake|pass|ghat|ghats|hill|hills|peak|fort|temple|beach|bridge|river|sunrise|sunset|road|highway|monastery|forest|mountain|mountains|lagoon|backwaters|plateau|palace|caves|cave|dam|coast|sea|island|desert|dunes|tea|plantation|snow|glacier|gompa|stupa|canyon|gorge|meadow|paddy|fields|landscape|panorama)\b/i;
+  /\b(waterfall|waterfalls|falls|view|views|valley|lake|pass|ghat|ghats|hill|hills|peak|fort|temple|beach|bridge|river|sunrise|sunset|highway|monastery|forest|mountain|mountains|lagoon|backwaters|plateau|palace|caves|cave|dam|coast|sea|island|desert|dunes|tea|plantation|snow|glacier|gompa|stupa|canyon|gorge|meadow|paddy|fields|landscape|panorama)\b/i;
 
 /** Licences we may show with a credit; anything non-commercial or no-derivatives is out. */
 export function licenceAllowed(license: string): boolean {
@@ -194,7 +233,12 @@ export function pickGallery(
   rideKm: number,
   max = GALLERY_MAX,
 ): PhotoCandidate[] {
-  const ok = candidates.filter(eligible).sort((a, b) => score(b) - score(a));
+  // Not the towns at either end: their photos are of streets and buildings, not of the ride.
+  const edge = Math.min(12, rideKm * 0.07);
+  const ok = candidates
+    .filter((c) => c.kmAlong >= edge && c.kmAlong <= rideKm - edge)
+    .filter(eligible)
+    .sort((a, b) => score(b) - score(a));
   // Photos named for something to see come first; the rest only fill a gallery that is too thin.
   const scenic = ok.filter((c) => SCENIC.test(captionOf(c.image.file)));
   const rest = ok.filter((c) => !SCENIC.test(captionOf(c.image.file)));

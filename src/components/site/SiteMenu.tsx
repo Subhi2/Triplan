@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { SITE_LINKS, type SiteLink, type SiteSection } from "./siteLinks";
+import { MoonIcon, SunIcon, useTheme } from "./ThemeToggle";
 
 /**
  * The site's screens behind one "Menu" button, for headers with no room for the links (phones,
@@ -22,6 +23,7 @@ export function SiteMenu({
   lead?: { href: string; label: string };
 }) {
   const [open, setOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
   const id = useId();
   const button = useRef<HTMLButtonElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -86,6 +88,16 @@ export function SiteMenu({
               </Link>
             </li>
           ))}
+          <li className="border-t border-stone-200 dark:border-stone-700">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex min-h-11 w-full items-center gap-2 px-4 hover:bg-stone-100 dark:hover:bg-stone-800"
+            >
+              {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </button>
+          </li>
         </ul>
       )}
     </div>

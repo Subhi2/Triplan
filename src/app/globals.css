@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: classes follow the toggle (data-theme on <html>), not only the device's setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* "Ghat Road" design (docs/08-design.md). Warm paper-and-ink neutrals replace Tailwind's stone,
    so every stone-* class in the app takes the new palette; teal stays the brand colour. */
 @theme {
@@ -110,15 +113,19 @@
   --chart-grid: var(--color-stone-200);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: var(--color-stone-950);
-    --surface: var(--color-stone-900);
-    --foreground: #f4f1ea;
-    --chart-road: #13a494;
-    --chart-ghat: #e8651b;
-    --chart-grid: var(--color-stone-800);
-  }
+/* Dark mode follows data-theme on <html>, set before the first paint by the script in layout.tsx
+   from the rider's choice (the toggle) or, without one, the device's setting. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: var(--color-stone-950);
+  --surface: var(--color-stone-900);
+  --foreground: #f4f1ea;
+  --chart-road: #13a494;
+  --chart-ghat: #e8651b;
+  --chart-grid: var(--color-stone-800);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 body {
