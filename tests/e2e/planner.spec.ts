@@ -417,6 +417,9 @@ test("open the ride story poster and download it", async ({ page }) => {
   );
   await page.getByRole("button", { name: "Ride story" }).click();
   const dialog = page.getByRole("dialog", { name: "Ride story" });
+  // The whole screen, also from inside the phone sheet (a fixed box there was cut to the sheet).
+  await expect(dialog).toBeVisible();
+  expect(await dialog.boundingBox()).toEqual({ x: 0, y: 0, ...page.viewportSize()! });
   await expect(
     dialog.getByRole("img", { name: /Ride story poster: Bengaluru → Kalasa/ }),
   ).toBeVisible();

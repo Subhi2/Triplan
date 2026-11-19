@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Modal } from "@/components/ui/Modal";
 
 interface Props {
   /** The poster's address (/og/story?…). */
@@ -57,12 +58,10 @@ export function StoryShare({ storyUrl, title, link }: Props) {
         });
       })
       .catch(() => !ctrl.signal.aborted && setPoster({ status: "error" }));
+    // Escape is the dialog's own (Modal); focus starts on Close.
     closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
     return () => {
       ctrl.abort();
-      window.removeEventListener("keydown", onKey);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [open, storyUrl, title]);
@@ -102,71 +101,71 @@ export function StoryShare({ storyUrl, title, link }: Props) {
         Ride story
       </button>
       {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Ride story"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={(e) => e.target === e.currentTarget && setOpen(false)}
-        >
-          <div className="flex max-h-full w-full max-w-sm flex-col gap-3 rounded-2xl bg-(--surface) p-4 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-bold">Ride story</h2>
-              <button
-                ref={closeRef}
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="flex h-11 w-11 items-center justify-center rounded-full text-xl hover:bg-stone-100 dark:hover:bg-stone-800"
-              >
-                ×
-              </button>
-            </div>
-            <div className="flex min-h-0 justify-center">
-              {poster.status === "loading" && (
-                <div
-                  aria-hidden
-                  className="shimmer aspect-[9/16] h-[60vh] max-h-[560px] rounded-xl"
-                />
-              )}
-              {poster.status === "error" && (
-                <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-                  The poster could not be made. Try again in a moment.
-                </p>
-              )}
-              {poster.status === "ok" && (
-                // eslint-disable-next-line @next/next/no-img-element -- a blob URL of our own poster
-                <img
-                  src={poster.objectUrl}
-                  alt={`Ride story poster: ${title}`}
-                  className="aspect-[9/16] h-[60vh] max-h-[560px] rounded-xl border border-stone-200 object-contain dark:border-stone-700"
-                />
-              )}
-            </div>
-            <div className="flex gap-2">
-              {poster.status === "ok" && canShareFile(poster.file) && (
+        <Modal label="Ride story" onClose={() => setOpen(false)}>
+          {/* A tap on the dimmed backdrop closes it. */}
+          <div
+            className="flex h-full items-center justify-center bg-black/60 p-4"
+            onClick={(e) => e.target === e.currentTarget && setOpen(false)}
+          >
+            <div className="flex max-h-full w-full max-w-sm flex-col gap-3 rounded-2xl bg-(--surface) p-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-bold">Ride story</h2>
+                <button
+                  ref={closeRef}
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-xl hover:bg-stone-100 dark:hover:bg-stone-800"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="flex min-h-0 justify-center">
+                {poster.status === "loading" && (
+                  <div
+                    aria-hidden
+                    className="shimmer aspect-[9/16] h-[60vh] max-h-[560px] rounded-xl"
+                  />
+                )}
+                {poster.status === "error" && (
+                  <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+                    The poster could not be made. Try again in a moment.
+                  </p>
+                )}
+                {poster.status === "ok" && (
+                  // eslint-disable-next-line @next/next/no-img-element -- a blob URL of our own poster
+                  <img
+                    src={poster.objectUrl}
+                    alt={`Ride story poster: ${title}`}
+                    className="aspect-[9/16] h-[60vh] max-h-[560px] rounded-xl border border-stone-200 object-contain dark:border-stone-700"
+                  />
+                )}
+              </div>
+              <div className="flex gap-2">
+                {poster.status === "ok" && canShareFile(poster.file) && (
+                  <button
+                    type="button"
+                    onClick={() => void share(poster.file)}
+                    className="bg-brand min-h-12 flex-1 rounded-xl px-4 font-bold text-white"
+                  >
+                    Share
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => void share(poster.file)}
-                  className="bg-brand min-h-12 flex-1 rounded-xl px-4 font-bold text-white"
+                  disabled={poster.status !== "ok"}
+                  onClick={() => poster.status === "ok" && download(poster)}
+                  className="min-h-12 flex-1 rounded-xl border border-stone-300 px-4 font-bold disabled:opacity-50 dark:border-stone-600"
                 >
-                  Share
+                  Download
                 </button>
-              )}
-              <button
-                type="button"
-                disabled={poster.status !== "ok"}
-                onClick={() => poster.status === "ok" && download(poster)}
-                className="min-h-12 flex-1 rounded-xl border border-stone-300 px-4 font-bold disabled:opacity-50 dark:border-stone-600"
-              >
-                Download
-              </button>
+              </div>
+              <p className="text-xs text-stone-600 dark:text-stone-400">
+                For Instagram stories and WhatsApp status. 1080 × 1920.
+              </p>
             </div>
-            <p className="text-xs text-stone-600 dark:text-stone-400">
-              For Instagram stories and WhatsApp status. 1080 × 1920.
-            </p>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

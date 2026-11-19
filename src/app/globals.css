@@ -142,6 +142,11 @@ body {
   color: var(--foreground);
 }
 
+/* The page behind an open modal (components/ui/Modal.tsx) stays still. */
+html:has(dialog:modal) {
+  overflow: hidden;
+}
+
 @layer base {
   /* Buttons and links respond to touch: a quick press, never a jump. */
   :where(button, a, summary) {

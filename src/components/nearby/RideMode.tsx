@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useWakeLock } from "@/components/geo/useWakeLock";
+import { Modal } from "@/components/ui/Modal";
 import { categoryStyle } from "@/lib/categories";
 import { isInSeason } from "@/lib/months";
 import { AHEAD_MAX_KM, compassPoint } from "@/lib/rideAhead";
@@ -18,7 +19,7 @@ function TurnArrow({ turnDeg }: { turnDeg: number }) {
     <svg
       aria-hidden
       viewBox="0 0 40 40"
-      className="text-brand dark:text-teal-300 h-10 w-10 shrink-0 motion-safe:transition-transform motion-safe:duration-300"
+      className="text-brand h-10 w-10 shrink-0 motion-safe:transition-transform motion-safe:duration-300 dark:text-teal-300"
       style={{ transform: `rotate(${Math.round(turnDeg)}deg)` }}
     >
       <circle cx="20" cy="20" r="19" className="fill-brand-tint dark:fill-teal-950" />
@@ -41,12 +42,10 @@ export function RideMode({ month, onStop }: Props) {
   const wakeLock = useWakeLock(true);
   const stopButton = useRef<HTMLButtonElement>(null);
 
+  // Escape is the dialog's own (Modal) and stops, as the Stop button does.
   useEffect(() => {
     stopButton.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onStop();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onStop]);
+  }, []);
 
   const on = ride.status === "on" ? ride : null;
   const summary =
@@ -61,11 +60,10 @@ export function RideMode({ month, onStop }: Props) {
           : "";
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ride-heading"
-      className="animate-rise fixed inset-0 z-40 flex flex-col bg-(--background) px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] md:px-8"
+    <Modal
+      labelledBy="ride-heading"
+      onClose={onStop}
+      className="animate-rise flex-col bg-(--background) px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] open:flex md:px-8"
     >
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -151,6 +149,6 @@ export function RideMode({ month, onStop }: Props) {
           {wakeLock === "unavailable" && " Keep your screen on to follow along."}
         </p>
       </footer>
-    </div>
+    </Modal>
   );
 }
