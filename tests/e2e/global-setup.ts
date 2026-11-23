@@ -42,7 +42,9 @@ const ROUTES = [
   ].map((r) =>
     r
       .replace(/:slug/g, "e2e-warm-up")
-      .replace(/:room/g, "e2eWarmUpRoom000000000a")
+      // A valid room id (22 characters, ROOM_ID_PATTERN): the page renders and its scripts
+      // compile; a malformed one only gets "not found".
+      .replace(/:room/g, "e2eWarmUpRoom000000000")
       .replace(/:id/g, "00000000-0000-4000-8000-000000000000"),
   ),
 ];
