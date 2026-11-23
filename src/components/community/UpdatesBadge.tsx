@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import type { MeUpdates } from "@/lib/community/views";
-import { lastSeenUpdates } from "./riderSession";
+import { lastSeenUpdates, mayHaveRider } from "./riderSession";
 
 // One request per page: the bar's "Me" link and the Menu (its button and its "Me" entry) both
 // show the count, and both are mounted on content pages.
 let pending: Promise<number> | null = null;
 
 function fetchUpdatesCount(): Promise<number> {
+  // Most visitors never make an account: no request for them on every page.
+  if (!mayHaveRider()) return Promise.resolve(0);
   pending ??= fetch(`/api/me/updates?since=${encodeURIComponent(lastSeenUpdates())}`, {
     cache: "no-store",
   })

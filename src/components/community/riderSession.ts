@@ -32,6 +32,17 @@ export class CommunityRequestError extends Error {
   }
 }
 
+/**
+ * Whether this browser may have a rider account, without a request. Supabase keeps its session
+ * in a readable cookie (`sb-<project>-auth-token`, split as .0, .1 when long), so a visitor who
+ * never made an account is known here. The test accounts' cookie is httpOnly: with local auth
+ * the server is asked.
+ */
+export function mayHaveRider(): boolean {
+  if (COMMUNITY_LOCAL_AUTH) return true;
+  return document.cookie.split(/;\s*/).some((c) => /^sb-[^=]+-auth-token(\.\d+)?=/.test(c));
+}
+
 /** A JSON call to the community API; throws the server's message when it fails. */
 export async function communityFetch<T>(url: string, init?: { method?: string; body?: unknown }) {
   const res = await fetch(url, {
