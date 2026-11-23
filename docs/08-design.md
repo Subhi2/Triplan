@@ -86,6 +86,7 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 - **z-index is only for things inside one screen:** map controls and sticky bars 10, the bottom sheet and phone action bar 20, the planner panel while typing 30 (its suggestions over the sheet).
 - **Bars that reach a panel's edges** (the step bar, the Google Maps bar) use `panel-bleed` and `panel-foot` (`globals.css`). Each scrolling panel states its padding as `--panel-px` and `--panel-pb`, so the bars line up in the sheet, the tablet panel and the laptop's places column alike.
 - **Scroll bars:** thin and warm with a mouse; side panels keep room for theirs (`scrollbar-gutter: stable`), so the form does not shift when a list grows.
+- **Guarded by** `tests/e2e/layout.spec.ts`: every key screen at 375 and 1280 px, with the Menu open too, must have no sideways scroll, nothing past the screen's sides, no control under another layer (a sticky or fixed bar is fine only over content that can be scrolled clear of it), nothing cut off by its box, and 40 px targets on phones. The checks are in `tests/helpers/layoutAudit.ts`; add new screens to the spec.
 
 ## Motion
 
