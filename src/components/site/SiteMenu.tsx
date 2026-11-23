@@ -42,8 +42,14 @@ export function SiteMenu({
   useEffect(() => {
     if (!open) return;
     const close = (e: Event) => {
-      // A long list scrolls inside itself on a short screen; that keeps it open.
-      if (e.target instanceof Node && menu.current?.contains(e.target)) return;
+      // Only a scroll that moves the button (the page, or a panel holding it) leaves the list
+      // adrift. Others keep it open: the list's own scrolling on a short screen, and boxes
+      // elsewhere that scroll by themselves (Near me's list as it loads closed it at once).
+      if (e.type === "scroll") {
+        const moved =
+          e.target === document || (e.target instanceof Node && e.target.contains(button.current));
+        if (!moved) return;
+      }
       menu.current?.hidePopover();
     };
     window.addEventListener("resize", close);
