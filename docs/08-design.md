@@ -79,6 +79,7 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 - **< 768 px:** the map full screen. With a trip, the header floats over it (frosted, `backdrop-blur`), and the bottom sheet holds routes and places; the map keeps its framing clear of both (`topInset`, `bottomInset`), and frames the route again whenever its box changes size until the rider moves it. Without a trip there is no map: the form, the famous rides and About scroll as a page.
 
 - **Near me** follows the same layout: side panel (26rem) and map from 768 px; on phones the map full screen, a frosted header, and the chooser, chips and list in the bottom sheet (typing a place opens the sheet fully; picking on the map drops it to its smallest).
+- **The first paint is already in the right layout.** The planner and Near me pick their layout in code (`useMediaQuery`: 768 px, 1024 px, touch), which the server cannot measure, so their pages pass it a guess (`ViewportHintProvider`, `src/server/viewportHint.ts`): the browser's own answer from its last visit (the `vp` cookie, which holds only "md.lg"-style flags), else the device type from the user agent (phone, tablet, laptop). Without it laptops saw the phone layout and then a jump, and an early tap could land on the wrong spot. A new layout query goes into `VIEWPORT_QUERIES`; `tests/e2e/layout.spec.ts` checks both pages with scripts off.
 
 ### Layers and panels (checked 2026-11-19)
 

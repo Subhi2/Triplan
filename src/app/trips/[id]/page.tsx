@@ -7,6 +7,8 @@ import { tripIdSchema } from "@/lib/savedTrip";
 import { SITE_NAME, tripHeadline } from "@/lib/site";
 import { powKey } from "@/server/services/proofOfWork";
 import { getTrip } from "@/server/services/tripService";
+import { ViewportHintProvider } from "@/components/ui/ViewportHint";
+import { viewportHint } from "@/server/viewportHint";
 
 // The saving device may update the trip at any time, so always show the latest version.
 export const dynamic = "force-dynamic";
@@ -43,9 +45,12 @@ export default async function TripPage({ params }: Props) {
   const trip = await loadTrip((await params).id);
   if (!trip) notFound();
   return (
-    // useSearchParams in Planner needs a Suspense boundary.
-    <Suspense>
-      <Planner savedTrip={trip} postsOpen={powKey() !== null} />
-    </Suspense>
+    // useSearchParams in Planner needs a Suspense boundary; the hint renders the layout that fits
+    // the screen from the start (src/lib/viewport.ts).
+    <ViewportHintProvider hint={await viewportHint()}>
+      <Suspense>
+        <Planner savedTrip={trip} postsOpen={powKey() !== null} />
+      </Suspense>
+    </ViewportHintProvider>
   );
 }

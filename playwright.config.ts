@@ -24,9 +24,15 @@ export default defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     // Product spec requires the app to work at 375 px width.
+    // A phone's user agent too, as real phones send: the server picks the first layout from it
+    // (src/lib/viewport.ts). Still a mouse, so the map keeps its zoom buttons for the tests.
     {
       name: "mobile",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 740 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 375, height: 740 },
+        userAgent: devices["Pixel 7"].userAgent,
+      },
     },
   ],
   webServer: {

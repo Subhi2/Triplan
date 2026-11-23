@@ -144,3 +144,36 @@ test("layout of the planner with a trip", async ({ page }) => {
   await expectClean(page, "the planner with a trip");
   await checkMenu(page, "the planner with a trip");
 });
+
+// The planner and Near me pick their layout in code, so the server must draw the one that fits the
+// screen (src/lib/viewport.ts), or laptops see the phone layout first and the page jumps. With
+// scripts off, the page stays exactly as the server drew it.
+for (const { path, sheet } of [
+  { path: TRIP, sheet: "Routes and places" },
+  { path: "/nearby", sheet: "Places near you" },
+]) {
+  test(`${path.split("?")[0]} is drawn in the screen's layout before its scripts run`, async ({
+    browser,
+  }, testInfo) => {
+    const phone = testInfo.project.name === "mobile";
+    const context = await browser.newContext({ ...testInfo.project.use, javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(path);
+    // The phone's bottom sheet is in the phone layout only.
+    await expect(page.locator(`section[aria-label="${sheet}"]`)).toHaveCount(phone ? 1 : 0);
+    await context.close();
+  });
+}
+
+test("a browser's own layout, once known, wins over its device type", async ({
+  browser,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "one check is enough");
+  // A laptop's browser that told us last time it is narrow (a small window): the phone layout.
+  const context = await browser.newContext({ ...testInfo.project.use, javaScriptEnabled: false });
+  await context.addCookies([{ name: "vp", value: "coarse", url: testInfo.project.use.baseURL! }]);
+  const page = await context.newPage();
+  await page.goto("/nearby");
+  await expect(page.locator('section[aria-label="Places near you"]')).toHaveCount(1);
+  await context.close();
+});

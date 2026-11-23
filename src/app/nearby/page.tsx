@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Nearby } from "@/components/nearby/Nearby";
 import { SITE_NAME } from "@/lib/site";
+import { ViewportHintProvider } from "@/components/ui/ViewportHint";
+import { viewportHint } from "@/server/viewportHint";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -22,11 +24,14 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-export default function NearbyPage() {
-  // useSearchParams in Nearby needs a Suspense boundary.
+export default async function NearbyPage() {
+  // useSearchParams in Nearby needs a Suspense boundary. The hint renders the layout that fits the
+  // screen from the start (src/lib/viewport.ts).
   return (
-    <Suspense>
-      <Nearby />
-    </Suspense>
+    <ViewportHintProvider hint={await viewportHint()}>
+      <Suspense>
+        <Nearby />
+      </Suspense>
+    </ViewportHintProvider>
   );
 }
