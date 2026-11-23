@@ -729,6 +729,7 @@ test("save the trip with its route, then see changes that are not saved", async 
       viaLabel: "via Hassan, Sakleshpur",
       distanceKm: 330,
       durationMin: 400,
+      myBike: null,
       updatedAt: new Date().toISOString(),
     };
     return route.fulfill({ status: 201, json: { trip, editToken: "test-edit-token" } });
@@ -1585,7 +1586,8 @@ for (const vehicle of ["bike", "car"] as const) {
     await check.getByLabel("Mileage (km per litre)").fill("35");
     await check.getByLabel("Fuel price (₹ per litre)").fill("103");
     await expect(check).toContainText(/Fuel cost: about ₹9\d0 for 3\d\d km/);
-    // Remembered for this vehicle on the next visit.
+    // "My bike" travels in the trip's link (a rider without an account), so a reload keeps it.
+    await expect(page).toHaveURL(/kpl=35&fp=103/);
     await page.reload();
     await page
       .getByRole("list", { name: "Route options" })

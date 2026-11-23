@@ -203,6 +203,9 @@ CREATE TABLE trip (
   distance_m    int,
   duration_s    int,
   is_public     boolean NOT NULL DEFAULT true,
+  range_km      int,                           -- "My bike" (0029): range on a full tank
+  km_per_litre  real,                          -- mileage
+  fuel_price    real,                          -- rupees a litre; null = the rider's own or defaults
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
@@ -284,6 +287,19 @@ CREATE TABLE ride_mark (
   note       text NOT NULL DEFAULT '',       -- the rider's own, at most 280 characters
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (rider_id, ride_slug)
+);
+
+-- My bike (migration 0029) --------------------------------------------------------
+-- A rider's own bike and car for the ride check and trip cost. Private to the rider, never in
+-- the snapshot, row level security on with no policies (only the server reads it).
+CREATE TABLE rider_vehicle (
+  rider_id     uuid NOT NULL REFERENCES rider(id) ON DELETE CASCADE,
+  vehicle      vehicle NOT NULL,
+  range_km     int,                          -- 50–1500
+  km_per_litre real,                         -- 3–120
+  fuel_price   real,                         -- 30–300 rupees a litre
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (rider_id, vehicle)
 );
 
 -- Service points (migration 0015) -----------------------------------------------

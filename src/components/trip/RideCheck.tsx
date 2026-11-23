@@ -31,12 +31,12 @@ import {
   formatRupees,
   FUEL_PRICE_LIMITS,
   fuelCost,
-  fuelPriceKey,
   MILEAGE_LIMITS,
-  mileageKey,
   parseWithin,
 } from "@/lib/tripCost";
 import type { SunsetStop } from "@/lib/sunset";
+import type { MyBike } from "@/lib/myBike";
+import type { BikeKept } from "./useMyBike";
 import { summarizeWeather, type WeatherPoint } from "@/lib/weather";
 import { useWeatherAlong } from "./useWeatherAlong";
 
@@ -51,6 +51,11 @@ interface Props {
   /** Shown instead of the start field when the time is not the rider's to change (a group
    *  ride's start, set by its host). */
   fixedDeparture?: string;
+  /** "My bike": range, mileage and fuel price (useMyBike); null fields use the defaults. */
+  myBike: MyBike;
+  onMyBikeChange: (bike: MyBike) => void;
+  /** Where the bike is kept, said under the fuel cost. */
+  myBikeKept: BikeKept;
   /** The longest stretch without a hospital near the road, once safety stops have loaded. */
   hospitalGap?: Gap | null;
   /** Official alerts on the route (all current ones; the ride check keeps those for the ride). */
@@ -82,25 +87,8 @@ const HOSPITAL_OK_KM = 60;
 const HOSPITAL_WARN_KM = 120;
 
 const FUEL_CATEGORIES = ["fuel"];
-const rangeKey = (v: Vehicle) => `ride-check-range-${v}`;
-
-function readRange(vehicle: Vehicle): number {
-  try {
-    const n = Number(localStorage.getItem(rangeKey(vehicle)));
-    if (n >= RANGE_LIMITS_KM.min && n <= RANGE_LIMITS_KM.max) return n;
-  } catch {
-    // Storage blocked (private window): use the default.
-  }
-  return DEFAULT_RANGE_KM[vehicle];
-}
-
-function readText(key: string): string {
-  try {
-    return localStorage.getItem(key) ?? "";
-  } catch {
-    return "";
-  }
-}
+/** A field's text for a stored number ("" when not set). */
+const numberText = (n: number | null) => (n === null ? "" : String(n));
 
 const time = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
 const dayAndTime = new Intl.DateTimeFormat(undefined, {
@@ -238,6 +226,9 @@ export function RideCheck({
   departure,
   onDepartureChange,
   fixedDeparture,
+  myBike,
+  onMyBikeChange,
+  myBikeKept,
   hospitalGap = null,
   alerts = { status: "idle" },
   rules = { status: "idle" },
@@ -252,44 +243,39 @@ export function RideCheck({
   reports = { status: "idle" },
   postsOpen = false,
 }: Props) {
-  const [rangeKm, setRangeKm] = useState(() => DEFAULT_RANGE_KM[vehicle]);
-  const [rangeText, setRangeText] = useState(String(DEFAULT_RANGE_KM[vehicle]));
+  // "My bike" (useMyBike keeps it): the fields hold what the rider types, and a value within its
+  // limits (or an emptied field) is passed on. Values from outside (the account, a vehicle
+  // switch) refill the fields.
+  const rangeKm = myBike.rangeKm ?? DEFAULT_RANGE_KM[vehicle];
+  const [rangeText, setRangeText] = useState(String(rangeKm));
+  const [mileageText, setMileageText] = useState(numberText(myBike.kmPerLitre));
+  const [priceText, setPriceText] = useState(numberText(myBike.fuelPrice));
   useEffect(() => {
-    const saved = readRange(vehicle);
-    setRangeKm(saved);
-    setRangeText(String(saved));
-  }, [vehicle]);
-
-  function changeRange(text: string) {
-    setRangeText(text);
-    const n = Number(text);
-    if (Number.isFinite(n) && n >= RANGE_LIMITS_KM.min && n <= RANGE_LIMITS_KM.max) {
-      setRangeKm(n);
-      try {
-        localStorage.setItem(rangeKey(vehicle), String(n));
-      } catch {
-        // Not remembered; still used for this trip.
-      }
-    }
-  }
-
-  // Mileage and fuel price as the rider typed them, remembered per vehicle.
-  const [mileageText, setMileageText] = useState("");
-  const [priceText, setPriceText] = useState("");
+    setRangeText((t) => (parseWithin(t, RANGE_LIMITS_KM) === rangeKm ? t : String(rangeKm)));
+  }, [rangeKm]);
   useEffect(() => {
-    setMileageText(readText(mileageKey(vehicle)));
-    setPriceText(readText(fuelPriceKey(vehicle)));
-  }, [vehicle]);
-  function changeCostInput(key: string, text: string, set: (t: string) => void) {
-    set(text);
-    try {
-      localStorage.setItem(key, text);
-    } catch {
-      // Not remembered; still used for this trip.
-    }
+    setMileageText((t) =>
+      parseWithin(t, MILEAGE_LIMITS) === myBike.kmPerLitre ? t : numberText(myBike.kmPerLitre),
+    );
+  }, [myBike.kmPerLitre]);
+  useEffect(() => {
+    setPriceText((t) =>
+      parseWithin(t, FUEL_PRICE_LIMITS) === myBike.fuelPrice ? t : numberText(myBike.fuelPrice),
+    );
+  }, [myBike.fuelPrice]);
+
+  function changeBike(
+    text: string,
+    setText: (t: string) => void,
+    limits: { min: number; max: number },
+    field: keyof MyBike,
+  ) {
+    setText(text);
+    const n = parseWithin(text, limits);
+    if (n !== null || text.trim() === "") onMyBikeChange({ ...myBike, [field]: n });
   }
-  const mileage = parseWithin(mileageText, MILEAGE_LIMITS);
-  const fuelPrice = parseWithin(priceText, FUEL_PRICE_LIMITS);
+  const mileage = myBike.kmPerLitre;
+  const fuelPrice = myBike.fuelPrice;
   const cost = mileage && fuelPrice ? fuelCost(route.distanceKm, mileage, fuelPrice) : null;
 
   const fuel = usePlacesAlong(route, FUEL_CORRIDOR_KM, FUEL_CATEGORIES, true);
@@ -492,7 +478,7 @@ export function RideCheck({
               max={RANGE_LIMITS_KM.max}
               step={10}
               value={rangeText}
-              onChange={(e) => changeRange(e.target.value)}
+              onChange={(e) => changeBike(e.target.value, setRangeText, RANGE_LIMITS_KM, "rangeKm")}
               className={inputClass}
             />
           </label>
@@ -580,7 +566,7 @@ export function RideCheck({
                   step="any"
                   value={mileageText}
                   onChange={(e) =>
-                    changeCostInput(mileageKey(vehicle), e.target.value, setMileageText)
+                    changeBike(e.target.value, setMileageText, MILEAGE_LIMITS, "kmPerLitre")
                   }
                   className={inputClass}
                 />
@@ -597,7 +583,7 @@ export function RideCheck({
                   step="any"
                   value={priceText}
                   onChange={(e) =>
-                    changeCostInput(fuelPriceKey(vehicle), e.target.value, setPriceText)
+                    changeBike(e.target.value, setPriceText, FUEL_PRICE_LIMITS, "fuelPrice")
                   }
                   className={inputClass}
                 />
@@ -605,7 +591,11 @@ export function RideCheck({
             </div>
             <p className="text-xs text-stone-600 dark:text-stone-400">
               {cost
-                ? `${cost.litres} litres, one way. Remembered on this device for your ${vehicle}.`
+                ? `${cost.litres} litres, one way. ${
+                    myBikeKept === "account"
+                      ? `Kept with your account for your ${vehicle}.`
+                      : "Kept in this trip's link."
+                  }`
                 : "Type your mileage and today's fuel price to work out the cost, one way."}
             </p>
           </Check>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouteAlerts } from "@/components/route/useRouteAlerts";
 import { useRouteRules } from "@/components/route/useRouteRules";
 import { RideCheck } from "@/components/trip/RideCheck";
+import { useMyBike } from "@/components/trip/useMyBike";
 import { formatRideTime } from "@/lib/community/shareText";
 import { toDateTimeLocal } from "@/lib/rideCheck";
 import type { SavedTrip } from "@/lib/savedTrip";
@@ -53,6 +54,11 @@ export function GroupRideCheck({ tripId, startsAt }: { tripId: string; startsAt:
   const route = loaded.status === "ok" ? loaded.route : null;
   const alerts = useRouteAlerts(route);
   const rules = useRouteRules(route);
+  // The rider's own bike (their account), for the trip's vehicle; no link to keep it in here.
+  const { bike, setBike, kept } = useMyBike(
+    loaded.status === "ok" ? loaded.trip.vehicle : "bike",
+    null,
+  );
 
   if (loaded.status === "loading") {
     return <div aria-hidden className="shimmer h-14 rounded-2xl" />;
@@ -77,6 +83,9 @@ export function GroupRideCheck({ tripId, startsAt }: { tripId: string; startsAt:
       departure={departure}
       onDepartureChange={() => {}}
       fixedDeparture={`${formatRideTime(startsAt)} (the ride's start)`}
+      myBike={bike}
+      onMyBikeChange={setBike}
+      myBikeKept={kept}
       alerts={alerts}
       rules={rules}
     />

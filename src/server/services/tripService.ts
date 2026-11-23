@@ -15,6 +15,7 @@ import {
   type CorridorKm,
   type Vehicle,
 } from "@/lib/trip";
+import { hasBike } from "@/lib/myBike";
 import { getDb } from "../db";
 
 // No sign-in: user_id stays empty. Anyone with a trip's link can open it; only the device that
@@ -57,6 +58,9 @@ interface TripRow extends Record<string, unknown> {
   via_label: string | null;
   distance_m: number | null;
   duration_s: number | null;
+  range_km: number | null;
+  km_per_litre: number | null;
+  fuel_price: number | null;
   updated_at: string | Date;
 }
 
@@ -111,6 +115,9 @@ function routeColumns(plan: TripPlan) {
     viaLabel: plan.route.viaLabel,
     distanceM: Math.round(plan.route.distanceKm * 1000),
     durationS: Math.round(plan.route.durationMin * 60),
+    rangeKm: plan.myBike?.rangeKm ?? null,
+    kmPerLitre: plan.myBike?.kmPerLitre ?? null,
+    fuelPrice: plan.myBike?.fuelPrice ?? null,
   };
 }
 
@@ -118,7 +125,7 @@ export async function getTrip(id: string): Promise<SavedTrip | null> {
   const db = getDb();
   const [trip] = await db.execute<TripRow>(sql`
     SELECT id, title, vehicle::text AS vehicle, corridor_m, route_id, via_label, distance_m,
-           duration_s, updated_at
+           duration_s, range_km, km_per_litre, fuel_price, updated_at
     FROM trip WHERE id = ${id}`);
   if (!trip) return null;
   const stops = await db.execute<StopRow>(sql`
@@ -135,6 +142,14 @@ export async function getTrip(id: string): Promise<SavedTrip | null> {
     viaLabel: trip.via_label,
     distanceKm: trip.distance_m === null ? null : trip.distance_m / 1000,
     durationMin: trip.duration_s === null ? null : Math.round(trip.duration_s / 60),
+    myBike: (() => {
+      const bike = {
+        rangeKm: trip.range_km,
+        kmPerLitre: trip.km_per_litre,
+        fuelPrice: trip.fuel_price,
+      };
+      return hasBike(bike) ? bike : null;
+    })(),
     updatedAt: iso(trip.updated_at),
   };
 }
@@ -148,10 +163,12 @@ export async function createTrip(
   const id = await getDb().transaction(async (tx) => {
     const [row] = await tx.execute<{ id: string }>(sql`
       INSERT INTO trip (title, vehicle, corridor_m, route_geom, route_id, via_label, distance_m,
-                        duration_s, is_public, edit_token_hash)
+                        duration_s, range_km, km_per_litre, fuel_price, is_public,
+                        edit_token_hash)
       VALUES (${input.title}, ${c.vehicle}, ${c.corridorM},
               ST_SetSRID(ST_GeomFromGeoJSON(${c.geojson}), 4326)::geography, ${c.routeId},
-              ${c.viaLabel}, ${c.distanceM}, ${c.durationS}, true, ${edit.hash})
+              ${c.viaLabel}, ${c.distanceM}, ${c.durationS}, ${c.rangeKm}, ${c.kmPerLitre},
+              ${c.fuelPrice}, true, ${edit.hash})
       RETURNING id`);
     await writeStops(tx, row!.id, input.stops);
     return row!.id;
@@ -178,7 +195,8 @@ export async function updateTrip(
           vehicle = ${c.vehicle}, corridor_m = ${c.corridorM},
           route_geom = ST_SetSRID(ST_GeomFromGeoJSON(${c.geojson}), 4326)::geography,
           route_id = ${c.routeId}, via_label = ${c.viaLabel},
-          distance_m = ${c.distanceM}, duration_s = ${c.durationS}
+          distance_m = ${c.distanceM}, duration_s = ${c.durationS},
+          range_km = ${c.rangeKm}, km_per_litre = ${c.kmPerLitre}, fuel_price = ${c.fuelPrice}
         WHERE id = ${id}
         RETURNING id`);
       if (rows.length > 0) await writeStops(tx, id, plan.stops);

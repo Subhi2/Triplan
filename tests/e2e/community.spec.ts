@@ -63,6 +63,19 @@ async function mockRideCheck(context: BrowserContext) {
   await context.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
 }
 
+/** The rest of the planner answered here: no terrain tiles, safety stops, day split or map. */
+async function mockPlanner(page: Page) {
+  await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
+  await page.route("**/api/route/reports", (route) => route.fulfill({ json: { reports: [] } }));
+  for (const api of ["**/api/services/along", "**/api/route/days"])
+    await page.route(api, (route) => route.fulfill({ status: 503, json: { error: "Not here" } }));
+  await page.route("https://tiles.openfreemap.org/**", (route) =>
+    route.fulfill({
+      json: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: {} }] },
+    }),
+  );
+}
+
 async function rider(browser: Browser): Promise<Page> {
   const context = await browser.newContext();
   await mockRideCheck(context);
@@ -296,16 +309,7 @@ ${track.map(([lng, lat]) => `    <trkpt lat="${lat}" lon="${lng}"></trkpt>`).joi
     await page.route("**/api/route/upload**", (route) =>
       route.fulfill({ json: { route: uploaded } }),
     );
-    // The rest of the planner answered here: no terrain tiles, safety stops or day split.
-    await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
-    await page.route("**/api/route/reports", (route) => route.fulfill({ json: { reports: [] } }));
-    for (const api of ["**/api/services/along", "**/api/route/days"])
-      await page.route(api, (route) => route.fulfill({ status: 503, json: { error: "Not here" } }));
-    await page.route("https://tiles.openfreemap.org/**", (route) =>
-      route.fulfill({
-        json: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: {} }] },
-      }),
-    );
+    await mockPlanner(page);
 
     await page.goto("/");
     await page.getByTestId("ride-file").setInputFiles({
@@ -326,6 +330,53 @@ ${track.map(([lng, lat]) => `    <trkpt lat="${lat}" lon="${lng}"></trkpt>`).joi
     expect(mark).toMatchObject({ status: "done" });
   } finally {
     // Removing the rider removes their marks (on delete cascade).
+    await sql`DELETE FROM rider WHERE nickname LIKE ${`${tag}%`}`;
+    await sql.end();
+  }
+});
+
+test("a rider's bike follows them to a new trip, kept with their account", async ({
+  browser,
+}, testInfo) => {
+  test.slow();
+  const tag = `E2E ${testInfo.project.name.slice(0, 3)} ${Date.now() % 1e9}`;
+  const sql = db();
+  try {
+    const page = await rider(browser);
+    await mockPlanner(page);
+    // A rider account first (a nickname on this device).
+    await page.goto("/me");
+    await pickNickname(page, `${tag} Rider`);
+    await expect(page.getByText(`Riding as ${tag} Rider`)).toBeVisible(FIRST_LOAD);
+
+    const openCheck = async () => {
+      await expect(
+        page.getByRole("list", { name: "Route options" }).getByRole("button").first(),
+      ).toBeVisible(FIRST_LOAD);
+      const toggle = page.getByRole("button", { name: /^Ride check/ });
+      if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+      return page.getByRole("region", { name: "Ride check" });
+    };
+
+    await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234&v=bike");
+    let check = await openCheck();
+    const saved = page.waitForResponse(
+      (r) => r.url().endsWith("/api/me/vehicle") && r.request().method() === "PUT",
+    );
+    await check.getByRole("spinbutton", { name: "Range on a full tank (km)" }).fill("320");
+    expect((await saved).ok()).toBe(true);
+    const [row] = await sql`SELECT v.range_km FROM rider_vehicle v JOIN rider r ON r.id = v.rider_id
+                            WHERE r.nickname = ${`${tag} Rider`} AND v.vehicle = 'bike'`;
+    expect(row).toMatchObject({ range_km: 320 });
+
+    // Another trip, with no bike in its link: it starts from the rider's own.
+    await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234&v=bike&c=10");
+    check = await openCheck();
+    await expect(check.getByRole("spinbutton", { name: "Range on a full tank (km)" })).toHaveValue(
+      "320",
+    );
+  } finally {
+    // Removing the rider removes their bike (on delete cascade).
     await sql`DELETE FROM rider WHERE nickname LIKE ${`${tag}%`}`;
     await sql.end();
   }

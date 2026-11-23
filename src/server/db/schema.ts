@@ -287,6 +287,11 @@ export const trip = pgTable(
     // sha256 of the edit token returned once when the trip is saved; only its holder may change
     // the trip. Null for trips saved before 2026-10-09: they are read only.
     editTokenHash: text("edit_token_hash"),
+    // The bike or car it was planned for ("My bike"), so a reopened or shared trip keeps it:
+    // range on a full tank, mileage and fuel price. Null: the defaults.
+    rangeKm: integer("range_km"),
+    kmPerLitre: real("km_per_litre"),
+    fuelPrice: real("fuel_price"),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -580,6 +585,24 @@ export const rider = pgTable("rider", {
   createdAt: createdAt(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// "My bike": a rider's own bike and car (tank range, mileage, fuel price), kept with their
+// account so the ride check and trip cost use them on any trip and device. Private to the
+// rider; removed with them; not in the snapshot.
+export const riderVehicle = pgTable(
+  "rider_vehicle",
+  {
+    riderId: uuid("rider_id")
+      .notNull()
+      .references(() => rider.id, { onDelete: "cascade" }),
+    vehicle: vehicle("vehicle").notNull(),
+    rangeKm: integer("range_km"),
+    kmPerLitre: real("km_per_litre"),
+    fuelPrice: real("fuel_price"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.riderId, t.vehicle] })],
+);
 
 // A rider's bucket list of famous rides: want to ride (pending) or ridden (done). Private to the
 // rider; no foreign key to ride, so reseeding rides never drops marks. Not in the snapshot.

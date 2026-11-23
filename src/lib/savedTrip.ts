@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { round5 } from "./geo";
+import { myBikeSchema, type MyBike } from "./myBike";
 import { lineStringSchema } from "./places";
 import {
   CORRIDOR_KM,
@@ -28,6 +29,8 @@ export const tripPlanSchema = z.object({
     durationMin: z.number().nonnegative(),
     viaLabel: z.string().trim().min(1).max(200),
   }),
+  /** The bike or car it is planned for ("My bike"); absent for trips saved before. */
+  myBike: myBikeSchema.optional(),
 });
 
 /** Body of POST /api/trips. */
@@ -72,6 +75,8 @@ export interface SavedTrip {
   viaLabel: string | null;
   distanceKm: number | null;
   durationMin: number | null;
+  /** The bike or car it was planned for, or null for the rider's own or the defaults. */
+  myBike: MyBike | null;
   updatedAt: string; // ISO
 }
 

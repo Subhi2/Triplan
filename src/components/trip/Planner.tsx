@@ -76,6 +76,8 @@ import { chipOff } from "@/components/ui/chips";
 import { MarkRide } from "@/components/ride/MarkRide";
 import { communityEnabled } from "@/lib/community/enabled";
 import { matchFamousRide } from "@/lib/rideMatch";
+import { hasBike } from "@/lib/myBike";
+import { useMyBike } from "./useMyBike";
 
 // Panels that show only once a route is on screen (or only with the AI key) load then, not with
 // the planner: the chart, the day split, safety stops, the ride check and the story poster.
@@ -146,6 +148,7 @@ export function Planner({
       to: to ?? null,
       vehicle: savedTrip.vehicle,
       corridorKm: savedTrip.corridorKm,
+      ...(savedTrip.myBike ? { myBike: savedTrip.myBike } : {}),
     };
   });
   const [saved, setSaved] = useState<SavedTrip | null>(savedTrip);
@@ -160,6 +163,12 @@ export function Planner({
     draft(initial.to),
   ]);
   const [vehicle, setVehicle] = useState<Vehicle>(initial.vehicle);
+  // "My bike": the link's or saved trip's, else the rider's own (useMyBike); kept in the link.
+  const {
+    bike: myBike,
+    setBike: setMyBike,
+    kept: myBikeKept,
+  } = useMyBike(vehicle, initial.myBike ?? null);
   const [corridorKm, setCorridorKm] = useState<CorridorKm>(initial.corridorKm);
   const [categories, setCategories] = useState<string[]>(initial.categories);
   const [maxDetourKm, setMaxDetourKm] = useState<DetourLimitKm | null>(initial.maxDetourKm);
@@ -229,6 +238,7 @@ export function Planner({
     maxDetourKm,
     rideHours,
     days: dayCount,
+    myBike: hasBike(myBike) ? myBike : undefined,
   });
   const stopsKey = JSON.stringify(stops.map((s) => s.location));
   const rideOpen = uploaded !== null && uploaded.stopsKey === stopsKey;
@@ -654,6 +664,7 @@ export function Planner({
             durationMin: selectedRoute.durationMin,
             viaLabel: selectedRoute.viaLabel,
           },
+          ...(hasBike(myBike) ? { myBike } : {}),
         }
       : null;
   const defaultTitle = `${first?.label ?? ""} → ${last?.label ?? ""}${
@@ -939,6 +950,9 @@ export function Planner({
           to={{ label: last.label, location: last.location }}
           departure={departure}
           onDepartureChange={setDeparture}
+          myBike={myBike}
+          onMyBikeChange={setMyBike}
+          myBikeKept={myBikeKept}
           alerts={alerts}
           rules={rules}
           days={dayPlan?.legs.map((l) => ({ fromKm: l.fromKm, toKm: l.toKm }))}
