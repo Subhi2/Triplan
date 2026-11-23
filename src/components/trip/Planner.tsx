@@ -73,6 +73,9 @@ import { TripForm, type StopDraft } from "./TripForm";
 import { FeatureShelf } from "./FeatureShelf";
 import { TripSaveBar } from "./TripSaveBar";
 import { chipOff } from "@/components/ui/chips";
+import { MarkRide } from "@/components/ride/MarkRide";
+import { communityEnabled } from "@/lib/community/enabled";
+import { matchFamousRide } from "@/lib/rideMatch";
 
 // Panels that show only once a route is on screen (or only with the AI key) load then, not with
 // the planner: the chart, the day split, safety stops, the ride check and the story poster.
@@ -801,6 +804,14 @@ export function Planner({
   );
 
   // The route panel's parts: the desktop column stacks them; phones reorder them (sidePanel).
+  // An opened GPX that follows a famous ride: offer to tick it off the bucket list (G7). Matched
+  // here in the browser against the ride lines already on the page.
+  const gpxFamousRide = useMemo(() => {
+    if (!communityEnabled || !uploaded || !rideOpen || uploaded.kind !== "gpx") return null;
+    const match = matchFamousRide(uploaded.route.geometry.coordinates as LngLat[], famousRides);
+    return match ? (famousRides.find((r) => r.slug === match.slug) ?? null) : null;
+  }, [uploaded, rideOpen, famousRides]);
+
   const routeCards = (
     <>
       <section aria-label="Routes" aria-live="polite" aria-busy={routeState.status === "loading"}>
@@ -840,6 +851,27 @@ export function Planner({
           </>
         )}
       </section>
+      {gpxFamousRide && (
+        // The bucket list brings its own card, so this heads it rather than boxing it in another.
+        <section aria-label="Famous ride" className="mt-3 flex flex-col gap-2">
+          <div>
+            <p className="font-display text-lg font-bold tracking-tight">
+              You rode {gpxFamousRide.title}
+            </p>
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              This ride follows one of the{" "}
+              <Link
+                href={`/rides/${gpxFamousRide.slug}`}
+                className="text-brand-dark font-bold underline dark:text-teal-300"
+              >
+                famous rides
+              </Link>
+              . Tick it off your bucket list.
+            </p>
+          </div>
+          <MarkRide rideSlug={gpxFamousRide.slug} />
+        </section>
+      )}
     </>
   );
   const routeAlerts = selectedRoute && rideAlerts.length > 0 && <RouteAlerts alerts={rideAlerts} />;

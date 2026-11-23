@@ -1,6 +1,7 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { config } from "dotenv";
 import postgres from "postgres";
+import type { LineString } from "geojson";
 import { routeCurvature } from "@/lib/curvature";
 import type { RouteOption } from "@/lib/trip";
 import { roadMix } from "@/server/services/roadMix";
@@ -252,6 +253,79 @@ test("start a club, ask to join, get approved, and see the members-only link", a
     );
   } finally {
     await sql`DELETE FROM club WHERE name = ${`${tag} Riders`}`;
+    await sql`DELETE FROM rider WHERE nickname LIKE ${`${tag}%`}`;
+    await sql.end();
+  }
+});
+
+test("an opened GPX that follows a famous ride offers to tick it off the bucket list", async ({
+  browser,
+}, testInfo) => {
+  test.slow();
+  const tag = `E2E ${testInfo.project.name.slice(0, 3)} ${Date.now() % 1e9}`;
+  const slug = "bengaluru-to-kalasa-via-sakleshpur";
+  const sql = db();
+  try {
+    // The famous ride's own road, as a rider's recording of it would follow.
+    const [row] = await sql`SELECT title, ST_AsGeoJSON(route_geom::geometry, 5) AS line
+                            FROM ride WHERE slug = ${slug}`;
+    test.skip(!row, "the famous rides are not in this database");
+    const line = (JSON.parse(row!.line as string) as { coordinates: [number, number][] })
+      .coordinates;
+    const step = Math.max(1, Math.floor(line.length / 400));
+    const track = line.filter((_, i) => i % step === 0);
+    const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>Sunday ride</name><trkseg>
+${track.map(([lng, lat]) => `    <trkpt lat="${lat}" lon="${lng}"></trkpt>`).join("\n")}
+  </trkseg></trk>
+</gpx>`;
+
+    const page = await rider(browser);
+    const geometry: LineString = { type: "LineString", coordinates: track };
+    const uploaded: RouteOption = {
+      id: `${"b".repeat(32)}-0`,
+      geometry,
+      distanceKm: 300,
+      durationMin: 400,
+      viaLabel: "Sunday ride",
+      towns: [],
+      roadMix: null,
+      curvature: routeCurvature(geometry),
+    };
+    await page.route("**/api/route/upload**", (route) =>
+      route.fulfill({ json: { route: uploaded } }),
+    );
+    // The rest of the planner answered here: no terrain tiles, safety stops or day split.
+    await page.route("**/api/route/profile", (route) => route.fulfill({ json: { profile: null } }));
+    await page.route("**/api/route/reports", (route) => route.fulfill({ json: { reports: [] } }));
+    for (const api of ["**/api/services/along", "**/api/route/days"])
+      await page.route(api, (route) => route.fulfill({ status: 503, json: { error: "Not here" } }));
+    await page.route("https://tiles.openfreemap.org/**", (route) =>
+      route.fulfill({
+        json: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: {} }] },
+      }),
+    );
+
+    await page.goto("/");
+    await page.getByTestId("ride-file").setInputFiles({
+      name: "sunday.gpx",
+      mimeType: "application/gpx+xml",
+      buffer: Buffer.from(gpx),
+    });
+    const famous = page.getByRole("region", { name: "Famous ride" });
+    await expect(famous).toContainText(`You rode ${row!.title as string}`, FIRST_LOAD);
+
+    // Tick it off: a nickname first, then the day it was ridden.
+    await famous.getByRole("button", { name: "I've ridden it" }).click();
+    await pickNickname(page, `${tag} Rider`);
+    await famous.getByRole("button", { name: "Save as done" }).click();
+    await expect(famous.getByText("You rode this")).toBeVisible();
+    const [mark] = await sql`SELECT m.status FROM ride_mark m JOIN rider r ON r.id = m.rider_id
+                             WHERE r.nickname = ${`${tag} Rider`} AND m.ride_slug = ${slug}`;
+    expect(mark).toMatchObject({ status: "done" });
+  } finally {
+    // Removing the rider removes their marks (on delete cascade).
     await sql`DELETE FROM rider WHERE nickname LIKE ${`${tag}%`}`;
     await sql.end();
   }
