@@ -1,6 +1,10 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { config } from "dotenv";
 import postgres from "postgres";
+import { routeCurvature } from "@/lib/curvature";
+import type { RouteOption } from "@/lib/trip";
+import { roadMix } from "@/server/services/roadMix";
+import { routeFixture } from "../helpers/fixtures";
 
 // Clubs and hosted group rides (G6). Each rider is a separate browser with its own test account
 // (NEXT_PUBLIC_COMMUNITY_AUTH=local: a signed cookie, never a Supabase user). These write to the
@@ -35,8 +39,33 @@ async function makeTrip(sql: postgres.Sql, title: string): Promise<string> {
   return trip!.id;
 }
 
+/** The ride page's ride check (G6): its road and checks answered here, never OSRM or SACHET. */
+async function mockRideCheck(context: BrowserContext) {
+  const routes: RouteOption[] = routeFixture("bengaluru-kalasa", "bike").map((r, i) => ({
+    id: `community-${i}`,
+    geometry: r.geometry,
+    distanceKm: r.distanceM / 1000,
+    durationMin: Math.round(r.durationS / 60),
+    viaLabel: `route ${i + 1}`,
+    towns: [],
+    roadMix: roadMix(r),
+    curvature: routeCurvature(r.geometry),
+  }));
+  await context.route("**/api/route", (route) => route.fulfill({ json: { routes } }));
+  await context.route("**/api/route/alerts", (route) =>
+    route.fulfill({ json: { alerts: [], partial: false } }),
+  );
+  await context.route("**/api/route/rules", (route) =>
+    route.fulfill({ json: { rules: [], timeline: null } }),
+  );
+  await context.route("**/api/places/along", (route) => route.fulfill({ json: { places: [] } }));
+  await context.route("**/api/weather", (route) => route.fulfill({ json: { points: [] } }));
+}
+
 async function rider(browser: Browser): Promise<Page> {
-  const page = await (await browser.newContext()).newPage();
+  const context = await browser.newContext();
+  await mockRideCheck(context);
+  const page = await context.newPage();
   // Leaving, removing and deleting ask first.
   page.on("dialog", (d) => void d.accept());
   return page;
@@ -47,6 +76,9 @@ async function rider(browser: Browser): Promise<Page> {
  * longer while the dev server compiles the route), so its answer gets the posts' longer wait.
  */
 const POW_WAIT = { timeout: 30_000 };
+
+/** A ride's or club's first page: its scripts compile on first use in the dev server. */
+const FIRST_LOAD = { timeout: 30_000 };
 
 /** On phones "Me" is behind the Menu, whose button carries the same count: open it first. */
 async function showMe(page: Page) {
@@ -81,7 +113,15 @@ test("host a ride, let a rider in, waitlist the next, and move them up when a se
     await host.waitForURL(/\/group-rides\/[0-9a-f-]{36}$/);
     const rideUrl = host.url();
     await expect(host.getByRole("heading", { name: `${tag} Kalasa run` })).toBeVisible();
-    await expect(host.getByText("You're hosting this ride.")).toBeVisible();
+    await expect(host.getByText("You're hosting this ride.")).toBeVisible(FIRST_LOAD);
+    // The ride check, for the ride's own start time rather than one the rider picks.
+    // Laptops open it by themselves; phones fold it until tapped.
+    const start = host.getByText(/\(the ride's start\)$/);
+    await expect(async () => {
+      if (!(await start.isVisible()))
+        await host.getByRole("button", { name: /^Ride check/ }).click();
+      await expect(start).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 10_000 });
 
     // A rider asks to join and does not see the meeting point yet.
     const asha = await rider(browser);
@@ -183,7 +223,7 @@ test("start a club, ask to join, get approved, and see the members-only link", a
       (url) => /^\/clubs\/[a-z0-9-]+$/.test(url.pathname) && !url.pathname.endsWith("/new"),
     );
     const clubUrl = owner.url();
-    await expect(owner.getByText("You're the club's owner.")).toBeVisible();
+    await expect(owner.getByText("You're the club's owner.")).toBeVisible(FIRST_LOAD);
 
     // Someone else asks; the link stays hidden from them until they are in.
     const meera = await rider(browser);

@@ -48,6 +48,9 @@ interface Props {
   /** The chosen start time (datetime-local value), shared with the weather check. */
   departure: string;
   onDepartureChange: (value: string) => void;
+  /** Shown instead of the start field when the time is not the rider's to change (a group
+   *  ride's start, set by its host). */
+  fixedDeparture?: string;
   /** The longest stretch without a hospital near the road, once safety stops have loaded. */
   hospitalGap?: Gap | null;
   /** Official alerts on the route (all current ones; the ride check keeps those for the ride). */
@@ -234,6 +237,7 @@ export function RideCheck({
   to,
   departure,
   onDepartureChange,
+  fixedDeparture,
   hospitalGap = null,
   alerts = { status: "idle" },
   rules = { status: "idle" },
@@ -461,15 +465,22 @@ export function RideCheck({
       </h2>
       <div id="ride-check-body" hidden={!open} className="space-y-3 px-3 pb-3">
         <div className="grid grid-cols-2 gap-3">
-          <label className="space-y-1">
-            <span className="block text-xs text-stone-600 dark:text-stone-400">Start</span>
-            <input
-              type="datetime-local"
-              value={departure}
-              onChange={(e) => onDepartureChange(e.target.value || defaultDeparture())}
-              className={inputClass}
-            />
-          </label>
+          {fixedDeparture ? (
+            <div className="space-y-1">
+              <span className="block text-xs text-stone-600 dark:text-stone-400">Start</span>
+              <p className="tabular py-2 font-mono text-sm font-semibold">{fixedDeparture}</p>
+            </div>
+          ) : (
+            <label className="space-y-1">
+              <span className="block text-xs text-stone-600 dark:text-stone-400">Start</span>
+              <input
+                type="datetime-local"
+                value={departure}
+                onChange={(e) => onDepartureChange(e.target.value || defaultDeparture())}
+                className={inputClass}
+              />
+            </label>
+          )}
           <label className="space-y-1">
             <span className="block text-xs text-stone-600 dark:text-stone-400">
               Range on a full tank (km)
