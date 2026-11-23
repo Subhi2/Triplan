@@ -272,6 +272,24 @@ Decided 2026-11-19: cover as many of India's famous rides as we can, let riders 
 
 **Not built / left open:** rides in Bihar and the Andaman and Nicobar Islands (no stop coordinates found); a "Central" filter (Madhya Pradesh and Chhattisgarh rides sit under West and East and North-east); the 3D ride preview keeps its light map in dark mode; ride photos are picked by title words, so a few will not match their road.
 
+## Growth G8 · Layout audit, ride-day polish and My bike
+
+Decided 2026-11-19 to 2026-11-23, after an audit of every screen at phone and laptop width (`08`, "Layers and panels"). Rules in `02`, "My bike", "Community (G6)" and "Ride your GPX".
+
+1. **Layers.** The Menu is a native popover (`SiteMenu`) and dialogs use `Modal` (`<dialog>` with `showModal()`), so neither sits under the phone sheet or inside a box that clips it; the ride story, 3D preview and riding mode moved onto it. Bars that reach a panel's edges use `panel-bleed` and `panel-foot` from the panel's `--panel-px` and `--panel-pb`. Thin scroll bars with a mouse; side panels keep a stable gutter. Photo strips line up with the text; route names stay whole; chip colours live once in `src/components/ui/chips.ts`.
+2. **Updates on phones.** The count on "Me" also shows on the Menu button and its "Me" entry, where phones keep "Me"; asked only when the browser holds a rider session (`mayHaveRider`).
+3. **Layout guard.** `tests/e2e/layout.spec.ts` checks every key screen at 375 and 1280 px, with the Menu open, for sideways scroll, controls under another layer or cut off, and small targets (`tests/helpers/layoutAudit.ts`). An e2e global setup compiles every route before the tests.
+4. **First paint in the right layout.** The planner and Near me get the server's guess at the screen (`vp` cookie, else the device type), so laptops no longer start in the phone layout and jump (`08`, "Layout").
+5. **Ride check on a group ride.** A ride still to come shows the ride check at its own start time (`GroupRideCheck`).
+6. **GPX to bucket list.** An opened GPX that follows a famous ride offers "I've ridden it" (`src/lib/rideMatch.ts`, matched in the browser).
+7. **My bike.** Range, mileage and fuel price kept with the rider's account (`rider_vehicle`, migration 0029, `/api/me/vehicle`) and in the trip's link and saved trip (`rng`, `kpl`, `fp`), never in browser storage (`useMyBike`).
+
+**Done when:** `layout.spec.ts` passes at both widths; the Menu and every dialog open over the phone sheet; a laptop's first paint of the planner is its laptop layout with scripts off; a hosted ride's page shows its night bans, alerts and sunset for its own day; a rider who opens a GPX of a famous ride can tick it off; a rider's range set on one trip comes back on a new trip and another device; `NEXT_DIST_DIR=.next-build pnpm build` passes.
+
+**Passes the new-features check** (`CLAUDE.md`, "Choosing new features"): all our own code and data; the Popover API, `<dialog>`, cookies and the user-agent parser are web standards and Next.js built-ins; My bike and the bucket list use Supabase Postgres, a service we already use and could swap; nothing needs anyone's approval or a public server.
+
+**Not built / next:** "Share to Triplan" (a `share_target` in `manifest.ts`, so GPX files and Google Maps links shared from other apps open in the planner; Android only); "Something's wrong here" on place pages (riders flag a closed or misplaced place through the road-report proof of work, to `/admin`); a return trip or loop in one tap. All three pass the check: web standards, our own data and our own routing provider.
+
 ## Phase 5 · Community content
 
 Steps 1, 2 and 5 are planned in Growth G5 D (step 14), without sign-in for riders. Steps 3 and 4 ("Add a place") stay here.

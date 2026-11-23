@@ -114,6 +114,17 @@ This settles the question G4 left open, how to stop spam without sign-in: proof 
 
 Spam without a supervisor: proof of work (ALTCHA, MIT) and per-visitor limits on every new club, ride and request, caps per rider, WhatsApp invite links as the only links, and blocking by owners and hosts. Admins only take down a club or ride by its link for a legal request. Checked and left out: push notifications (left for later: they need service-worker work, and iPhones only get them for an installed app), email notices (Supabase's built-in mailer sends only a few emails an hour; a mail service costs money).
 
+**G8 · Layout audit, ride-day polish and My bike (decided 2026-11-19 to 2026-11-23).** After the owner saw popups under the page and misaligned panels on a laptop, an audit of every screen at phone and laptop width; then features that make the ride check and bucket list follow the rider. Steps are in `04-build-plan.md` "Growth G8".
+
+| Feature | Why it sells | Tools and data, and how it passes "Choosing new features" |
+|---|---|---|
+| Menus and dialogs over everything, panels that line up | A popup under the routes sheet, or a bar hanging off the screen, reads as a broken app | Web standards (Popover API, `<dialog>`) and our own CSS; nothing outside |
+| Right layout from the first paint | Laptops no longer start in the phone layout and jump | A cookie of our own and Next.js's user-agent parser |
+| Layout guard in the tests | Popups, cut-off bars and small targets cannot come back unnoticed | Playwright, already our test runner |
+| Ride check on a group ride | Every rider sees the night bans, alerts and sunset for the ride's own day without re-planning | Our ride check, road rules and SACHET alerts, already used |
+| GPX to bucket list | Riding a famous road and opening its GPX ticks it off: the bucket list fills itself | Our own ride lines, matched in the browser; the GPX never leaves the phone beyond its trimmed line |
+| My bike | Range, mileage and fuel price follow the rider to every trip and device | Supabase Postgres (a service we use and could swap) and the trip's own link; no browser storage |
+
 **Later: needs decisions, accounts or money.**
 
 - "Add a place" (Phase 5 steps 3–4). Reviews and rider photos are in G5.
