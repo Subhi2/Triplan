@@ -529,8 +529,15 @@ test("stops can be reordered from the keyboard", async ({ page }) => {
   const announcement = page.locator('[id^="DndLiveRegion"]');
   await page.keyboard.press("Space");
   await expect(announcement).toHaveText(/^Picked up Sakleshpur\./);
-  await page.keyboard.press("ArrowUp");
-  await expect(announcement).toHaveText("Sakleshpur moved to position 1 of 3.");
+  // dnd-kit starts listening for keys on a timer after the pick-up, which a busy first page load
+  // can put behind the announcement: press again until the move registers (at the top, a second
+  // ArrowUp does nothing).
+  await expect(async () => {
+    await page.keyboard.press("ArrowUp");
+    await expect(announcement).toHaveText("Sakleshpur moved to position 1 of 3.", {
+      timeout: 1_000,
+    });
+  }).toPass({ timeout: 10_000 });
   await page.keyboard.press("Space");
   await expect(announcement).toHaveText("Sakleshpur dropped at position 1 of 3.");
   await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Sakleshpur");

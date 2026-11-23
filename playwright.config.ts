@@ -6,6 +6,8 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // Compiles each page once before the tests, so no test waits on (or is broken by) a compile.
+  globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: true,
   // One dev server compiles routes on demand and shares the database; more workers only time out.
   workers: process.env.CI ? 1 : 2,
