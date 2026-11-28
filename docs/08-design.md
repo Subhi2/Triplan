@@ -48,7 +48,7 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 ## Components
 
 - **Buttons.** Primary: `bg-brand`, white, bold, `rounded-xl`, 48 px on phones. Secondary: white with a `stone-300` border. Soft: `bg-brand-tint` with `brand-dark` text. Icons are inline stroke SVGs, never emoji.
-- **Chips.** `rounded-full`; off: `bg-stone-100`; on: ink (`bg-stone-900`, white, bold). A category chip leads with its colour dot. Counts in mono.
+- **Chips.** `rounded-full`; off: a see-through ink tint (`chipOff`), so it shows on the paper page as well as on white panels; on: ink (`bg-stone-900`, white, bold). Both live once in `src/components/ui/chips.ts`. A category chip leads with its colour dot. Counts in mono.
 - **Segmented control** (Bike / Car): a `stone-100` pill holding the options; the chosen one `bg-brand`.
 - **Route cards.** The picked route on a white card with a 2 px teal border; the others quieter and compact. Under the towns, a hairpin line: a hairpin icon and "24 hairpins" bold in `ghat-dark`, then "· 54.6 km twisty" in `stone-600` (hidden on roads with no hairpins and under 5 km twisty). Road mix bar: NH teal, SH `state-road`, ghat `ghat`, other `stone-300`, 2 px gaps.
 - **Road strip** (`RoadStrip`). A teal ribbon from 0 to the route length, ghat stretches thicker in `ghat` with a "GHAT" label, each listed place as a dot in its category colour (the active or hovered one larger, ringed in ink), round km marks below. Ghat positions come from `RoadMix.ghats`.
@@ -79,6 +79,15 @@ Atkinson Hyperlegible was designed for low vision and reads well on a phone in s
 - **< 768 px:** the map full screen. With a trip, the header floats over it (frosted, `backdrop-blur`), and the bottom sheet holds routes and places; the map keeps its framing clear of both (`topInset`, `bottomInset`), and frames the route again whenever its box changes size until the rider moves it. Without a trip there is no map: the form, the famous rides and About scroll as a page.
 
 - **Near me** follows the same layout: side panel (26rem) and map from 768 px; on phones the map full screen, a frosted header, and the chooser, chips and list in the bottom sheet (typing a place opens the sheet fully; picking on the map drops it to its smallest).
+- **The first paint is already in the right layout.** The planner and Near me pick their layout in code (`useMediaQuery`: 768 px, 1024 px, touch), which the server cannot measure, so their pages pass it a guess (`ViewportHintProvider`, `src/server/viewportHint.ts`): the browser's own answer from its last visit (the `vp` cookie, which holds only "md.lg"-style flags), else the device type from the user agent (phone, tablet, laptop). Without it laptops saw the phone layout and then a jump, and an early tap could land on the wrong spot. A new layout query goes into `VIEWPORT_QUERIES`; `tests/e2e/layout.spec.ts` checks both pages with scripts off.
+
+### Layers and panels (checked 2026-11-19)
+
+- **Menus and dialogs sit in the browser's top layer**, never on a z-index. The Menu (`SiteMenu`) is a native popover placed under its button; dialogs (ride story, 3D preview, riding mode) use `Modal` (`src/components/ui/Modal.tsx`, a native `<dialog>` opened with `showModal()`). A fixed box inside the phone sheet was cut to the sheet (its slide-in transform makes it the containing block), and the Menu opened under the sheet. The page behind a dialog is inert and does not scroll.
+- **z-index is only for things inside one screen:** map controls and sticky bars 10, the bottom sheet and phone action bar 20, the planner panel while typing 30 (its suggestions over the sheet).
+- **Bars that reach a panel's edges** (the step bar, the Google Maps bar) use `panel-bleed` and `panel-foot` (`globals.css`). Each scrolling panel states its padding as `--panel-px` and `--panel-pb`, so the bars line up in the sheet, the tablet panel and the laptop's places column alike.
+- **Scroll bars:** thin and warm with a mouse; side panels keep room for theirs (`scrollbar-gutter: stable`), so the form does not shift when a list grows.
+- **Guarded by** `tests/e2e/layout.spec.ts`: every key screen at 375 and 1280 px, with the Menu open too, must have no sideways scroll, nothing past the screen's sides, no control under another layer (a sticky or fixed bar is fine only over content that can be scrolled clear of it), nothing cut off by its box, and 40 px targets on phones. The checks are in `tests/helpers/layoutAudit.ts`; add new screens to the spec.
 
 ## Motion
 

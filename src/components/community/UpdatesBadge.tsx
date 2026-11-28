@@ -2,24 +2,47 @@
 
 import { useEffect, useState } from "react";
 import type { MeUpdates } from "@/lib/community/views";
-import { lastSeenUpdates } from "./riderSession";
+import { lastSeenUpdates, mayHaveRider } from "./riderSession";
+
+// One request per page: the bar's "Me" link and the Menu (its button and its "Me" entry) both
+// show the count, and both are mounted on content pages.
+let pending: Promise<number> | null = null;
+
+function fetchUpdatesCount(): Promise<number> {
+  // Most visitors never make an account: no request for them on every page.
+  if (!mayHaveRider()) return Promise.resolve(0);
+  pending ??= fetch(`/api/me/updates?since=${encodeURIComponent(lastSeenUpdates())}`, {
+    cache: "no-store",
+  })
+    .then((r) => (r.ok ? (r.json() as Promise<MeUpdates>) : null))
+    .then((u) => (u ? u.waiting + u.decided : 0))
+    .catch(() => 0)
+    .finally(() => {
+      // The next page (or a return to this one) asks again: the count changes as hosts decide.
+      setTimeout(() => (pending = null), 2_000);
+    });
+  return pending;
+}
 
 /**
- * The count on "Me": requests waiting on the rider's clubs and rides, and decisions on their own
- * requests since they last opened /me. Nothing shows for a visitor without an account.
+ * Requests waiting on the rider's clubs and rides, and decisions on their own requests since
+ * they last opened /me. 0 for a visitor without an account, and when `enabled` is false.
  */
-export function UpdatesBadge() {
+export function useUpdatesCount(enabled = true): number {
   const [count, setCount] = useState(0);
   useEffect(() => {
+    if (!enabled) return;
     let live = true;
-    fetch(`/api/me/updates?since=${encodeURIComponent(lastSeenUpdates())}`, { cache: "no-store" })
-      .then((r) => (r.ok ? (r.json() as Promise<MeUpdates>) : null))
-      .then((u) => live && u && setCount(u.waiting + u.decided))
-      .catch(() => {});
+    void fetchUpdatesCount().then((n) => live && setCount(n));
     return () => {
       live = false;
     };
-  }, []);
+  }, [enabled]);
+  return enabled ? count : 0;
+}
+
+/** The count as a small badge (nothing at 0); its text reads ", 2 new" to screen readers. */
+export function UpdatesCount({ count }: { count: number }) {
   if (count === 0) return null;
   return (
     <span
@@ -31,4 +54,9 @@ export function UpdatesBadge() {
       <span className="sr-only"> new</span>
     </span>
   );
+}
+
+/** The count on "Me" in the bar. Nothing shows for a visitor without an account. */
+export function UpdatesBadge() {
+  return <UpdatesCount count={useUpdatesCount()} />;
 }

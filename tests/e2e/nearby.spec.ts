@@ -99,6 +99,10 @@ async function mockApis(
   page: Page,
   opts: { roadTimes?: NearbyResponse["roadTimes"]; nearRequests?: URLSearchParams[] } = {},
 ) {
+  // The rider's position is named by our nearest town (G10).
+  await page.route("**/api/places/near-town?**", (route) =>
+    route.fulfill({ json: { town: "Sakleshpur" } }),
+  );
   await page.route("**/api/places/near?**", (route) => {
     const params = new URL(route.request().url()).searchParams;
     opts.nearRequests?.push(params);
@@ -170,6 +174,7 @@ test.describe("with location allowed", () => {
   test("the planner links to Near me, which asks for the position only on a tap", async ({
     page,
   }) => {
+    test.slow(); // the dev server may compile the planner and /nearby on first use
     const nearRequests: URLSearchParams[] = [];
     await mockApis(page, { nearRequests });
     await countLocationRequests(page);
@@ -246,12 +251,17 @@ test.describe("with location allowed", () => {
     await rows(page).first().getByRole("button").first().click();
     await expect(page.getByRole("heading", { name: "Manjarabad Fort" })).toBeVisible();
 
+    const rideThere = page.getByRole("link", { name: "Ride there" });
+    await expect(rideThere).toHaveAttribute("href", /from=Near\+Sakleshpur/);
     const routed = page.waitForRequest("**/api/route");
-    await page.getByRole("link", { name: "Ride there" }).click();
-    await expect(page).toHaveURL(/\/\?from=My\+location%4075\.785%2C12\.943&to=Manjarabad/);
+    await rideThere.click();
+    // The planner may compile on first use in dev.
+    await expect(page).toHaveURL(/\/\?from=Near\+Sakleshpur%4075\.785%2C12\.943&to=Manjarabad/, {
+      timeout: 20_000,
+    });
     const body = (await routed).postDataJSON() as { stops: { label: string; location: LngLat }[] };
     expect(body.stops).toEqual([
-      { label: "My location", location: [75.785, 12.943] },
+      { label: "Near Sakleshpur", location: [75.785, 12.943] },
       { label: "Manjarabad Fort", location: [75.7581, 12.9173] },
     ]);
   });
@@ -260,8 +270,8 @@ test.describe("with location allowed", () => {
     await mockApis(page);
     await page.goto("/");
     await page.getByRole("button", { name: "Use my location" }).click();
-    await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("My location");
-    await expect(page).toHaveURL(/from=My\+location%4075\.785%2C12\.943/);
+    await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Near Sakleshpur");
+    await expect(page).toHaveURL(/from=Near\+Sakleshpur%4075\.785%2C12\.943/);
   });
 
   test("ride mode shows the places ahead, not behind", async ({ page, context }) => {

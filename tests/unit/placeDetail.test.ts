@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { carryBySeason, monthRatings, type CarryEntry } from "@/lib/placeDetail";
+import { avoidNow, carryBySeason, monthRatings, type CarryEntry } from "@/lib/placeDetail";
 import { feeText, httpUrl, wikipediaUrl } from "@/server/services/placeDetailService";
 
 const item = (slug: string, months: number[]): CarryEntry => ({
@@ -72,5 +72,30 @@ describe("OSM tags on the place page", () => {
     expect(httpUrl("http://www.mysorepalace.gov.in/")).toBe("http://www.mysorepalace.gov.in/");
     expect(httpUrl("javascript:alert(1)")).toBeNull();
     expect(httpUrl("www.example.com")).toBeNull();
+  });
+});
+
+describe("avoidNow", () => {
+  const guide = { bestMonths: [10, 11, 12], okMonths: [1, 2], avoidMonths: [4, 5, 6, 7, 8] };
+
+  it("is null outside the avoid months", () => {
+    expect(avoidNow(guide, 11)).toBeNull();
+    expect(avoidNow(null, 7)).toBeNull();
+  });
+
+  it("names the monsoon and the next good month", () => {
+    expect(avoidNow(guide, 7)).toEqual({ reason: "monsoon", nextGood: 10 });
+  });
+
+  it("names the heat in April and May", () => {
+    expect(avoidNow(guide, 4)).toEqual({ reason: "heat", nextGood: 10 });
+  });
+
+  it("wraps round the year and copes with no good month", () => {
+    expect(avoidNow({ bestMonths: [2], okMonths: [], avoidMonths: [12] }, 12)).toEqual({
+      reason: null,
+      nextGood: 2,
+    });
+    expect(avoidNow({ bestMonths: [], okMonths: [], avoidMonths: [7] }, 7)?.nextGood).toBeNull();
   });
 });

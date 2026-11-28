@@ -31,7 +31,7 @@ export function FamousRidesStrip({
         </Link>
       </div>
       <CrownList
-        className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pt-2 pb-1"
+        className="-mx-1 flex snap-x scroll-px-1 gap-2 overflow-x-auto px-1 pt-2 pb-1"
         selector="[data-ride]"
         config={{ axis: "x", radius: 170, lift: 6, shift: 8, grow: 0.04, glow: 0.6 }}
       >

@@ -45,6 +45,7 @@ const saved: SavedTrip = {
   viaLabel: "via Sakleshpur",
   distanceKm: 330.8,
   durationMin: 402,
+  myBike: null,
   updatedAt: "2026-09-29T07:00:00.000Z",
 };
 

@@ -38,8 +38,11 @@ export function PlannerHeader({
   hasTrip,
   formToggle,
 }: Props) {
+  const nearbyHref = `/nearby?v=${vehicle}`;
   return (
-    <header className="flex items-center justify-between gap-2">
+    // Only the full header wraps (its tagline takes a row of its own); the compact one stays one
+    // row, the trip's name giving way to the buttons.
+    <header className={`flex items-center justify-between gap-x-2 ${compact ? "" : "flex-wrap"}`}>
       {compact ? (
         <div className="min-w-0">
           <h1 className="sr-only">{SITE_NAME}</h1>
@@ -59,28 +62,33 @@ export function PlannerHeader({
           </p>
         </div>
       ) : (
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl leading-none font-extrabold tracking-tight md:text-3xl">
-            {SITE_NAME}
-          </h1>
-          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{SITE_TAGLINE}</p>
-        </div>
+        <h1 className="font-display min-w-0 text-2xl leading-none font-extrabold tracking-tight md:text-3xl">
+          {SITE_NAME}
+        </h1>
       )}
       <div className="flex shrink-0 items-center gap-1">
-        <Link
-          href={`/nearby?v=${vehicle}`}
-          aria-label={compact ? "Near me" : undefined}
-          title="Well-known places near you"
-          className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-sm font-bold hover:underline dark:text-teal-300"
-        >
-          <CrosshairIcon size={18} />
-          {!compact && "Near me"}
-        </Link>
-        {!compact && <ThemeToggle />}
+        {/* The compact header gives its room to the trip's name ("Beng… → Kalasa" otherwise):
+            Near me and the theme move into the Menu. */}
+        {!compact && (
+          <>
+            <Link
+              href={nearbyHref}
+              title="Well-known places near you"
+              className="text-brand-dark inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-sm font-bold hover:underline dark:text-teal-300"
+            >
+              <CrosshairIcon size={18} />
+              Near me
+            </Link>
+            <ThemeToggle />
+          </>
+        )}
         <SiteMenu
           showTheme={compact}
           links={SITE_LINKS.filter((l) => l.href !== "/" && l.href !== "/nearby")}
-          lead={hasTrip ? { href: `/?v=${vehicle}`, label: "New trip" } : undefined}
+          leads={[
+            ...(hasTrip ? [{ href: `/?v=${vehicle}`, label: "New trip" }] : []),
+            ...(compact ? [{ href: nearbyHref, label: "Near me" }] : []),
+          ]}
         />
         {formToggle && (
           <button
@@ -93,6 +101,10 @@ export function PlannerHeader({
           </button>
         )}
       </div>
+      {/* Its own row under the name and buttons: beside them it was squeezed onto three lines. */}
+      {!compact && (
+        <p className="basis-full text-sm text-stone-600 dark:text-stone-400">{SITE_TAGLINE}</p>
+      )}
     </header>
   );
 }

@@ -53,12 +53,14 @@ import { planSunsetStops } from "@/lib/sunset";
 import { trackEvent } from "@/lib/track";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
-  MAX_VIA_STOPS,
-  stopIndexAt,
-  viaInsertIndex,
   type CorridorKm,
+  makeLoop,
+  MAX_VIA_STOPS,
+  rideBack,
   type RouteOption,
+  stopIndexAt,
   type Vehicle,
+  viaInsertIndex,
 } from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
@@ -72,6 +74,12 @@ import type { MapBias } from "./StopInput";
 import { TripForm, type StopDraft } from "./TripForm";
 import { FeatureShelf } from "./FeatureShelf";
 import { TripSaveBar } from "./TripSaveBar";
+import { chipOff } from "@/components/ui/chips";
+import { MarkRide } from "@/components/ride/MarkRide";
+import { communityEnabled } from "@/lib/community/enabled";
+import { matchFamousRide } from "@/lib/rideMatch";
+import { hasBike } from "@/lib/myBike";
+import { useMyBike } from "./useMyBike";
 
 // Panels that show only once a route is on screen (or only with the AI key) load then, not with
 // the planner: the chart, the day split, safety stops, the ride check and the story poster.
@@ -142,6 +150,7 @@ export function Planner({
       to: to ?? null,
       vehicle: savedTrip.vehicle,
       corridorKm: savedTrip.corridorKm,
+      ...(savedTrip.myBike ? { myBike: savedTrip.myBike } : {}),
     };
   });
   const [saved, setSaved] = useState<SavedTrip | null>(savedTrip);
@@ -156,6 +165,12 @@ export function Planner({
     draft(initial.to),
   ]);
   const [vehicle, setVehicle] = useState<Vehicle>(initial.vehicle);
+  // "My bike": the link's or saved trip's, else the rider's own (useMyBike); kept in the link.
+  const {
+    bike: myBike,
+    setBike: setMyBike,
+    kept: myBikeKept,
+  } = useMyBike(vehicle, initial.myBike ?? null);
   const [corridorKm, setCorridorKm] = useState<CorridorKm>(initial.corridorKm);
   const [categories, setCategories] = useState<string[]>(initial.categories);
   const [maxDetourKm, setMaxDetourKm] = useState<DetourLimitKm | null>(initial.maxDetourKm);
@@ -225,6 +240,7 @@ export function Planner({
     maxDetourKm,
     rideHours,
     days: dayCount,
+    myBike: hasBike(myBike) ? myBike : undefined,
   });
   const stopsKey = JSON.stringify(stops.map((s) => s.location));
   const rideOpen = uploaded !== null && uploaded.stopsKey === stopsKey;
@@ -650,6 +666,7 @@ export function Planner({
             durationMin: selectedRoute.durationMin,
             viaLabel: selectedRoute.viaLabel,
           },
+          ...(hasBike(myBike) ? { myBike } : {}),
         }
       : null;
   const defaultTitle = `${first?.label ?? ""} → ${last?.label ?? ""}${
@@ -800,6 +817,14 @@ export function Planner({
   );
 
   // The route panel's parts: the desktop column stacks them; phones reorder them (sidePanel).
+  // An opened GPX that follows a famous ride: offer to tick it off the bucket list (G7). Matched
+  // here in the browser against the ride lines already on the page.
+  const gpxFamousRide = useMemo(() => {
+    if (!communityEnabled || !uploaded || !rideOpen || uploaded.kind !== "gpx") return null;
+    const match = matchFamousRide(uploaded.route.geometry.coordinates as LngLat[], famousRides);
+    return match ? (famousRides.find((r) => r.slug === match.slug) ?? null) : null;
+  }, [uploaded, rideOpen, famousRides]);
+
   const routeCards = (
     <>
       <section aria-label="Routes" aria-live="polite" aria-busy={routeState.status === "loading"}>
@@ -839,6 +864,27 @@ export function Planner({
           </>
         )}
       </section>
+      {gpxFamousRide && (
+        // The bucket list brings its own card, so this heads it rather than boxing it in another.
+        <section aria-label="Famous ride" className="mt-3 flex flex-col gap-2">
+          <div>
+            <p className="font-display text-lg font-bold tracking-tight">
+              You rode {gpxFamousRide.title}
+            </p>
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              This ride follows one of the{" "}
+              <Link
+                href={`/rides/${gpxFamousRide.slug}`}
+                className="text-brand-dark font-bold underline dark:text-teal-300"
+              >
+                famous rides
+              </Link>
+              . Tick it off your bucket list.
+            </p>
+          </div>
+          <MarkRide rideSlug={gpxFamousRide.slug} />
+        </section>
+      )}
     </>
   );
   const routeAlerts = selectedRoute && rideAlerts.length > 0 && <RouteAlerts alerts={rideAlerts} />;
@@ -906,6 +952,9 @@ export function Planner({
           to={{ label: last.label, location: last.location }}
           departure={departure}
           onDepartureChange={setDeparture}
+          myBike={myBike}
+          onMyBikeChange={setMyBike}
+          myBikeKept={myBikeKept}
           alerts={alerts}
           rules={rules}
           days={dayPlan?.legs.map((l) => ({ fromKm: l.fromKm, toKm: l.toKm }))}
@@ -1197,7 +1246,9 @@ export function Planner({
         className={`flex shrink-0 flex-col gap-3 ${
           floatingHeader
             ? "absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-2xl border border-stone-200/80 bg-(--surface)/85 py-1.5 pr-1.5 pl-4 shadow-sm backdrop-blur-md dark:border-stone-700/80"
-            : "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none lg:w-[24rem] dark:md:border-stone-800"
+            : // The panel states its padding for the bars that reach its edges (globals.css),
+              // and keeps room for its scroll bar so the form does not shift as one appears.
+              "relative bg-(--background) px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm md:w-[26rem] md:[scrollbar-gutter:stable] md:gap-5 md:overflow-y-auto md:border-r md:border-stone-200 md:p-6 md:shadow-none md:[--panel-pb:1.5rem] md:[--panel-px:1.5rem] lg:w-[24rem] dark:md:border-stone-800"
         } ${typing ? "z-30" : "z-10"}`}
       >
         <div className="relative">
@@ -1231,6 +1282,16 @@ export function Planner({
               near={mapBias}
               onStopsChange={setStops}
               onAddStop={addStop}
+              onRideBack={() => setStops((prev) => rideBack(prev))}
+              onLoop={
+                // Checked with the start itself, so no id is used up on every render.
+                makeLoop(stops, (start) => start)
+                  ? () =>
+                      setStops(
+                        (prev) => makeLoop(prev, (start) => ({ ...start, id: newId() })) ?? prev,
+                      )
+                  : null
+              }
               onVehicleChange={setVehicle}
               onCorridorChange={setCorridorKm}
             />
@@ -1271,7 +1332,7 @@ export function Planner({
       {secondColumn && (
         <aside
           aria-label={placePanel ? "Place" : "Places along the road"}
-          className="relative w-[26rem] shrink-0 overflow-y-auto border-r border-stone-200 bg-(--surface) px-4 pt-6 dark:border-stone-800"
+          className="relative w-[26rem] shrink-0 [scrollbar-gutter:stable] overflow-y-auto border-r border-stone-200 bg-(--surface) px-(--panel-px) pt-6 pb-(--panel-pb) [--panel-pb:1.5rem] [--panel-px:1rem] dark:border-stone-800"
         >
           {secondColumn}
         </aside>
@@ -1384,7 +1445,7 @@ function StepBar() {
     <nav
       ref={bar}
       aria-label="Steps"
-      className="sticky top-0 z-10 -mx-4 flex gap-1 bg-(--surface) px-4 py-2 shadow-[0_1px_0_var(--color-stone-200)] dark:shadow-[0_1px_0_var(--color-stone-800)]"
+      className="panel-bleed sticky top-0 z-10 flex gap-1 bg-(--surface) py-2 shadow-[0_1px_0_var(--color-stone-200)] dark:shadow-[0_1px_0_var(--color-stone-800)]"
     >
       {STEPS.map((st, i) => {
         const here = i === at;
@@ -1392,8 +1453,8 @@ function StepBar() {
           <button
             key={st.id}
             type="button"
-            // Its own name: "Check" alone would sit beside the Ride check toggle.
-            aria-label={`Step ${i + 1}: ${st.label}`}
+            // Its own name, "Step 3: Check" ("Check" alone would sit beside the Ride check
+            // toggle), from its text so the spoken name starts with what is seen.
             aria-current={here ? "step" : undefined}
             onClick={() => {
               tappedUntil.current = Date.now() + 1200;
@@ -1405,12 +1466,13 @@ function StepBar() {
                 ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
                 : i < at
                   ? "bg-brand-tint text-brand-dark dark:bg-teal-950 dark:text-teal-200"
-                  : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700"
+                  : chipOff
             }`}
           >
             <span aria-hidden className="tabular font-mono text-xs">
               {i < at ? "✓" : i + 1}
             </span>
+            <span className="sr-only">Step {i + 1}: </span>
             {st.label}
           </button>
         );

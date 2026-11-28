@@ -203,6 +203,9 @@ CREATE TABLE trip (
   distance_m    int,
   duration_s    int,
   is_public     boolean NOT NULL DEFAULT true,
+  range_km      int,                           -- "My bike" (0029): range on a full tank
+  km_per_litre  real,                          -- mileage
+  fuel_price    real,                          -- rupees a litre; null = the rider's own or defaults
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
@@ -284,6 +287,19 @@ CREATE TABLE ride_mark (
   note       text NOT NULL DEFAULT '',       -- the rider's own, at most 280 characters
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (rider_id, ride_slug)
+);
+
+-- My bike (migration 0029) --------------------------------------------------------
+-- A rider's own bike and car for the ride check and trip cost. Private to the rider, never in
+-- the snapshot, row level security on with no policies (only the server reads it).
+CREATE TABLE rider_vehicle (
+  rider_id     uuid NOT NULL REFERENCES rider(id) ON DELETE CASCADE,
+  vehicle      vehicle NOT NULL,
+  range_km     int,                          -- 50–1500
+  km_per_litre real,                         -- 3–120
+  fuel_price   real,                         -- 30–300 rupees a litre
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (rider_id, vehicle)
 );
 
 -- Service points (migration 0015) -----------------------------------------------
@@ -373,6 +389,35 @@ CREATE TABLE road_report (
 );
 CREATE INDEX road_report_location_gix ON road_report USING gist (location);
 CREATE INDEX road_report_expires_idx ON road_report (expires_at);
+
+-- "Something's wrong here" (migration 0030, G8/G9) ----------------------------------
+-- A rider says a place is closed, in the wrong spot, the wrong kind or listed twice. Server only
+-- (RLS on, no policies). Never in the snapshot; settled flags go after 90 days.
+CREATE TABLE place_flag (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  place_id    uuid NOT NULL REFERENCES place(id) ON DELETE CASCADE,
+  kind        text NOT NULL CHECK (kind IN ('closed','wrong_location','wrong_category','duplicate','other')),
+  note        text NOT NULL DEFAULT '',
+  device_hash text NOT NULL,
+  status      place_status NOT NULL DEFAULT 'unverified',  -- verified = acted on, rejected = dismissed
+  moderation  jsonb,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (place_id, device_hash)
+);
+
+-- Takedown requests (migration 0031, G9) ------------------------------------------
+-- From the form on /terms: one of our pages and what is wrong with it. Server only (RLS on, no
+-- policies). Never in the snapshot; a settled request and its contact go after 90 days.
+CREATE TABLE content_report (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  path        text NOT NULL,                       -- our own page, never another site's
+  kind        text NOT NULL CHECK (kind IN ('copyright','privacy','harmful','wrong','other')),
+  note        text NOT NULL,
+  contact     text,                                -- only to answer
+  device_hash text NOT NULL,
+  status      place_status NOT NULL DEFAULT 'unverified',
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
 
 -- Spent proofs of work (0023): one solved challenge pays for one post. Server only (RLS on, no
 -- policies); the daily clean-up removes rows past expires_at.

@@ -50,6 +50,47 @@ export function longestFuelGap(
   return best;
 }
 
+/** Keep this share of the range in the tank when picking where to fill (C2). */
+export const FUEL_RESERVE = 0.25;
+
+export interface FuelPlan {
+  /** Where to fill, in km order; empty when a full tank at the start reaches the end. */
+  stops: FuelStation[];
+  /** km where the tank runs dry with no pump in reach, or null when the plan reaches the end. */
+  strandedAtKm: number | null;
+}
+
+/**
+ * Where to fill up (G10, C2): starting with a full tank, ride as far as the range less a reserve
+ * allows and fill at the last pump before that point, again and again. Fewest stops, each one as
+ * late as is safe. When no pump is in reach, says where the tank would run dry.
+ */
+export function pickFuelStops(
+  stations: FuelStation[],
+  totalKm: number,
+  rangeKm: number,
+  reserve = FUEL_RESERVE,
+): FuelPlan {
+  const reach = rangeKm * (1 - reserve);
+  const sorted = stations
+    .filter((s) => s.kmFromStart > 0 && s.kmFromStart < totalKm)
+    .sort((a, b) => a.kmFromStart - b.kmFromStart);
+  const stops: FuelStation[] = [];
+  let at = 0;
+  while (at + reach < totalKm) {
+    let next: FuelStation | undefined;
+    for (const s of sorted) {
+      if (s.kmFromStart <= at) continue;
+      if (s.kmFromStart > at + reach) break;
+      next = s;
+    }
+    if (!next) return { stops, strandedAtKm: Math.min(at + rangeKm, totalKm) };
+    stops.push(next);
+    at = next.kmFromStart;
+  }
+  return { stops, strandedAtKm: null };
+}
+
 /**
  * "ok": the longest gap uses at most 3/4 of the range (reserve left for detours and a closed
  * pump); "tight": within range but with little reserve; "short": the tank will not last.

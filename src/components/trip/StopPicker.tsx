@@ -2,6 +2,7 @@
 
 import { formatDuration } from "@/lib/format";
 import { STOP_BUDGETS_MIN, type StopBudgetMin } from "@/lib/pickStops";
+import { chipOff, chipOn } from "@/components/ui/chips";
 
 interface Props {
   /** The time chosen, or null. */
@@ -20,8 +21,6 @@ const LABELS: Record<StopBudgetMin, string> = {
 
 const chip =
   "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full px-3 text-sm whitespace-nowrap md:min-h-8 md:text-[13px]";
-const chipOn = "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900";
-const chipOff = "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700";
 
 /**
  * "Time for stops": the rider picks how long they have, and the most worthwhile sights that fit

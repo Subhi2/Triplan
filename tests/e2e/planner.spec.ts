@@ -417,6 +417,9 @@ test("open the ride story poster and download it", async ({ page }) => {
   );
   await page.getByRole("button", { name: "Ride story" }).click();
   const dialog = page.getByRole("dialog", { name: "Ride story" });
+  // The whole screen, also from inside the phone sheet (a fixed box there was cut to the sheet).
+  await expect(dialog).toBeVisible();
+  expect(await dialog.boundingBox()).toEqual({ x: 0, y: 0, ...page.viewportSize()! });
   await expect(
     dialog.getByRole("img", { name: /Ride story poster: Bengaluru → Kalasa/ }),
   ).toBeVisible();
@@ -526,8 +529,15 @@ test("stops can be reordered from the keyboard", async ({ page }) => {
   const announcement = page.locator('[id^="DndLiveRegion"]');
   await page.keyboard.press("Space");
   await expect(announcement).toHaveText(/^Picked up Sakleshpur\./);
-  await page.keyboard.press("ArrowUp");
-  await expect(announcement).toHaveText("Sakleshpur moved to position 1 of 3.");
+  // dnd-kit starts listening for keys on a timer after the pick-up, which a busy first page load
+  // can put behind the announcement: press again until the move registers (at the top, a second
+  // ArrowUp does nothing).
+  await expect(async () => {
+    await page.keyboard.press("ArrowUp");
+    await expect(announcement).toHaveText("Sakleshpur moved to position 1 of 3.", {
+      timeout: 1_000,
+    });
+  }).toPass({ timeout: 10_000 });
   await page.keyboard.press("Space");
   await expect(announcement).toHaveText("Sakleshpur dropped at position 1 of 3.");
   await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Sakleshpur");
@@ -719,6 +729,7 @@ test("save the trip with its route, then see changes that are not saved", async 
       viaLabel: "via Hassan, Sakleshpur",
       distanceKm: 330,
       durationMin: 400,
+      myBike: null,
       updatedAt: new Date().toISOString(),
     };
     return route.fulfill({ status: 201, json: { trip, editToken: "test-edit-token" } });
@@ -762,7 +773,9 @@ test("save the trip with its route, then see changes that are not saved", async 
   expect((await patch).headers()["authorization"]).toBe("Bearer test-edit-token");
 });
 
-test("tick places and open the trip in Google Maps with them as stops", async ({ page }) => {
+test("tick places and open the trip in Google Maps with them as stops", async ({
+  page,
+}, testInfo) => {
   await mockApis(page, []);
   await mockPlace(page);
   await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
@@ -777,6 +790,11 @@ test("tick places and open the trip in Google Maps with them as stops", async ({
   });
   await expect(open).toHaveAttribute("href", /maps\/dir\/\?api=1&origin=12\.9716%2C77\.5946/);
   expect(await open.getAttribute("href")).not.toContain("waypoints");
+  if (testInfo.project.name === "desktop") {
+    // The bar ends on screen, at the foot of the places column (it once hung 1rem below it).
+    const bar = await page.getByRole("region", { name: "Google Maps" }).boundingBox();
+    expect(bar!.y + bar!.height).toBeLessThanOrEqual(page.viewportSize()!.height + 0.5);
+  }
 
   await page.getByRole("checkbox", { name: "Tick Manjarabad Fort for Google Maps" }).check();
   await expect(
@@ -953,6 +971,13 @@ test("on phones the map comes with the trip, under a one-line header and over th
   for (const name of ["Famous rides", "Your trips", "About"]) {
     await expect(page.getByRole("link", { name })).toBeVisible();
   }
+  // The list's foot takes a tap: it opens above the sheet, not under it (a trial click fails
+  // when another element would receive the tap).
+  await page.getByRole("link", { name: "About" }).click({ trial: true });
+  await expect(page.getByRole("link", { name: "Near me" })).toHaveAttribute(
+    "href",
+    "/nearby?v=bike",
+  );
   await page.keyboard.press("Escape");
   await expect(page.getByRole("link", { name: "Famous rides" })).toBeHidden();
 
@@ -1016,9 +1041,16 @@ test.describe("ride check", () => {
     await expect(check).toContainText(
       "3 fuel stations within 2 km of the route, from OpenStreetMap and Overture Maps",
     );
+    // Where to fill, keeping a quarter of the tank (150 km between fills on 200 km).
+    await expect(check).toContainText(
+      "Fill at Kunigal HP (km 60). After that no pump is in reach before km 260.",
+    );
     const range = check.getByRole("spinbutton", { name: "Range on a full tank (km)" });
     await range.fill("300");
     await expect(check).toContainText("Fuel: longest stretch without a pump is 190 km");
+    await expect(check).toContainText(
+      "Fill at Kunigal HP (km 60), then Hassan IOCL (km 250), keeping a quarter of the tank spare.",
+    );
     await range.fill("150");
     await expect(check).toContainText("190 km without a pump, more than your range");
 
@@ -1561,7 +1593,8 @@ for (const vehicle of ["bike", "car"] as const) {
     await check.getByLabel("Mileage (km per litre)").fill("35");
     await check.getByLabel("Fuel price (₹ per litre)").fill("103");
     await expect(check).toContainText(/Fuel cost: about ₹9\d0 for 3\d\d km/);
-    // Remembered for this vehicle on the next visit.
+    // "My bike" travels in the trip's link (a rider without an account), so a reload keeps it.
+    await expect(page).toHaveURL(/kpl=35&fp=103/);
     await page.reload();
     await page
       .getByRole("list", { name: "Route options" })
@@ -1599,4 +1632,37 @@ test("download the trip as a GPX file with the route, stops and places", async (
   expect(gpx).toContain("<desc>Destination</desc>");
   expect(gpx).toContain("<name>Manjarabad Fort</name>");
   expect(gpx.match(/<trkpt /g)!.length).toBeGreaterThan(100);
+});
+
+/** Taps a button in the trip form, opening the folded form on phones first (it may re-fold). */
+async function tapInForm(page: Page, name: string) {
+  const target = page.getByRole("button", { name });
+  const edit = page.getByRole("button", { name: "Edit trip" });
+  await expect(async () => {
+    if (!(await target.isVisible())) await edit.click({ timeout: 1_000 });
+    await target.click({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
+test("ride back and make it a loop in one tap", async ({ page }) => {
+  const routeRequests: { stops: { label: string }[] }[] = [];
+  await mockApis(page, routeRequests);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await expect.poll(() => routeRequests.length).toBeGreaterThan(0);
+
+  await tapInForm(page, "Ride back");
+  await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Kalasa");
+  await expect(page.getByRole("combobox", { name: "Destination" })).toHaveValue("Bengaluru");
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Kalasa", "Bengaluru"]);
+
+  await tapInForm(page, "Make it a loop");
+  await expect(page.getByRole("combobox", { name: "Stop 1" })).toHaveValue("Bengaluru");
+  await expect(page.getByRole("combobox", { name: "Destination" })).toHaveValue("Kalasa");
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Kalasa", "Bengaluru", "Kalasa"]);
+  // Already a loop: the button goes.
+  await expect(page.getByRole("button", { name: "Make it a loop" })).toHaveCount(0);
 });

@@ -142,6 +142,23 @@ body {
   color: var(--foreground);
 }
 
+/* The page behind an open modal (components/ui/Modal.tsx) stays still. */
+html:has(dialog:modal) {
+  overflow: hidden;
+}
+
+/* With a mouse, panels scroll with a thin warm bar instead of the system's wide grey one, which
+   crowded the narrow side panels. Touch screens keep their own overlay bars. */
+@media (pointer: fine) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-stone-300) transparent;
+  }
+  :root[data-theme="dark"] * {
+    scrollbar-color: var(--color-stone-700) transparent;
+  }
+}
+
 @layer base {
   /* Buttons and links respond to touch: a quick press, never a jump. */
   :where(button, a, summary) {
@@ -239,6 +256,20 @@ body {
       0 0 0 2px var(--color-brand),
       0 0 0 7px color-mix(in oklab, var(--color-brand) 20%, transparent);
   }
+}
+
+/* Bars inside a scrolling panel (the phone sheet, the side panels) that reach its edges. Each
+   panel states its padding as --panel-px and --panel-pb, so a bar lines up in every panel
+   instead of guessing one panel's padding (a fixed -1rem left the Google Maps bar hanging below
+   the laptop's places column, and short of the edges on tablets). */
+@utility panel-bleed {
+  margin-inline: calc(-1 * var(--panel-px, 1rem));
+  padding-inline: var(--panel-px, 1rem);
+}
+/* Stays at the foot of the panel, flush with its bottom edge, over the panel's own padding. */
+@utility panel-foot {
+  position: sticky;
+  bottom: calc(-1 * var(--panel-pb, 0px));
 }
 
 /* A list still on screen while its new contents load: dimmed and not clickable. */

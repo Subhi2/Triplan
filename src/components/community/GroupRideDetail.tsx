@@ -21,6 +21,7 @@ import { rideApprovedText, rideInviteText, rideJoinedText } from "@/lib/communit
 import type { GroupRidePublic, GroupRideView, RideMemberRow } from "@/lib/community/views";
 import { whatsAppUrl } from "@/lib/site";
 import { trackEvent } from "@/lib/track";
+import { GroupRideCheck } from "./GroupRideCheck";
 import { RidePublicInfo } from "./RidePublicInfo";
 import { NicknamePrompt, useRider } from "./RiderGate";
 import { communityFetch, startProofOfWork } from "./riderSession";
@@ -460,6 +461,9 @@ export function GroupRideDetail({ id, initial }: { id: string; initial: GroupRid
           </p>
         )}
       </section>
+
+      {/* The road checked for the ride's own day and time, while the ride is still to come. */}
+      {open && <GroupRideCheck tripId={ride.tripId} startsAt={ride.startsAt} />}
 
       {priv && (
         <section aria-label="For riders on this ride" className={`${card} flex flex-col gap-3`}>

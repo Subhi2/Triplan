@@ -17,9 +17,9 @@ import {
 import type { WeatherProvider } from "@/server/providers/weather";
 import { jsonFixture, routeFixture } from "../helpers/fixtures";
 
-vi.mock("@/server/services/corridorService", () => ({ townsAlong: vi.fn() }));
+vi.mock("@/server/services/routeTowns", () => ({ townsAlong: vi.fn() }));
 vi.mock("@/server/services/routeService", () => ({ getRouteGeometry: vi.fn() }));
-const { townsAlong } = await import("@/server/services/corridorService");
+const { townsAlong } = await import("@/server/services/routeTowns");
 const { getRouteGeometry } = await import("@/server/services/routeService");
 const { weatherAlong } = await import("@/server/services/weatherService");
 const { POST } = await import("@/app/api/weather/route");

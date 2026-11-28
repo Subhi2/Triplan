@@ -1,5 +1,5 @@
 import { formatMonthRanges, MONTH_SHORT } from "@/lib/months";
-import { monthRatings, type MonthRating, type PlaceGuide } from "@/lib/placeDetail";
+import { avoidNow, monthRatings, type MonthRating, type PlaceGuide } from "@/lib/placeDetail";
 import { NotKnown } from "./NotKnown";
 
 // A bar per month, tallest in the best months, so the good season reads at a glance
@@ -30,6 +30,35 @@ interface Props {
   month: number;
   /** The months are estimated (src/lib/guideDefaults.ts): softer words, lighter bars. */
   estimated?: boolean;
+}
+
+const AVOID_REASON = {
+  monsoon: "Monsoon rain: slippery paths and rough roads.",
+  heat: "It is the hottest time of year here.",
+} as const;
+
+/**
+ * A warning near the top of the place page in one of its avoid months (G9, A11), so a rider
+ * planning for today sees it before the photos. Estimated months say so.
+ */
+export function AvoidNowNotice({ guide, month, estimated = false }: Props) {
+  const now = avoidNow(guide, month);
+  if (!now) return null;
+  return (
+    <div
+      role="note"
+      className="border-ghat/40 bg-ghat/10 text-ghat-dark flex flex-col gap-0.5 rounded-2xl border px-4 py-3 text-sm dark:border-orange-400/40 dark:bg-orange-950/40 dark:text-orange-200"
+    >
+      <p className="font-bold">
+        {estimated ? "Usually better avoided" : "Better avoided"} in {MONTH_LONG[month - 1]}
+      </p>
+      <p>
+        {now.reason ? `${AVOID_REASON[now.reason]} ` : ""}
+        {now.nextGood ? `Good again from ${MONTH_LONG[now.nextGood - 1]}.` : ""}
+        {estimated ? " Estimated from places like it, not checked here." : ""}
+      </p>
+    </div>
+  );
 }
 
 /** Twelve bars, January to December, marked best / ok / avoid, with the ranges in words. */

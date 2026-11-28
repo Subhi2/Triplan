@@ -21,7 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useRef } from "react";
 import { useLocate } from "@/components/geo/useLocate";
-import { MY_LOCATION } from "@/lib/nearby";
+import { fetchNearTown, MY_LOCATION, myLocationLabel } from "@/lib/nearby";
 import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import type { LngLat } from "@/lib/geo";
 import { VehicleToggle } from "@/components/ui/VehicleToggle";
@@ -48,6 +48,10 @@ interface Props {
   near: MapBias;
   onStopsChange: (stops: StopDraft[]) => void;
   onAddStop: () => void;
+  /** The same stops the other way (G10); shown once every stop is found. */
+  onRideBack: () => void;
+  /** End back at the start (G10); null when it is a loop already or has no room. */
+  onLoop: (() => void) | null;
   onVehicleChange: (v: Vehicle) => void;
   onCorridorChange: (km: CorridorKm) => void;
 }
@@ -162,6 +166,16 @@ export function TripForm(props: Props) {
         s.id === start.id ? { ...s, label: MY_LOCATION, location: at } : s,
       ),
     );
+    // Then named by the nearest town (G10), if the rider has not changed the start meanwhile.
+    const town = await fetchNearTown(at);
+    if (!town) return;
+    onStopsChange(
+      latestStops.current.map((s) =>
+        s.id === start.id && s.label === MY_LOCATION && s.location === at
+          ? { ...s, label: myLocationLabel(town) }
+          : s,
+      ),
+    );
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
@@ -200,6 +214,7 @@ export function TripForm(props: Props) {
   };
 
   const viaCount = stops.length - 2;
+  const allFound = stops.every((s) => s.location !== null);
 
   return (
     <form
@@ -287,6 +302,53 @@ export function TripForm(props: Props) {
         </svg>
         Add a stop{viaCount >= MAX_VIA_STOPS ? ` (max ${MAX_VIA_STOPS})` : ""}
       </button>
+
+      {allFound && (
+        <div className="ml-9 flex flex-wrap gap-x-4">
+          <button
+            type="button"
+            onClick={props.onRideBack}
+            className="text-brand-dark inline-flex min-h-11 items-center gap-1.5 text-sm font-bold hover:underline dark:text-teal-300"
+          >
+            <svg
+              aria-hidden
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3" />
+            </svg>
+            Ride back
+          </button>
+          {props.onLoop && (
+            <button
+              type="button"
+              onClick={props.onLoop}
+              className="text-brand-dark inline-flex min-h-11 items-center gap-1.5 text-sm font-bold hover:underline dark:text-teal-300"
+            >
+              <svg
+                aria-hidden
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" />
+              </svg>
+              Make it a loop
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9 text-sm">
         <VehicleToggle value={props.vehicle} onChange={props.onVehicleChange} />

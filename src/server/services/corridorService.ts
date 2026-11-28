@@ -103,6 +103,7 @@ interface TownRawRow extends Record<string, unknown> {
   km_from_start: number;
   population: number | null;
   kind: string;
+  distance_m: number;
 }
 
 /** The OSM place type of a town row: city, town, or a well-known village (osmClassify). */
@@ -118,8 +119,20 @@ export interface TownAlongRow {
   kind: "city" | "town" | "village";
 }
 
-/** Towns and cities within `withinM` of the route, ordered by km, with population for ranking. */
-export async function townsAlong(geometry: LineString, withinM: number): Promise<TownAlongRow[]> {
+/** A town along the route with its distance from the (50 m simplified) line. */
+export interface TownNearLineRow extends TownAlongRow {
+  distanceM: number;
+}
+
+/**
+ * Towns and cities within `withinM` of the route, ordered by km, with population for ranking and
+ * their distance from the line. One query; callers use `townsAlong` (routeTowns.ts), which asks
+ * once per route at the widest radius and filters for the others (G9, B7).
+ */
+export async function queryTownsAlong(
+  geometry: LineString,
+  withinM: number,
+): Promise<TownNearLineRow[]> {
   const rows = await getDb().execute<TownRawRow>(sql`
     WITH r AS (
       SELECT ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(geometry)}), 4326) AS g
@@ -130,7 +143,8 @@ export async function townsAlong(geometry: LineString, withinM: number): Promise
     )
     SELECT p.name, ST_X(p.location::geometry) AS lng, ST_Y(p.location::geometry) AS lat,
            ST_LineLocatePoint(rl.g, p.location::geometry) * rl.len / 1000 AS km_from_start,
-           p.population, coalesce(p.osm_tags->>'place', 'town') AS kind
+           p.population, coalesce(p.osm_tags->>'place', 'town') AS kind,
+           ST_Distance(p.location, rl.simple) AS distance_m
     FROM place p
     JOIN category c ON c.id = p.category_id
     CROSS JOIN rl
@@ -143,6 +157,7 @@ export async function townsAlong(geometry: LineString, withinM: number): Promise
     kmFromStart: Number(r.km_from_start),
     population: r.population,
     kind: townKind(r.kind),
+    distanceM: Number(r.distance_m),
   }));
 }
 
@@ -195,4 +210,28 @@ export async function townsInBox([west, south, east, north]: [number, number, nu
     population: r.population,
     kind: townKind(r.kind),
   }));
+}
+
+/** How far the nearest town may be for "Near <town>" (G10). */
+export const NEAR_TOWN_M = 25_000;
+
+/**
+ * The town to name a point by ("Near Hassan", G10): the verified town or city within 25 km,
+ * preferring bigger places a little (a city 12 km away beats a village 8 km away). Null when
+ * none is that close.
+ */
+export async function nearestTown([lng, lat]: LngLat): Promise<string | null> {
+  const rows = await getDb().execute<{ name: string }>(sql`
+    WITH pt AS (SELECT ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography AS g)
+    SELECT p.name
+    FROM place p
+    JOIN category c ON c.id = p.category_id
+    CROSS JOIN pt
+    WHERE c.slug = 'town' AND p.status = 'verified'
+      AND ST_DWithin(p.location, pt.g, ${NEAR_TOWN_M})
+    ORDER BY ST_Distance(p.location, pt.g)
+             / (CASE coalesce(p.osm_tags->>'place', 'town')
+                  WHEN 'city' THEN 2.0 WHEN 'village' THEN 0.7 ELSE 1.0 END)
+    LIMIT 1`);
+  return rows[0]?.name ?? null;
 }

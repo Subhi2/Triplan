@@ -105,8 +105,9 @@ export function BottomSheet({ label, snap, onSnapChange, hidden = false, childre
       >
         <span className="h-1.5 w-10 rounded-full bg-stone-300 dark:bg-stone-600" />
       </button>
-      {/* Bottom padding clears the iPhone home bar (safe area) as well. */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      {/* Bottom padding clears the iPhone home bar (safe area) as well. The padding is stated as
+          variables for the bars inside that reach the edges (panel-bleed, panel-foot). */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-(--panel-px) pb-(--panel-pb) [--panel-pb:calc(1rem+env(safe-area-inset-bottom))] [--panel-px:1rem]">
         {children}
       </div>
     </section>

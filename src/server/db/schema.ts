@@ -287,6 +287,11 @@ export const trip = pgTable(
     // sha256 of the edit token returned once when the trip is saved; only its holder may change
     // the trip. Null for trips saved before 2026-10-09: they are read only.
     editTokenHash: text("edit_token_hash"),
+    // The bike or car it was planned for ("My bike"), so a reopened or shared trip keeps it:
+    // range on a full tank, mileage and fuel price. Null: the defaults.
+    rangeKm: integer("range_km"),
+    kmPerLitre: real("km_per_litre"),
+    fuelPrice: real("fuel_price"),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -436,6 +441,62 @@ export const roadReport = pgTable(
   ],
 );
 
+// "Something's wrong here" (G8): a rider says a place is closed, in the wrong spot, the wrong kind
+// or listed twice. Waits for an admin, who hides the place, fixes it or dismisses the flag; never
+// shown publicly. One open flag per device and place (a second one replaces it). Not in the
+// snapshot.
+export const placeFlag = pgTable(
+  "place_flag",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => place.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // closed | wrong_location | wrong_category | duplicate | other
+    note: text("note").notNull().default(""),
+    deviceHash: text("device_hash").notNull(),
+    // unverified = waiting; verified = acted on (fixed or the place hidden); rejected = dismissed.
+    status: placeStatus("status").notNull().default("unverified"),
+    moderation: jsonb("moderation"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("place_flag_place_device_idx").on(t.placeId, t.deviceHash),
+    index("place_flag_status_idx").on(t.status, t.createdAt),
+    check(
+      "place_flag_kind_check",
+      sql`${t.kind} IN ('closed', 'wrong_location', 'wrong_category', 'duplicate', 'other')`,
+    ),
+  ],
+);
+
+// Takedown requests (G9): anyone asks for a page or something on it (a photo, a review, a club,
+// a ride) to be taken down, through the form on /terms; the admin's address stays out of the
+// site. Read only by an admin, who takes the content down by its link with the tools that
+// already exist and marks the request done or dismissed. The contact, if given, is kept only to
+// answer and goes with the request 90 days after it is settled. Not in the snapshot.
+export const contentReport = pgTable(
+  "content_report",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    path: text("path").notNull(), // our own page, "/place/…", never another site's
+    kind: text("kind").notNull(), // copyright | privacy | harmful | wrong | other
+    note: text("note").notNull(),
+    contact: text("contact"),
+    deviceHash: text("device_hash").notNull(),
+    // unverified = waiting; verified = taken down or fixed; rejected = dismissed.
+    status: placeStatus("status").notNull().default("unverified"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("content_report_status_idx").on(t.status, t.createdAt),
+    check(
+      "content_report_kind_check",
+      sql`${t.kind} IN ('copyright', 'privacy', 'harmful', 'wrong', 'other')`,
+    ),
+  ],
+);
+
 // Spent proofs of work (G5): one solved challenge pays for one post. Kept until the challenge
 // would have expired, then removed by the daily clean-up.
 export const powSpent = pgTable("pow_spent", {
@@ -580,6 +641,24 @@ export const rider = pgTable("rider", {
   createdAt: createdAt(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// "My bike": a rider's own bike and car (tank range, mileage, fuel price), kept with their
+// account so the ride check and trip cost use them on any trip and device. Private to the
+// rider; removed with them; not in the snapshot.
+export const riderVehicle = pgTable(
+  "rider_vehicle",
+  {
+    riderId: uuid("rider_id")
+      .notNull()
+      .references(() => rider.id, { onDelete: "cascade" }),
+    vehicle: vehicle("vehicle").notNull(),
+    rangeKm: integer("range_km"),
+    kmPerLitre: real("km_per_litre"),
+    fuelPrice: real("fuel_price"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.riderId, t.vehicle] })],
+);
 
 // A rider's bucket list of famous rides: want to ride (pending) or ridden (done). Private to the
 // rider; no foreign key to ride, so reseeding rides never drops marks. Not in the snapshot.

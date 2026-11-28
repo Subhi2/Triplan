@@ -29,7 +29,7 @@ describe("GET /api/health", () => {
     forgetOldForecasts.mockReset().mockResolvedValue(2);
     forgetOldAlerts.mockReset().mockResolvedValue(5);
     forgetOldVisitors.mockReset().mockResolvedValue(1);
-    forgetOldPosts.mockReset().mockResolvedValue({ pow: 6, reports: 7 });
+    forgetOldPosts.mockReset().mockResolvedValue({ pow: 6, reports: 7, flags: 2, takedowns: 1 });
     forgetOldRideNotes.mockReset().mockResolvedValue(8);
     forgetIdleRiders.mockReset().mockResolvedValue(9);
   });
@@ -48,6 +48,8 @@ describe("GET /api/health", () => {
         geocodes: 4,
         pow: 6,
         reports: 7,
+        flags: 2,
+        takedowns: 1,
         rideNotes: 8,
         idleRiders: 9,
       },

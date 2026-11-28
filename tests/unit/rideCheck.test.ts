@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LngLat } from "@/lib/geo";
 import {
+  pickFuelStops,
   breakMinutes,
   defaultDeparture,
   fromDateTimeLocal,
@@ -111,5 +112,46 @@ describe("departure time values", () => {
     ]);
     expect(toDateTimeLocal(d)).toBe("2026-10-03T06:05");
     expect(fromDateTimeLocal("tomorrow")).toBeNull();
+  });
+});
+
+describe("pickFuelStops", () => {
+  const pumps = [
+    { name: "A", kmFromStart: 60 },
+    { name: "B", kmFromStart: 140 },
+    { name: "C", kmFromStart: 170 },
+    { name: "D", kmFromStart: 300 },
+    { name: "E", kmFromStart: 420 },
+  ];
+
+  it("needs no stop when a full tank with its reserve reaches the end", () => {
+    expect(pickFuelStops(pumps, 140, 200)).toEqual({ stops: [], strandedAtKm: null });
+  });
+
+  it("fills at the last pump within reach, keeping a quarter in the tank", () => {
+    // 200 km range: 150 km between fills.
+    const plan = pickFuelStops(pumps, 450, 200);
+    // From 0 the last pump within 150 km is B (140), then C (170, D at 300 is too far), then D.
+    expect(plan.stops.map((s) => s.name)).toEqual(["B", "C", "D"]);
+    expect(plan.strandedAtKm).toBeNull();
+  });
+
+  it("says where the tank runs dry when no pump is in reach", () => {
+    const plan = pickFuelStops([{ name: "A", kmFromStart: 60 }], 400, 200);
+    expect(plan.stops.map((s) => s.name)).toEqual(["A"]);
+    expect(plan.strandedAtKm).toBe(260);
+  });
+
+  it("ignores pumps outside the route and takes them in km order", () => {
+    const plan = pickFuelStops(
+      [
+        { name: "late", kmFromStart: 140 },
+        { name: "early", kmFromStart: 100 },
+        { name: "behind", kmFromStart: -5 },
+      ],
+      250,
+      200,
+    );
+    expect(plan.stops.map((s) => s.name)).toEqual(["late"]);
   });
 });

@@ -16,7 +16,8 @@ import { RetryAlert } from "@/components/ui/RetryAlert";
 import { useMediaQuery } from "@/components/ui/useMediaQuery";
 import { roundLngLat3, type LngLat } from "@/lib/geo";
 import {
-  MY_LOCATION,
+  fetchNearTown,
+  myLocationLabel,
   NEARBY_TOP,
   nearbyRank,
   parseNearbyUrl,
@@ -121,6 +122,21 @@ export function Nearby() {
   const originName =
     origin?.label ?? (origin ? (source === "gps" ? "Your location" : "Pinned spot") : null);
 
+  // "Ride there" from the rider's position names it by the nearest town (G10), so the trip reads
+  // right when it is shared.
+  const [gpsTown, setGpsTown] = useState<string | null>(null);
+  useEffect(() => {
+    if (source !== "gps" || !origin) return;
+    let live = true;
+    void fetchNearTown(origin.location).then((town) => {
+      if (live) setGpsTown(town);
+    });
+    return () => {
+      live = false;
+      setGpsTown(null);
+    };
+  }, [source, origin]);
+
   function searchAround(at: NearbyOrigin, how: OriginSource) {
     setOrigin(at);
     setSource(how);
@@ -196,7 +212,7 @@ export function Nearby() {
             onClick={() => trackEvent("ride_there")}
             href={rideThereHref(
               {
-                label: source === "gps" ? MY_LOCATION : (originName ?? "Start"),
+                label: source === "gps" ? myLocationLabel(gpsTown) : (originName ?? "Start"),
                 location: origin.location,
               },
               openPlace,

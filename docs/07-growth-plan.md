@@ -114,6 +114,26 @@ This settles the question G4 left open, how to stop spam without sign-in: proof 
 
 Spam without a supervisor: proof of work (ALTCHA, MIT) and per-visitor limits on every new club, ride and request, caps per rider, WhatsApp invite links as the only links, and blocking by owners and hosts. Admins only take down a club or ride by its link for a legal request. Checked and left out: push notifications (left for later: they need service-worker work, and iPhones only get them for an installed app), email notices (Supabase's built-in mailer sends only a few emails an hour; a mail service costs money).
 
+**G8 · Layout audit, ride-day polish and My bike (decided 2026-11-19 to 2026-11-23).** After the owner saw popups under the page and misaligned panels on a laptop, an audit of every screen at phone and laptop width; then features that make the ride check and bucket list follow the rider. Steps are in `04-build-plan.md` "Growth G8".
+
+| Feature | Why it sells | Tools and data, and how it passes "Choosing new features" |
+|---|---|---|
+| Menus and dialogs over everything, panels that line up | A popup under the routes sheet, or a bar hanging off the screen, reads as a broken app | Web standards (Popover API, `<dialog>`) and our own CSS; nothing outside |
+| Right layout from the first paint | Laptops no longer start in the phone layout and jump | A cookie of our own and Next.js's user-agent parser |
+| Layout guard in the tests | Popups, cut-off bars and small targets cannot come back unnoticed | Playwright, already our test runner |
+| Ride check on a group ride | Every rider sees the night bans, alerts and sunset for the ride's own day without re-planning | Our ride check, road rules and SACHET alerts, already used |
+| GPX to bucket list | Riding a famous road and opening its GPX ticks it off: the bucket list fills itself | Our own ride lines, matched in the browser; the GPX never leaves the phone beyond its trimmed line |
+| My bike | Range, mileage and fuel price follow the rider to every trip and device | Supabase Postgres (a service we use and could swap) and the trip's own link; no browser storage |
+
+**G9–G12 · Audit of 2026-11-28.** The owner asked for an audit of gaps, improvements and new features, and chose all of them. Steps are in `04-build-plan.md` "Growth G9" to "G12".
+
+| Phase | Features | Tools and data, and how each passes "Choosing new features" |
+|---|---|---|
+| G9 · Launch basics | Finish "Something's wrong here"; CI that builds; Lighthouse; accessibility checks; terms and a takedown form; towns once per route; avoid-month warning | Our own code and data; axe-core (MPL-2.0), Lighthouse CI (Apache-2.0), Supabase CLI (MIT) in GitHub Actions |
+| G10 · Ride-day tools | Return trip and loop; "Near Hassan"; electric range; fuel-stop picks; packing list; printable road book; send my position; add to calendar | Our own data; OSM charging stations (ODbL); `wa.me`, `sms:` and iCalendar (web standards); `qrcode` (MIT) |
+| G11 · Community and content | Add a place; review after the ride; ride log and year card; push notices; ride photos fix; Central rides; dark 3D preview | Our own data; Supabase; Web Push (web standard, our own VAPID keys, `web-push` MPL-2.0) |
+| G12 · Reach and data | Embeds; Share to Triplan; Ask this route; Seen in films; no-signal stretches; landslide risk; languages | Wikidata (CC0); OpenCelliD (CC BY-SA 4.0) and NASA LHASA (public domain), each after a step-0 check; Anthropic behind its switch; `next-intl` (MIT) |
+
 **Later: needs decisions, accounts or money.**
 
 - "Add a place" (Phase 5 steps 3–4). Reviews and rider photos are in G5.
@@ -162,6 +182,8 @@ Web research of 2026-10-14. What we read, and what each finding changed.
 - YouTube's [developer policies](https://developers.google.com/youtube/terms/developer-policies-guide): API data refreshed or deleted within 30 days.
 
 **Checked and left out**
+- Error monitoring on GlitchTip, self-hosted OSRM, Nominatim, Photon and tiles, and Valhalla for scenic routing and "Avoid this area" (2026-11-28): each needs a server running all the time, which costs money. The app stays on the public servers it uses today.
+- Hidden places from YouTube (phase 6): postponed by the owner (2026-11-28).
 - Ookla's open speed data: CC BY-NC-SA, not for commercial use.
 - Valhalla's public FOSSGIS server for the scenic route: a free volunteer server that asks apps to announce themselves and can throttle them. Only a Valhalla on our own server (2026-10-15).
 - Offline packs downloaded from OpenFreeMap: their rules need a User-Agent a browser cannot send, so it would need their permission. Our own PMTiles file instead (2026-10-15).

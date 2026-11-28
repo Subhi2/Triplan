@@ -1,7 +1,9 @@
-# Lint, typecheck and unit tests on every push and pull request. No build here: About, the rides
-# pages and the sitemap prerender from the database, which CI has no access to; Vercel builds
-# every deploy with its own settings. Integration and end-to-end tests need the database too, so
-# they run locally (pnpm test:integration, pnpm test:e2e).
+# Two jobs on every push and pull request:
+# - check: lint, typecheck and unit tests.
+# - build: a Supabase Postgres (the Supabase CLI's own image, so the auth schema, roles and
+#   PostGIS match production) loaded from data/snapshot, then `next build` against it (About,
+#   the rides pages and the sitemap prerender from the database), then Lighthouse on four pages.
+# Integration and end-to-end tests still run locally (pnpm test:integration, pnpm test:e2e).
 name: CI
 
 on:
@@ -28,3 +30,50 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      NEXT_DIST_DIR: .next-build
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NOMINATIM_USER_AGENT: bike-travelling-guide-ci/0.1
+      # No Google, Anthropic, SACHET or community keys: every optional feature stays off.
+      USAGE_EVENTS_OFF: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase Postgres
+        run: |
+          supabase init --force < /dev/null
+          supabase db start
+      - run: pnpm install --frozen-lockfile
+      # The scripts read .env.local (tsx --env-file), which must exist; the values come from env.
+      - run: touch .env.local
+      - name: Migrations and data/snapshot
+        # On failure the last lines become annotations, readable on the run's page without logs.
+        run: |
+          set -o pipefail
+          pnpm db:setup 2>&1 | tee db-setup.log || {
+            grep -iE "error|must be|denied|does not exist|failed" db-setup.log | tail -8 \
+              | sed 's/^/::error title=db:setup::/'
+            exit 1
+          }
+      - run: pnpm build
+      - name: Lighthouse
+        run: pnpm dlx @lhci/cli@0.14.0 autorun --config=lighthouserc.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: .lighthouseci
+          if-no-files-found: ignore
+          retention-days: 14

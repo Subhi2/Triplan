@@ -18,9 +18,9 @@ export const moderationSchema = z.object({
 });
 export type Moderation = z.infer<typeof moderationSchema> & { model: string };
 
-export type PostKind = "review" | "road_report" | "photo_caption";
+export type PostKind = "review" | "road_report" | "photo_caption" | "place_flag";
 
-export const MODERATION_SYSTEM_PROMPT = `You screen posts riders leave in a road-trip guide for India before an admin reads them. A post is a review of a place (a temple, fort, waterfall, viewpoint, food stop...), a road report (closed road, landslide, flooding, potholes, diversion), or a photo caption.
+export const MODERATION_SYSTEM_PROMPT = `You screen posts riders leave in a road-trip guide for India before an admin reads them. A post is a review of a place (a temple, fort, waterfall, viewpoint, food stop...), a road report (closed road, landslide, flooding, potholes, diversion), a photo caption, or a correction to a place (closed, in the wrong spot, the wrong kind of place, listed twice).
 
 Pick one verdict:
 - ok: about the place or the road, even if short, negative, informal, in Indian English or another Indian language.

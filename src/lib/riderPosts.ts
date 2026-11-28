@@ -81,6 +81,87 @@ export const roadReportInputSchema = z.object({
 });
 export type RoadReportInput = z.infer<typeof roadReportInputSchema>;
 
+/** "Something's wrong here" on a place (G8): what the rider says is wrong. */
+export const PLACE_FLAG_KINDS = [
+  "closed",
+  "wrong_location",
+  "wrong_category",
+  "duplicate",
+  "other",
+] as const;
+export type PlaceFlagKind = (typeof PLACE_FLAG_KINDS)[number];
+
+export const PLACE_FLAG_LABELS: Record<PlaceFlagKind, string> = {
+  closed: "It is closed or gone",
+  wrong_location: "It is in the wrong spot on the map",
+  wrong_category: "It is the wrong kind of place",
+  duplicate: "It is listed twice",
+  other: "Something else",
+};
+
+export const placeFlagInputSchema = z
+  .object({ kind: z.enum(PLACE_FLAG_KINDS), note: text(REPORT_NOTE_MAX) })
+  .refine((f) => f.kind !== "other" || f.note.trim().length >= 3, {
+    message: "Say what is wrong",
+    path: ["note"],
+  });
+export type PlaceFlagInput = z.infer<typeof placeFlagInputSchema>;
+
+/** A takedown request from /terms (G9): what is wrong with a page of ours. */
+export const CONTENT_REPORT_KINDS = ["copyright", "privacy", "harmful", "wrong", "other"] as const;
+export type ContentReportKind = (typeof CONTENT_REPORT_KINDS)[number];
+
+export const CONTENT_REPORT_LABELS: Record<ContentReportKind, string> = {
+  copyright: "It uses my photo or text without permission",
+  privacy: "It shows a person or private details",
+  harmful: "It is abusive, unsafe or illegal",
+  wrong: "It is false or misleading",
+  other: "Something else",
+};
+
+export const CONTENT_NOTE_MAX = 1000;
+const CONTACT_MAX = 200;
+
+/**
+ * One of our own pages: a path, or a full link to this site reduced to its path. Never another
+ * site's address, so the form cannot carry links to elsewhere.
+ */
+export function ownPath(input: string, siteOrigin: string): string | null {
+  const s = input.trim();
+  if (!s) return null;
+  try {
+    const url = new URL(s, siteOrigin);
+    if (url.origin !== new URL(siteOrigin).origin) return null;
+    const path = `${url.pathname}${url.search}`;
+    return path.length <= 300 ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+export const contentReportInputSchema = z.object({
+  path: z
+    .string()
+    .trim()
+    .max(300)
+    .regex(/^\/[^\s]*$/, "Paste the link to the page on this site"),
+  kind: z.enum(CONTENT_REPORT_KINDS),
+  note: z
+    .string()
+    .trim()
+    .min(10, "Say what should come down and why")
+    .max(CONTENT_NOTE_MAX)
+    .transform((s) => s.replace(/\n{3,}/g, "\n\n")),
+  contact: z
+    .string()
+    .trim()
+    .max(CONTACT_MAX)
+    .transform((s) => s || null)
+    .nullable()
+    .default(null),
+});
+export type ContentReportInput = z.infer<typeof contentReportInputSchema>;
+
 /** An approved road report on a route (POST /api/route/reports). */
 export interface RoadReportAlong {
   id: string;

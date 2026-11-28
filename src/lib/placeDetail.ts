@@ -120,6 +120,34 @@ export function carryBySeason(
 export type MonthRating = "best" | "ok" | "avoid" | null;
 
 /** Best / ok / avoid for each month Jan..Dec (index 0 = January). Avoid wins over best. */
+/** What the place page says at its top when this month is one to avoid (G9, A11). */
+export interface AvoidNow {
+  /** "monsoon" in June to September, "heat" in April and May, else null (no reason known). */
+  reason: "monsoon" | "heat" | null;
+  /** The next month (1–12) that is not one to avoid, if any. */
+  nextGood: number | null;
+}
+
+/** Null unless `month` (1–12) is one of the place's avoid months. */
+export function avoidNow(
+  guide: Pick<PlaceGuide, "bestMonths" | "okMonths" | "avoidMonths"> | null,
+  month: number,
+): AvoidNow | null {
+  const ratings = monthRatings(guide);
+  if (ratings[month - 1] !== "avoid") return null;
+  const reason = month >= 6 && month <= 9 ? "monsoon" : month === 4 || month === 5 ? "heat" : null;
+  let nextGood: number | null = null;
+  for (let step = 1; step < 12; step++) {
+    const m = ((month - 1 + step) % 12) + 1;
+    const r = ratings[m - 1];
+    if (r === "best" || r === "ok") {
+      nextGood = m;
+      break;
+    }
+  }
+  return { reason, nextGood };
+}
+
 export function monthRatings(
   guide: Pick<PlaceGuide, "bestMonths" | "okMonths" | "avoidMonths"> | null,
 ): MonthRating[] {

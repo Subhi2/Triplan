@@ -34,6 +34,7 @@ import {
 } from "./composite";
 import { canEncodeVideoHere, createVideoWriter, type VideoWriter } from "./encodeVideo";
 import { storyFileName } from "./StoryShare";
+import { Modal } from "@/components/ui/Modal";
 
 const MAP_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/liberty";
@@ -465,22 +466,13 @@ export default function RidePreview(props: RidePreviewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Escape closes; the page behind does not scroll; focus starts on Close and returns on close.
+  // Focus starts on Close and returns on close. Escape, the still page behind and the inert page
+  // are the dialog's own (Modal).
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     closeButton.current?.focus();
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
-      opener?.focus();
-    };
-  }, [onClose]);
+    return () => opener?.focus();
+  }, []);
 
   function scrubTo(km: number) {
     tRef.current = timeAtKm(path, km);
@@ -648,11 +640,10 @@ export default function RidePreview(props: RidePreviewProps) {
     .sort((a, b) => Math.abs(a.kmFromStart - km) - Math.abs(b.kmFromStart - km))[0];
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`3D ride preview: ${props.title}`}
-      className="fixed inset-0 z-50 bg-stone-900 text-stone-900"
+    <Modal
+      label={`3D ride preview: ${props.title}`}
+      onClose={onClose}
+      className="bg-stone-900 text-stone-900"
     >
       {/* MapLibre makes its container position: relative, so it fills an absolute box. */}
       <div
@@ -839,7 +830,7 @@ export default function RidePreview(props: RidePreviewProps) {
       {record.status === "done" && (
         <SavedVideo url={record.url} file={record.file} title={props.title} onClose={closeVideo} />
       )}
-    </div>
+    </Modal>
   );
 }
 
