@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { after } from "next/server";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import type { Notice, PushSubscriptionInput } from "@/lib/pushNotices";
 import { siteUrl } from "@/lib/site";
 import { getDb } from "../db";
