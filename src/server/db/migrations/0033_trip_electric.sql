@@ -1,0 +1,1 @@
+ALTER TABLE "trip" ADD COLUMN "electric" boolean DEFAULT false NOT NULL;

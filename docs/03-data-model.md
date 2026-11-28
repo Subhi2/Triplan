@@ -405,6 +405,11 @@ CREATE TABLE place_flag (
   UNIQUE (place_id, device_hash)
 );
 
+-- G10 columns: electric on rider_vehicle (0032) and trip (0033), boolean, default false: the
+-- bike is electric (charging points instead of pumps, prices per kWh). packing on trip (0034),
+-- text[] of carry_item slugs the trip's device ticked. service_point.kind gains 'charging'
+-- (0032, OpenStreetMap amenity=charging_station).
+
 -- Takedown requests (migration 0031, G9) ------------------------------------------
 -- From the form on /terms: one of our pages and what is wrong with it. Server only (RLS on, no
 -- policies). Never in the snapshot; a settled request and its contact go after 90 days.

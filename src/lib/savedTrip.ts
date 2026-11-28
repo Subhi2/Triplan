@@ -36,11 +36,21 @@ export const tripPlanSchema = z.object({
 /** Body of POST /api/trips. */
 export const createTripSchema = tripPlanSchema.extend({ title: tripTitleSchema });
 
-/** Body of PATCH /api/trips/[id]: a new title, a new plan, or both. */
+/** Packing list ticks (carry_item slugs). */
+export const packingSchema = z
+  .array(z.string().regex(/^[a-z0-9_]{1,40}$/))
+  .max(40)
+  .transform((slugs) => [...new Set(slugs)]);
+
+/** Body of PATCH /api/trips/[id]: a new title, a new plan, packing ticks, or any of them. */
 export const updateTripSchema = z
-  .object({ title: tripTitleSchema.optional(), plan: tripPlanSchema.optional() })
-  .refine((b) => b.title !== undefined || b.plan !== undefined, {
-    message: "Send a title or a plan",
+  .object({
+    title: tripTitleSchema.optional(),
+    plan: tripPlanSchema.optional(),
+    packing: packingSchema.optional(),
+  })
+  .refine((b) => b.title !== undefined || b.plan !== undefined || b.packing !== undefined, {
+    message: "Send a title, a plan or packing ticks",
   });
 
 export type TripPlan = z.infer<typeof tripPlanSchema>;
@@ -77,6 +87,8 @@ export interface SavedTrip {
   durationMin: number | null;
   /** The bike or car it was planned for, or null for the rider's own or the defaults. */
   myBike: MyBike | null;
+  /** Packing list items ticked (carry_item slugs, G10). */
+  packing: string[];
   updatedAt: string; // ISO
 }
 

@@ -51,7 +51,7 @@ pnpm db:import-osm -- --region=<key|all>       # places from OpenStreetMap (--re
 pnpm db:import-photos                          # Wikimedia Commons photos (--recheck drops wrong links)
 pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptions, credited
 pnpm db:link-wikidata                          # link places to Wikidata by name and distance (--dry-run)
-pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays
+pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays, EV charging (--kinds=)
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json (--tiers-only sets each ride's tier, no routing)
 pnpm db:import-ride-photos                     # up to 8 Wikimedia Commons photos along each famous ride (--only=, --force)
 pnpm db:import-districts                       # India's districts with LGD codes, for official alerts (G5)
@@ -148,4 +148,6 @@ NEXT_PUBLIC_COMMUNITY_AUTH=       # tests only: "local" uses signed test account
 - Dark mode follows `data-theme` on `<html>` (`src/lib/theme.ts`, `docs/08-design.md`, "Light and dark"): every text and border colour needs its `dark:` pair, form fields keep the `globals.css` border rule, and the Google map's lines use `useMapColors`.
 - Takedown requests come only through the form on `/terms` (`content_report`); never publish an admin's email address on the site. A request's contact is used only to answer and goes 90 days after it is settled.
 - Every key screen in `tests/e2e/layout.spec.ts` also passes axe (`tests/helpers/axe.ts`): no serious or critical findings. A sideways strip that scrolls takes keyboard focus.
+- "Send my position" builds its message on the phone and opens WhatsApp or SMS: the position never goes to our server (G10).
+- The road book (`/book`) is our own data only: a sketch of the road, no map tiles, nothing from Google.
 - YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).

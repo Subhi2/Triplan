@@ -292,6 +292,9 @@ export const trip = pgTable(
     rangeKm: integer("range_km"),
     kmPerLitre: real("km_per_litre"),
     fuelPrice: real("fuel_price"),
+    electric: boolean("electric").notNull().default(false), // My bike is electric (G10)
+    // Items on the packing list the trip's device ticked (carry_item slugs, G10).
+    packing: text("packing").array().notNull().default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -408,7 +411,7 @@ export const servicePoint = pgTable(
     index("service_point_region_idx").on(t.region),
     check(
       "service_point_kind_check",
-      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay', 'toll')`,
+      sql`${t.kind} IN ('hospital', 'police', 'atm', 'tyre', 'repair', 'stay', 'toll', 'charging')`,
     ),
   ],
 );
@@ -655,6 +658,8 @@ export const riderVehicle = pgTable(
     rangeKm: integer("range_km"),
     kmPerLitre: real("km_per_litre"),
     fuelPrice: real("fuel_price"),
+    // An electric bike or car (G10): range between charges, km per kWh and rupees per kWh.
+    electric: boolean("electric").notNull().default(false),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.riderId, t.vehicle] })],

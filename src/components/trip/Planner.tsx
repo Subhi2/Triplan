@@ -64,6 +64,7 @@ import {
 } from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
+import { PackingList } from "./PackingList";
 import { GoogleMapsBar } from "./GoogleMapsBar";
 import { OpenRideFile } from "./OpenRideFile";
 import { PlannerHeader } from "./PlannerHeader";
@@ -1056,11 +1057,25 @@ export function Planner({
         <SafetyStops
           state={safety}
           nationalKm={selectedRoute.roadMix ? selectedRoute.roadMix.nationalM / 1000 : null}
+          position={{
+            line: selectedRoute.geometry.coordinates as LngLat[],
+            tripName: defaultTitle,
+            towns: selectedRoute.townStops,
+          }}
           selected={safetyKind}
           onSelect={(kind) =>
             setSafetyPick(kind && selectedRoute ? { routeId: selectedRoute.id, kind } : null)
           }
         />
+        {stops.at(-1)?.location && (
+          <PackingList
+            key={saved?.id ?? "new"}
+            placeIds={picked.map((p) => p.id)}
+            month={Number(departure.slice(5, 7)) || new Date().getMonth() + 1}
+            destination={stops.at(-1)!.location!}
+            saved={saved ? { id: saved.id, packing: saved.packing } : null}
+          />
+        )}
         {placesState.status === "loading" && !refreshing && (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-stone-600 dark:text-stone-400">Finding places…</p>
@@ -1156,6 +1171,13 @@ export function Planner({
         }
         onClear={() => setPicked([])}
         onDownloadGpx={downloadGpx}
+        bookHref={
+          selectedRoute
+            ? `/book?${query}&route=${encodeURIComponent(selectedRoute.id)}${
+                picked.length > 0 ? `&p=${picked.map((p) => p.id).join(",")}` : ""
+              }`
+            : null
+        }
       />
       {isWide && rideActions}
     </div>

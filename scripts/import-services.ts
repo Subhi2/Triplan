@@ -51,7 +51,7 @@ async function importRegion(
   const { failed, elements } = await runRegionTiles({
     region,
     state,
-    fetchTile: (bbox) => provider.fetchServices({ areaIso: region.iso, bbox }),
+    fetchTile: (bbox) => provider.fetchServices({ areaIso: region.iso, bbox, kinds: [...kinds] }),
     log: (line) => console.log(`  ${time()}${line}`),
     async onTile(tileElements, tile, { done, left }) {
       const points = tileElements

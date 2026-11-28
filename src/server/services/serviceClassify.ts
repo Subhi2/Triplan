@@ -12,6 +12,7 @@ export const SERVICE_KINDS = [
   "repair",
   "stay",
   "toll",
+  "charging",
 ] as const;
 export type ServiceKind = (typeof SERVICE_KINDS)[number];
 
@@ -65,6 +66,7 @@ function kindOf(tags: Record<string, string>): ServiceKind | null {
   }
   if (["hotel", "guest_house", "hostel", "motel"].includes(tags.tourism ?? "")) return "stay";
   if (tags.barrier === "toll_booth") return "toll";
+  if (tags.amenity === "charging_station") return "charging";
   return null;
 }
 

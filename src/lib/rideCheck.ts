@@ -6,6 +6,8 @@ import type { Vehicle } from "./trip";
 
 /** Distance on a full tank, by vehicle, until the rider sets their own. */
 export const DEFAULT_RANGE_KM: Record<Vehicle, number> = { bike: 200, car: 450 };
+/** Distance on a full charge for an electric bike or car (G10), until the rider sets their own. */
+export const DEFAULT_EV_RANGE_KM: Record<Vehicle, number> = { bike: 100, car: 300 };
 export const RANGE_LIMITS_KM = { min: 50, max: 1500 } as const;
 
 /** Fuel stations this far from the route (straight line) count as on the way. */

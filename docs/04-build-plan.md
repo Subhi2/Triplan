@@ -306,7 +306,9 @@ Decided 2026-11-28, after an audit of gaps in the built features (A), quality an
 
 **Passes the new-features check** (`CLAUDE.md`, "Choosing new features"): all our own code and data; axe-core (MPL-2.0), Lighthouse CI (Apache-2.0) and the Supabase CLI (MIT) are open source and run in GitHub Actions; nothing needs anyone's approval or a public server.
 
-## Growth G10 · Ride-day tools (planned)
+## Growth G10 · Ride-day tools
+
+Built 2026-11-28; how each works is in `02`, "Ride check and GPX" and "My bike".
 
 1. **Return trip and loop** (A3): "Ride back" reverses the stops; "Make it a loop" ends where it started, within `MAX_VIA_STOPS`.
 2. **"Near Hassan"** (A5): `nearestTown` from our own towns; a shared or saved trip's "My location" becomes "Near <town>" (the coordinates stay).
@@ -316,6 +318,10 @@ Decided 2026-11-28, after an audit of gaps in the built features (A), quality an
 6. **Road book** (C4): `/book`, a printable A4 trip from the trip link: route sketch, stops, fuel, breaks, rules with their links, helplines, sunset, packing list and a QR code. No map tiles, no Google content.
 7. **Send my position** (C5): one tap in Ride mode and Safety stops opens WhatsApp or SMS with an OpenStreetMap link, the nearest town and the km; nothing goes to our server.
 8. **Add to calendar** (C1): an `.ics` built in the browser for a trip or a group ride; the exact meeting point only for riders let in.
+
+**Done when:** Bengaluru → Kalasa gets a return trip and a loop in one tap; a trip started from "Use my location" near Hassan reads "Near Hassan"; an electric bike counts charging points; the ride check says where to fill up; a saved trip keeps its packing ticks; `/book` prints the trip; "Send my position" gets WhatsApp and SMS ready and sends nothing to our server; a trip and a group ride download an `.ics`.
+
+**As built:** the fuel picks are in the ride check and the road book; they are not GPX waypoints (the GPX keeps the stops and ticked places). Charging points are imported region by region, so a region not yet run has none, and the ride check then says it knows no charger on the way.
 
 **Passes the new-features check:** our own data and code, OpenStreetMap (ODbL) through the existing import, web standards (`wa.me`, `sms:`, iCalendar), `qrcode` (MIT).
 

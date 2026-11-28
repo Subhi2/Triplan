@@ -7,6 +7,7 @@ import { categoryStyle } from "@/lib/categories";
 import { isInSeason } from "@/lib/months";
 import { AHEAD_MAX_KM, compassPoint } from "@/lib/rideAhead";
 import { useRideAhead } from "./useRideAhead";
+import { SendPosition } from "@/components/route/SendPosition";
 
 interface Props {
   month: number;
@@ -143,6 +144,7 @@ export function RideMode({ month, onStop }: Props) {
       </div>
 
       <footer className="mt-3 space-y-1 text-sm text-stone-600 dark:text-stone-400">
+        <SendPosition />
         <p className="font-bold">Glance only; pull over before tapping.</p>
         <p>
           Distances are in a straight line.

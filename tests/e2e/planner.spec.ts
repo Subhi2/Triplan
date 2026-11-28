@@ -730,6 +730,7 @@ test("save the trip with its route, then see changes that are not saved", async 
       distanceKm: 330,
       durationMin: 400,
       myBike: null,
+      packing: [],
       updatedAt: new Date().toISOString(),
     };
     return route.fulfill({ status: 201, json: { trip, editToken: "test-edit-token" } });
@@ -1665,4 +1666,127 @@ test("ride back and make it a loop in one tap", async ({ page }) => {
     .toEqual(["Kalasa", "Bengaluru", "Kalasa"]);
   // Already a loop: the button goes.
   await expect(page.getByRole("button", { name: "Make it a loop" })).toHaveCount(0);
+});
+
+test("an electric bike counts charging points instead of pumps", async ({ page }) => {
+  await mockApis(page, []);
+  await page.route("**/api/places/along", (route) => {
+    const body = route.request().postDataJSON() as { categories?: string[] };
+    const places = body.categories?.[0] === "fuel" ? [pump("Hassan IOCL", 250)] : [];
+    return route.fulfill({ json: { places } });
+  });
+  const chargingAsked: unknown[] = [];
+  await page.route("**/api/services/charging", (route) => {
+    chargingAsked.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: {
+        points: [
+          { name: "Kunigal EV Hub", kmFromStart: 70 },
+          { name: "Hassan Charge", kmFromStart: 160 },
+        ],
+      },
+    });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  await expect(check).toContainText("Fuel:");
+  expect(chargingAsked).toHaveLength(0); // only asked for once the bike is electric
+
+  await check.getByLabel(/^Electric bike/).check();
+  // 100 km on a charge by default: 75 km between charges with a quarter spare.
+  await expect(check.getByRole("spinbutton", { name: "Range on a full charge (km)" })).toHaveValue(
+    "100",
+  );
+  await expect(check).toContainText("Charging:");
+  await expect(check).toContainText("Charge at Kunigal EV Hub (km 70)");
+  await expect(check).toContainText("2 charging points within 2 km of the route");
+  await expect(check.getByText("Charging price (₹ per kWh)")).toBeVisible();
+  // The trip's link keeps it.
+  await expect(page).toHaveURL(/ev=1/);
+});
+
+test.describe("send my position", () => {
+  test.use({
+    geolocation: { longitude: 76.0996, latitude: 13.0072 },
+    permissions: ["geolocation"],
+  });
+
+  test("gets WhatsApp and SMS ready with the position, sent nowhere else", async ({ page }) => {
+    await mockApis(page, []);
+    const ours: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("13.007") && new URL(r.url()).host === new URL(page.url()).host) {
+        ours.push(r.url());
+      }
+    });
+    await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+    await page.getByRole("button", { name: "Send my position" }).click();
+    const whatsapp = page.getByRole("link", { name: "Send on WhatsApp" });
+    await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=I%20need%20help/);
+    await expect(whatsapp).toHaveAttribute("href", /openstreetmap\.org/);
+    await expect(page.getByRole("link", { name: "Send by SMS" })).toHaveAttribute(
+      "href",
+      /^sms:\?&body=/,
+    );
+    expect(ours).toEqual([]);
+  });
+});
+
+test("add the ride's start to the calendar", async ({ page }) => {
+  await mockApis(page, []);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  await check.getByLabel("Start").fill("2026-12-05T06:00");
+  const download = page.waitForEvent("download");
+  await check.getByRole("button", { name: "Add to calendar" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("ride-bengaluru-kalasa.ics");
+  const text = await (await import("node:fs/promises")).readFile((await file.path())!, "utf8");
+  expect(text).toContain("SUMMARY:Ride: Bengaluru → Kalasa");
+  expect(text).toMatch(/DTSTART:20261205T\d{6}Z/);
+});
+
+test("a packing list from the trip's places, to tick off", async ({ page }) => {
+  await mockApis(page, []);
+  const asked: { month: number }[] = [];
+  await page.route("**/api/packing", (route) => {
+    asked.push(route.request().postDataJSON() as { month: number });
+    return route.fulfill({
+      json: {
+        items: [
+          { slug: "water_2l", name: "Water (2 L)", for: [] },
+          { slug: "raincoat", name: "Raincoat", for: ["Manjarabad Fort"] },
+        ],
+      },
+    });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const summary = page.getByText("What to pack");
+  await summary.scrollIntoViewIfNeeded();
+  await summary.click();
+  const list = page.getByRole("list", { name: "Packing list" });
+  await expect(list.getByText("For Manjarabad Fort")).toBeVisible();
+  await list.getByLabel(/Raincoat/).check();
+  await expect(page.getByText("1/2")).toBeVisible();
+  await expect(page.getByText("Save the trip to keep your ticks.")).toBeVisible();
+  expect(asked.at(-1)!.month).toBeGreaterThanOrEqual(1);
 });
