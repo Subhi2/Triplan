@@ -17,6 +17,9 @@ export function SiteFooter() {
         <Link href="/about" className="inline-flex min-h-11 items-center underline md:min-h-0">
           About {SITE_NAME}
         </Link>
+        <Link href="/contribute" className="inline-flex min-h-11 items-center underline md:min-h-0">
+          Add a place
+        </Link>
         <Link href="/terms" className="inline-flex min-h-11 items-center underline md:min-h-0">
           Terms
         </Link>

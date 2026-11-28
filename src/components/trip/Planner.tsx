@@ -65,6 +65,9 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { PackingList } from "./PackingList";
+import { AfterTheRide } from "./AfterTheRide";
+import { LogThisRide } from "./LogThisRide";
+import { askForReviews, placesAtStops } from "@/lib/afterRide";
 import { GoogleMapsBar } from "./GoogleMapsBar";
 import { OpenRideFile } from "./OpenRideFile";
 import { PlannerHeader } from "./PlannerHeader";
@@ -987,8 +990,20 @@ export function Planner({
   );
 
   // The last things before riding: offline copy and ride together (save and share sit in saveBar).
+  // After the ride (G11): the places a saved trip stopped at, once it has sat unchanged a while.
+  const reviewStops =
+    saved && askForReviews(saved.updatedAt) ? placesAtStops(stops, allPlaces) : [];
   const rideActions = selectedRoute && (
     <>
+      {reviewStops.length > 0 && <AfterTheRide places={reviewStops} />}
+      {saved && (
+        <LogThisRide
+          tripId={saved.id}
+          title={saved.title}
+          distanceKm={selectedRoute.distanceKm}
+          hairpins={selectedRoute.curvature?.hairpins ?? 0}
+        />
+      )}
       {packOpen ? (
         <p role="status" className="text-sm text-stone-600 dark:text-stone-400">
           {pack.tiles > 0

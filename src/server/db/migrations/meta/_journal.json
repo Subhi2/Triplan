@@ -253,6 +253,13 @@
       "when": 1795873071361,
       "tag": "0035_ride_photo_block",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795876070176,
+      "tag": "0036_ride_log",
+      "breakpoints": true
     }
   ]
 }

@@ -89,10 +89,16 @@ function EstimateNote({ basis }: { basis: string }) {
   );
 }
 
-function Section(props: { title: string; level: 2 | 3; children: React.ReactNode }) {
+function Section(props: {
+  title: string;
+  level: 2 | 3;
+  /** An anchor to link to (#reviews). */
+  id?: string;
+  children: React.ReactNode;
+}) {
   const H = props.level === 2 ? "h2" : "h3";
   return (
-    <section className="flex flex-col gap-2">
+    <section id={props.id} className="flex scroll-mt-4 flex-col gap-2">
       <H className="font-display text-lg font-bold tracking-tight">{props.title}</H>
       {props.children}
     </section>
@@ -350,7 +356,7 @@ export function PlaceDetailView({
         />
       </Section>
 
-      <Section title="Reviews" level={sub}>
+      <Section title="Reviews" level={sub} id="reviews">
         {place.reviews.length === 0 ? (
           <p className="text-sm text-stone-600 dark:text-stone-400">No reviews yet.</p>
         ) : (

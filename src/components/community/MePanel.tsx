@@ -8,6 +8,7 @@ import { COMMUNITY_LOCAL_AUTH } from "@/lib/community/enabled";
 import { NICKNAME_MAX, nicknameSchema } from "@/lib/community/schemas";
 import type { MeOverview } from "@/lib/community/views";
 import { ClubCard, GroupRideCard } from "./Cards";
+import { MyRides } from "./MyRides";
 import { RideProgress } from "./RideProgress";
 import { NicknamePrompt, useRider } from "./RiderGate";
 import {
@@ -213,6 +214,7 @@ export function MePanel({
       </section>
 
       <RideProgress rides={badgeRides} />
+      <MyRides />
 
       <section aria-label="Rides you host" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

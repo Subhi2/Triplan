@@ -126,6 +126,11 @@ const PAGES: { path: string; ready: (page: Page) => Promise<void> }[] = [
     ready: (page) => expect(page.getByRole("heading", { level: 1 })).toBeVisible(),
   },
   {
+    path: "/contribute",
+    ready: (page) =>
+      expect(page.getByRole("heading", { name: "Add a place", level: 1 })).toBeVisible(),
+  },
+  {
     path: "/terms",
     ready: (page) => expect(page.getByRole("heading", { name: "Terms", level: 1 })).toBeVisible(),
   },
