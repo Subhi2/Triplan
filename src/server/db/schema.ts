@@ -680,6 +680,31 @@ export const riderVehicle = pgTable(
   (t) => [primaryKey({ columns: [t.riderId, t.vehicle] })],
 );
 
+// A rider's own ride log (G11): rides they did that are not famous rides (those are marked done
+// in ride_mark). Numbers only: never a line or a position. Private to the rider; removed with
+// them; never in the snapshot.
+export const rideLog = pgTable(
+  "ride_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    riderId: uuid("rider_id")
+      .notNull()
+      .references(() => rider.id, { onDelete: "cascade" }),
+    riddenOn: date("ridden_on").notNull(),
+    title: text("title").notNull(),
+    distanceKm: real("distance_km").notNull(),
+    hairpins: smallint("hairpins").notNull().default(0),
+    climbM: integer("climb_m"),
+    // The saved trip it came from, so the same trip is not logged twice. No foreign key.
+    tripId: uuid("trip_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("ride_log_rider_idx").on(t.riderId, t.riddenOn),
+    uniqueIndex("ride_log_trip_idx").on(t.riderId, t.tripId),
+  ],
+);
+
 // A rider's bucket list of famous rides: want to ride (pending) or ridden (done). Private to the
 // rider; no foreign key to ride, so reseeding rides never drops marks. Not in the snapshot.
 export const rideMark = pgTable(

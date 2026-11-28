@@ -66,6 +66,7 @@ import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { PackingList } from "./PackingList";
 import { AfterTheRide } from "./AfterTheRide";
+import { LogThisRide } from "./LogThisRide";
 import { askForReviews, placesAtStops } from "@/lib/afterRide";
 import { GoogleMapsBar } from "./GoogleMapsBar";
 import { OpenRideFile } from "./OpenRideFile";
@@ -995,6 +996,14 @@ export function Planner({
   const rideActions = selectedRoute && (
     <>
       {reviewStops.length > 0 && <AfterTheRide places={reviewStops} />}
+      {saved && (
+        <LogThisRide
+          tripId={saved.id}
+          title={saved.title}
+          distanceKm={selectedRoute.distanceKm}
+          hairpins={selectedRoute.curvature?.hairpins ?? 0}
+        />
+      )}
       {packOpen ? (
         <p role="status" className="text-sm text-stone-600 dark:text-stone-400">
           {pack.tiles > 0
