@@ -39,3 +39,6 @@ pnpm-debug.log*
 
 # Our own offline map file and its fonts (pnpm tiles:extract); uploaded, never committed
 /data/tiles/
+
+# Lighthouse CI reports (CI job "build")
+/.lighthouseci/
