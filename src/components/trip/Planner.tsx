@@ -1171,6 +1171,13 @@ export function Planner({
         }
         onClear={() => setPicked([])}
         onDownloadGpx={downloadGpx}
+        bookHref={
+          selectedRoute
+            ? `/book?${query}&route=${encodeURIComponent(selectedRoute.id)}${
+                picked.length > 0 ? `&p=${picked.map((p) => p.id).join(",")}` : ""
+              }`
+            : null
+        }
       />
       {isWide && rideActions}
     </div>

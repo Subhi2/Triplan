@@ -12,6 +12,8 @@ interface Props {
   onClear: () => void;
   /** Downloads the trip as a GPX file, for OsmAnd, Organic Maps and GPS units. */
   onDownloadGpx: () => void;
+  /** The printable road book for the picked route (G10), or null without one. */
+  bookHref?: string | null;
 }
 
 /**
@@ -19,7 +21,14 @@ interface Props {
  * via stops and the ticked places as stops in route order, or downloads it as GPX. It sits flush
  * with the bottom of whichever panel holds it (`panel-foot`, from the panel's --panel-pb).
  */
-export function GoogleMapsBar({ trip, pickedCount, totalMin, onClear, onDownloadGpx }: Props) {
+export function GoogleMapsBar({
+  trip,
+  pickedCount,
+  totalMin,
+  onClear,
+  onDownloadGpx,
+  bookHref = null,
+}: Props) {
   const tooMany = trip.url === null && trip.waypointCount > MAX_GOOGLE_WAYPOINTS;
   return (
     <div
@@ -72,6 +81,17 @@ export function GoogleMapsBar({ trip, pickedCount, totalMin, onClear, onDownload
       >
         GPX
       </button>
+      {bookHref && (
+        <a
+          href={bookHref}
+          target="_blank"
+          rel="noopener"
+          title="A printable road book: stops, fuel, road rules, helplines and what to pack"
+          className="inline-flex min-h-12 items-center rounded-xl border border-stone-300 bg-(--surface) px-4 font-bold whitespace-nowrap hover:border-stone-500 md:min-h-10 dark:border-stone-700"
+        >
+          Print
+        </a>
+      )}
       {trip.url ? (
         <a
           href={trip.url}
