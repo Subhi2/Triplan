@@ -201,7 +201,9 @@ test("a takedown request from /terms reaches the admin queue", async ({ page }, 
     await form.getByLabel("It uses my photo or text without permission").check();
     await form.getByLabel("What should come down, and why").fill(note);
     await form.getByRole("button", { name: "Send the request" }).click();
-    await expect(page.getByText(/We read every request/).last()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("status").filter({ hasText: "Thanks." })).toBeVisible({
+      timeout: 30_000,
+    });
 
     const [row] = await sql`SELECT path, kind, status, contact FROM content_report
                             WHERE note = ${note}`;
