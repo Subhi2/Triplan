@@ -325,7 +325,9 @@ Built 2026-11-28; how each works is in `02`, "Ride check and GPX" and "My bike".
 
 **Passes the new-features check:** our own data and code, OpenStreetMap (ODbL) through the existing import, web standards (`wa.me`, `sms:`, iCalendar), `qrcode` (MIT).
 
-## Growth G11 · Community and content (planned)
+## Growth G11 · Community and content
+
+Built 2026-11-28; how each works is in `02`, "Reviews, photos and road reports", "Community (G6)" and "Famous rides".
 
 1. **Add a place** (A9, Phase 5 steps 3–4): `/contribute` with a pin, name, category, optional guide fields, photos and a plain link; proof of work, pre-screen, a duplicate check (`pg_trgm` > 0.4 within 1 km) and the admin's "New places".
 2. **Review after the ride** (C6): a past trip or group ride asks for reviews of its stops.
@@ -334,6 +336,13 @@ Built 2026-11-28; how each works is in `02`, "Ride check and GPX" and "My bike".
 5. **Ride photos** (A8): a tighter distance from the road, and `ride_photo_block` so a photo an admin hides stays hidden after a re-import.
 6. **Famous rides** (A6): a "Central" area; Bihar and Andaman rides only if every stop resolves.
 7. **3D preview in dark mode** (A7).
+
+**As built:**
+- Add a place takes no photos at first: riders add them on the place's page once it is approved. No AI pre-screen either: an admin reads every new place.
+- "Review after the ride" shows on a saved trip left unchanged for 12 hours (trips keep no ride date) and on a past group ride, which links to its trip.
+- The ride log is filled from "I rode this today" on a saved trip, by hand on Me, and from famous rides marked ridden; not from an opened GPX.
+- Push notices are off until `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are set on Vercel (`npx web-push generate-vapid-keys`).
+- Two rides were added (Port Blair to Chidiya Tapu, Rajgir to Bodh Gaya), so Bihar and the Andaman and Nicobar Islands now have one each.
 
 **Passes the new-features check:** our own data; Supabase (a service we use and could swap); Web Push is a web standard with keys we hold; Commons as already used.
 

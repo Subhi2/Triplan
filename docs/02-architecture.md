@@ -381,6 +381,18 @@ Up to eight photos per ride in `ride_photo`, picked by `pnpm db:import-ride-phot
 - **Badges** (`src/lib/badges.ts`) are worked out from the done rides each time, not stored: counts 1, 5, 10, 25; Legends 1, 3 and all; three rides in a part of India.
 - **Share card.** `GET /og/done?ride=<slug>&on=<YYYY-MM-DD>` draws the ride's 1200x630 card with `TripCard` ("Ridden", "· Legend", the day if it is a real past day). Our own route and numbers only.
 
+### Hiding a ride photo
+
+`/admin` "Hide a ride photo" lists a ride's gallery by its link; Hide deletes the `ride_photo` row and records the file in `ride_photo_block`, which `pnpm db:import-ride-photos` skips, so a re-import never brings it back. Photos are kept within 3 km of the road (was 6 km).
+
+### My rides (G11)
+
+"My rides" on Me lists the rider's `ride_log` (day, name, km, hairpins, climb; never a line or a position; from "I rode this today" on a saved trip or typed in) and the famous rides they marked ridden, with totals by year (`src/lib/rideLog.ts`) and a year card (`/og/year?y&r&km&hp`, numbers only, no nickname). `GET/POST/DELETE /api/me/log`, rider only. No leaderboard.
+
+## Push notices (G11)
+
+Web Push with our own VAPID keys (`web-push`, MPL-2.0); off, and the switch hidden, without `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. A rider turns notices on for a device on Me (`PushToggle`, `POST/DELETE /api/me/push`, `push_subscription`; on iPhones only in the app added to the home screen). The ride and club routes send, after the response (`notifyLater`, Next's `after()`): a request to join a ride or club that waits for a decision (to the host and co-hosts, or the owner and admins), the decision (to the rider), and a ride called off, back on or moved (to its riders). The text (`src/lib/pushNotices.ts`) names only the ride or club and what happened, and opens its page; never a meeting point, WhatsApp link or room. A subscription the push service reports gone (404, 410) is deleted. The service worker shows the notice and opens only our own pages.
+
 ## Light and dark
 
 `data-theme` ("light" or "dark") on `<html>`, set before the first paint by the script in `layout.tsx` (`THEME_SCRIPT`, `src/lib/theme.ts`) from `localStorage` ("theme") or the device. Tailwind's `dark:` variant and the colour tokens in `globals.css` follow it. `ThemeToggle` is in `SiteNav`, the planner and Near me headers, and the Menu. The Google map is made with the colour scheme in force and made again when it changes (`GoogleMapView`); its lines take `useMapColors`. The MapLibre map (`MapView`) uses OpenFreeMap's "dark" style in dark mode and passes the dark palette to its layers through `MapPaletteContext`. Rules and what was checked: `08-design.md`, "Light and dark".
@@ -568,6 +580,8 @@ The ride check's range on a full tank, and the trip cost's mileage and fuel pric
 - **Road reports**: a kind, a point (the rider's position on a tap, or a km of the selected route) and a short note; they expire after 72 hours (closed, landslide, flooded) or 24 hours (potholes, diversion). Approved reports within 500 m of the route show in the ride check (`reports_along_route`, `POST /api/route/reports`) until they expire; the daily clean-up deletes them a week later, and spent proofs of work once they would have expired.
 - **"Something's wrong here"** (G8, built in G9): on a place page a rider says it is closed, in the wrong spot, the wrong kind of place or listed twice (`POST /api/places/[slug]/flags`, `place_flag`). The same gate and pre-screen; one open flag per device and place. `/admin` lists them with how many riders flagged the place: Hide the place (status `rejected`, which the OpenStreetMap re-import keeps), Fixed, or Dismiss. Never shown on the site; settled flags go after 90 days.
 - **Takedown requests** (G9): `/terms` has a form (`POST /api/takedown`, `content_report`) for anything on our pages: a link to the page (only this site's links are taken, `ownPath`), what is wrong, a note and an optional contact to answer. The same proof of work and limits; no pre-screen. The admin takes the content down with the tools that exist (reject a post, hide a place, take down a club or ride by link) and marks the request done or dismissed. The admin's address never appears on the site; a settled request and its contact go after 90 days.
+- **Add a place** (G11, `/contribute`, `POST /api/places/contribute`, `contributeService.ts`): a pin on a MapLibre map (or "I am there now"), a name, a kind, and optionally best months, a note (`place_guide.notes`) and a YouTube or Instagram link kept as a plain `social_post` (`user_link`, never fetched). Before sending, places within 1 km with a similar name (`pg_trgm` similarity > 0.4) are listed. Behind `gatePost`; saved as `place` with `status = 'unverified'` and `source = 'rider'`; `/admin` "New places" approves it (it then shows on routes) or rejects it (deleted with its guide and link).
+- **Review after the ride** (G11, `src/lib/afterRide.ts`): a saved trip left unchanged for 12 hours asks "Rode it? How was it?" with the places it stopped at (a stop within 300 m of a place), each linking to `/place/<slug>#reviews`; places this device reviewed are left out.
 - **Rating**: places still show their plain average. Ranking (`placeRank`) uses a Bayesian average, `(C × m + Σ ratings) / (C + n)` with `m = 3.5` and `C = 5`, so one 5-star review does not top fifty 4.5-star ones. (A per-category mean waits until there are enough reviews to have one.)
 
 ## Community (G6)

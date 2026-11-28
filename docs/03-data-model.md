@@ -410,6 +410,13 @@ CREATE TABLE place_flag (
 -- text[] of carry_item slugs the trip's device ticked. service_point.kind gains 'charging'
 -- (0032, OpenStreetMap amenity=charging_station).
 
+-- G11 tables, all server only (RLS on, no policies), never in the snapshot:
+-- ride_photo_block (0035): ride_slug + Commons file an admin hid; the photo import skips them.
+-- ride_log (0036): id, rider_id (cascade), ridden_on date, title, distance_km, hairpins, climb_m,
+--   trip_id (no FK; unique per rider). A rider's own rides; numbers only.
+-- push_subscription (0037): endpoint (PK), rider_id (cascade), p256dh, auth, created_at.
+-- Riders' new places are place rows with source = 'rider' and status 'unverified' until approved.
+
 -- Takedown requests (migration 0031, G9) ------------------------------------------
 -- From the form on /terms: one of our pages and what is wrong with it. Server only (RLS on, no
 -- policies). Never in the snapshot; a settled request and its contact go after 90 days.

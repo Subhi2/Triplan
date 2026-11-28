@@ -118,6 +118,8 @@ SACHET_BASE_URL=https://sachet.ndma.gov.in/cap_public_website   # alerts on the 
 NEXT_PUBLIC_OFFLINE_TILES_URL=    # our own PMTiles file of India for offline packs (G5); empty = no "Save for offline"
 ALTCHA_HMAC_KEY=                  # proof of work for reviews, photos and road reports (G5); empty = closed
 ADMIN_EMAILS=                     # who may sign in to /admin (G5); set in the deployment, never committed
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=     # Web Push for clubs and group rides (G11); empty = no notices
+VAPID_PRIVATE_KEY=                # its private half; server only
 PHOTO_STORE=                      # tests only: "memory" keeps riders' photos out of Supabase Storage
 NEXT_PUBLIC_COMMUNITY=            # 0 hides clubs, group rides and Me (G6); on whenever Supabase is set
 NEXT_PUBLIC_COMMUNITY_AUTH=       # tests only: "local" uses signed test accounts instead of Supabase users
@@ -150,4 +152,6 @@ NEXT_PUBLIC_COMMUNITY_AUTH=       # tests only: "local" uses signed test account
 - Every key screen in `tests/e2e/layout.spec.ts` also passes axe (`tests/helpers/axe.ts`): no serious or critical findings. A sideways strip that scrolls takes keyboard focus.
 - "Send my position" builds its message on the phone and opens WhatsApp or SMS: the position never goes to our server (G10).
 - The road book (`/book`) is our own data only: a sketch of the road, no map tiles, nothing from Google.
+- Push notices name only the ride or club and what happened: never a meeting point, WhatsApp link or room id (`src/lib/pushNotices.ts`).
+- The ride log (`ride_log`) holds numbers only, never a line or a position; the year card shows no nickname.
 - YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).
