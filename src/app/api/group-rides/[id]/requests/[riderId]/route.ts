@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { rideDecisionNotice, type RideDecision } from "@/lib/pushNotices";
 import { RIDE_MEMBER_ACTIONS } from "@/lib/community/schemas";
 import { failed, invalid, json, readJson, requireRider } from "@/server/services/communityHttp";
 import { actOnRideMember } from "@/server/services/groupRideService";
+import { notifyLater, notifyRiders, rideAudience } from "@/server/services/pushService";
 import { allowWrite } from "@/server/services/writeLimit";
 
 type Ctx = { params: Promise<{ id: string; riderId: string }> };
@@ -21,6 +23,18 @@ export async function POST(request: Request, { params }: Ctx) {
   if (!(await allowWrite(request))) return json({ error: "Too many changes from here" }, 429);
   try {
     await actOnRideMember(id, me.id, riderId, parsed.data.action);
+    const action = parsed.data.action;
+    if (
+      action === "approve" ||
+      action === "waitlist" ||
+      action === "decline" ||
+      action === "remove"
+    ) {
+      notifyLater(async () => {
+        const { title } = await rideAudience(id);
+        await notifyRiders([riderId], rideDecisionNotice(title, id, action as RideDecision));
+      });
+    }
     return json({ ok: true });
   } catch (err) {
     return failed("POST /api/group-rides/[id]/requests/[riderId]", err);

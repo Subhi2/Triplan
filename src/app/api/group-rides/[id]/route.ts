@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { rideChangeNotice } from "@/lib/pushNotices";
 import { groupRideUpdateSchema } from "@/lib/community/schemas";
 import {
   failed,
@@ -9,6 +10,7 @@ import {
   requireRider,
 } from "@/server/services/communityHttp";
 import { groupRideView, updateGroupRide } from "@/server/services/groupRideService";
+import { notifyLater, notifyRiders, rideAudience } from "@/server/services/pushService";
 import { allowWrite } from "@/server/services/writeLimit";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -39,6 +41,22 @@ export async function PATCH(request: Request, { params }: Ctx) {
   if (!(await allowWrite(request))) return json({ error: "Too many changes from here" }, 429);
   try {
     await updateGroupRide(id, me.id, parsed.data.update);
+    const { cancelled, startsAt } = parsed.data.update;
+    const what =
+      cancelled === true
+        ? "cancelled"
+        : cancelled === false
+          ? "restored"
+          : startsAt
+            ? "time"
+            : null;
+    if (what) {
+      notifyLater(async () => {
+        const { title, riders, hosts } = await rideAudience(id);
+        const others = [...riders, ...hosts].filter((r) => r !== me.id);
+        await notifyRiders(others, rideChangeNotice(title, id, what));
+      });
+    }
     return json({ ok: true });
   } catch (err) {
     return failed("PATCH /api/group-rides/[id]", err);

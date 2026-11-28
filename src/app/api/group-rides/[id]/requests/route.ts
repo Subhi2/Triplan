@@ -1,9 +1,11 @@
 import { z } from "zod";
+import { rideRequestNotice } from "@/lib/pushNotices";
 import { joinRequestSchema } from "@/lib/community/schemas";
 import { failed, invalid, json, readJson, requireRider } from "@/server/services/communityHttp";
 import { leaveRide, requestToJoin } from "@/server/services/groupRideService";
 import { gatePost } from "@/server/services/postGate";
 import { powPayloadSchema } from "@/server/services/proofOfWork";
+import { notifyLater, notifyRiders, rideAudience } from "@/server/services/pushService";
 import { allowWrite } from "@/server/services/writeLimit";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -25,7 +27,15 @@ export async function POST(request: Request, { params }: Ctx) {
   const refused = await gatePost(request, parsed.data.pow);
   if (refused) return refused;
   try {
-    return json({ status: await requestToJoin(id, me.id, parsed.data.request) });
+    const status = await requestToJoin(id, me.id, parsed.data.request);
+    // A request the host has to decide on: a push notice to the host and co-hosts (G11).
+    if (status === "pending") {
+      notifyLater(async () => {
+        const { title, hosts } = await rideAudience(id);
+        await notifyRiders(hosts, rideRequestNotice(title, id));
+      });
+    }
+    return json({ status });
   } catch (err) {
     return failed("POST /api/group-rides/[id]/requests", err);
   }

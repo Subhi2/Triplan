@@ -680,6 +680,23 @@ export const riderVehicle = pgTable(
   (t) => [primaryKey({ columns: [t.riderId, t.vehicle] })],
 );
 
+// Push notices (G11, C9): a rider's devices that asked for them (Web Push). Private; removed with
+// the rider, and when the browser's push service says the subscription is gone. Not in the
+// snapshot.
+export const pushSubscription = pgTable(
+  "push_subscription",
+  {
+    endpoint: text("endpoint").primaryKey(),
+    riderId: uuid("rider_id")
+      .notNull()
+      .references(() => rider.id, { onDelete: "cascade" }),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("push_subscription_rider_idx").on(t.riderId)],
+);
+
 // A rider's own ride log (G11): rides they did that are not famous rides (those are marked done
 // in ride_mark). Numbers only: never a line or a position. Private to the rider; removed with
 // them; never in the snapshot.

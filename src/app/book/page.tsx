@@ -12,10 +12,12 @@ import {
   FUEL_CORRIDOR_KM,
   pickFuelStops,
 } from "@/lib/rideCheck";
+import { placeRank } from "@/lib/places";
+import { spreadStops } from "@/lib/roadBook";
 import { helplines } from "@/lib/safety";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import { parseTripUrl, serializeTripUrl } from "@/lib/tripUrl";
-import { placesAlong } from "@/server/services/corridorService";
+import { placesAlong, toPlaceAlong } from "@/server/services/corridorService";
 import { openPlacesAlong } from "@/server/services/openPlaceService";
 import { packingFor } from "@/server/services/packingService";
 import { rulesAlongRoute } from "@/server/services/roadRuleService";
@@ -31,7 +33,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Stops listed when the rider picked none: the well-known places along the road. */
+/** Stops listed when the rider picked none: the best along the road, spread out. */
 const TOP_PLACES = 15;
 const UUID = /^[0-9a-f-]{36}$/;
 
@@ -91,7 +93,9 @@ export default async function RoadBookPage({ searchParams }: { searchParams: Sea
 
   const picked = places.filter((p) => pickedIds.includes(p.id));
   const stops = (
-    picked.length > 0 ? picked : places.filter((p) => p.notable).slice(0, TOP_PLACES)
+    picked.length > 0
+      ? picked
+      : spreadStops(places, totalKm, (p) => placeRank(toPlaceAlong(p)), TOP_PLACES)
   ).sort((a, b) => a.kmFromStart - b.kmFromStart);
   const stations = electric
     ? charging.map((c) => ({ name: c.name ?? "Charging point", kmFromStart: c.kmFromStart }))
