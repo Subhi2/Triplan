@@ -50,6 +50,7 @@ pnpm db:seed          # load docs/06 seed data
 pnpm db:import-osm -- --region=<key|all>       # places from OpenStreetMap (--resume after a stopped run)
 pnpm db:import-photos                          # Wikimedia Commons photos (--recheck drops wrong links)
 pnpm db:import-descriptions                    # Wikipedia / Wikidata descriptions, credited
+pnpm db:import-films                           # films shot at our places, from Wikidata (P915, CC0)
 pnpm db:link-wikidata                          # link places to Wikidata by name and distance (--dry-run)
 pnpm db:import-services -- --region=<key|all>  # hospitals, police, ATMs, tyre/repair shops, stays, EV charging (--kinds=)
 pnpm db:seed-rides    # route and store the famous rides in data/rides.json (--tiers-only sets each ride's tier, no routing)
@@ -154,4 +155,8 @@ NEXT_PUBLIC_COMMUNITY_AUTH=       # tests only: "local" uses signed test account
 - The road book (`/book`) is our own data only: a sketch of the road, no map tiles, nothing from Google.
 - Push notices name only the ride or club and what happened: never a meeting point, WhatsApp link or room id (`src/lib/pushNotices.ts`).
 - The ride log (`ride_log`) holds numbers only, never a line or a position; the year card shows no nickname.
+- Only `/embed/*` may be framed by other sites; embeds draw our own sketch and data, never Google content.
+- "Ask this route" questions go to Anthropic and are never stored or logged; the answer may name only places and rules from the route's own data.
+- Share to Triplan never follows or fetches a Google short link; a shared file is read on the phone like an opened GPX.
+- The app's own words live in `src/lib/messages/`; add every new UI string there (English first), and keep the drafts marked unchecked until a native speaker checks them.
 - YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).
