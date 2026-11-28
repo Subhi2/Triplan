@@ -1441,8 +1441,8 @@ function StepBar() {
           <button
             key={st.id}
             type="button"
-            // Its own name: "Check" alone would sit beside the Ride check toggle.
-            aria-label={`Step ${i + 1}: ${st.label}`}
+            // Its own name, "Step 3: Check" ("Check" alone would sit beside the Ride check
+            // toggle), from its text so the spoken name starts with what is seen.
             aria-current={here ? "step" : undefined}
             onClick={() => {
               tappedUntil.current = Date.now() + 1200;
@@ -1460,6 +1460,7 @@ function StepBar() {
             <span aria-hidden className="tabular font-mono text-xs">
               {i < at ? "✓" : i + 1}
             </span>
+            <span className="sr-only">Step {i + 1}: </span>
             {st.label}
           </button>
         );

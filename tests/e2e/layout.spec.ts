@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { routeCurvature } from "@/lib/curvature";
 import type { RouteOption } from "@/lib/trip";
 import { roadMix } from "@/server/services/roadMix";
+import { axeFaults } from "../helpers/axe";
 import { routeFixture } from "../helpers/fixtures";
 import { layoutFaults } from "../helpers/layoutAudit";
 
@@ -124,6 +125,10 @@ const PAGES: { path: string; ready: (page: Page) => Promise<void> }[] = [
     path: "/about",
     ready: (page) => expect(page.getByRole("heading", { level: 1 })).toBeVisible(),
   },
+  {
+    path: "/terms",
+    ready: (page) => expect(page.getByRole("heading", { name: "Terms", level: 1 })).toBeVisible(),
+  },
 ];
 
 for (const { path, ready } of PAGES) {
@@ -131,6 +136,7 @@ for (const { path, ready } of PAGES) {
     await page.goto(path);
     await ready(page);
     await expectClean(page, path);
+    expect(await axeFaults(page), `accessibility on ${path}`).toEqual([]);
     await checkMenu(page, path);
   });
 }
@@ -142,6 +148,7 @@ test("layout of the planner with a trip", async ({ page }) => {
     2,
   );
   await expectClean(page, "the planner with a trip");
+  expect(await axeFaults(page), "accessibility on the planner with a trip").toEqual([]);
   await checkMenu(page, "the planner with a trip");
 });
 

@@ -66,6 +66,13 @@ export function RideCarousel({
         <ul
           ref={strip}
           aria-label="Photos along the ride"
+          // Reachable by keyboard (axe: scrollable-region-focusable); the arrow keys turn it.
+          tabIndex={photos.length > 1 ? 0 : undefined}
+          onKeyDown={(e) => {
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            go(index + (e.key === "ArrowRight" ? 1 : -1));
+          }}
           onScroll={(e) => {
             const el = e.currentTarget;
             setIndex(Math.round(el.scrollLeft / Math.max(el.clientWidth, 1)));
