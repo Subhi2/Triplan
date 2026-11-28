@@ -1626,3 +1626,36 @@ test("download the trip as a GPX file with the route, stops and places", async (
   expect(gpx).toContain("<name>Manjarabad Fort</name>");
   expect(gpx.match(/<trkpt /g)!.length).toBeGreaterThan(100);
 });
+
+/** Taps a button in the trip form, opening the folded form on phones first (it may re-fold). */
+async function tapInForm(page: Page, name: string) {
+  const target = page.getByRole("button", { name });
+  const edit = page.getByRole("button", { name: "Edit trip" });
+  await expect(async () => {
+    if (!(await target.isVisible())) await edit.click({ timeout: 1_000 });
+    await target.click({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
+test("ride back and make it a loop in one tap", async ({ page }) => {
+  const routeRequests: { stops: { label: string }[] }[] = [];
+  await mockApis(page, routeRequests);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await expect.poll(() => routeRequests.length).toBeGreaterThan(0);
+
+  await tapInForm(page, "Ride back");
+  await expect(page.getByRole("combobox", { name: "Start" })).toHaveValue("Kalasa");
+  await expect(page.getByRole("combobox", { name: "Destination" })).toHaveValue("Bengaluru");
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Kalasa", "Bengaluru"]);
+
+  await tapInForm(page, "Make it a loop");
+  await expect(page.getByRole("combobox", { name: "Stop 1" })).toHaveValue("Bengaluru");
+  await expect(page.getByRole("combobox", { name: "Destination" })).toHaveValue("Kalasa");
+  await expect
+    .poll(() => routeRequests.at(-1)?.stops.map((s) => s.label))
+    .toEqual(["Kalasa", "Bengaluru", "Kalasa"]);
+  // Already a loop: the button goes.
+  await expect(page.getByRole("button", { name: "Make it a loop" })).toHaveCount(0);
+});

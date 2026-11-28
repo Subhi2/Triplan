@@ -92,3 +92,33 @@ export function viaInsertIndex(
   }
   return Math.max(1, stops.length - 1);
 }
+
+/** A trip ends where it starts when its ends are within this of each other. */
+const LOOP_M = 1_000;
+
+/** The trip ends where it starts (both ends known and within 1 km). */
+export function isLoop(stops: { location: LngLat | null }[]): boolean {
+  const a = stops[0]?.location;
+  const b = stops.at(-1)?.location;
+  return stops.length >= 2 && !!a && !!b && haversineM(a, b) <= LOOP_M;
+}
+
+/** The ride back (G10): the same stops the other way round. */
+export function rideBack<T>(stops: T[]): T[] {
+  return [...stops].reverse();
+}
+
+/**
+ * A loop (G10): the destination becomes the last stop on the way and the trip ends back at the
+ * start (`copyStart` makes the new end from the start, with its own id). Null when the trip is a
+ * loop already or there is no room for another stop (MAX_VIA_STOPS).
+ */
+export function makeLoop<T extends { location: LngLat | null }>(
+  stops: T[],
+  copyStart: (start: T) => T,
+): T[] | null {
+  const start = stops[0];
+  if (!start || stops.length < 2 || isLoop(stops)) return null;
+  if (stops.length - 1 > MAX_VIA_STOPS) return null; // the old destination becomes a via stop
+  return [...stops, copyStart(start)];
+}

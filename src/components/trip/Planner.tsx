@@ -53,12 +53,14 @@ import { planSunsetStops } from "@/lib/sunset";
 import { trackEvent } from "@/lib/track";
 import type { SavedTrip, TripPlan } from "@/lib/savedTrip";
 import {
-  MAX_VIA_STOPS,
-  stopIndexAt,
-  viaInsertIndex,
   type CorridorKm,
+  makeLoop,
+  MAX_VIA_STOPS,
+  rideBack,
   type RouteOption,
+  stopIndexAt,
   type Vehicle,
+  viaInsertIndex,
 } from "@/lib/trip";
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
@@ -1280,6 +1282,16 @@ export function Planner({
               near={mapBias}
               onStopsChange={setStops}
               onAddStop={addStop}
+              onRideBack={() => setStops((prev) => rideBack(prev))}
+              onLoop={
+                // Checked with the start itself, so no id is used up on every render.
+                makeLoop(stops, (start) => start)
+                  ? () =>
+                      setStops(
+                        (prev) => makeLoop(prev, (start) => ({ ...start, id: newId() })) ?? prev,
+                      )
+                  : null
+              }
               onVehicleChange={setVehicle}
               onCorridorChange={setCorridorKm}
             />
