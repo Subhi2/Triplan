@@ -12,7 +12,7 @@ import { PlaceFlagForm } from "../posts/PlaceFlagForm";
 import { ReviewForm } from "../posts/ReviewForm";
 import { CarryList } from "./CarryList";
 import { FromGoogle } from "./FromGoogle";
-import { MonthStrip } from "./MonthStrip";
+import { AvoidNowNotice, MonthStrip } from "./MonthStrip";
 import { NotKnown } from "./NotKnown";
 
 interface Props {
@@ -211,6 +211,8 @@ export function PlaceDetailView({
           </a>
         </div>
       </header>
+
+      <AvoidNowNotice guide={g} month={month} estimated={Boolean(guessed)} />
 
       {place.media.length > 0 ? (
         <ul
