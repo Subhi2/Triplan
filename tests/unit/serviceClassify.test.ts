@@ -78,9 +78,29 @@ describe("buildServicesQuery", () => {
       '"shop"~',
       '"tourism"~',
       '"barrier"="toll_booth"',
+      '"amenity"="charging_station"',
     ]) {
       expect(q).toContain(tag);
     }
     expect(q).toContain("(14.73,73.66,15.73,74.36)");
+  });
+
+  it("asks only for the kinds named (an import of charging points alone)", () => {
+    const q = buildServicesQuery({
+      areaIso: "IN-GA",
+      bbox: [73.66, 14.73, 74.36, 15.73],
+      kinds: ["charging"],
+    });
+    expect(q).toContain('"amenity"="charging_station"');
+    expect(q).not.toContain('"amenity"="hospital"');
+  });
+});
+
+describe("EV charging points (G10)", () => {
+  it("are a service kind of their own", () => {
+    expect(
+      classifyService(el({ amenity: "charging_station", name: "Tata Power EZ" })),
+    ).toMatchObject({ kind: "charging", name: "Tata Power EZ" });
+    expect(classifyService(el({ amenity: "charging_station", access: "private" }))).toBeNull();
   });
 });

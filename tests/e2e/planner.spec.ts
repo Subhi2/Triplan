@@ -1666,3 +1666,47 @@ test("ride back and make it a loop in one tap", async ({ page }) => {
   // Already a loop: the button goes.
   await expect(page.getByRole("button", { name: "Make it a loop" })).toHaveCount(0);
 });
+
+test("an electric bike counts charging points instead of pumps", async ({ page }) => {
+  await mockApis(page, []);
+  await page.route("**/api/places/along", (route) => {
+    const body = route.request().postDataJSON() as { categories?: string[] };
+    const places = body.categories?.[0] === "fuel" ? [pump("Hassan IOCL", 250)] : [];
+    return route.fulfill({ json: { places } });
+  });
+  const chargingAsked: unknown[] = [];
+  await page.route("**/api/services/charging", (route) => {
+    chargingAsked.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: {
+        points: [
+          { name: "Kunigal EV Hub", kmFromStart: 70 },
+          { name: "Hassan Charge", kmFromStart: 160 },
+        ],
+      },
+    });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  await expect(check).toContainText("Fuel:");
+  expect(chargingAsked).toHaveLength(0); // only asked for once the bike is electric
+
+  await check.getByLabel(/^Electric bike/).check();
+  // 100 km on a charge by default: 75 km between charges with a quarter spare.
+  await expect(check.getByRole("spinbutton", { name: "Range on a full charge (km)" })).toHaveValue(
+    "100",
+  );
+  await expect(check).toContainText("Charging:");
+  await expect(check).toContainText("Charge at Kunigal EV Hub (km 70)");
+  await expect(check).toContainText("2 charging points within 2 km of the route");
+  await expect(check.getByText("Charging price (₹ per kWh)")).toBeVisible();
+  // The trip's link keeps it.
+  await expect(page).toHaveURL(/ev=1/);
+});

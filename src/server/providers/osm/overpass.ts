@@ -85,28 +85,42 @@ export function buildPlacesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
 }
 
 /**
- * Tag filters for service points (docs/02, "Safety stops"): hospitals, police, ATMs, tyre and
- * repair shops, stays and toll booths, kept apart from places (no pages) in service_point.
+ * Tag filters for service points (docs/02, "Safety stops"), by kind: hospitals, police, ATMs,
+ * tyre and repair shops, stays, toll booths and EV charging points (G10), kept apart from places
+ * (no pages) in service_point.
  */
-const SERVICE_FILTERS = [
-  '["amenity"="hospital"]',
-  '["healthcare"="hospital"]',
-  '["amenity"="police"]',
-  '["amenity"="atm"]',
-  '["amenity"="bank"]["atm"="yes"]',
-  '["shop"~"^(tyres|motorcycle_repair|car_repair|motorcycle)$"]',
-  '["tourism"~"^(hotel|guest_house|hostel|motel)$"]',
-  '["barrier"="toll_booth"]',
-];
+const SERVICE_FILTERS_BY_KIND: Record<string, string[]> = {
+  hospital: ['["amenity"="hospital"]', '["healthcare"="hospital"]'],
+  police: ['["amenity"="police"]'],
+  atm: ['["amenity"="atm"]', '["amenity"="bank"]["atm"="yes"]'],
+  // Tyre and repair shops share their tags; serviceClassify tells them apart by name.
+  tyre: ['["shop"~"^(tyres|motorcycle_repair|car_repair|motorcycle)$"]'],
+  repair: ['["shop"~"^(tyres|motorcycle_repair|car_repair|motorcycle)$"]'],
+  stay: ['["tourism"~"^(hotel|guest_house|hostel|motel)$"]'],
+  toll: ['["barrier"="toll_booth"]'],
+  charging: ['["amenity"="charging_station"]'],
+};
 
-export function buildServicesQuery({ areaIso, bbox }: OsmPlacesRequest): string {
+/** The filters for these kinds (every kind when none are given), each once. */
+export function serviceFilters(kinds?: string[]): string[] {
+  const wanted = kinds && kinds.length > 0 ? kinds : Object.keys(SERVICE_FILTERS_BY_KIND);
+  return [...new Set(wanted.flatMap((k) => SERVICE_FILTERS_BY_KIND[k] ?? []))];
+}
+
+export function buildServicesQuery({
+  areaIso,
+  bbox,
+  kinds,
+}: OsmPlacesRequest & { kinds?: string[] }): string {
   const [west, south, east, north] = bbox;
   const box = `(${south},${west},${north},${east})`;
   return [
     `[out:json][timeout:${QUERY_TIMEOUT_S}][maxsize:${QUERY_MAXSIZE_BYTES}];`,
     `area["ISO3166-2"="${areaIso}"]["admin_level"="4"]->.region;`,
     ".region out ids;",
-    `(${SERVICE_FILTERS.map((f) => `nwr${f}(area.region)${box};`).join("")})->.all;`,
+    `(${serviceFilters(kinds)
+      .map((f) => `nwr${f}(area.region)${box};`)
+      .join("")})->.all;`,
     "node.all;out body qt;",
     "way.all;out tags bb qt;",
     "rel.all;out tags bb qt;",

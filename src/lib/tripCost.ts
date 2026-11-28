@@ -5,6 +5,8 @@
 export const MILEAGE_LIMITS = { min: 3, max: 120 } as const;
 /** Fuel price the form accepts, in rupees per litre. */
 export const FUEL_PRICE_LIMITS = { min: 30, max: 300 } as const;
+/** Charging price the form accepts for an electric bike or car, in rupees per kWh (G10). */
+export const ENERGY_PRICE_LIMITS = { min: 3, max: 60 } as const;
 
 /** The FASTag annual pass for private cars (NHAI, from 15 August 2025). */
 export const FASTAG_PASS = { rupees: 3000, crossings: 200 } as const;

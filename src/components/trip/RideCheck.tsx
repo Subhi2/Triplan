@@ -12,6 +12,7 @@ import { formatDuration } from "@/lib/format";
 import type { LngLat } from "@/lib/geo";
 import { routeTimeline } from "@/lib/multiDay";
 import {
+  DEFAULT_EV_RANGE_KM,
   DEFAULT_RANGE_KM,
   defaultDeparture,
   FUEL_CORRIDOR_KM,
@@ -21,22 +22,17 @@ import {
   pickFuelStops,
   planDaylight,
   RANGE_LIMITS_KM,
+  type FuelStation,
 } from "@/lib/rideCheck";
 import type { PlaceAlong } from "@/lib/places";
 import { ROAD_REPORT_LABELS, type RoadReportAlong } from "@/lib/riderPosts";
 import { checkRules, closedHours, SPARE_WARN_MIN, type RuleCheck } from "@/lib/roadRules";
 import type { Gap, TollPlaza } from "@/lib/safety";
 import type { RouteOption, Vehicle } from "@/lib/trip";
-import {
-  FASTAG_PASS,
-  formatRupees,
-  FUEL_PRICE_LIMITS,
-  fuelCost,
-  MILEAGE_LIMITS,
-  parseWithin,
-} from "@/lib/tripCost";
+import { FASTAG_PASS, formatRupees, fuelCost, MILEAGE_LIMITS, parseWithin } from "@/lib/tripCost";
 import type { SunsetStop } from "@/lib/sunset";
-import type { MyBike } from "@/lib/myBike";
+import { priceLimits, type MyBike } from "@/lib/myBike";
+import { useChargingAlong } from "./useChargingAlong";
 import type { BikeKept } from "./useMyBike";
 import { summarizeWeather, type WeatherPoint } from "@/lib/weather";
 import { useWeatherAlong } from "./useWeatherAlong";
@@ -88,6 +84,38 @@ const HOSPITAL_OK_KM = 60;
 const HOSPITAL_WARN_KM = 120;
 
 const FUEL_CATEGORIES = ["fuel"];
+
+/** What the fuel check says, for a petrol or an electric bike or car (G10). */
+const SUPPLY_WORDS = {
+  petrol: {
+    title: "Fuel",
+    stop: "pump",
+    fill: "Fill at",
+    tank: "tank",
+    station: "fuel station",
+    stations: "fuel stations",
+    tankLabel: "Range on a full tank (km)",
+    mileage: "Mileage (km per litre)",
+    price: "Fuel price (₹ per litre)",
+    unit: "litres",
+    cost: "Fuel cost",
+    costHint: "Type your mileage and today's fuel price to work out the cost, one way.",
+  },
+  electric: {
+    title: "Charging",
+    stop: "charger",
+    fill: "Charge at",
+    tank: "battery",
+    station: "charging point",
+    stations: "charging points",
+    tankLabel: "Range on a full charge (km)",
+    mileage: "Efficiency (km per kWh)",
+    price: "Charging price (₹ per kWh)",
+    unit: "kWh",
+    cost: "Charging cost",
+    costHint: "Type your km per kWh and the charging price to work out the cost, one way.",
+  },
+} as const;
 /** A field's text for a stored number ("" when not set). */
 const numberText = (n: number | null) => (n === null ? "" : String(n));
 
@@ -247,7 +275,10 @@ export function RideCheck({
   // "My bike" (useMyBike keeps it): the fields hold what the rider types, and a value within its
   // limits (or an emptied field) is passed on. Values from outside (the account, a vehicle
   // switch) refill the fields.
-  const rangeKm = myBike.rangeKm ?? DEFAULT_RANGE_KM[vehicle];
+  const electric = myBike.electric;
+  const words = SUPPLY_WORDS[electric ? "electric" : "petrol"];
+  const rangeKm = myBike.rangeKm ?? (electric ? DEFAULT_EV_RANGE_KM : DEFAULT_RANGE_KM)[vehicle];
+  const PRICE_LIMITS = priceLimits(electric);
   const [rangeText, setRangeText] = useState(String(rangeKm));
   const [mileageText, setMileageText] = useState(numberText(myBike.kmPerLitre));
   const [priceText, setPriceText] = useState(numberText(myBike.fuelPrice));
@@ -261,9 +292,9 @@ export function RideCheck({
   }, [myBike.kmPerLitre]);
   useEffect(() => {
     setPriceText((t) =>
-      parseWithin(t, FUEL_PRICE_LIMITS) === myBike.fuelPrice ? t : numberText(myBike.fuelPrice),
+      parseWithin(t, priceLimits(electric)) === myBike.fuelPrice ? t : numberText(myBike.fuelPrice),
     );
-  }, [myBike.fuelPrice]);
+  }, [myBike.fuelPrice, electric]);
 
   function changeBike(
     text: string,
@@ -280,12 +311,27 @@ export function RideCheck({
   const cost = mileage && fuelPrice ? fuelCost(route.distanceKm, mileage, fuelPrice) : null;
 
   const fuel = usePlacesAlong(route, FUEL_CORRIDOR_KM, FUEL_CATEGORIES, true);
+  // An electric bike or car counts charging points instead of pumps (G10).
+  const charging = useChargingAlong(route, electric);
+  const supply = useMemo((): {
+    status: "idle" | "loading" | "error" | "ok";
+    stations: FuelStation[];
+  } => {
+    if (electric) {
+      return charging.status === "ok"
+        ? { status: "ok", stations: charging.points }
+        : { status: charging.status, stations: [] };
+    }
+    return fuel.status === "ok"
+      ? { status: "ok", stations: fuel.places }
+      : { status: fuel.status, stations: [] };
+  }, [electric, charging, fuel]);
   const gap = useMemo(
     () =>
-      fuel.status === "ok"
-        ? longestFuelGap(fuel.places, route.distanceKm, short(from.label), short(to.label))
+      supply.status === "ok"
+        ? longestFuelGap(supply.stations, route.distanceKm, short(from.label), short(to.label))
         : null,
-    [fuel, route.distanceKm, from.label, to.label],
+    [supply, route.distanceKm, from.label, to.label],
   );
 
   const departAt = fromDateTimeLocal(departure);
@@ -303,11 +349,12 @@ export function RideCheck({
   const verdict = gap ? fuelVerdict(gap.km, rangeKm) : null;
   // Where to fill (G10): only worth saying when one tank, with its reserve, does not do.
   const fuelPlan = useMemo(
-    () => (fuel.status === "ok" ? pickFuelStops(fuel.places, route.distanceKm, rangeKm) : null),
-    [fuel, route.distanceKm, rangeKm],
+    () =>
+      supply.status === "ok" ? pickFuelStops(supply.stations, route.distanceKm, rangeKm) : null,
+    [supply, route.distanceKm, rangeKm],
   );
-  const stationCount = fuel.status === "ok" ? fuel.places.length : 0;
-  const someOpenFuel = fuel.status === "ok" && fuel.places.some((p) => p.open);
+  const stationCount = supply.stations.length;
+  const someOpenFuel = !electric && fuel.status === "ok" && fuel.places.some((p) => p.open);
   const fuelTone: Tone = !verdict
     ? "muted"
     : verdict === "ok"
@@ -438,7 +485,7 @@ export function RideCheck({
               )}
               <span className="inline-flex items-center gap-1">
                 <span aria-hidden className={`h-2 w-2 rounded-full ${DOT[fuelTone]}`} />
-                {gap ? `Fuel gap ${Math.round(gap.km)} km` : "Fuel"}
+                {gap ? `${words.title} gap ${Math.round(gap.km)} km` : words.title}
               </span>
               <span className="inline-flex items-center gap-1">
                 <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${DOT[dayTone]}`} />
@@ -475,7 +522,7 @@ export function RideCheck({
           )}
           <label className="space-y-1">
             <span className="block text-xs text-stone-600 dark:text-stone-400">
-              Range on a full tank (km)
+              {words.tankLabel}
             </span>
             <input
               type="number"
@@ -489,6 +536,25 @@ export function RideCheck({
             />
           </label>
         </div>
+        <label className="flex min-h-11 items-center gap-2 text-sm md:min-h-8">
+          <input
+            type="checkbox"
+            checked={electric}
+            onChange={(e) => {
+              const next = e.target.checked;
+              // A price typed for the other kind (per litre, per kWh) does not carry over.
+              const limits = priceLimits(next);
+              const price =
+                myBike.fuelPrice !== null &&
+                myBike.fuelPrice >= limits.min &&
+                myBike.fuelPrice <= limits.max
+                  ? myBike.fuelPrice
+                  : null;
+              onMyBikeChange({ ...myBike, electric: next, fuelPrice: price });
+            }}
+          />
+          Electric {vehicle === "bike" ? "bike" : "car"}: count charging points, not pumps
+        </label>
 
         <ul className="space-y-3" aria-live="polite">
           {hospitalGap && (
@@ -508,14 +574,16 @@ export function RideCheck({
               </p>
             </Check>
           )}
-          {fuel.status === "loading" && (
-            <Check tone="muted" title="Fuel">
-              <p className="text-stone-600 dark:text-stone-400">Checking fuel stations…</p>
+          {supply.status === "loading" && (
+            <Check tone="muted" title={words.title}>
+              <p className="text-stone-600 dark:text-stone-400">Checking {words.stations}…</p>
             </Check>
           )}
-          {fuel.status === "error" && (
-            <Check tone="muted" title="Fuel">
-              <p className="text-stone-600 dark:text-stone-400">Could not check fuel stations.</p>
+          {supply.status === "error" && (
+            <Check tone="muted" title={words.title}>
+              <p className="text-stone-600 dark:text-stone-400">
+                Could not check {words.stations}.
+              </p>
             </Check>
           )}
           {gap && verdict && (
@@ -523,23 +591,27 @@ export function RideCheck({
               tone={fuelTone}
               title={
                 verdict === "ok"
-                  ? `Fuel: longest stretch without a pump is ${Math.round(gap.km)} km`
+                  ? `${words.title}: longest stretch without a ${words.stop} is ${Math.round(gap.km)} km`
                   : verdict === "tight"
-                    ? `Fuel: fill up before a ${Math.round(gap.km)} km stretch`
-                    : `Fuel: ${Math.round(gap.km)} km without a pump, more than your range`
+                    ? `${words.title}: ${electric ? "charge" : "fill up"} before a ${Math.round(gap.km)} km stretch`
+                    : `${words.title}: ${Math.round(gap.km)} km without a ${words.stop}, more than your range`
               }
             >
               <p>
                 From {gap.from} (km {Math.round(gap.fromKm)}) to {gap.to} (km {Math.round(gap.toKm)}
                 ).{" "}
                 {verdict === "tight" &&
-                  `That is close to your ${rangeKm} km range: fill the tank at ${gap.from}.`}
+                  (electric
+                    ? `That is close to your ${rangeKm} km range: charge fully at ${gap.from}.`
+                    : `That is close to your ${rangeKm} km range: fill the tank at ${gap.from}.`)}
                 {verdict === "short" &&
-                  `Your tank lasts about ${rangeKm} km: carry fuel or plan a detour to a pump.`}
+                  (electric
+                    ? `Your battery lasts about ${rangeKm} km: this road needs a charge on the way that we do not know of.`
+                    : `Your tank lasts about ${rangeKm} km: carry fuel or plan a detour to a pump.`)}
               </p>
               {fuelPlan && fuelPlan.stops.length > 0 && (
                 <p>
-                  <span className="font-bold">Fill at </span>
+                  <span className="font-bold">{words.fill} </span>
                   {fuelPlan.stops.map((s, i) => (
                     <span key={`${s.name}-${s.kmFromStart}`}>
                       {i > 0 && ", then "}
@@ -548,13 +620,13 @@ export function RideCheck({
                     </span>
                   ))}
                   {fuelPlan.strandedAtKm !== null
-                    ? `. After that no pump is in reach before km ${Math.round(fuelPlan.strandedAtKm)}.`
-                    : ", keeping a quarter of the tank spare."}
+                    ? `. After that no ${words.stop} is in reach before km ${Math.round(fuelPlan.strandedAtKm)}.`
+                    : `, keeping a quarter of the ${words.tank} spare.`}
                 </p>
               )}
               <p className="text-xs text-stone-600 dark:text-stone-400">
-                {stationCount} fuel station{stationCount === 1 ? "" : "s"} within {FUEL_CORRIDOR_KM}{" "}
-                km of the route, from OpenStreetMap
+                {stationCount} {stationCount === 1 ? words.station : words.stations} within{" "}
+                {FUEL_CORRIDOR_KM} km of the route, from OpenStreetMap
                 {someOpenFuel && (
                   <>
                     {" "}
@@ -570,14 +642,14 @@ export function RideCheck({
             tone={cost ? "ok" : "muted"}
             title={
               cost
-                ? `Fuel cost: about ${formatRupees(cost.rupees)} for ${Math.round(route.distanceKm)} km`
-                : "Fuel cost"
+                ? `${words.cost}: about ${formatRupees(cost.rupees)} for ${Math.round(route.distanceKm)} km`
+                : words.cost
             }
           >
             <div className="grid grid-cols-2 gap-3 pt-1">
               <label className="space-y-1">
                 <span className="block text-xs text-stone-600 dark:text-stone-400">
-                  Mileage (km per litre)
+                  {words.mileage}
                 </span>
                 <input
                   type="number"
@@ -594,17 +666,17 @@ export function RideCheck({
               </label>
               <label className="space-y-1">
                 <span className="block text-xs text-stone-600 dark:text-stone-400">
-                  Fuel price (₹ per litre)
+                  {words.price}
                 </span>
                 <input
                   type="number"
                   inputMode="decimal"
-                  min={FUEL_PRICE_LIMITS.min}
-                  max={FUEL_PRICE_LIMITS.max}
+                  min={PRICE_LIMITS.min}
+                  max={PRICE_LIMITS.max}
                   step="any"
                   value={priceText}
                   onChange={(e) =>
-                    changeBike(e.target.value, setPriceText, FUEL_PRICE_LIMITS, "fuelPrice")
+                    changeBike(e.target.value, setPriceText, PRICE_LIMITS, "fuelPrice")
                   }
                   className={inputClass}
                 />
@@ -612,12 +684,12 @@ export function RideCheck({
             </div>
             <p className="text-xs text-stone-600 dark:text-stone-400">
               {cost
-                ? `${cost.litres} litres, one way. ${
+                ? `${cost.litres} ${words.unit}, one way. ${
                     myBikeKept === "account"
                       ? `Kept with your account for your ${vehicle}.`
                       : "Kept in this trip's link."
                   }`
-                : "Type your mileage and today's fuel price to work out the cost, one way."}
+                : words.costHint}
             </p>
           </Check>
 
