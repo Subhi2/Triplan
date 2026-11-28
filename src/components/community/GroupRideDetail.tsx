@@ -490,6 +490,13 @@ export function GroupRideDetail({ id, initial }: { id: string; initial: GroupRid
         />
       )}
 
+      {/* After the ride (G11): its trip asks for reviews of the stops. */}
+      {priv && ride.state === "past" && (
+        <Link href={`/trips/${ride.tripId}`} className={`${secondaryButton} self-start`}>
+          Review the stops of this ride
+        </Link>
+      )}
+
       {priv && (
         <section aria-label="For riders on this ride" className={`${card} flex flex-col gap-3`}>
           <h2 className="font-display text-xl font-bold">For riders on this ride</h2>
