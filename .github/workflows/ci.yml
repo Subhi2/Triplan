@@ -56,6 +56,8 @@ jobs:
           supabase init --force < /dev/null
           supabase db start
       - run: pnpm install --frozen-lockfile
+      # The scripts read .env.local (tsx --env-file), which must exist; the values come from env.
+      - run: touch .env.local
       - name: Migrations and data/snapshot
         # On failure the last lines become annotations, readable on the run's page without logs.
         run: |
