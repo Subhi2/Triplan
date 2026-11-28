@@ -3187,5 +3187,55 @@
     "expect": {
       "km": 95
     }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "port-blair-to-chidiya-tapu",
+    "title": "Port Blair to Chidiya Tapu",
+    "region": "Andaman and Nicobar Islands",
+    "blurb": "South from Port Blair along the coast of South Andaman to Chidiya Tapu, the island's southern tip, known for its sunsets and Munda Pahar beach.",
+    "tags": ["coast", "sunset", "island"],
+    "bestMonths": [11, 12, 1, 2, 3, 4],
+    "notes": "Bikes are rented in Port Blair; the islands' rains run from about May to October.",
+    "stops": [
+      {
+        "label": "Port Blair",
+        "location": [92.73904, 11.66453]
+      },
+      {
+        "label": "Chidiya Tapu",
+        "location": [92.7013, 11.50322]
+      }
+    ],
+    "expect": {
+      "km": 25
+    }
+  },
+  {
+    "vehicle": "bike",
+    "tier": "classic",
+    "checkpoints": [],
+    "slug": "rajgir-to-bodh-gaya",
+    "title": "Rajgir to Bodh Gaya",
+    "region": "Bihar",
+    "blurb": "From Rajgir, among the hills of the old Magadha kingdom, south-west to Bodh Gaya and the Mahabodhi Temple, a UNESCO World Heritage Site.",
+    "tags": ["heritage", "buddhist sites", "plains"],
+    "bestMonths": [10, 11, 12, 1, 2, 3],
+    "notes": "Summers are very hot.",
+    "stops": [
+      {
+        "label": "Rajgir",
+        "location": [85.42074, 25.03]
+      },
+      {
+        "label": "Bodh Gaya",
+        "location": [84.99376, 24.69626]
+      }
+    ],
+    "expect": {
+      "km": 75
+    }
   }
 ]

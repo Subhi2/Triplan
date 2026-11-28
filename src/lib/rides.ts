@@ -95,7 +95,13 @@ export interface RideSummary {
 }
 
 /** Broad parts of India for filtering rides, by the first state a ride's region names. */
-export const RIDE_AREAS = ["South", "West", "North and Himalaya", "East and North-east"] as const;
+export const RIDE_AREAS = [
+  "South",
+  "West",
+  "Central",
+  "North and Himalaya",
+  "East and North-east",
+] as const;
 export type RideArea = (typeof RIDE_AREAS)[number];
 
 const AREA_OF_STATE: Record<string, RideArea> = {
@@ -109,7 +115,7 @@ const AREA_OF_STATE: Record<string, RideArea> = {
   maharashtra: "West",
   gujarat: "West",
   rajasthan: "West",
-  "madhya pradesh": "West",
+  "madhya pradesh": "Central",
   "himachal pradesh": "North and Himalaya",
   ladakh: "North and Himalaya",
   "jammu and kashmir": "North and Himalaya",
@@ -130,8 +136,8 @@ const AREA_OF_STATE: Record<string, RideArea> = {
   tripura: "East and North-east",
   odisha: "East and North-east",
   bihar: "East and North-east",
-  jharkhand: "East and North-east",
-  chhattisgarh: "East and North-east",
+  jharkhand: "Central",
+  chhattisgarh: "Central",
 };
 
 /**
