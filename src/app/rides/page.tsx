@@ -17,10 +17,16 @@ export const metadata: Metadata = {
 };
 
 export default async function RidesPage() {
+  // Timings in the build log: a production build once stalled on this page (2026-11-28).
+  const started = Date.now();
   const [rides, photos] = await Promise.all([
-    listRides().catch(() => []),
+    listRides()
+      .catch(() => [])
+      .finally(() => console.log(`/rides: rides loaded in ${Date.now() - started} ms`)),
     // Photos are a nicety: without them the cards keep their route sketches.
-    rideGalleries().catch(() => ({})),
+    rideGalleries()
+      .catch(() => ({}))
+      .finally(() => console.log(`/rides: photos loaded in ${Date.now() - started} ms`)),
   ]);
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
