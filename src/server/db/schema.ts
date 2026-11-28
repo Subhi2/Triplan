@@ -680,6 +680,21 @@ export const riderVehicle = pgTable(
   (t) => [primaryKey({ columns: [t.riderId, t.vehicle] })],
 );
 
+// Films and series shot at a place (G12): Wikidata's filming location (P915), CC0, linked by
+// the place's wikidata_id. In the snapshot. `pnpm db:import-films`.
+export const placeFilm = pgTable(
+  "place_film",
+  {
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => place.id, { onDelete: "cascade" }),
+    filmQid: text("film_qid").notNull(),
+    title: text("title").notNull(),
+    year: smallint("year"),
+  },
+  (t) => [primaryKey({ columns: [t.placeId, t.filmQid] })],
+);
+
 // Push notices (G11, C9): a rider's devices that asked for them (Web Push). Private; removed with
 // the rider, and when the browser's push service says the subscription is gone. Not in the
 // snapshot.

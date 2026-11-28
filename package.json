@@ -23,6 +23,7 @@
     "db:import-open-places": "tsx --env-file=.env.local scripts/import-open-places.ts",
     "db:import-photos": "tsx --env-file=.env.local scripts/import-photos.ts",
     "db:import-descriptions": "tsx --env-file=.env.local scripts/import-descriptions.ts",
+    "db:import-films": "tsx --env-file=.env.local scripts/import-films.ts",
     "db:link-wikidata": "tsx --env-file=.env.local scripts/link-wikidata.ts",
     "db:seed-rides": "tsx --env-file=.env.local scripts/seed-rides.ts",
     "db:import-ride-photos": "tsx --env-file=.env.local scripts/import-ride-photos.ts",
