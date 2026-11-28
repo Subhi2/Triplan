@@ -346,7 +346,9 @@ Built 2026-11-28; how each works is in `02`, "Reviews, photos and road reports",
 
 **Passes the new-features check:** our own data; Supabase (a service we use and could swap); Web Push is a web standard with keys we hold; Commons as already used.
 
-## Growth G12 · Reach and data (planned)
+## Growth G12 · Reach and data
+
+Built 2026-11-28 except where "As built" says; how each works is in `02`, "Embeds", "Share to Triplan", "Ask this route", "Seen in films" and "Languages".
 
 1. **Embeds** (C8): `/embed/route` and `/embed/ride/[slug]`, MapLibre only, framable anywhere, `noindex`.
 2. **Share to Triplan** (A2): a `share_target` for GPX files and Google Maps links (Android); files read in the browser, full links parsed, short links searched by the place name in the shared text and never fetched.
@@ -355,6 +357,14 @@ Built 2026-11-28; how each works is in `02`, "Reviews, photos and road reports",
 5. **No-signal stretches** (C12): OpenCelliD (CC BY-SA 4.0), only if its download needs no card or approval.
 6. **Landslide risk** (C13): NASA LHASA, only if it downloads without a login; a daily GitHub Actions job.
 7. **Languages** (B6): `next-intl` (MIT) with a `lang` cookie; Kannada, Hindi, Tamil, Malayalam and Marathi as drafts marked unreviewed.
+
+**As built:**
+- Embeds draw a sketch of the road (our own SVG), not a MapLibre map: lighter in a stranger's page and the same look as the road book.
+- Share to Triplan: full Google Maps links are read; short links are never followed, so the place name in the shared text is searched instead.
+- Ask this route is off in production until `ANTHROPIC_API_KEY` is set on Vercel.
+- Seen in films: 133 films at 54 places (only places linked to Wikidata). No planner chip yet.
+- **No-signal stretches (C12) and landslide risk (C13) stopped at step 0:** OpenCelliD's country files need an API token from a registered account, and NASA's LHASA archive sits in a controlled S3 bucket that needs a NASA Earthdata login (and is a retrospective daily record, not clearly a live nowcast). Both accounts are free; they wait for the owner to decide whether to make them.
+- Languages: our own small `useT()` context instead of `next-intl`. Reading a cookie in the root layout (what `next-intl` does without `/hi/` addresses) would make every page render per request, the ride and place pages included. The planner and Near me already render per request, so they read the `lang` cookie on the server; content pages stay in English. First part: the trip form, the step guide and the Menu, in five AI drafts marked unchecked. The rest of the planner, Near me and Me are next.
 
 **Passes the new-features check:** open data under commercial-use licences, stored by us (CC0, CC BY-SA, public domain), open-source libraries, and Anthropic behind its switch; each data source gets a step-0 check before it is built.
 

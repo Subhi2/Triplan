@@ -4,6 +4,8 @@ import { Nearby } from "@/components/nearby/Nearby";
 import { SITE_NAME } from "@/lib/site";
 import { ViewportHintProvider } from "@/components/ui/ViewportHint";
 import { viewportHint } from "@/server/viewportHint";
+import { LangProvider } from "@/components/i18n/LangProvider";
+import { langFromCookie } from "@/server/lang";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -29,9 +31,11 @@ export default async function NearbyPage() {
   // screen from the start (src/lib/viewport.ts).
   return (
     <ViewportHintProvider hint={await viewportHint()}>
-      <Suspense>
-        <Nearby />
-      </Suspense>
+      <LangProvider lang={await langFromCookie()}>
+        <Suspense>
+          <Nearby />
+        </Suspense>
+      </LangProvider>
     </ViewportHintProvider>
   );
 }

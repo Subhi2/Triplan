@@ -393,6 +393,26 @@ Up to eight photos per ride in `ride_photo`, picked by `pnpm db:import-ride-phot
 
 Web Push with our own VAPID keys (`web-push`, MPL-2.0); off, and the switch hidden, without `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. A rider turns notices on for a device on Me (`PushToggle`, `POST/DELETE /api/me/push`, `push_subscription`; on iPhones only in the app added to the home screen). The ride and club routes send, after the response (`notifyLater`, Next's `after()`): a request to join a ride or club that waits for a decision (to the host and co-hosts, or the owner and admins), the decision (to the rider), and a ride called off, back on or moved (to its riders). The text (`src/lib/pushNotices.ts`) names only the ride or club and what happened, and opens its page; never a meeting point, WhatsApp link or room. A subscription the push service reports gone (404, 410) is deleted. The service worker shows the notice and opens only our own pages.
 
+## Embeds (G12)
+
+`/embed/ride/<slug>` and `/embed/route?<trip>&route=<id>` draw a card another site can frame: a sketch of the road (our own SVG; no map tiles, nothing from Google), its numbers, the five best stops spread along it (`spreadStops`) and a link to plan it, opening in a new tab. `next.config` sends `frame-ancestors *` (and no `X-Frame-Options`) for `/embed/*` only; every other page keeps `SAMEORIGIN`. Not indexed. Ride pages offer the iframe code (`EmbedSnippet`).
+
+## Share to Triplan (G12)
+
+The manifest's `share_target` (Android) posts a GPX, KML or TCX file, or a title, text and link, to `/share`. The service worker catches the POST: a file is kept in IndexedDB (the offline store's `recent` table) and the planner opens it as an opened ride (`uploadRideFile`; only the trimmed line leaves the phone); links and text go to the planner in its address (`?shared=link&st&sx&su`). `src/lib/mapsLink.ts` reads full Google Maps links (place with `@lat,lng`, `/dir/`, `api=1`, `q=`); short `maps.app.goo.gl` links are never followed or fetched: the place name on the first line of the shared text is searched instead (`/api/geocode`, one search as on Enter). Without the service worker, `src/app/share/route.ts` passes links on and asks for a file to be opened by hand.
+
+## Ask this route (G12)
+
+A box under the route (`AskRoute`), shown only with `ANTHROPIC_API_KEY`. `POST /api/route/ask { routeId, question }` builds the route's own facts (`askRouteService.ts`: the 40 best places spread along it, pumps, road rules, safety and charging stops, the route's numbers) as compact lines with ids, and asks Claude (`ANTHROPIC_TRIP_MODEL`) through structured output for an answer and the place ids and rule slugs it uses. Ids not in the facts are dropped; a question the data does not answer gets "This route's data does not say." Rate limited (scope `ai`, 10 an hour) and on a daily budget (`ai_ask`, 300). The question is never stored or logged.
+
+## Seen in films (G12)
+
+`pnpm db:import-films` asks Wikidata (CC0) for films, TV films and series whose filming location (P915) is one of our places' Wikidata items, and keeps up to 12 per place in `place_film` (in the snapshot). Place pages list them oldest first, linked to Wikidata.
+
+## Languages (G12)
+
+The app's own words in `src/lib/messages/<lang>.ts` (English is the source; Kannada, Hindi, Tamil, Malayalam and Marathi are AI drafts, which the Menu says are unchecked), read with `useT()` (`src/components/i18n/LangProvider.tsx`). The Menu's language switch sets the `lang` cookie; the planner and Near me read it on the server (`src/server/lang.ts`) and draw in that language from the first paint, with `lang` set on the screen's container. No `/hi/` addresses, so search engines see one page; content pages stay in English, and place names and our data stay as stored.
+
 ## Light and dark
 
 `data-theme` ("light" or "dark") on `<html>`, set before the first paint by the script in `layout.tsx` (`THEME_SCRIPT`, `src/lib/theme.ts`) from `localStorage` ("theme") or the device. Tailwind's `dark:` variant and the colour tokens in `globals.css` follow it. `ThemeToggle` is in `SiteNav`, the planner and Near me headers, and the Menu. The Google map is made with the colour scheme in force and made again when it changes (`GoogleMapView`); its lines take `useMapColors`. The MapLibre map (`MapView`) uses OpenFreeMap's "dark" style in dark mode and passes the dark palette to its layers through `MapPaletteContext`. Rules and what was checked: `08-design.md`, "Light and dark".

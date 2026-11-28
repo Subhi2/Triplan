@@ -1808,3 +1808,21 @@ test("a share that arrives before the service worker goes to the planner", async
   expect(res.status()).toBe(303);
   expect(res.headers()["location"]).toMatch(/\/\?shared=link&st=Manjarabad\+Fort/);
 });
+
+test("the planner in Hindi, chosen in the menu and kept in a cookie", async ({
+  page,
+  context,
+}, testInfo) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Menu/ }).first().click();
+  await page.getByRole("button", { name: "हिन्दी" }).click();
+  await expect(page.getByRole("combobox", { name: "शुरुआत" })).toBeVisible();
+  // The menu, now in Hindi, says the translation is an unchecked draft.
+  await page.getByRole("button", { name: /^Menu/ }).first().click();
+  await expect(page.getByText("AI का मसौदा, अभी जाँचा नहीं गया")).toBeVisible();
+  await page.keyboard.press("Escape");
+  const cookies = await context.cookies(testInfo.project.use.baseURL!);
+  expect(cookies.find((c) => c.name === "lang")?.value).toBe("hi");
+  // Back to English for the other tests in this browser.
+  await context.clearCookies({ name: "lang" });
+});

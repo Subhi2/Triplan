@@ -182,6 +182,7 @@ Web research of 2026-10-14. What we read, and what each finding changed.
 - YouTube's [developer policies](https://developers.google.com/youtube/terms/developer-policies-guide): API data refreshed or deleted within 30 days.
 
 **Checked and left out**
+- Stretches without phone signal from OpenCelliD, and landslide risk from NASA LHASA (2026-11-28): both need an account first (an OpenCelliD API token; a NASA Earthdata login for LHASA's controlled bucket), free but someone's sign-up. Waiting for the owner's decision; nothing built.
 - Error monitoring on GlitchTip, self-hosted OSRM, Nominatim, Photon and tiles, and Valhalla for scenic routing and "Avoid this area" (2026-11-28): each needs a server running all the time, which costs money. The app stays on the public servers it uses today.
 - Hidden places from YouTube (phase 6): postponed by the owner (2026-11-28).
 - Ookla's open speed data: CC BY-NC-SA, not for commercial use.

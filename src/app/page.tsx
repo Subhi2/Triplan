@@ -9,6 +9,8 @@ import { powKey } from "@/server/services/proofOfWork";
 import { listRides, rideGalleries } from "@/server/services/rideService";
 import { ViewportHintProvider } from "@/components/ui/ViewportHint";
 import { viewportHint } from "@/server/viewportHint";
+import { LangProvider } from "@/components/i18n/LangProvider";
+import { langFromCookie } from "@/server/lang";
 
 /** Famous rides for "Try a famous ride", read at most hourly; none if the database is down. */
 const famousRides = unstable_cache(() => listRides().catch(() => []), ["famous-rides"], {
@@ -55,23 +57,26 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function HomePage() {
-  const [rides, photos, hint] = await Promise.all([
+  const [rides, photos, hint, lang] = await Promise.all([
     famousRides(),
     famousRidePhotos(),
     viewportHint(),
+    langFromCookie(),
   ]);
   // useSearchParams in Planner needs a Suspense boundary. The hint renders the layout that fits
   // the screen from the start (src/lib/viewport.ts).
   return (
     <ViewportHintProvider hint={hint}>
-      <Suspense>
-        <Planner
-          famousRides={rides}
-          famousRidePhotos={photos}
-          aiEnabled={aiEnabled()}
-          postsOpen={powKey() !== null}
-        />
-      </Suspense>
+      <LangProvider lang={lang}>
+        <Suspense>
+          <Planner
+            famousRides={rides}
+            famousRidePhotos={photos}
+            aiEnabled={aiEnabled()}
+            postsOpen={powKey() !== null}
+          />
+        </Suspense>
+      </LangProvider>
     </ViewportHintProvider>
   );
 }
