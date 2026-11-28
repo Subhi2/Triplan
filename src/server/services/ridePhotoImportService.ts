@@ -18,7 +18,8 @@ const SAMPLE_EVERY_M = 15_000;
 const MAX_SAMPLES = 24;
 const RADIUS_M = 6_000;
 /** A file may be this far from the road and still count as seen from it. */
-const MAX_FROM_ROAD_M = 6_000;
+// Farther than this a photo is of somewhere else as often as of the road (G11: was 6 km).
+const MAX_FROM_ROAD_M = 3_000;
 const ROAD_STEP_M = 250;
 
 interface RideRow extends Record<string, unknown> {
@@ -139,6 +140,15 @@ export async function importRidePhotos(
         }
         await wait(pauseMs);
       }
+      // Files an admin hid from this ride stay out (ride_photo_block).
+      const blocked = new Set(
+        (
+          await getDb().execute<{ file: string }>(
+            sql`SELECT file FROM ride_photo_block WHERE ride_slug = ${r.slug}`,
+          )
+        ).map((b) => b.file),
+      );
+      for (const file of blocked) hits.delete(file);
       // Cheap title checks before asking Commons for each file's credit and size.
       const titles = [...hits.keys()].filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
       const images = new Map<string, CommonsImage>();

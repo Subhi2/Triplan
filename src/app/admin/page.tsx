@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CONTENT_REPORT_LABELS, PLACE_FLAG_LABELS, ROAD_REPORT_LABELS } from "@/lib/riderPosts";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, siteUrl } from "@/lib/site";
 import { adminEmails, currentAdmin } from "@/server/auth/admin";
 import type { Moderation } from "@/server/providers/llm/moderation";
 import { pendingPosts, pendingTakedowns } from "@/server/services/riderPostService";
-import { decideFlag, decideTakedown, moderate, sendSignInLink, signOut, takeDown } from "./actions";
+import { ridePhotosOf, rideSlugFromLink } from "@/server/services/ridePhotoAdmin";
+import {
+  decideFlag,
+  decideTakedown,
+  hidePhoto,
+  moderate,
+  sendSignInLink,
+  signOut,
+  takeDown,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -76,9 +85,9 @@ function Empty({ what }: { what: string }) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; link?: string; takedown?: string }>;
+  searchParams: Promise<{ sent?: string; link?: string; takedown?: string; ride?: string }>;
 }) {
-  const { sent, link, takedown } = await searchParams;
+  const { sent, link, takedown, ride } = await searchParams;
   const admin = await currentAdmin();
 
   if (!admin) {
@@ -117,9 +126,11 @@ export default async function AdminPage({
     );
   }
 
-  const [{ reviews, photos, reports, flags }, requests] = await Promise.all([
+  const rideSlug = ride ? rideSlugFromLink(ride, siteUrl()) : null;
+  const [{ reviews, photos, reports, flags }, requests, ridePhotos] = await Promise.all([
     pendingPosts(),
     pendingTakedowns(),
+    rideSlug ? ridePhotosOf(rideSlug) : Promise.resolve(null),
   ]);
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
@@ -337,6 +348,64 @@ export default async function AdminPage({
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="ride-photos" className="flex flex-col gap-3">
+        <h2 id="ride-photos" className="font-display text-xl font-bold">
+          Hide a ride photo
+        </h2>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          For a gallery photo that does not show its road. Paste the ride&rsquo;s link; a hidden
+          photo stays out when the photos are imported again.
+        </p>
+        <form method="get" action="/admin#ride-photos" className="flex flex-wrap gap-2">
+          <input
+            name="ride"
+            required
+            defaultValue={rideSlug ? `/rides/${rideSlug}` : ""}
+            aria-label="Ride link"
+            placeholder="/rides/…"
+            className="min-h-11 min-w-60 flex-1 rounded-md border border-stone-300 bg-white px-2 text-base md:min-h-9 md:text-sm dark:border-stone-700 dark:bg-stone-900"
+          />
+          <button
+            type="submit"
+            className={`${button} border border-stone-300 dark:border-stone-600`}
+          >
+            Show its photos
+          </button>
+        </form>
+        {ride && !rideSlug && <p className="text-sm">That is not a ride&rsquo;s link.</p>}
+        {ridePhotos && ridePhotos.length === 0 && (
+          <p className="text-sm">This ride has no photos.</p>
+        )}
+        {ridePhotos && ridePhotos.length > 0 && (
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {ridePhotos.map((p) => (
+              <li key={p.file} className="flex flex-col gap-1 text-xs">
+                {/* Commons thumbnails, shown from Commons with the file named under them. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.thumbUrl}
+                  alt={p.caption}
+                  className="aspect-[4/3] w-full rounded-lg object-cover"
+                />
+                <span className="break-all">
+                  km {Math.round(p.kmFromStart)} · {p.file.replace(/^File:/, "")}
+                </span>
+                <form action={hidePhoto}>
+                  <input type="hidden" name="slug" value={rideSlug!} />
+                  <input type="hidden" name="file" value={p.file} />
+                  <button
+                    type="submit"
+                    className={`${button} border border-stone-300 dark:border-stone-600`}
+                  >
+                    Hide
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section aria-labelledby="takedown" className="flex flex-col gap-3">

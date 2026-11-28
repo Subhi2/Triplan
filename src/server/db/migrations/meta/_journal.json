@@ -246,6 +246,13 @@
       "when": 1795870717996,
       "tag": "0034_trip_packing",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795873071361,
+      "tag": "0035_ride_photo_block",
+      "breakpoints": true
     }
   ]
 }
