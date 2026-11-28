@@ -21,7 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useRef } from "react";
 import { useLocate } from "@/components/geo/useLocate";
-import { MY_LOCATION } from "@/lib/nearby";
+import { fetchNearTown, MY_LOCATION, myLocationLabel } from "@/lib/nearby";
 import { CrosshairIcon } from "@/components/geo/CrosshairIcon";
 import type { LngLat } from "@/lib/geo";
 import { VehicleToggle } from "@/components/ui/VehicleToggle";
@@ -164,6 +164,16 @@ export function TripForm(props: Props) {
     onStopsChange(
       latestStops.current.map((s) =>
         s.id === start.id ? { ...s, label: MY_LOCATION, location: at } : s,
+      ),
+    );
+    // Then named by the nearest town (G10), if the rider has not changed the start meanwhile.
+    const town = await fetchNearTown(at);
+    if (!town) return;
+    onStopsChange(
+      latestStops.current.map((s) =>
+        s.id === start.id && s.label === MY_LOCATION && s.location === at
+          ? { ...s, label: myLocationLabel(town) }
+          : s,
       ),
     );
   }

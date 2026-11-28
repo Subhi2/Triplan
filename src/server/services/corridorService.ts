@@ -211,3 +211,27 @@ export async function townsInBox([west, south, east, north]: [number, number, nu
     kind: townKind(r.kind),
   }));
 }
+
+/** How far the nearest town may be for "Near <town>" (G10). */
+export const NEAR_TOWN_M = 25_000;
+
+/**
+ * The town to name a point by ("Near Hassan", G10): the verified town or city within 25 km,
+ * preferring bigger places a little (a city 12 km away beats a village 8 km away). Null when
+ * none is that close.
+ */
+export async function nearestTown([lng, lat]: LngLat): Promise<string | null> {
+  const rows = await getDb().execute<{ name: string }>(sql`
+    WITH pt AS (SELECT ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography AS g)
+    SELECT p.name
+    FROM place p
+    JOIN category c ON c.id = p.category_id
+    CROSS JOIN pt
+    WHERE c.slug = 'town' AND p.status = 'verified'
+      AND ST_DWithin(p.location, pt.g, ${NEAR_TOWN_M})
+    ORDER BY ST_Distance(p.location, pt.g)
+             / (CASE coalesce(p.osm_tags->>'place', 'town')
+                  WHEN 'city' THEN 2.0 WHEN 'village' THEN 0.7 ELSE 1.0 END)
+    LIMIT 1`);
+  return rows[0]?.name ?? null;
+}

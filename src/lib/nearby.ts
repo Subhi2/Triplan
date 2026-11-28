@@ -244,6 +244,26 @@ export function serializeNearbyUrl(state: NearbyUrlState): string {
 export const MY_LOCATION = "My location";
 
 /**
+ * The label for a stop at the rider's position (G10): "Near Hassan" when a town is close, so a
+ * shared or saved trip reads right to others; "My location" otherwise.
+ */
+export function myLocationLabel(town: string | null): string {
+  return town ? `Near ${town}` : MY_LOCATION;
+}
+
+/** The town near a position, from our own towns; null when none is close or the call fails. */
+export async function fetchNearTown([lng, lat]: [number, number]): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/places/near-town?lng=${lng.toFixed(3)}&lat=${lat.toFixed(3)}`);
+    if (!res.ok) return null;
+    const body = (await res.json()) as { town?: unknown };
+    return typeof body.town === "string" ? body.town : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * "Ride there": the planner from the point searched around to a place, so the places along that
  * road take over. The start is kept to 3 decimals: planner links and saved trips are shareable.
  */
