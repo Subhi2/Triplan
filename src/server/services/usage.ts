@@ -8,7 +8,13 @@ import { getDb } from "../db";
 // asked is stored.
 
 export type UsageKey =
-  "route_planned" | "ai_trip" | "ai_tokens_in" | "ai_tokens_out" | "story" | `event:${UsageEvent}`;
+  | "route_planned"
+  | "ai_trip"
+  | "ai_ask"
+  | "ai_tokens_in"
+  | "ai_tokens_out"
+  | "story"
+  | `event:${UsageEvent}`;
 
 /** Adds `by` to today's count for `key`; returns the new count for today. */
 export async function countUsage(key: UsageKey | `test:${string}`, by = 1): Promise<number> {

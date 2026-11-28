@@ -67,6 +67,7 @@ import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { PackingList } from "./PackingList";
 import { useSharedIntake } from "./useSharedIntake";
 import { AfterTheRide } from "./AfterTheRide";
+import { AskRoute } from "./AskRoute";
 import { LogThisRide } from "./LogThisRide";
 import { askForReviews, placesAtStops } from "@/lib/afterRide";
 import { GoogleMapsBar } from "./GoogleMapsBar";
@@ -898,6 +899,9 @@ export function Planner({
   );
   const routeExtras = (
     <>
+      {aiEnabled && selectedRoute && /^[0-9a-f]{32}-[0-2]$/.test(selectedRoute.id) && (
+        <AskRoute key={selectedRoute.id} routeId={selectedRoute.id} />
+      )}
       {selectedRoute && (
         <RouteProfile
           key={selectedRoute.id}
