@@ -1,4 +1,5 @@
 import { createAnthropicTripProvider, DEFAULT_TRIP_MODEL } from "./anthropic";
+import { createAnthropicAskProvider, type RouteAskProvider } from "./askRoute";
 import type { TripIntentProvider } from "./types";
 
 export * from "./types";
@@ -22,4 +23,17 @@ export function getTripIntentProvider(): TripIntentProvider | null {
     process.env.ANTHROPIC_TRIP_MODEL?.trim() || DEFAULT_TRIP_MODEL,
   );
   return provider;
+}
+
+let askProvider: RouteAskProvider | undefined;
+
+/** Claude for "Ask this route" (G12; ANTHROPIC_TRIP_MODEL as for plain words), or null. */
+export function getRouteAskProvider(): RouteAskProvider | null {
+  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!key) return null;
+  askProvider ??= createAnthropicAskProvider(
+    key,
+    process.env.ANTHROPIC_TRIP_MODEL?.trim() || DEFAULT_TRIP_MODEL,
+  );
+  return askProvider;
 }

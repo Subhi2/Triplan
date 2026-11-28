@@ -16,6 +16,7 @@ export const SNAPSHOT_TABLES = [
   "media",
   "ride",
   "ride_photo",
+  "place_film",
   "service_point",
   "open_place",
   "district",
@@ -45,6 +46,7 @@ export const SNAPSHOT_WHERE: Partial<Record<SnapshotTable, string>> = {
   place_guide: OF_PUBLIC_PLACE,
   place_carry: OF_PUBLIC_PLACE,
   media: `status = 'verified' AND source IN ('wikimedia', 'youtube') AND ${OF_PUBLIC_PLACE}`,
+  place_film: OF_PUBLIC_PLACE,
 };
 
 /** Row order in each file: stable, so a refresh with few changes has a small diff in size. */
@@ -57,6 +59,7 @@ const SNAPSHOT_ORDER: Record<SnapshotTable, string> = {
   media: "id",
   ride: "position, slug",
   ride_photo: "ride_slug, position",
+  place_film: "place_id, film_qid",
   service_point: "osm_id",
   open_place: "id",
   district: "osm_id",

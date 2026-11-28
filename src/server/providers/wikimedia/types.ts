@@ -47,6 +47,17 @@ export interface WikimediaProvider {
   imageInfo(files: string[]): Promise<Map<string, CommonsImage>>;
   /** Files on Commons with coordinates within `radiusM` (at most 10,000) of a point, nearest first. */
   filesNear(point: LngLat, radiusM: number): Promise<CommonsGeoFile[]>;
+  /**
+   * Films and series with a filming location (P915) at these items (G12), by place item id; at
+   * most WIKIDATA_BATCH ids. Wikidata is CC0.
+   */
+  filmsAt(wikidataIds: string[]): Promise<Map<string, WikidataFilm[]>>;
+}
+
+export interface WikidataFilm {
+  qid: string;
+  title: string;
+  year: number | null;
 }
 
 /** Files per geosearch request (the API's limit for an anonymous client). */

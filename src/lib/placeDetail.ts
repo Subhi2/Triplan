@@ -94,6 +94,8 @@ export interface PlaceDetail {
   /** Google's id for the place, once looked up: the only Google data we store. */
   googlePlaceId: string | null;
   videos: PlaceVideo[];
+  /** Films and series shot here, from Wikidata (P915, CC0), oldest first (G12). */
+  films?: { qid: string; title: string; year: number | null }[];
   reviews: PlaceReview[];
   /** Facts from the place's OpenStreetMap tags, shown where the guide has nothing. */
   osm: {

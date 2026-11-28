@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "createdAt": "2026-11-19T10:01:00.256Z",
-  "migration": "0028_ride_photo",
+  "createdAt": "2026-11-28T15:26:45.825Z",
+  "migration": "0038_place_film",
   "licence": "Open Database License (ODbL) 1.0. Contains information from OpenStreetMap (© OpenStreetMap contributors, https://www.openstreetmap.org/copyright). Photo files stay with their authors under the licence in each media row. Imported place descriptions keep the licence in their place row (description_license, description_url). open_place rows are from Overture Places (Overture Maps Foundation, overturemaps.org) under the licence in each row (CDLA-Permissive-2.0, Apache-2.0 for Foursquare, CC0-1.0): see LICENCE.md, NOTICE-Foursquare.txt and the LICENSE-*.txt files.",
   "tables": [
     {
@@ -69,7 +69,7 @@
       ],
       "rows": 99372,
       "bytes": 13747526,
-      "sha256": "633053cae420612a94407c0878f5f11b896f8e70c6cd0104970898505430f67f"
+      "sha256": "fc0a9ab8f56e98107f532773476b50a0288bed54405d443bb0e0e053d11f1cb9"
     },
     {
       "name": "place_guide",
@@ -158,9 +158,9 @@
         "seeded_at",
         "tier"
       ],
-      "rows": 100,
-      "bytes": 5156481,
-      "sha256": "6a41f2a1a8574f7e117961d5b497243335d620a9192c5b625fc87b13624ffb5f"
+      "rows": 102,
+      "bytes": 5183228,
+      "sha256": "5efcea75a526900323fab0c90ab74d089ec30cf24432e606aade9ffb5a3646fa"
     },
     {
       "name": "ride_photo",
@@ -179,9 +179,22 @@
         "width",
         "height"
       ],
-      "rows": 681,
-      "bytes": 56539,
-      "sha256": "428d831905c549eccc1e6a6daa7696d2c91f0ac5daf99f8d9e86ea650851fd6c"
+      "rows": 689,
+      "bytes": 57239,
+      "sha256": "c441d01e49a78f30733ede0a88fc632ae034d0afa196b59b14a3ecff6ada6f4a"
+    },
+    {
+      "name": "place_film",
+      "file": "place_film.ndjson.gz",
+      "columns": [
+        "place_id",
+        "film_qid",
+        "title",
+        "year"
+      ],
+      "rows": 133,
+      "bytes": 3586,
+      "sha256": "7c22683cbf41534a3a0eb3e07857f5faa856788186dd38298582e7f6ee56b07c"
     },
     {
       "name": "service_point",
@@ -195,9 +208,9 @@
         "location",
         "updated_at"
       ],
-      "rows": 116190,
-      "bytes": 4105263,
-      "sha256": "23ad20dc6e39dcc9355172af31aed718d8b0f7a2cf7f562604b0a083b18c9027"
+      "rows": 116478,
+      "bytes": 4118000,
+      "sha256": "f060461343e09e2db09113cdf64dbef0cdc8eced3b6de3a522293f4e05607cde"
     },
     {
       "name": "open_place",

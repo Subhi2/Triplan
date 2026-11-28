@@ -6,6 +6,7 @@ import {
   GEOSEARCH_LIMIT,
   WIKIDATA_BATCH,
   type CommonsImage,
+  type WikidataFilm,
   type WikidataItem,
   type WikidataPlaceItem,
   type WikimediaProvider,
@@ -82,6 +83,45 @@ export const geoSearchSchema = z.object({
     })
     .optional(),
 });
+
+export const filmSchema = z.object({
+  results: z.object({
+    bindings: z.array(
+      z.object({
+        place: z.object({ value: z.string() }),
+        film: z.object({ value: z.string() }),
+        title: z.object({ value: z.string() }),
+        date: z.object({ value: z.string() }).optional(),
+      }),
+    ),
+  }),
+});
+
+/** Film bindings -> films by place id, each film once, oldest first. */
+export function parseFilms(data: z.infer<typeof filmSchema>): Map<string, WikidataFilm[]> {
+  const out = new Map<string, WikidataFilm[]>();
+  for (const b of data.results.bindings) {
+    const place = b.place.value.split("/").pop()!;
+    const qid = b.film.value.split("/").pop()!;
+    const title = b.title.value.trim();
+    if (!/^Q\d+$/.test(qid) || !title || /^Q\d+$/.test(title)) continue; // no English name
+    const year = b.date ? Number(b.date.value.slice(0, 4)) : null;
+    const list = out.get(place) ?? [];
+    const seen = list.find((f) => f.qid === qid);
+    if (seen) {
+      if (year !== null && (seen.year === null || year < seen.year)) seen.year = year;
+      continue;
+    }
+    list.push({
+      qid,
+      title: title.slice(0, 200),
+      year: year !== null && year > 1880 ? year : null,
+    });
+    out.set(place, list);
+  }
+  for (const list of out.values()) list.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
+  return out;
+}
 
 export const boxSchema = z.object({
   results: z.object({
@@ -268,6 +308,22 @@ export function createWikimediaProvider(
         'OPTIONAL { ?item schema:description ?desc FILTER(lang(?desc) = "en") } ' +
         "BIND(EXISTS { ?item wdt:P31 wd:Q5 } AS ?human) }";
       return parseItems(await sparql(sparqlSchema, query, 60_000));
+    },
+
+    async filmsAt(wikidataIds) {
+      const ids = wikidataIds.filter((id) => WIKIDATA_ID.test(id));
+      if (ids.length === 0) return new Map();
+      if (ids.length > WIKIDATA_BATCH) {
+        throw new Error(`At most ${WIKIDATA_BATCH} Wikidata ids per request`);
+      }
+      // Films, feature films, TV films and TV series filmed at the place.
+      const query =
+        `SELECT ?place ?film ?title ?date WHERE { VALUES ?place { ${ids.map((id) => `wd:${id}`).join(" ")} } ` +
+        "?film wdt:P915 ?place . ?film wdt:P31 ?kind . " +
+        "VALUES ?kind { wd:Q11424 wd:Q24869 wd:Q506240 wd:Q5398426 wd:Q229390 } " +
+        '?film rdfs:label ?title FILTER(lang(?title) = "en") ' +
+        "OPTIONAL { ?film wdt:P577 ?date } }";
+      return parseFilms(await sparql(filmSchema, query, 60_000));
     },
 
     async itemsInBox([west, south, east, north]) {

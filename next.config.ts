@@ -27,7 +27,20 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [
+      // Everything but the embeds: no framing by other sites.
+      { source: "/((?!embed/).*)", headers: SECURITY_HEADERS },
+      // Embeds (G12): any site may frame them; the rest of the safe defaults stay.
+      {
+        source: "/embed/:path*",
+        headers: [
+          ...SECURITY_HEADERS.filter(
+            (h) => h.key !== "X-Frame-Options" && h.key !== "Content-Security-Policy",
+          ),
+          { key: "Content-Security-Policy", value: "frame-ancestors *" },
+        ],
+      },
+    ];
   },
   // Two Next processes must not share a build dir. Playwright uses .next-e2e so it can run
   // beside your dev server; NEXT_DIST_DIR=.next-build pnpm build does the same for builds.

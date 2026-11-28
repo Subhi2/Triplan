@@ -381,6 +381,30 @@ export function PlaceDetailView({
         {place.postsOpen && <ReviewForm slug={place.slug} placeName={place.name} />}
       </Section>
 
+      {/* Seen in films (G12): Wikidata's filming locations, CC0, credited. */}
+      {place.films && place.films.length > 0 && (
+        <Section title="Seen in films" level={sub}>
+          <ul className="flex flex-col gap-1 text-sm">
+            {place.films.map((f) => (
+              <li key={f.qid}>
+                <a
+                  href={`https://www.wikidata.org/wiki/${f.qid}`}
+                  target="_blank"
+                  rel={external}
+                  className="font-bold underline"
+                >
+                  {f.title}
+                </a>
+                {f.year ? ` (${f.year})` : ""}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-stone-600 dark:text-stone-400">
+            Filming locations from Wikidata (CC0).
+          </p>
+        </Section>
+      )}
+
       {/* Nothing fills videos until the YouTube discovery (phase 6): no empty section till then. */}
       {place.videos.length > 0 && (
         <Section title="Videos and reels" level={sub}>

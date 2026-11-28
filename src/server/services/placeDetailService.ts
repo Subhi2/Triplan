@@ -154,7 +154,7 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
     WHERE p.slug = ${slug} AND p.status = 'verified'`);
   if (!row) return null;
 
-  const [carry, media, videos, reviews] = await Promise.all([
+  const [carry, media, videos, reviews, films] = await Promise.all([
     db.execute<CarryRow>(sql`
       SELECT ci.slug, ci.name, pc.months, pc.reason
       FROM place_carry pc JOIN carry_item ci ON ci.id = pc.item_id
@@ -180,6 +180,13 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
       WHERE r.place_id = ${row.id} AND r.status = 'verified'
       ORDER BY r.created_at DESC
       LIMIT ${MAX_REVIEWS}`),
+    db
+      .execute<{ film_qid: string; title: string; year: number | null }>(
+        sql`
+        SELECT film_qid, title, year FROM place_film WHERE place_id = ${row.id}
+        ORDER BY year NULLS LAST, title`,
+      )
+      .catch(() => []),
   ]);
 
   const tags = row.osm_tags ?? {};
@@ -241,6 +248,7 @@ export async function getPlaceDetail(slug: string): Promise<PlaceDetail | null> 
       source: m.source,
     })),
     googlePlaceId: row.google_place_id,
+    films: films.map((f) => ({ qid: f.film_qid, title: f.title, year: f.year })),
     videos: videos.map((v) => ({
       url: v.url,
       source: v.source,

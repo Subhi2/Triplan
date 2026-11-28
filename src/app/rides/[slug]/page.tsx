@@ -22,6 +22,7 @@ import { SITE_NAME, siteUrl } from "@/lib/site";
 import { placesAlong, toPlaceAlong } from "@/server/services/corridorService";
 import { getPlaceDetail } from "@/server/services/placeDetailService";
 import { getRide, rideGallery } from "@/server/services/rideService";
+import { EmbedSnippet } from "@/components/embed/EmbedSnippet";
 
 // Rides change only when seeded again, their places when OpenStreetMap is imported again.
 export const revalidate = 86400;
@@ -206,6 +207,8 @@ export default async function RidePage({ params }: Props) {
         profile={ride.profile}
         places={places}
       />
+
+      <EmbedSnippet src={`${siteUrl()}/embed/ride/${ride.slug}`} title={ride.title} />
 
       {ride.roadMix && (
         <section aria-labelledby="roads" className="flex flex-col gap-1">

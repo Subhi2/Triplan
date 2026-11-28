@@ -1790,3 +1790,21 @@ test("a packing list from the trip's places, to tick off", async ({ page }) => {
   await expect(page.getByText("Save the trip to keep your ticks.")).toBeVisible();
   expect(asked.at(-1)!.month).toBeGreaterThanOrEqual(1);
 });
+
+test("a Google Maps link shared to Triplan opens as the destination", async ({ page }) => {
+  await mockApis(page, []);
+  const link = "https://www.google.com/maps/place/Manjarabad+Fort/@12.9173,75.7581,17z/data=!3m1";
+  await page.goto(`/?shared=link&su=${encodeURIComponent(link)}`);
+  await openTripForm(page);
+  await expect(page.getByRole("combobox", { name: "Destination" })).toHaveValue("Manjarabad Fort");
+  await expect(page).not.toHaveURL(/shared=/);
+});
+
+test("a share that arrives before the service worker goes to the planner", async ({ request }) => {
+  const res = await request.post("/share", {
+    multipart: { title: "Manjarabad Fort", text: "Manjarabad Fort\nhttps://maps.app.goo.gl/x" },
+    maxRedirects: 0,
+  });
+  expect(res.status()).toBe(303);
+  expect(res.headers()["location"]).toMatch(/\/\?shared=link&st=Manjarabad\+Fort/);
+});

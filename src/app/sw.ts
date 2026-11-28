@@ -76,3 +76,61 @@ self.addEventListener("notificationclick", (event) => {
     }),
   );
 });
+
+// "Share to Triplan" (G12, manifest share_target): another app shares a ride file or a link. The
+// file is kept on this phone (IndexedDB, the offline store's "recent" table) for the planner to
+// read; it never goes to our server as a file. Links and text go to the planner in its address.
+const SHARE_DB = "triplan-offline";
+const SHARE_STORE = "recent";
+const SHARED_FILE_KEY = "shared-file";
+
+function keepSharedFile(file: File): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(SHARE_DB);
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      if (!db.objectStoreNames.contains(SHARE_STORE)) {
+        db.close();
+        reject(new Error("no store"));
+        return;
+      }
+      const tx = db.transaction(SHARE_STORE, "readwrite");
+      tx.objectStore(SHARE_STORE).put(
+        { name: file.name, type: file.type, blob: file },
+        SHARED_FILE_KEY,
+      );
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+}
+
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== "POST" || url.origin !== self.location.origin) return;
+  if (url.pathname !== "/share") return;
+  event.respondWith(
+    (async () => {
+      const form = await event.request.formData();
+      const file = form.get("file");
+      if (file instanceof File && file.size > 0) {
+        try {
+          await keepSharedFile(file);
+          return Response.redirect("/?shared=file", 303);
+        } catch {
+          return Response.redirect("/?shared=failed", 303);
+        }
+      }
+      const q = new URLSearchParams({ shared: "link" });
+      for (const k of ["title", "text", "url"]) {
+        const v = form.get(k);
+        if (typeof v === "string" && v.trim()) q.set(`s${k[0]}`, v.trim().slice(0, 1000));
+      }
+      return Response.redirect(`/?${q.toString()}`, 303);
+    })(),
+  );
+});
