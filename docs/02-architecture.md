@@ -157,6 +157,10 @@ The public OSRM server reports no road classes (tunnels, tolls), so tunnels cann
 
 `MediaRecorder` on `canvas.captureStream()` was tried first and dropped: Chrome's MP4 recorder keeps wall-clock time across `pause()`, so waiting for tiles made a 40 s ride a 138 s video. Rendering takes one to a few minutes depending on the device and network; a progress bar and Cancel show meanwhile, and the finished video can be played back, shared as a file through the share sheet, or downloaded.
 
+### Towns along a route
+
+Four requests want the towns along the same route with different radii: the via labels (2 km), the elevation profile (2 km), the weather (3 km) and the overnight towns (5 km). `townsAlong` (`src/server/services/routeTowns.ts`, G9) asks the database once per route at the widest radius, with each town's distance from the line, and filters for the others; the answer is kept in the instance's memory and in `route_cache` for 7 days, keyed by the line.
+
 ### Suggesting "via" towns
 
 To show "via Sakleshpur" vs "via Chikkamagaluru" labels on route cards, find the largest towns (OSM `place=town|city`) within 2 km of each route that are not within 2 km of the other routes. Show the top 1–2 as the card label. Store towns in `place` with category `town`, or a separate `settlement` table.
@@ -552,6 +556,8 @@ The ride check's range on a full tank, and the trip cost's mileage and fuel pric
 - **Admin**: `/admin` lists waiting reviews, photos and road reports with Approve and Reject (server actions). Only addresses in `ADMIN_EMAILS` get a Supabase Auth email link and pass `currentAdmin()`; the page says the same for any address, so it does not tell who is an admin. The link returns to the public address (never a Host header). `/auth/callback` takes Supabase's `code` link or a `token_hash` link. Approving a review or photo rebuilds the place page. Only admins ever sign in.
 - **Photos**: at most 8 MB (JPEG, PNG or WebP), turned upright and resized to 1600 px and 400 px WebP with `sharp`, which writes no metadata (GPS, phone, time); stored in Supabase Storage's public bucket `rider-photos` (made on first use) with licence `user-granted`, credited to the name given. A rejected photo's row and files are deleted.
 - **Road reports**: a kind, a point (the rider's position on a tap, or a km of the selected route) and a short note; they expire after 72 hours (closed, landslide, flooded) or 24 hours (potholes, diversion). Approved reports within 500 m of the route show in the ride check (`reports_along_route`, `POST /api/route/reports`) until they expire; the daily clean-up deletes them a week later, and spent proofs of work once they would have expired.
+- **"Something's wrong here"** (G8, built in G9): on a place page a rider says it is closed, in the wrong spot, the wrong kind of place or listed twice (`POST /api/places/[slug]/flags`, `place_flag`). The same gate and pre-screen; one open flag per device and place. `/admin` lists them with how many riders flagged the place: Hide the place (status `rejected`, which the OpenStreetMap re-import keeps), Fixed, or Dismiss. Never shown on the site; settled flags go after 90 days.
+- **Takedown requests** (G9): `/terms` has a form (`POST /api/takedown`, `content_report`) for anything on our pages: a link to the page (only this site's links are taken, `ownPath`), what is wrong, a note and an optional contact to answer. The same proof of work and limits; no pre-screen. The admin takes the content down with the tools that exist (reject a post, hide a place, take down a club or ride by link) and marks the request done or dismissed. The admin's address never appears on the site; a settled request and its contact go after 90 days.
 - **Rating**: places still show their plain average. Ranking (`placeRank`) uses a Bayesian average, `(C × m + Σ ratings) / (C + n)` with `m = 3.5` and `C = 5`, so one 5-star review does not top fifty 4.5-star ones. (A per-category mean waits until there are enough reviews to have one.)
 
 ## Community (G6)
@@ -624,6 +630,8 @@ Vercel (Hobby, free, non-commercial) runs the app; the database stays on Supabas
 
 ## Testing
 
+- CI (`.github/workflows/ci.yml`, G9): the `check` job runs lint, typecheck and unit tests; the `build` job starts Supabase's own Postgres image (`supabase db start`, so the auth schema, roles and PostGIS match production), loads `data/snapshot` with `pnpm db:setup`, runs `next build` and then Lighthouse (`lighthouserc.json`: the planner, a place, `/rides` and a ride; performance, accessibility, best practices and SEO at 0.9, warnings until they pass). Reports stay as a GitHub artifact, never on Google's public report storage.
+- Accessibility: `tests/e2e/layout.spec.ts` runs axe-core (`tests/helpers/axe.ts`, WCAG 2.1 A and AA) on every key screen at both widths; serious and critical findings fail the test. The map's canvas is left out.
 - Unit: geo utils, ranking, provider response parsing (with recorded fixtures in `tests/fixtures/`), LLM extraction parsing.
 - Integration: `places_along_route` against a test DB with seed data (use the acceptance criteria in `01-product-spec.md`).
 - E2E (Playwright): search Bengaluru → Kalasa, add via Sakleshpur, open Manjarabad Fort, add it to trip.

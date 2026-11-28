@@ -78,7 +78,7 @@ Add these scripts to `package.json` as the phases introduce them.
 - Months are stored as integers 1–12.
 - Every image stored or displayed must carry `source`, `license` and `author`. Never re-host social media videos or photos; embed or link them.
 - Secrets live in `.env.local` (never committed). Keep `.env.example` up to date.
-- Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`). GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and unit tests on every push; it cannot build (the ISR pages need the database).
+- Run `pnpm lint && pnpm typecheck && pnpm test` before calling a task done, and `NEXT_DIST_DIR=.next-build pnpm build` before pushing to `main` (Vercel runs `next build`, which checks more than `tsc`). GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and unit tests on every push, and a second job builds against Supabase's Postgres image loaded from `data/snapshot`, then runs Lighthouse.
 - Small commits, one feature per commit, message in imperative mood.
 
 ## Choosing new features
@@ -146,4 +146,6 @@ NEXT_PUBLIC_COMMUNITY_AUTH=       # tests only: "local" uses signed test account
 - Never build a menu or dialog as a fixed `div` with a z-index: menus are native popovers (`SiteMenu`), dialogs use `Modal` (`<dialog>` with `showModal()`), so they cover the phone sheet and are never clipped by a panel (`docs/08-design.md`, "Layers and panels"). Add new key screens to `tests/e2e/layout.spec.ts`.
 - "My bike" (`rider_vehicle`, and `rng`/`kpl`/`fp` in the trip link) belongs to the rider alone: never in the snapshot or browser storage, read and written only by our server (row level security on).
 - Dark mode follows `data-theme` on `<html>` (`src/lib/theme.ts`, `docs/08-design.md`, "Light and dark"): every text and border colour needs its `dark:` pair, form fields keep the `globals.css` border rule, and the Google map's lines use `useMapColors`.
+- Takedown requests come only through the form on `/terms` (`content_report`); never publish an admin's email address on the site. A request's contact is used only to answer and goes 90 days after it is settled.
+- Every key screen in `tests/e2e/layout.spec.ts` also passes axe (`tests/helpers/axe.ts`): no serious or critical findings. A sideways strip that scrolls takes keyboard focus.
 - YouTube API data is refreshed or deleted within 30 days (YouTube developer policies); keep the video id and our own extracted facts (phase 6).

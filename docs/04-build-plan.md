@@ -109,7 +109,7 @@ Decided 2026-09-30: well-known places around the rider, by road time. Design in 
 
 **Done when:** at Sakleshpur, "Within 1 h by bike" lists Manjarabad Fort first (about 7 min); nothing asks for the position until a tap; the URL and requests carry 3 decimals; Ride there routes in the planner; ride mode heading north from Sakleshpur shows Belur and not Bisle; `tests/e2e/nearby.spec.ts` passes on desktop and at 375 px.
 
-Next ideas (not built): label "My location" by the nearest town from our own data ("Near Hassan") for shared trips; an offline copy of the last Near me list for ride mode in areas without signal.
+Next ideas: label "My location" by the nearest town from our own data ("Near Hassan") for shared trips (planned in G10). The last Near me list is kept on the phone for areas without signal (built: `packStore.ts`, `near-me`).
 
 ## Growth G3 · Showcase
 
@@ -197,7 +197,7 @@ Decided 2026-10-09 after an audit of features, data and code. Features are ahead
 - C5: six rides were added (Leh–Nubra over Khardung La, Leh–Pangong over Chang La, Srinagar–Leh over Zoji La, the Thamarassery Ghat, Shillong–Sohra, Gangtok–Tsomgo). A dry run of `pnpm db:seed-rides` routed all six within their expected distances.
 - E1: no SQL change. The corridor search took about 0.5 s for 340 km and about 1 s for 1,700 km (Chennai to Kolkata, 17,650 points), within the 2 s the spec asks.
 - E3, E6 and F3 were not built. The towns along a route are looked up two or three times across separate, cached requests. The "route id or geometry" code is one line in each route. Too few trips have been saved for popular route pages, and the famous rides cover them for now.
-- F2: an offline page only. Keeping the last trip and the last Near me list on the phone is still open.
+- F2: the offline page, and since G5 the last trip and the last Near me list kept on the phone (IndexedDB, `src/components/offline/packStore.ts`), shown on `/~offline`.
 - Migrations 0017 (trip edit token) and 0018 (description credit) are on the live database.
 
 ## Growth G5 · Ride day, smart picks, ride together, riders' content
@@ -288,7 +288,60 @@ Decided 2026-11-19 to 2026-11-23, after an audit of every screen at phone and la
 
 **Passes the new-features check** (`CLAUDE.md`, "Choosing new features"): all our own code and data; the Popover API, `<dialog>`, cookies and the user-agent parser are web standards and Next.js built-ins; My bike and the bucket list use Supabase Postgres, a service we already use and could swap; nothing needs anyone's approval or a public server.
 
-**Not built / next:** "Share to Triplan" (a `share_target` in `manifest.ts`, so GPX files and Google Maps links shared from other apps open in the planner; Android only); "Something's wrong here" on place pages (riders flag a closed or misplaced place through the road-report proof of work, to `/admin`); a return trip or loop in one tap. All three pass the check: web standards, our own data and our own routing provider.
+**Not built / next:** "Share to Triplan" (G12) and a return trip or loop in one tap (G10). "Something's wrong here" was finished in G9.
+
+## Growth G9 · Launch basics
+
+Decided 2026-11-28, after an audit of gaps in the built features (A), quality and launch readiness (B) and new features (C). The owner chose all of them, in four phases (G9 to G12), each checked before the next. Left out: GlitchTip, self-hosted OSRM, Nominatim, Photon and tiles, and Valhalla (each needs a server that costs money), and YouTube (postponed); see `07`, "Checked and left out".
+
+1. **"Something's wrong here"** (A1): `place_flag` (migration 0030), `POST /api/places/[slug]/flags`, `PlaceFlagForm`, the admin's "Places riders flagged" (Hide the place, Fixed, Dismiss); settled flags go after 90 days. Unit and e2e tests.
+2. **CI that builds** (B4): a `build` job with Supabase's Postgres image (`supabase db start`), `pnpm db:setup` from `data/snapshot`, `next build`.
+3. **Lighthouse** (B3): `lighthouserc.json` on the planner, a place, `/rides` and a ride, at 0.9 for each category, as warnings until the pages pass; then blocking.
+4. **Accessibility** (B5): axe-core in `layout.spec.ts` on every key screen at both widths. Fixed: photo strips take keyboard focus and turn with the arrow keys; the planner's steps take their spoken name from their text.
+5. **Terms and takedowns** (B1): `/terms` (plain-words rules, data licences, no warranty for routes, rules and alerts) and its takedown form (`content_report`, migration 0031, `POST /api/takedown`); "Takedown requests" in `/admin`; links in the footer.
+6. **Towns once per route** (B7): `routeTowns.ts` (see `02`, "Towns along a route").
+7. **Avoid-month warning** (A11): `AvoidNowNotice` near the top of the place page in an avoid month, with the monsoon or heat and the month it is good again. A matching chip in the planner's list was left out: it needs the avoid months in `places_along_route`, a change to the corridor function on the live database.
+
+**Done when:** a place can be flagged and hidden from `/admin`; CI builds against the snapshot and Lighthouse runs on the four pages; axe finds nothing serious on any key screen; `/terms` exists and a takedown request reaches `/admin`; one route queries its towns once.
+
+**Passes the new-features check** (`CLAUDE.md`, "Choosing new features"): all our own code and data; axe-core (MPL-2.0), Lighthouse CI (Apache-2.0) and the Supabase CLI (MIT) are open source and run in GitHub Actions; nothing needs anyone's approval or a public server.
+
+## Growth G10 · Ride-day tools (planned)
+
+1. **Return trip and loop** (A3): "Ride back" reverses the stops; "Make it a loop" ends where it started, within `MAX_VIA_STOPS`.
+2. **"Near Hassan"** (A5): `nearestTown` from our own towns; a shared or saved trip's "My location" becomes "Near <town>" (the coordinates stay).
+3. **Electric bikes and cars** (B9): a fuel type on My bike (`rider_vehicle`, `ft` in the link); OSM `amenity=charging_station` as a service kind; the ride check counts charging gaps.
+4. **Fuel-stop picks** (C2): `pickFuelStops` names where to fill for the range, with a reserve; in the ride check and as GPX waypoints.
+5. **Packing list** (C3): from the ticked places' carry items and the season; ticks kept with a saved trip (`trip.packing`, edit token).
+6. **Road book** (C4): `/book`, a printable A4 trip from the trip link: route sketch, stops, fuel, breaks, rules with their links, helplines, sunset, packing list and a QR code. No map tiles, no Google content.
+7. **Send my position** (C5): one tap in Ride mode and Safety stops opens WhatsApp or SMS with an OpenStreetMap link, the nearest town and the km; nothing goes to our server.
+8. **Add to calendar** (C1): an `.ics` built in the browser for a trip or a group ride; the exact meeting point only for riders let in.
+
+**Passes the new-features check:** our own data and code, OpenStreetMap (ODbL) through the existing import, web standards (`wa.me`, `sms:`, iCalendar), `qrcode` (MIT).
+
+## Growth G11 · Community and content (planned)
+
+1. **Add a place** (A9, Phase 5 steps 3–4): `/contribute` with a pin, name, category, optional guide fields, photos and a plain link; proof of work, pre-screen, a duplicate check (`pg_trgm` > 0.4 within 1 km) and the admin's "New places".
+2. **Review after the ride** (C6): a past trip or group ride asks for reviews of its stops.
+3. **Ride log and year in rides** (C7): `ride_log` (numbers only, rider only), "My rides" on `/me`, an `/og/year` card with no nickname.
+4. **Push notices** (C9): Web Push with our own VAPID keys (`web-push`, MPL-2.0) for join requests, decisions and changed or cancelled rides; never a meeting point in the text; off without keys.
+5. **Ride photos** (A8): a tighter distance from the road, and `ride_photo_block` so a photo an admin hides stays hidden after a re-import.
+6. **Famous rides** (A6): a "Central" area; Bihar and Andaman rides only if every stop resolves.
+7. **3D preview in dark mode** (A7).
+
+**Passes the new-features check:** our own data; Supabase (a service we use and could swap); Web Push is a web standard with keys we hold; Commons as already used.
+
+## Growth G12 · Reach and data (planned)
+
+1. **Embeds** (C8): `/embed/route` and `/embed/ride/[slug]`, MapLibre only, framable anywhere, `noindex`.
+2. **Share to Triplan** (A2): a `share_target` for GPX files and Google Maps links (Android); files read in the browser, full links parsed, short links searched by the place name in the shared text and never fetched.
+3. **Ask this route** (C10): answers only from the route's own places, rules and services, ids checked; never stored; off without `ANTHROPIC_API_KEY`.
+4. **Seen in films** (C11): Wikidata `P915` (CC0) into `place_film`.
+5. **No-signal stretches** (C12): OpenCelliD (CC BY-SA 4.0), only if its download needs no card or approval.
+6. **Landslide risk** (C13): NASA LHASA, only if it downloads without a login; a daily GitHub Actions job.
+7. **Languages** (B6): `next-intl` (MIT) with a `lang` cookie; Kannada, Hindi, Tamil, Malayalam and Marathi as drafts marked unreviewed.
+
+**Passes the new-features check:** open data under commercial-use licences, stored by us (CC0, CC BY-SA, public domain), open-source libraries, and Anthropic behind its switch; each data source gets a step-0 check before it is built.
 
 ## Phase 5 · Community content
 
