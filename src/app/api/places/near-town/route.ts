@@ -26,7 +26,10 @@ export async function GET(request: Request) {
     const town = await nearestTown([parsed.data.lng, parsed.data.lat]);
     return Response.json({ town }, { headers: NO_STORE });
   } catch (err) {
-    console.error("GET /api/places/near-town failed:", err instanceof Error ? err.message : "error");
+    console.error(
+      "GET /api/places/near-town failed:",
+      err instanceof Error ? err.message : "error",
+    );
     return Response.json({ town: null }, { headers: NO_STORE });
   }
 }
