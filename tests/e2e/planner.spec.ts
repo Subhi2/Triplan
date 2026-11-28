@@ -1737,3 +1737,24 @@ test.describe("send my position", () => {
     expect(ours).toEqual([]);
   });
 });
+
+test("add the ride's start to the calendar", async ({ page }) => {
+  await mockApis(page, []);
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const toggle = page.getByRole("button", { name: /^Ride check/ });
+  if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  const check = page.getByRole("region", { name: "Ride check" });
+  await check.getByLabel("Start").fill("2026-12-05T06:00");
+  const download = page.waitForEvent("download");
+  await check.getByRole("button", { name: "Add to calendar" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("ride-bengaluru-kalasa.ics");
+  const text = await (await import("node:fs/promises")).readFile((await file.path())!, "utf8");
+  expect(text).toContain("SUMMARY:Ride: Bengaluru → Kalasa");
+  expect(text).toMatch(/DTSTART:20261205T\d{6}Z/);
+});

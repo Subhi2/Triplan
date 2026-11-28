@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PowPayload } from "@/components/posts/postClient";
 import { ShareButtons } from "@/components/site/ShareButtons";
+import { AddToCalendar } from "@/components/ui/AddToCalendar";
 import {
   canActOnRideMember,
   canRide,
@@ -19,7 +20,7 @@ import {
 } from "@/lib/community/schemas";
 import { rideApprovedText, rideInviteText, rideJoinedText } from "@/lib/community/shareText";
 import type { GroupRidePublic, GroupRideView, RideMemberRow } from "@/lib/community/views";
-import { whatsAppUrl } from "@/lib/site";
+import { siteUrl, whatsAppUrl } from "@/lib/site";
 import { trackEvent } from "@/lib/track";
 import { GroupRideCheck } from "./GroupRideCheck";
 import { RidePublicInfo } from "./RidePublicInfo";
@@ -464,6 +465,30 @@ export function GroupRideDetail({ id, initial }: { id: string; initial: GroupRid
 
       {/* The road checked for the ride's own day and time, while the ride is still to come. */}
       {open && <GroupRideCheck tripId={ride.tripId} startsAt={ride.startsAt} />}
+
+      {/* The exact meeting point goes in only for riders the host let in (G10). */}
+      {open && (
+        <AddToCalendar
+          className={`${secondaryButton} self-start`}
+          event={{
+            uid: `group-ride-${id}@triplan`,
+            title: ride.title,
+            start: new Date(ride.startsAt),
+            end: new Date(
+              new Date(ride.startsAt).getTime() + ((ride.durationMin ?? 120) + 60) * 60_000,
+            ),
+            location: priv
+              ? `${priv.meetNote || ride.meetLabel}${
+                  priv.meetPoint
+                    ? ` (${priv.meetPoint[1].toFixed(5)}, ${priv.meetPoint[0].toFixed(5)})`
+                    : ""
+                }`
+              : ride.meetLabel,
+            description: `${ride.from} → ${ride.to}, hosted by ${ride.host}.`,
+            url: `${siteUrl()}/group-rides/${id}`,
+          }}
+        />
+      )}
 
       {priv && (
         <section aria-label="For riders on this ride" className={`${card} flex flex-col gap-3`}>

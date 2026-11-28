@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePlacesAlong } from "@/components/place/usePlacesAlong";
+import { AddToCalendar } from "@/components/ui/AddToCalendar";
 import { RoadReportForm } from "@/components/posts/RoadReportForm";
 import type { AlertsState } from "@/components/route/useRouteAlerts";
 import type { RoadReportsState } from "@/components/route/useRoadReports";
@@ -555,6 +556,19 @@ export function RideCheck({
           />
           Electric {vehicle === "bike" ? "bike" : "car"}: count charging points, not pumps
         </label>
+        {departAt && !fixedDeparture && (
+          <AddToCalendar
+            className="text-brand-dark inline-flex min-h-11 items-center self-start text-sm font-bold hover:underline md:min-h-8 dark:text-teal-300"
+            event={{
+              uid: `trip-${route.id}-${departAt.getTime()}@triplan`,
+              title: `Ride: ${short(from.label)} → ${short(to.label)}`,
+              start: departAt,
+              end: daylight?.arriveAt,
+              location: from.label,
+              description: `${Math.round(route.distanceKm)} km, ${route.viaLabel}.`,
+            }}
+          />
+        )}
 
         <ul className="space-y-3" aria-live="polite">
           {hospitalGap && (
