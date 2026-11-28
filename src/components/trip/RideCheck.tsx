@@ -18,6 +18,7 @@ import {
   fromDateTimeLocal,
   fuelVerdict,
   longestFuelGap,
+  pickFuelStops,
   planDaylight,
   RANGE_LIMITS_KM,
 } from "@/lib/rideCheck";
@@ -300,6 +301,11 @@ export function RideCheck({
   const fmtArrive = (d: Date) => (sameDay ? time.format(d) : dayAndTime.format(d));
 
   const verdict = gap ? fuelVerdict(gap.km, rangeKm) : null;
+  // Where to fill (G10): only worth saying when one tank, with its reserve, does not do.
+  const fuelPlan = useMemo(
+    () => (fuel.status === "ok" ? pickFuelStops(fuel.places, route.distanceKm, rangeKm) : null),
+    [fuel, route.distanceKm, rangeKm],
+  );
   const stationCount = fuel.status === "ok" ? fuel.places.length : 0;
   const someOpenFuel = fuel.status === "ok" && fuel.places.some((p) => p.open);
   const fuelTone: Tone = !verdict
@@ -531,6 +537,21 @@ export function RideCheck({
                 {verdict === "short" &&
                   `Your tank lasts about ${rangeKm} km: carry fuel or plan a detour to a pump.`}
               </p>
+              {fuelPlan && fuelPlan.stops.length > 0 && (
+                <p>
+                  <span className="font-bold">Fill at </span>
+                  {fuelPlan.stops.map((s, i) => (
+                    <span key={`${s.name}-${s.kmFromStart}`}>
+                      {i > 0 && ", then "}
+                      {s.name}{" "}
+                      <span className="tabular font-mono">(km {Math.round(s.kmFromStart)})</span>
+                    </span>
+                  ))}
+                  {fuelPlan.strandedAtKm !== null
+                    ? `. After that no pump is in reach before km ${Math.round(fuelPlan.strandedAtKm)}.`
+                    : ", keeping a quarter of the tank spare."}
+                </p>
+              )}
               <p className="text-xs text-stone-600 dark:text-stone-400">
                 {stationCount} fuel station{stationCount === 1 ? "" : "s"} within {FUEL_CORRIDOR_KM}{" "}
                 km of the route, from OpenStreetMap

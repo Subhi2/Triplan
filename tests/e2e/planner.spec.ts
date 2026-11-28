@@ -1041,9 +1041,16 @@ test.describe("ride check", () => {
     await expect(check).toContainText(
       "3 fuel stations within 2 km of the route, from OpenStreetMap and Overture Maps",
     );
+    // Where to fill, keeping a quarter of the tank (150 km between fills on 200 km).
+    await expect(check).toContainText(
+      "Fill at Kunigal HP (km 60). After that no pump is in reach before km 260.",
+    );
     const range = check.getByRole("spinbutton", { name: "Range on a full tank (km)" });
     await range.fill("300");
     await expect(check).toContainText("Fuel: longest stretch without a pump is 190 km");
+    await expect(check).toContainText(
+      "Fill at Kunigal HP (km 60), then Hassan IOCL (km 250), keeping a quarter of the tank spare.",
+    );
     await range.fill("150");
     await expect(check).toContainText("190 km without a pump, more than your range");
 
