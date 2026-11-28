@@ -10,6 +10,7 @@ import { takeDownClub } from "@/server/services/clubService";
 import { takeDownRide } from "@/server/services/groupRideService";
 import { moderateFlag, moderatePost, settleTakedown } from "@/server/services/riderPostService";
 import { hideRidePhoto } from "@/server/services/ridePhotoAdmin";
+import { decidePlace } from "@/server/services/contributeService";
 import { allowRequestOrOpen } from "@/server/services/writeLimit";
 
 const SIGN_IN_LIMIT = { scope: "admin-link", limit: 5, windowS: 3600 };
@@ -95,6 +96,18 @@ export async function decideTakedown(form: FormData) {
   const parsed = takedownRequestSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return;
   await settleTakedown(parsed.data.id, parsed.data.action);
+  revalidatePath("/admin");
+}
+
+const placeSchema = z.object({ id: z.uuid(), decision: z.enum(["approve", "reject"]) });
+
+/** Approves a rider's new place (it shows on routes from now on) or rejects it. Admins only. */
+export async function decideNewPlace(form: FormData) {
+  if (!(await currentAdmin())) redirect("/admin");
+  const parsed = placeSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return;
+  const slug = await decidePlace(parsed.data.id, parsed.data.decision);
+  if (slug && parsed.data.decision === "approve") revalidatePath(`/place/${slug}`);
   revalidatePath("/admin");
 }
 

@@ -6,8 +6,11 @@ import { adminEmails, currentAdmin } from "@/server/auth/admin";
 import type { Moderation } from "@/server/providers/llm/moderation";
 import { pendingPosts, pendingTakedowns } from "@/server/services/riderPostService";
 import { ridePhotosOf, rideSlugFromLink } from "@/server/services/ridePhotoAdmin";
+import { pendingPlaces } from "@/server/services/contributeService";
+import { categoryStyle } from "@/lib/categories";
 import {
   decideFlag,
+  decideNewPlace,
   decideTakedown,
   hidePhoto,
   moderate,
@@ -127,10 +130,11 @@ export default async function AdminPage({
   }
 
   const rideSlug = ride ? rideSlugFromLink(ride, siteUrl()) : null;
-  const [{ reviews, photos, reports, flags }, requests, ridePhotos] = await Promise.all([
+  const [{ reviews, photos, reports, flags }, requests, ridePhotos, newPlaces] = await Promise.all([
     pendingPosts(),
     pendingTakedowns(),
     rideSlug ? ridePhotosOf(rideSlug) : Promise.resolve(null),
+    pendingPlaces(),
   ]);
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
@@ -290,6 +294,69 @@ export default async function AdminPage({
                   <form key={c.action} action={decideFlag}>
                     <input type="hidden" name="id" value={f.id} />
                     <input type="hidden" name="action" value={c.action} />
+                    <button type="submit" className={`${button} ${c.style}`}>
+                      {c.label}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="new-places" className="flex flex-col gap-3">
+        <h2 id="new-places" className="font-display text-xl font-bold">
+          New places from riders ({newPlaces.length})
+        </h2>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          From &ldquo;Add a place&rdquo;. Check the pin on the map; approved places show on routes.
+        </p>
+        {newPlaces.length === 0 && <Empty what="new places" />}
+        <ul className="flex flex-col gap-3">
+          {newPlaces.map((p) => (
+            <li
+              key={p.id}
+              className="flex flex-col gap-1.5 rounded-xl border border-stone-200 p-3 dark:border-stone-700"
+            >
+              <p className="text-sm">
+                <span className="font-bold">{p.name}</span> · {categoryStyle(p.category).name} ·{" "}
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${p.location[1]}&mlon=${p.location[0]}#map=17/${p.location[1]}/${p.location[0]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  the pin on OpenStreetMap
+                </a>{" "}
+                · {when.format(new Date(p.createdAt))}
+              </p>
+              {p.bestMonths.length > 0 && (
+                <p className="text-sm">Best months: {p.bestMonths.join(", ")}</p>
+              )}
+              {p.note && <p className="text-sm whitespace-pre-line">{p.note}</p>}
+              {p.link && (
+                <p className="text-sm break-all">
+                  Link:{" "}
+                  <a href={p.link} target="_blank" rel="noopener noreferrer" className="underline">
+                    {p.link}
+                  </a>
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { decision: "approve", label: "Approve", style: "bg-brand text-white" },
+                    {
+                      decision: "reject",
+                      label: "Reject",
+                      style: "border border-stone-300 dark:border-stone-600",
+                    },
+                  ] as const
+                ).map((c) => (
+                  <form key={c.decision} action={decideNewPlace}>
+                    <input type="hidden" name="id" value={p.id} />
+                    <input type="hidden" name="decision" value={c.decision} />
                     <button type="submit" className={`${button} ${c.style}`}>
                       {c.label}
                     </button>
