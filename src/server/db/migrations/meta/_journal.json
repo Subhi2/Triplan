@@ -260,6 +260,13 @@
       "when": 1795876070176,
       "tag": "0036_ride_log",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795876958779,
+      "tag": "0037_push_subscription",
+      "breakpoints": true
     }
   ]
 }

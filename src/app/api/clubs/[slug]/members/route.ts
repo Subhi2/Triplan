@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { clubRequestNotice } from "@/lib/pushNotices";
 import { joinClub, leaveClub } from "@/server/services/clubService";
 import { failed, invalid, json, readJson, requireRider } from "@/server/services/communityHttp";
 import { gatePost } from "@/server/services/postGate";
 import { powPayloadSchema } from "@/server/services/proofOfWork";
+import { clubAdmins, notifyLater, notifyRiders } from "@/server/services/pushService";
 import { allowWrite } from "@/server/services/writeLimit";
 
 type Ctx = { params: Promise<{ slug: string }> };
@@ -30,6 +32,13 @@ export async function POST(request: Request, { params }: Ctx) {
       note: parsed.data.note,
       inviteToken: parsed.data.invite,
     });
+    const slug = (await params).slug;
+    if (seat?.status === "pending") {
+      notifyLater(async () => {
+        const { name, admins } = await clubAdmins(slug);
+        await notifyRiders(admins, clubRequestNotice(name, slug));
+      });
+    }
     return json({ seat });
   } catch (err) {
     return failed("POST /api/clubs/[slug]/members", err);

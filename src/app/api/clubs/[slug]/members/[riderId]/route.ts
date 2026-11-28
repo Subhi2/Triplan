@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { clubDecisionNotice } from "@/lib/pushNotices";
 import { CLUB_MEMBER_ACTIONS } from "@/lib/community/schemas";
 import { actOnClubMember } from "@/server/services/clubService";
+import { clubName, notifyLater, notifyRiders } from "@/server/services/pushService";
 import { failed, invalid, json, readJson, requireRider } from "@/server/services/communityHttp";
 import { allowWrite } from "@/server/services/writeLimit";
 
@@ -19,6 +21,15 @@ export async function POST(request: Request, { params }: Ctx) {
   if (!(await allowWrite(request))) return json({ error: "Too many changes from here" }, 429);
   try {
     await actOnClubMember(slug, me.id, riderId, parsed.data.action);
+    const action = parsed.data.action;
+    if (action === "approve" || action === "decline") {
+      notifyLater(async () => {
+        await notifyRiders(
+          [riderId],
+          clubDecisionNotice(await clubName(slug), slug, action === "approve"),
+        );
+      });
+    }
     return json({ ok: true });
   } catch (err) {
     return failed("POST /api/clubs/[slug]/members/[riderId]", err);
