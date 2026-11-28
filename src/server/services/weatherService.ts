@@ -10,7 +10,7 @@ import {
   type WeatherPoint,
 } from "@/lib/weather";
 import type { WeatherProvider } from "../providers/weather";
-import { townsAlong } from "./corridorService";
+import { townsAlong } from "./routeTowns";
 
 /** Forecast requests at a time; MET Norway allows 20 a second. */
 const CONCURRENCY = 4;

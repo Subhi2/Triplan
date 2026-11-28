@@ -16,7 +16,8 @@ import {
 } from "@/lib/multiDay";
 import { getDb } from "../db";
 import type { RouteResult } from "../providers/routing";
-import { townsAlong, type TownAlongRow } from "./corridorService";
+import type { TownAlongRow } from "./corridorService";
+import { townsAlong } from "./routeTowns";
 import { RESIDENT_HOSTEL_SQL } from "./serviceClassify";
 import { getRouteResult } from "./routeService";
 

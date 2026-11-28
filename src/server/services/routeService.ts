@@ -23,7 +23,8 @@ import {
   viaTownCandidates,
   type CandidateTown,
 } from "./altRoutes";
-import { countsAlong, townsAlong, townsInBox } from "./corridorService";
+import { countsAlong, townsInBox } from "./corridorService";
+import { townsAlong } from "./routeTowns";
 import { roadMix } from "./roadMix";
 import { mainTowns, viaLabels, type TownOnRoute } from "./viaLabel";
 
