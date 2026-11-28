@@ -730,6 +730,7 @@ test("save the trip with its route, then see changes that are not saved", async 
       distanceKm: 330,
       durationMin: 400,
       myBike: null,
+      packing: [],
       updatedAt: new Date().toISOString(),
     };
     return route.fulfill({ status: 201, json: { trip, editToken: "test-edit-token" } });
@@ -1757,4 +1758,35 @@ test("add the ride's start to the calendar", async ({ page }) => {
   const text = await (await import("node:fs/promises")).readFile((await file.path())!, "utf8");
   expect(text).toContain("SUMMARY:Ride: Bengaluru → Kalasa");
   expect(text).toMatch(/DTSTART:20261205T\d{6}Z/);
+});
+
+test("a packing list from the trip's places, to tick off", async ({ page }) => {
+  await mockApis(page, []);
+  const asked: { month: number }[] = [];
+  await page.route("**/api/packing", (route) => {
+    asked.push(route.request().postDataJSON() as { month: number });
+    return route.fulfill({
+      json: {
+        items: [
+          { slug: "water_2l", name: "Water (2 L)", for: [] },
+          { slug: "raincoat", name: "Raincoat", for: ["Manjarabad Fort"] },
+        ],
+      },
+    });
+  });
+  await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+  await page
+    .getByRole("list", { name: "Route options" })
+    .getByRole("button")
+    .filter({ hasText: "via Hassan, Sakleshpur" })
+    .click();
+  const summary = page.getByText("What to pack");
+  await summary.scrollIntoViewIfNeeded();
+  await summary.click();
+  const list = page.getByRole("list", { name: "Packing list" });
+  await expect(list.getByText("For Manjarabad Fort")).toBeVisible();
+  await list.getByLabel(/Raincoat/).check();
+  await expect(page.getByText("1/2")).toBeVisible();
+  await expect(page.getByText("Save the trip to keep your ticks.")).toBeVisible();
+  expect(asked.at(-1)!.month).toBeGreaterThanOrEqual(1);
 });

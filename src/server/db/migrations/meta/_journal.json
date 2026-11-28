@@ -239,6 +239,13 @@
       "when": 1795867085419,
       "tag": "0033_trip_electric",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795870717996,
+      "tag": "0034_trip_packing",
+      "breakpoints": true
     }
   ]
 }

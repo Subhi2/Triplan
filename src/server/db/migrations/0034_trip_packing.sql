@@ -1,0 +1,1 @@
+ALTER TABLE "trip" ADD COLUMN "packing" text[] DEFAULT '{}'::text[] NOT NULL;

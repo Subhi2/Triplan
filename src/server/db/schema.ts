@@ -293,6 +293,8 @@ export const trip = pgTable(
     kmPerLitre: real("km_per_litre"),
     fuelPrice: real("fuel_price"),
     electric: boolean("electric").notNull().default(false), // My bike is electric (G10)
+    // Items on the packing list the trip's device ticked (carry_item slugs, G10).
+    packing: text("packing").array().notNull().default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

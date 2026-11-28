@@ -62,6 +62,7 @@ interface TripRow extends Record<string, unknown> {
   km_per_litre: number | null;
   fuel_price: number | null;
   electric: boolean;
+  packing: string[] | null;
   updated_at: string | Date;
 }
 
@@ -127,7 +128,7 @@ export async function getTrip(id: string): Promise<SavedTrip | null> {
   const db = getDb();
   const [trip] = await db.execute<TripRow>(sql`
     SELECT id, title, vehicle::text AS vehicle, corridor_m, route_id, via_label, distance_m,
-           duration_s, range_km, km_per_litre, fuel_price, electric, updated_at
+           duration_s, range_km, km_per_litre, fuel_price, electric, packing, updated_at
     FROM trip WHERE id = ${id}`);
   if (!trip) return null;
   const stops = await db.execute<StopRow>(sql`
@@ -153,6 +154,7 @@ export async function getTrip(id: string): Promise<SavedTrip | null> {
       };
       return hasBike(bike) ? bike : null;
     })(),
+    packing: trip.packing ?? [],
     updatedAt: iso(trip.updated_at),
   };
 }
@@ -185,10 +187,12 @@ export async function createTrip(
  */
 export async function updateTrip(
   id: string,
-  update: { title?: string; plan?: TripPlan },
+  update: { title?: string; plan?: TripPlan; packing?: string[] },
 ): Promise<SavedTrip | null> {
   const found = await getDb().transaction(async (tx) => {
-    const { title, plan } = update;
+    const { title, plan, packing } = update;
+    // Ticks are a text[]; null keeps the ones there.
+    const ticks = packing === undefined ? null : `{${packing.join(",")}}`;
     let rows: { id: string }[];
     if (plan) {
       const c = routeColumns(plan);
@@ -200,13 +204,16 @@ export async function updateTrip(
           route_id = ${c.routeId}, via_label = ${c.viaLabel},
           distance_m = ${c.distanceM}, duration_s = ${c.durationS},
           range_km = ${c.rangeKm}, km_per_litre = ${c.kmPerLitre}, fuel_price = ${c.fuelPrice},
-          electric = ${c.electric}
+          electric = ${c.electric},
+          packing = coalesce(${ticks}::text[], packing)
         WHERE id = ${id}
         RETURNING id`);
       if (rows.length > 0) await writeStops(tx, id, plan.stops);
     } else {
       rows = await tx.execute<{ id: string }>(sql`
-        UPDATE trip SET title = ${title ?? null} WHERE id = ${id} RETURNING id`);
+        UPDATE trip SET title = coalesce(${title ?? null}, title),
+                        packing = coalesce(${ticks}::text[], packing)
+        WHERE id = ${id} RETURNING id`);
     }
     return rows.length > 0;
   });

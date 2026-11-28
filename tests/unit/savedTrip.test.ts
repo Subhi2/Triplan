@@ -46,6 +46,7 @@ const saved: SavedTrip = {
   distanceKm: 330.8,
   durationMin: 402,
   myBike: null,
+  packing: [],
   updatedAt: "2026-09-29T07:00:00.000Z",
 };
 
@@ -70,6 +71,12 @@ describe("saved trip requests", () => {
   it("updates need a title or a plan", () => {
     expect(updateTripSchema.safeParse({}).success).toBe(false);
     expect(updateTripSchema.safeParse({ title: "New name" }).success).toBe(true);
+    // Packing ticks alone (G10), each once; no other site's text in them.
+    expect(updateTripSchema.parse({ packing: ["cash", "cash", "raincoat"] }).packing).toEqual([
+      "cash",
+      "raincoat",
+    ]);
+    expect(updateTripSchema.safeParse({ packing: ["<b>"] }).success).toBe(false);
     expect(updateTripSchema.safeParse({ plan }).success).toBe(true);
   });
 });
