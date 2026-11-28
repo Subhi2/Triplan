@@ -1710,3 +1710,30 @@ test("an electric bike counts charging points instead of pumps", async ({ page }
   // The trip's link keeps it.
   await expect(page).toHaveURL(/ev=1/);
 });
+
+test.describe("send my position", () => {
+  test.use({
+    geolocation: { longitude: 76.0996, latitude: 13.0072 },
+    permissions: ["geolocation"],
+  });
+
+  test("gets WhatsApp and SMS ready with the position, sent nowhere else", async ({ page }) => {
+    await mockApis(page, []);
+    const ours: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("13.007") && new URL(r.url()).host === new URL(page.url()).host) {
+        ours.push(r.url());
+      }
+    });
+    await page.goto("/?from=Bengaluru@77.5946,12.9716&to=Kalasa@75.356,13.234");
+    await page.getByRole("button", { name: "Send my position" }).click();
+    const whatsapp = page.getByRole("link", { name: "Send on WhatsApp" });
+    await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=I%20need%20help/);
+    await expect(whatsapp).toHaveAttribute("href", /openstreetmap\.org/);
+    await expect(page.getByRole("link", { name: "Send by SMS" })).toHaveAttribute(
+      "href",
+      /^sms:\?&body=/,
+    );
+    expect(ours).toEqual([]);
+  });
+});

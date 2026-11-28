@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   helplines,
+  positionLinks,
+  positionMessage,
   longestGap,
   type SafetyPoint,
   type SafetySummary,
@@ -134,5 +136,44 @@ describe("helplines", () => {
     expect(helplines(42.5).map((h) => h.number)).toEqual(["112", "1033"]);
     // No road mix: 1033 is not guessed.
     expect(helplines(null).map((h) => h.number)).toEqual(["112"]);
+  });
+});
+
+describe("Send my position (G10)", () => {
+  const line: [number, number][] = [
+    [77.5946, 12.9716],
+    [76.0996, 13.0072],
+    [75.356, 13.234],
+  ];
+  const when = new Date("2026-11-28T10:35:00Z");
+
+  it("gives an OpenStreetMap link, the accuracy, the town and the km of the trip", () => {
+    const msg = positionMessage([76.1, 13.007], 32, when, {
+      line,
+      tripName: "Bengaluru → Kalasa",
+      towns: [
+        { name: "Hassan", location: [76.0996, 13.0072] },
+        { name: "Sakleshpur", location: [75.785, 12.943] },
+      ],
+    });
+    expect(msg).toContain("https://www.openstreetmap.org/?mlat=13.00700&mlon=76.10000");
+    expect(msg).toContain("(to about 30 m)");
+    expect(msg).toMatch(/Near Hassan, km \d+ of Bengaluru → Kalasa/);
+    expect(msg).toMatch(/Sent at /);
+  });
+
+  it("leaves out what it does not know", () => {
+    const msg = positionMessage([80, 20], null, when);
+    expect(msg).not.toContain("Near");
+    expect(msg).not.toContain("km");
+    expect(msg).not.toContain("to about");
+    // Far from the trip's line: no km along it.
+    expect(positionMessage([80, 20], 10, when, { line })).not.toContain("km");
+  });
+
+  it("opens WhatsApp or an SMS with the message", () => {
+    const links = positionLinks("I need help. Here");
+    expect(links.whatsapp).toBe("https://wa.me/?text=I%20need%20help.%20Here");
+    expect(links.sms).toBe("sms:?&body=I%20need%20help.%20Here");
   });
 });

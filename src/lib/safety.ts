@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { LngLat } from "./geo";
+import { haversineM, metresAlong, pointAtKm, type LngLat } from "./geo";
 import { lineStringSchema, ROUTE_ID_PATTERN } from "./places";
 
 // Safety stops along a route (docs/02-architecture.md, "Safety stops"): hospitals, police, ATMs,
@@ -168,4 +168,61 @@ export function helplines(nationalKm: number | null): Helpline[] {
 export function telLink(phone: string): string | null {
   const digits = phone.replace(/[^\d+]/g, "");
   return digits.replace(/\D/g, "").length >= 3 ? `tel:${digits}` : null;
+}
+
+/** Where the rider is on the trip, for "Send my position" (G10, C5). */
+export interface PositionContext {
+  /** The trip's line, to say how far along it the rider is. */
+  line?: LngLat[];
+  /** The trip's name ("Bengaluru → Kalasa"). */
+  tripName?: string;
+  /** Towns along the trip, to say which the rider is near. */
+  towns?: { name: string; location: LngLat }[];
+}
+
+/** Farther than this from the line, the km along it says nothing. */
+const ON_LINE_M = 3_000;
+/** Farther than this from a town, "near" it is not true. */
+const NEAR_M = 25_000;
+
+/**
+ * The message "Send my position" puts in WhatsApp or an SMS (G10, C5): an OpenStreetMap link to
+ * the point, how exact it is, the nearest town and km of the trip when known, and the time.
+ * Built on the phone; nothing is sent to our server.
+ */
+export function positionMessage(
+  at: LngLat,
+  accuracyM: number | null,
+  when: Date,
+  context: PositionContext = {},
+): string {
+  const [lng, lat] = at;
+  const link = `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lng.toFixed(5)}#map=16/${lat.toFixed(5)}/${lng.toFixed(5)}`;
+  const parts = [`I need help. I am here: ${link}`];
+  if (accuracyM !== null && Number.isFinite(accuracyM)) {
+    parts[0] += ` (to about ${Math.max(5, Math.round(accuracyM / 5) * 5)} m)`;
+  }
+  const town = (context.towns ?? [])
+    .map((t) => ({ name: t.name, m: haversineM(at, t.location) }))
+    .filter((t) => t.m <= NEAR_M)
+    .sort((a, b) => a.m - b.m)[0];
+  let along: string | null = null;
+  if (context.line && context.line.length > 1) {
+    const km = metresAlong(context.line, at) / 1000;
+    const onLine = pointAtKm(context.line, km);
+    if (onLine && haversineM(onLine, at) <= ON_LINE_M) {
+      along = `km ${Math.round(km)}${context.tripName ? ` of ${context.tripName}` : ""}`;
+    }
+  }
+  const where = [town ? `near ${town.name}` : null, along].filter(Boolean).join(", ");
+  if (where) parts.push(where.charAt(0).toUpperCase() + where.slice(1));
+  const time = when.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+  parts.push(`Sent at ${time}`);
+  return `${parts.join(". ")}.`;
+}
+
+/** The WhatsApp and SMS links that open with the message ready to send. */
+export function positionLinks(message: string): { whatsapp: string; sms: string } {
+  const text = encodeURIComponent(message);
+  return { whatsapp: `https://wa.me/?text=${text}`, sms: `sms:?&body=${text}` };
 }

@@ -1056,6 +1056,11 @@ export function Planner({
         <SafetyStops
           state={safety}
           nationalKm={selectedRoute.roadMix ? selectedRoute.roadMix.nationalM / 1000 : null}
+          position={{
+            line: selectedRoute.geometry.coordinates as LngLat[],
+            tripName: defaultTitle,
+            towns: selectedRoute.townStops,
+          }}
           selected={safetyKind}
           onSelect={(kind) =>
             setSafetyPick(kind && selectedRoute ? { routeId: selectedRoute.id, kind } : null)

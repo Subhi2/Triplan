@@ -1,8 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { helplines, SAFETY_KINDS, SAFETY_STYLE, telLink, type SafetyKind } from "@/lib/safety";
+import {
+  helplines,
+  SAFETY_KINDS,
+  SAFETY_STYLE,
+  telLink,
+  type PositionContext,
+  type SafetyKind,
+} from "@/lib/safety";
 import { RetryAlert } from "@/components/ui/RetryAlert";
+import { SendPosition } from "./SendPosition";
 import type { SafetyState } from "./useSafetyAlong";
 
 interface Props {
@@ -12,28 +20,39 @@ interface Props {
   onSelect: (kind: SafetyKind | null) => void;
   /** National-highway km on the route (its road mix), or null when unknown: 1033 shows with any. */
   nationalKm: number | null;
+  /** The trip, so "Send my position" can say the town and km (G10). */
+  position?: PositionContext;
 }
 
 /** Stops listed before "Show all". */
 const LISTED = 8;
 
 /** 112, and 1033 on national highways: always there, whatever the stops do. */
-function Helplines({ nationalKm }: { nationalKm: number | null }) {
+function Helplines({
+  nationalKm,
+  position,
+}: {
+  nationalKm: number | null;
+  position?: PositionContext;
+}) {
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="Helplines">
-      {helplines(nationalKm).map((h) => (
-        <li key={h.number}>
-          <a
-            href={`tel:${h.number}`}
-            title={h.what}
-            className="text-brand-dark inline-flex min-h-11 items-center gap-1.5 rounded-full border border-stone-300 px-3 text-sm hover:bg-stone-100 md:min-h-9 dark:border-stone-600 dark:text-teal-300 dark:hover:bg-stone-800"
-          >
-            <span className="tabular font-mono font-bold">{h.number}</span>
-            <span>{h.name}</span>
-          </a>
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-1.5">
+      <ul className="flex flex-wrap gap-1.5" aria-label="Helplines">
+        {helplines(nationalKm).map((h) => (
+          <li key={h.number}>
+            <a
+              href={`tel:${h.number}`}
+              title={h.what}
+              className="text-brand-dark inline-flex min-h-11 items-center gap-1.5 rounded-full border border-stone-300 px-3 text-sm hover:bg-stone-100 md:min-h-9 dark:border-stone-600 dark:text-teal-300 dark:hover:bg-stone-800"
+            >
+              <span className="tabular font-mono font-bold">{h.number}</span>
+              <span>{h.name}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <SendPosition context={position} />
+    </div>
   );
 }
 
@@ -42,7 +61,7 @@ function Helplines({ nationalKm }: { nationalKm: number | null }) {
  * and repair shops are near the road, per 50 km. A tap on a kind lists them (with tap to call)
  * and pins them on the map.
  */
-export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
+export function SafetyStops({ state, selected, onSelect, nationalKm, position }: Props) {
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState(false);
   if (state.status === "idle") return null;
@@ -55,7 +74,7 @@ export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
     return (
       <section aria-labelledby="safety-heading" className="flex flex-col gap-2">
         {heading}
-        <Helplines nationalKm={nationalKm} />
+        <Helplines nationalKm={nationalKm} position={position} />
         {state.status === "error" ? (
           <RetryAlert quiet message="Could not load safety stops." onRetry={state.retry} />
         ) : (
@@ -70,7 +89,7 @@ export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
     return (
       <section aria-labelledby="safety-heading" className="flex flex-col gap-2">
         {heading}
-        <Helplines nationalKm={nationalKm} />
+        <Helplines nationalKm={nationalKm} position={position} />
         <p className="text-xs text-stone-600 dark:text-stone-400">
           No hospitals, police, ATMs or repair shops are mapped within 3 km of this road.
         </p>
@@ -118,7 +137,7 @@ export function SafetyStops({ state, selected, onSelect, nationalKm }: Props) {
             </span>
           </button>
         </h3>
-        <Helplines nationalKm={nationalKm} />
+        <Helplines nationalKm={nationalKm} position={position} />
       </div>
       {expanded && (
         <div
