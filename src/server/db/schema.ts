@@ -294,7 +294,10 @@ export const trip = pgTable(
     fuelPrice: real("fuel_price"),
     electric: boolean("electric").notNull().default(false), // My bike is electric (G10)
     // Items on the packing list the trip's device ticked (carry_item slugs, G10).
-    packing: text("packing").array().notNull().default(sql`'{}'::text[]`),
+    packing: text("packing")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -364,6 +367,18 @@ export const ridePhoto = pgTable(
     height: smallint("height").notNull(),
   },
   (t) => [primaryKey({ columns: [t.rideSlug, t.position] })],
+);
+
+// Commons files an admin hid from a ride's gallery (G11): the photo import skips them, so a
+// re-import never brings one back. Not in the snapshot (the snapshot's galleries leave them out).
+export const ridePhotoBlock = pgTable(
+  "ride_photo_block",
+  {
+    rideSlug: text("ride_slug").notNull(),
+    file: text("file").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.rideSlug, t.file] })],
 );
 
 // Write limits ------------------------------------------------------------------

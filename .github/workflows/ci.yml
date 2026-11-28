@@ -67,7 +67,13 @@ jobs:
               | sed 's/^/::error title=db:setup::/'
             exit 1
           }
-      - run: pnpm build
+      - name: Build
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee build.log || {
+            grep -iE "error|failed|cannot|not found" build.log | grep -v "^\s*$" | head -12               | sed 's/^/::error title=next build::/'
+            exit 1
+          }
       - name: Lighthouse
         run: pnpm dlx @lhci/cli@0.14.0 autorun --config=lighthouserc.json
       - uses: actions/upload-artifact@v4

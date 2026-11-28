@@ -9,6 +9,7 @@ import { currentAdmin, isAdminEmail, supabaseForRequest } from "@/server/auth/ad
 import { takeDownClub } from "@/server/services/clubService";
 import { takeDownRide } from "@/server/services/groupRideService";
 import { moderateFlag, moderatePost, settleTakedown } from "@/server/services/riderPostService";
+import { hideRidePhoto } from "@/server/services/ridePhotoAdmin";
 import { allowRequestOrOpen } from "@/server/services/writeLimit";
 
 const SIGN_IN_LIMIT = { scope: "admin-link", limit: 5, windowS: 3600 };
@@ -95,6 +96,24 @@ export async function decideTakedown(form: FormData) {
   if (!parsed.success) return;
   await settleTakedown(parsed.data.id, parsed.data.action);
   revalidatePath("/admin");
+}
+
+const hidePhotoSchema = z.object({
+  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  file: z.string().startsWith("File:").max(300),
+});
+
+/** Hides a ride photo that does not show its road; the photo import skips it from then on. */
+export async function hidePhoto(form: FormData) {
+  if (!(await currentAdmin())) redirect("/admin");
+  const parsed = hidePhotoSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return;
+  if (await hideRidePhoto(parsed.data.slug, parsed.data.file)) {
+    revalidatePath(`/rides/${parsed.data.slug}`);
+    revalidatePath("/rides");
+    revalidatePath("/bucket-list");
+  }
+  redirect(`/admin?ride=${parsed.data.slug}#ride-photos`);
 }
 
 /**

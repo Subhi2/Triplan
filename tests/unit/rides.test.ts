@@ -101,6 +101,9 @@ describe("rideArea", () => {
     expect(rideArea("Himachal Pradesh and Ladakh")).toBe("North and Himalaya");
     expect(rideArea("Assam and Arunachal Pradesh")).toBe("East and North-east");
     expect(rideArea("Maharashtra")).toBe("West");
+    // G11: the heart of India has an area of its own.
+    expect(rideArea("Madhya Pradesh")).toBe("Central");
+    expect(rideArea("Chhattisgarh")).toBe("Central");
     expect(rideArea("Atlantis")).toBeNull();
   });
 

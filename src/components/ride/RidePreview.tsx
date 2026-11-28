@@ -38,6 +38,15 @@ import { Modal } from "@/components/ui/Modal";
 
 const MAP_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/liberty";
+/** Dark mode's style, as the planner's map picks it (MapView); "" keeps the preview light. */
+const DARK_MAP_STYLE =
+  process.env.NEXT_PUBLIC_MAP_STYLE_DARK_URL ||
+  (process.env.NEXT_PUBLIC_MAP_STYLE_URL ? "" : "https://tiles.openfreemap.org/styles/dark");
+
+/** The page is dark (data-theme) and there is a dark style to match it (G11). */
+function darkPreview(): boolean {
+  return document.documentElement.dataset.theme === "dark" && DARK_MAP_STYLE !== "";
+}
 const SPEEDS = [0.5, 1, 2, 4] as const;
 /** A place's card shows while the camera is this close to it along the road. */
 const CARD_WITHIN_KM = 0.8;
@@ -114,7 +123,7 @@ const FLY_SKIP_LAYER =
  * drew 5-21 frames a second, with towns and cities alone 27-29 (2026-10-28). The card above the
  * controls names the places on the route.
  */
-const FLY_KEEP_LABEL = /^label_(city|town)/;
+const FLY_KEEP_LABEL = /^(label|place)_(city|town)/; // liberty's names, then the dark style's
 
 function lightenStyle(map: MapLibreMap) {
   for (const layer of map.getStyle().layers ?? []) {
@@ -225,11 +234,13 @@ export default function RidePreview(props: RidePreviewProps) {
     const container = box.current;
     if (!container) return;
     const lowEnd = lowEndDevice();
+    // Dark page, dark fly-through: chosen once, when the preview opens.
+    const dark = darkPreview();
     let map: MapLibreMap;
     try {
       map = new maplibregl.Map({
         container,
-        style: MAP_STYLE,
+        style: dark ? DARK_MAP_STYLE : MAP_STYLE,
         center: targetAt(path, 0),
         zoom: zoomAt(path, 0),
         pitch: reduced ? 45 : FLY_PITCH,
@@ -288,7 +299,12 @@ export default function RidePreview(props: RidePreviewProps) {
             id: "hillshade",
             type: "hillshade",
             source: "hillshade-dem",
-            paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#3f3a2e" },
+            paint: {
+              "hillshade-exaggeration": dark ? 0.5 : 0.35,
+              // On the dark map the hills shade towards black; on the light one, warm ink.
+              "hillshade-shadow-color": dark ? "#000000" : "#3f3a2e",
+              ...(dark ? { "hillshade-highlight-color": "#5a5448" } : {}),
+            },
           },
           firstSymbolLayer(map),
         );
