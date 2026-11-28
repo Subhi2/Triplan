@@ -8,7 +8,7 @@ import { siteUrl } from "@/lib/site";
 import { currentAdmin, isAdminEmail, supabaseForRequest } from "@/server/auth/admin";
 import { takeDownClub } from "@/server/services/clubService";
 import { takeDownRide } from "@/server/services/groupRideService";
-import { moderatePost } from "@/server/services/riderPostService";
+import { moderateFlag, moderatePost, settleTakedown } from "@/server/services/riderPostService";
 import { allowRequestOrOpen } from "@/server/services/writeLimit";
 
 const SIGN_IN_LIMIT = { scope: "admin-link", limit: 5, windowS: 3600 };
@@ -68,6 +68,32 @@ export async function moderate(form: FormData) {
   const { kind, id, decision } = parsed.data;
   const slug = await moderatePost(kind, id, decision);
   if (slug) revalidatePath(`/place/${slug}`);
+  revalidatePath("/admin");
+}
+
+const flagSchema = z.object({ id: z.uuid(), action: z.enum(["hide", "done", "dismiss"]) });
+
+/**
+ * Acts on a rider's "Something's wrong here" flag: hide the place, say it was fixed, or dismiss
+ * the flag; the place's page is rebuilt. Admins only.
+ */
+export async function decideFlag(form: FormData) {
+  if (!(await currentAdmin())) redirect("/admin");
+  const parsed = flagSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return;
+  const slug = await moderateFlag(parsed.data.id, parsed.data.action);
+  if (slug) revalidatePath(`/place/${slug}`);
+  revalidatePath("/admin");
+}
+
+const takedownRequestSchema = z.object({ id: z.uuid(), action: z.enum(["done", "dismiss"]) });
+
+/** Settles a takedown request from /terms once the content is down, or nothing needed doing. */
+export async function decideTakedown(form: FormData) {
+  if (!(await currentAdmin())) redirect("/admin");
+  const parsed = takedownRequestSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return;
+  await settleTakedown(parsed.data.id, parsed.data.action);
   revalidatePath("/admin");
 }
 

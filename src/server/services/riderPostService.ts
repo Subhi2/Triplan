@@ -3,6 +3,10 @@ import type { LineString } from "geojson";
 import { sql } from "drizzle-orm";
 import {
   reportExpiresAt,
+  type ContentReportInput,
+  type ContentReportKind,
+  type PlaceFlagInput,
+  type PlaceFlagKind,
   type ReviewInput,
   type RoadReportAlong,
   type RoadReportInput,
@@ -110,6 +114,65 @@ export async function saveRoadReport(input: RoadReportInput, deviceKey: string, 
   return { id: row!.id, moderation };
 }
 
+/**
+ * Saves this device's flag on the place ("Something's wrong here"), or replaces its open one;
+ * it waits for an admin and is never shown publicly.
+ */
+export async function savePlaceFlag(place: PlaceRef, input: PlaceFlagInput, deviceKey: string) {
+  const moderation = await screen("place_flag", place.name, input.note);
+  const json = moderation ? JSON.stringify(moderation) : null;
+  await getDb().execute(sql`
+    INSERT INTO place_flag (place_id, kind, note, device_hash, moderation)
+    VALUES (${place.id}, ${input.kind}, ${input.note}, ${deviceHash(deviceKey)}, ${json}::jsonb)
+    ON CONFLICT (place_id, device_hash) DO UPDATE SET
+      kind = excluded.kind, note = excluded.note, moderation = excluded.moderation,
+      status = 'unverified', created_at = now()`);
+}
+
+/** Saves a takedown request from /terms (G9); only an admin reads it. */
+export async function saveContentReport(input: ContentReportInput, deviceKey: string) {
+  await getDb().execute(sql`
+    INSERT INTO content_report (path, kind, note, contact, device_hash)
+    VALUES (${input.path}, ${input.kind}, ${input.note}, ${input.contact},
+            ${deviceHash(deviceKey)})`);
+}
+
+export interface PendingTakedown {
+  id: string;
+  path: string;
+  kind: ContentReportKind;
+  note: string;
+  contact: string | null;
+  createdAt: string;
+}
+
+/** Takedown requests waiting for an admin, oldest first. */
+export async function pendingTakedowns(): Promise<PendingTakedown[]> {
+  const rows = await getDb().execute<Record<string, unknown>>(sql`
+    SELECT id, path, kind, note, contact, created_at FROM content_report
+    WHERE status = 'unverified' ORDER BY created_at LIMIT ${QUEUE_LIMIT}`);
+  return rows.map((r) => ({
+    id: String(r.id),
+    path: String(r.path),
+    kind: r.kind as ContentReportKind,
+    note: String(r.note),
+    contact: r.contact == null ? null : String(r.contact),
+    createdAt: new Date(String(r.created_at)).toISOString(),
+  }));
+}
+
+/**
+ * Settles a takedown request: "done" once the content is down or fixed (with the admin tools
+ * that take things down by link), "dismiss" when nothing needed to change.
+ */
+export async function settleTakedown(id: string, action: "done" | "dismiss"): Promise<boolean> {
+  const rows = await getDb().execute(sql`
+    UPDATE content_report
+    SET status = ${action === "done" ? "verified" : "rejected"}::place_status
+    WHERE id = ${id} AND status = 'unverified' RETURNING 1`);
+  return rows.length > 0;
+}
+
 /** Approved reports in force within `corridorM` of the route, by km from start. */
 export async function reportsAlong(geometry: LineString, corridorM: number) {
   const rows = await getDb().execute<{
@@ -138,14 +201,35 @@ export async function reportsAlong(geometry: LineString, corridorM: number) {
 }
 
 /** Removes spent proofs of work past their time, and reports a week after they expired. */
-export async function forgetOldPosts(): Promise<{ pow: number; reports: number }> {
+export async function forgetOldPosts(): Promise<{
+  pow: number;
+  reports: number;
+  flags: number;
+  takedowns: number;
+}> {
   const pow = await getDb().execute(
     sql`DELETE FROM pow_spent WHERE expires_at < now() RETURNING 1`,
   );
   const reports = await getDb().execute(
     sql`DELETE FROM road_report WHERE expires_at < now() - interval '7 days' RETURNING 1`,
   );
-  return { pow: pow.length, reports: reports.length };
+  // Settled flags are kept 90 days (what was said about a place, and by how many), then go;
+  // the device may then flag the place again.
+  const flags = await getDb().execute(
+    sql`DELETE FROM place_flag
+        WHERE status <> 'unverified' AND created_at < now() - interval '90 days' RETURNING 1`,
+  );
+  // Settled takedown requests go after 90 days, with the contact they carried.
+  const takedowns = await getDb().execute(
+    sql`DELETE FROM content_report
+        WHERE status <> 'unverified' AND created_at < now() - interval '90 days' RETURNING 1`,
+  );
+  return {
+    pow: pow.length,
+    reports: reports.length,
+    flags: flags.length,
+    takedowns: takedowns.length,
+  };
 }
 
 // Admin queue -----------------------------------------------------------------
@@ -180,6 +264,18 @@ export interface PendingReport {
   expiresAt: string;
 }
 
+export interface PendingFlag {
+  id: string;
+  placeSlug: string;
+  placeName: string;
+  kind: PlaceFlagKind;
+  note: string;
+  /** Open flags on the same place, this one included: several riders saying it carries weight. */
+  onPlace: number;
+  moderation: Moderation | null;
+  createdAt: string;
+}
+
 const QUEUE_LIMIT = 100;
 
 /** Riders' posts waiting for an admin, oldest first (reports only while still in force). */
@@ -187,9 +283,10 @@ export async function pendingPosts(): Promise<{
   reviews: PendingReview[];
   photos: PendingPhoto[];
   reports: PendingReport[];
+  flags: PendingFlag[];
 }> {
   const db = getDb();
-  const [reviews, photos, reports] = await Promise.all([
+  const [reviews, photos, reports, flags] = await Promise.all([
     db.execute<Record<string, unknown>>(sql`
       SELECT r.id, p.slug, p.name, r.rating, r.body, r.nickname, r.moderation, r.created_at
       FROM review r JOIN place p ON p.id = r.place_id
@@ -206,6 +303,12 @@ export async function pendingPosts(): Promise<{
       FROM road_report
       WHERE status = 'unverified' AND expires_at > now()
       ORDER BY created_at LIMIT ${QUEUE_LIMIT}`),
+    db.execute<Record<string, unknown>>(sql`
+      SELECT f.id, p.slug, p.name, f.kind, f.note, f.moderation, f.created_at,
+             count(*) OVER (PARTITION BY f.place_id) AS on_place
+      FROM place_flag f JOIN place p ON p.id = f.place_id
+      WHERE f.status = 'unverified' AND p.status = 'verified'
+      ORDER BY f.created_at LIMIT ${QUEUE_LIMIT}`),
   ]);
   const iso = (v: unknown) => new Date(String(v)).toISOString();
   return {
@@ -238,7 +341,43 @@ export async function pendingPosts(): Promise<{
       createdAt: iso(r.created_at),
       expiresAt: iso(r.expires_at),
     })),
+    flags: flags.map((f) => ({
+      id: String(f.id),
+      placeSlug: String(f.slug),
+      placeName: String(f.name),
+      kind: f.kind as PlaceFlagKind,
+      note: String(f.note ?? ""),
+      onPlace: Number(f.on_place),
+      moderation: (f.moderation as Moderation | null) ?? null,
+      createdAt: iso(f.created_at),
+    })),
   };
+}
+
+export type FlagAction = "hide" | "done" | "dismiss";
+
+/**
+ * Acts on a waiting flag: "hide" takes the place off the site (status rejected, which the OSM
+ * re-import keeps; 'closed' it would reopen) and settles every open flag on it; "done" says the
+ * place was fixed; "dismiss" says nothing was wrong. Returns the place's slug (its page is then
+ * rebuilt), or undefined when there is no such waiting flag.
+ */
+export async function moderateFlag(id: string, action: FlagAction): Promise<string | undefined> {
+  return getDb().transaction(async (tx) => {
+    const [flag] = await tx.execute<{ place_id: string; slug: string }>(sql`
+      UPDATE place_flag f SET status = ${action === "dismiss" ? "rejected" : "verified"}::place_status
+      FROM place p
+      WHERE f.id = ${id} AND f.status = 'unverified' AND p.id = f.place_id
+      RETURNING f.place_id, p.slug`);
+    if (!flag) return undefined;
+    if (action === "hide") {
+      await tx.execute(sql`UPDATE place SET status = 'rejected' WHERE id = ${flag.place_id}`);
+      await tx.execute(sql`
+        UPDATE place_flag SET status = 'verified'
+        WHERE place_id = ${flag.place_id} AND status = 'unverified'`);
+    }
+    return flag.slug;
+  });
 }
 
 export type PostKindForAdmin = "review" | "photo" | "report";

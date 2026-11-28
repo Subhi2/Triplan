@@ -8,6 +8,7 @@ import { detourLabel } from "@/lib/places";
 import { mediaSourceName } from "@/lib/media";
 import type { Vehicle } from "@/lib/trip";
 import { PhotoForm } from "../posts/PhotoForm";
+import { PlaceFlagForm } from "../posts/PlaceFlagForm";
 import { ReviewForm } from "../posts/ReviewForm";
 import { CarryList } from "./CarryList";
 import { FromGoogle } from "./FromGoogle";
@@ -453,6 +454,8 @@ export function PlaceDetailView({
             </a>
           </p>
         )}
+        {/* A closed, misplaced or doubled place, told to an admin (G8); never shown publicly. */}
+        {place.postsOpen && <PlaceFlagForm slug={place.slug} placeName={place.name} />}
       </footer>
     </article>
   );

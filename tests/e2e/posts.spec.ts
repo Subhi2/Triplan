@@ -156,3 +156,63 @@ test("the admin page lets nobody in when no admin is set", async ({ page }) => {
   await expect(page.getByText("No admin is set up")).toBeVisible();
   await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
 });
+
+/** Skips a test until its table's migration is on the database (0030, 0031). */
+async function needsTable(sql: postgres.Sql, table: string) {
+  const [row] = await sql`SELECT to_regclass(${`public.${table}`}) AS t`;
+  test.skip(!row?.t, `apply the ${table} migration first (pnpm db:migrate)`);
+}
+
+test("a place flag waits for an admin and is never shown", async ({ page }, testInfo) => {
+  test.slow();
+  const note = `E2E flag ${testInfo.project.name.slice(0, 3)} ${Date.now() % 1e9}`;
+  const sql = db();
+  try {
+    await needsTable(sql, "place_flag");
+    await page.goto(PLACE);
+    await page.getByRole("button", { name: "Something wrong here?" }).click();
+    const form = page.getByRole("form", { name: "Something wrong here" });
+    await form.getByLabel("Something else").check();
+    await form.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Say what is wrong")).toBeVisible();
+    await form.getByLabel("What is wrong").fill(note);
+    await form.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText(/We will check Manjarabad Fort/)).toBeVisible({ timeout: 30_000 });
+
+    const [row] = await sql`SELECT kind, status FROM place_flag WHERE note = ${note}`;
+    expect(row).toMatchObject({ kind: "other", status: "unverified" });
+    await page.reload();
+    await expect(page.getByText(note)).toHaveCount(0);
+  } finally {
+    await sql`DELETE FROM place_flag WHERE note = ${note}`.catch(() => {});
+    await sql.end();
+  }
+});
+
+test("a takedown request from /terms reaches the admin queue", async ({ page }, testInfo) => {
+  test.slow();
+  const note = `E2E takedown ${testInfo.project.name.slice(0, 3)} ${Date.now() % 1e9}`;
+  const sql = db();
+  try {
+    await needsTable(sql, "content_report");
+    await page.goto(`/terms?url=${encodeURIComponent(PLACE)}#takedown`);
+    const form = page.getByRole("form", { name: "Ask for a takedown" });
+    await expect(form.getByLabel("Link to the page")).toHaveValue(PLACE);
+    await form.getByLabel("It uses my photo or text without permission").check();
+    await form.getByLabel("What should come down, and why").fill(note);
+    await form.getByRole("button", { name: "Send the request" }).click();
+    await expect(page.getByText(/We read every request/).last()).toBeVisible({ timeout: 30_000 });
+
+    const [row] = await sql`SELECT path, kind, status, contact FROM content_report
+                            WHERE note = ${note}`;
+    expect(row).toMatchObject({
+      path: PLACE,
+      kind: "copyright",
+      status: "unverified",
+      contact: null,
+    });
+  } finally {
+    await sql`DELETE FROM content_report WHERE note = ${note}`.catch(() => {});
+    await sql.end();
+  }
+});

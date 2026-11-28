@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ROAD_REPORT_LABELS } from "@/lib/riderPosts";
+import { CONTENT_REPORT_LABELS, PLACE_FLAG_LABELS, ROAD_REPORT_LABELS } from "@/lib/riderPosts";
 import { SITE_NAME } from "@/lib/site";
 import { adminEmails, currentAdmin } from "@/server/auth/admin";
 import type { Moderation } from "@/server/providers/llm/moderation";
-import { pendingPosts } from "@/server/services/riderPostService";
-import { moderate, sendSignInLink, signOut, takeDown } from "./actions";
+import { pendingPosts, pendingTakedowns } from "@/server/services/riderPostService";
+import { decideFlag, decideTakedown, moderate, sendSignInLink, signOut, takeDown } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -110,14 +110,17 @@ export default async function AdminPage({
             "If this address is an admin's, a sign-in link is on its way. Open it on this device."}
           {link === "failed" && "That link did not work or has expired. Ask for a new one."}
         </p>
-        <Link href="/" className="text-brand dark:text-teal-300 text-sm underline">
+        <Link href="/" className="text-brand text-sm underline dark:text-teal-300">
           Back to {SITE_NAME}
         </Link>
       </main>
     );
   }
 
-  const { reviews, photos, reports } = await pendingPosts();
+  const [{ reviews, photos, reports, flags }, requests] = await Promise.all([
+    pendingPosts(),
+    pendingTakedowns(),
+  ]);
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
@@ -225,6 +228,112 @@ export default async function AdminPage({
               {r.note && <p className="text-sm">{r.note}</p>}
               <Verdict moderation={r.moderation} />
               <Decide kind="report" id={r.id} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="flags" className="flex flex-col gap-3">
+        <h2 id="flags" className="font-display text-xl font-bold">
+          Places riders flagged ({flags.length})
+        </h2>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          &ldquo;Something&apos;s wrong here&rdquo; on a place. Hide takes the place off the site
+          (the OpenStreetMap import keeps it hidden); Fixed is for when you corrected it; Dismiss
+          when nothing was wrong.
+        </p>
+        {flags.length === 0 && <Empty what="flags" />}
+        <ul className="flex flex-col gap-3">
+          {flags.map((f) => (
+            <li
+              key={f.id}
+              className="flex flex-col gap-1.5 rounded-xl border border-stone-200 p-3 dark:border-stone-700"
+            >
+              <p className="text-sm">
+                <a href={`/place/${f.placeSlug}`} className="font-bold underline">
+                  {f.placeName}
+                </a>{" "}
+                · {PLACE_FLAG_LABELS[f.kind]} · {when.format(new Date(f.createdAt))}
+                {f.onPlace > 1 && (
+                  <span className="font-bold"> · {f.onPlace} riders flagged this place</span>
+                )}
+              </p>
+              {f.note && <p className="text-sm">{f.note}</p>}
+              <Verdict moderation={f.moderation} />
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { action: "hide", label: "Hide the place", style: "bg-brand text-white" },
+                    {
+                      action: "done",
+                      label: "Fixed",
+                      style: "border border-stone-300 dark:border-stone-600",
+                    },
+                    {
+                      action: "dismiss",
+                      label: "Dismiss",
+                      style: "border border-stone-300 dark:border-stone-600",
+                    },
+                  ] as const
+                ).map((c) => (
+                  <form key={c.action} action={decideFlag}>
+                    <input type="hidden" name="id" value={f.id} />
+                    <input type="hidden" name="action" value={c.action} />
+                    <button type="submit" className={`${button} ${c.style}`}>
+                      {c.label}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="requests" className="flex flex-col gap-3">
+        <h2 id="requests" className="font-display text-xl font-bold">
+          Takedown requests ({requests.length})
+        </h2>
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          Sent from the form on /terms. Take the content down with the tools on this page (reject a
+          post above, hide a flagged place, or a club or ride below), then mark the request done.
+          Answer through the contact if there is one.
+        </p>
+        {requests.length === 0 && <Empty what="takedown requests" />}
+        <ul className="flex flex-col gap-3">
+          {requests.map((r) => (
+            <li
+              key={r.id}
+              className="flex flex-col gap-1.5 rounded-xl border border-stone-200 p-3 dark:border-stone-700"
+            >
+              <p className="text-sm">
+                <a href={r.path} className="font-bold break-all underline">
+                  {r.path}
+                </a>{" "}
+                · {CONTENT_REPORT_LABELS[r.kind]} · {when.format(new Date(r.createdAt))}
+              </p>
+              <p className="text-sm whitespace-pre-line">{r.note}</p>
+              {r.contact && <p className="text-sm">Answer to: {r.contact}</p>}
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { action: "done", label: "Done", style: "bg-brand text-white" },
+                    {
+                      action: "dismiss",
+                      label: "Dismiss",
+                      style: "border border-stone-300 dark:border-stone-600",
+                    },
+                  ] as const
+                ).map((c) => (
+                  <form key={c.action} action={decideTakedown}>
+                    <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="action" value={c.action} />
+                    <button type="submit" className={`${button} ${c.style}`}>
+                      {c.label}
+                    </button>
+                  </form>
+                ))}
+              </div>
             </li>
           ))}
         </ul>
