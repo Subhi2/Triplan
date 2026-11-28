@@ -57,7 +57,14 @@ jobs:
           supabase db start
       - run: pnpm install --frozen-lockfile
       - name: Migrations and data/snapshot
-        run: pnpm db:setup
+        # On failure the last lines become annotations, readable on the run's page without logs.
+        run: |
+          set -o pipefail
+          pnpm db:setup 2>&1 | tee db-setup.log || {
+            grep -iE "error|must be|denied|does not exist|failed" db-setup.log | tail -8 \
+              | sed 's/^/::error title=db:setup::/'
+            exit 1
+          }
       - run: pnpm build
       - name: Lighthouse
         run: pnpm dlx @lhci/cli@0.14.0 autorun --config=lighthouserc.json
