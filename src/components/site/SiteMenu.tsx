@@ -5,6 +5,14 @@ import { useEffect, useId, useRef, useState } from "react";
 import { UpdatesCount, useUpdatesCount } from "@/components/community/UpdatesBadge";
 import { SITE_LINKS, type SiteLink, type SiteSection } from "./siteLinks";
 import { MoonIcon, SunIcon, useTheme } from "./ThemeToggle";
+import { useLang, useT } from "@/components/i18n/LangProvider";
+import { DRAFT_LANGS, LANG_COOKIE, LANG_NAMES, LANGS, type Lang } from "@/lib/i18n";
+
+/** Keeps the chosen language for a year and shows the page in it (G12). */
+function chooseLang(lang: Lang) {
+  document.cookie = `${LANG_COOKIE}=${lang}; path=/; max-age=${365 * 24 * 3600}; samesite=lax`;
+  window.location.reload();
+}
 
 /**
  * The site's screens behind one "Menu" button, for headers with no room for the links (phones,
@@ -32,6 +40,8 @@ export function SiteMenu({
 }) {
   const [open, setOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
+  const lang = useLang();
+  const t = useT();
   const id = useId();
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLUListElement>(null);
@@ -138,10 +148,37 @@ export function SiteMenu({
               className="flex min-h-11 w-full items-center gap-2 px-4 hover:bg-stone-100 dark:hover:bg-stone-800"
             >
               {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-              {theme === "dark" ? "Light mode" : "Dark mode"}
+              {theme === "dark" ? t("menu.lightMode") : t("menu.darkMode")}
             </button>
           </li>
         )}
+        <li className="border-t border-stone-200 px-4 pt-2 pb-1 dark:border-stone-700">
+          <p className="text-xs font-bold text-stone-600 dark:text-stone-400">
+            {t("menu.language")}
+          </p>
+          <ul className="flex flex-wrap gap-1 py-1" aria-label={t("menu.language")}>
+            {LANGS.map((l) => (
+              <li key={l}>
+                <button
+                  type="button"
+                  lang={l}
+                  aria-pressed={l === lang}
+                  onClick={() => chooseLang(l)}
+                  className={`inline-flex min-h-11 items-center rounded-full px-3 text-sm md:min-h-8 ${
+                    l === lang
+                      ? "bg-stone-900 font-bold text-white dark:bg-stone-100 dark:text-stone-900"
+                      : "hover:bg-stone-100 dark:hover:bg-stone-800"
+                  }`}
+                >
+                  {LANG_NAMES[l]}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {DRAFT_LANGS.has(lang) && (
+            <p className="pb-1 text-xs text-stone-600 dark:text-stone-400">{t("menu.draft")}</p>
+          )}
+        </li>
       </ul>
     </div>
   );

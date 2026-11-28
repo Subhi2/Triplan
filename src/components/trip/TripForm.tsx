@@ -33,6 +33,7 @@ import {
   type Vehicle,
 } from "@/lib/trip";
 import { StopInput, type MapBias } from "./StopInput";
+import { useT } from "@/components/i18n/LangProvider";
 
 export interface StopDraft {
   id: string;
@@ -56,10 +57,12 @@ interface Props {
   onCorridorChange: (km: CorridorKm) => void;
 }
 
-function roleOf(index: number, count: number) {
-  if (index === 0) return { name: "Start", placeholder: "Where are you starting from?" };
-  if (index === count - 1) return { name: "Destination", placeholder: "Where are you going?" };
-  return { name: `Stop ${index}`, placeholder: "A town or place to ride through" };
+function roleOf(index: number, count: number, t: ReturnType<typeof useT>) {
+  if (index === 0) return { name: t("trip.start"), placeholder: t("trip.startPlaceholder") };
+  if (index === count - 1) {
+    return { name: t("trip.destination"), placeholder: t("trip.destinationPlaceholder") };
+  }
+  return { name: t("trip.stop", { n: index }), placeholder: t("trip.stopPlaceholder") };
 }
 
 function SortableStop(props: {
@@ -77,7 +80,8 @@ function SortableStop(props: {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: stop.id,
   });
-  const role = roleOf(index, count);
+  const t = useT();
+  const role = roleOf(index, count, t);
 
   return (
     <li
@@ -141,6 +145,7 @@ function SortableStop(props: {
 
 export function TripForm(props: Props) {
   const { stops, onStopsChange } = props;
+  const t = useT();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -189,7 +194,7 @@ export function TripForm(props: Props) {
   const hasMoved = useRef(false);
   const nameOf = (id: UniqueIdentifier) => {
     const i = stops.findIndex((s) => s.id === id);
-    return stops[i]?.label || roleOf(i, stops.length).name;
+    return stops[i]?.label || roleOf(i, stops.length, t).name;
   };
   const positionOf = (id: UniqueIdentifier) => stops.findIndex((s) => s.id === id) + 1;
   const announcements: Announcements = {
@@ -251,8 +256,8 @@ export function TripForm(props: Props) {
                       type="button"
                       onClick={() => void locateStart()}
                       disabled={locateState.status === "locating"}
-                      aria-label="Use my location"
-                      title="Use my location"
+                      aria-label={t("trip.useLocation")}
+                      title={t("trip.useLocation")}
                       className="text-brand-dark flex h-11 w-11 items-center justify-center rounded-xl hover:bg-stone-100 disabled:opacity-70 dark:text-teal-300 dark:hover:bg-stone-800"
                     >
                       {locateState.status === "locating" ? (
@@ -300,7 +305,7 @@ export function TripForm(props: Props) {
         >
           <path d="M12 5v14M5 12h14" />
         </svg>
-        Add a stop{viaCount >= MAX_VIA_STOPS ? ` (max ${MAX_VIA_STOPS})` : ""}
+        {viaCount >= MAX_VIA_STOPS ? t("trip.addStopMax", { n: MAX_VIA_STOPS }) : t("trip.addStop")}
       </button>
 
       {allFound && (
@@ -323,7 +328,7 @@ export function TripForm(props: Props) {
             >
               <path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3" />
             </svg>
-            Ride back
+            {t("trip.rideBack")}
           </button>
           {props.onLoop && (
             <button
@@ -344,7 +349,7 @@ export function TripForm(props: Props) {
               >
                 <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4" />
               </svg>
-              Make it a loop
+              {t("trip.loop")}
             </button>
           )}
         </div>
@@ -353,7 +358,7 @@ export function TripForm(props: Props) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pl-9 text-sm">
         <VehicleToggle value={props.vehicle} onChange={props.onVehicleChange} />
         <label className="flex items-center gap-2">
-          <span>Places within</span>
+          <span>{t("trip.placesWithin")}</span>
           <select
             value={props.corridorKm}
             onChange={(e) => props.onCorridorChange(Number(e.target.value) as CorridorKm)}

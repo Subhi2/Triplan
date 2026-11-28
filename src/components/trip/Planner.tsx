@@ -68,6 +68,7 @@ import { PackingList } from "./PackingList";
 import { useSharedIntake } from "./useSharedIntake";
 import { AfterTheRide } from "./AfterTheRide";
 import { AskRoute } from "./AskRoute";
+import { useT } from "@/components/i18n/LangProvider";
 import { LogThisRide } from "./LogThisRide";
 import { askForReviews, placesAtStops } from "@/lib/afterRide";
 import { GoogleMapsBar } from "./GoogleMapsBar";
@@ -1445,10 +1446,10 @@ function jumpTo(id: string) {
 }
 
 const STEPS = [
-  { id: "step-route", label: "Route" },
-  { id: "step-stops", label: "Stops" },
-  { id: "step-check", label: "Check" },
-  { id: "step-ride", label: "Ride" },
+  { id: "step-route", label: "steps.route" },
+  { id: "step-stops", label: "steps.stops" },
+  { id: "step-check", label: "steps.check" },
+  { id: "step-ride", label: "steps.ride" },
 ] as const;
 
 /**
@@ -1456,6 +1457,7 @@ const STEPS = [
  * any other step.
  */
 function StepBar() {
+  const t = useT();
   const [current, setCurrent] = useState<string>(STEPS[0].id);
   const bar = useRef<HTMLElement>(null);
   // After a tap the tapped step stays current while the sheet scrolls to it.
@@ -1526,8 +1528,8 @@ function StepBar() {
             <span aria-hidden className="tabular font-mono text-xs">
               {i < at ? "✓" : i + 1}
             </span>
-            <span className="sr-only">Step {i + 1}: </span>
-            {st.label}
+            <span className="sr-only">{t("steps.step", { n: i + 1 })} </span>
+            {t(st.label)}
           </button>
         );
       })}
