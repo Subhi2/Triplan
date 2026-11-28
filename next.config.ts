@@ -32,6 +32,9 @@ const nextConfig: NextConfig = {
   // Two Next processes must not share a build dir. Playwright uses .next-e2e so it can run
   // beside your dev server; NEXT_DIST_DIR=.next-build pnpm build does the same for builds.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // /rides and the sitemap prerender from the database; a build during a data import once took
+  // more than the default 60 s for /rides and failed the deploy (2026-11-28).
+  staticPageGenerationTimeout: 180,
 };
 
 export default withSerwist(nextConfig);
