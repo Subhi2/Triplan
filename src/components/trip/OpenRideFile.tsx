@@ -19,33 +19,42 @@ type State = { status: "idle" } | { status: "busy" } | { status: "error"; messag
  * hairpins, profile, places passed, 3D replay and story poster. The file is read here; only the
  * line goes to the server, with 500 m cut from each end (src/lib/rideFile.ts).
  */
+/**
+ * Reads a GPX, KML or TCX file in the browser and sends only its trimmed line (src/lib/rideFile.ts)
+ * to be routed; also used for a file shared from another app (G12, Share to Triplan).
+ */
+export async function uploadRideFile(
+  file: File,
+): Promise<{ route: RouteOption; name: string | null } | { error: string }> {
+  try {
+    const ride = await readRideFile(file);
+    if (!ride.ok) return { error: ride.error };
+    const res = await fetch("/api/route/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ geometry: ride.geometry, durationS: ride.durationS }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { route?: RouteOption; error?: string };
+    if (!res.ok || !data.route) return { error: data.error ?? "Could not open the ride." };
+    return { route: data.route, name: ride.name };
+  } catch {
+    return { error: "Could not open the ride." };
+  }
+}
+
 export function OpenRideFile({ onOpened, variant = "link" }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<State>({ status: "idle" });
 
   async function open(file: File) {
     setState({ status: "busy" });
-    try {
-      const ride = await readRideFile(file);
-      if (!ride.ok) {
-        setState({ status: "error", message: ride.error });
-        return;
-      }
-      const res = await fetch("/api/route/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ geometry: ride.geometry, durationS: ride.durationS }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { route?: RouteOption; error?: string };
-      if (!res.ok || !data.route) {
-        setState({ status: "error", message: data.error ?? "Could not open the ride." });
-        return;
-      }
-      setState({ status: "idle" });
-      onOpened(data.route, ride.name);
-    } catch {
-      setState({ status: "error", message: "Could not open the ride." });
+    const result = await uploadRideFile(file);
+    if ("error" in result) {
+      setState({ status: "error", message: result.error });
+      return;
     }
+    setState({ status: "idle" });
+    onOpened(result.route, result.name);
   }
 
   return (

@@ -65,6 +65,7 @@ import {
 import { parseTripUrl, serializeTripUrl, type DetourLimitKm, type UrlStop } from "@/lib/tripUrl";
 import { AddToTrip, type PlaceInTrip } from "./AddToTrip";
 import { PackingList } from "./PackingList";
+import { useSharedIntake } from "./useSharedIntake";
 import { AfterTheRide } from "./AfterTheRide";
 import { LogThisRide } from "./LogThisRide";
 import { askForReviews, placesAtStops } from "@/lib/afterRide";
@@ -990,6 +991,13 @@ export function Planner({
   );
 
   // The last things before riding: offline copy and ride together (save and share sit in saveBar).
+  // "Share to Triplan" (G12): a ride file or a Google Maps link shared from another app.
+  const shared = useSharedIntake({
+    onRide: openRide,
+    onStops: (found) =>
+      setStops(found.length === 1 ? [draft(null), draft(found[0]!)] : found.map((f) => draft(f))),
+  });
+
   // After the ride (G11): the places a saved trip stopped at, once it has sat unchanged a while.
   const reviewStops =
     saved && askForReviews(saved.updatedAt) ? placesAtStops(stops, allPlaces) : [];
@@ -1337,6 +1345,11 @@ export function Planner({
               <div className="mt-3">
                 <OpenRideFile onOpened={openRide} />
               </div>
+            )}
+            {shared.status !== "idle" && (
+              <p role="status" className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                {shared.status === "busy" ? "Opening what you shared…" : shared.message}
+              </p>
             )}
             {gpxExpired && (
               <p role="status" className="mt-1 text-sm text-stone-600 dark:text-stone-400">
